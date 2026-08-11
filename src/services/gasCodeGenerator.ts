@@ -84,13 +84,25 @@ const HEADERS_MAP = {
 };
 
 /**
+ * Helper to safely resolve Spreadsheet instance
+ */
+function getSS(ss) {
+  if (ss) return ss;
+  var active = SpreadsheetApp.getActiveSpreadsheet() || SpreadsheetApp.getActive();
+  if (!active) {
+    throw new Error("Spreadsheet tidak ditemukan. Pastikan Apps Script ini dibuka melalui Extensions -> Apps Script pada Google Sheet Anda.");
+  }
+  return active;
+}
+
+/**
  * Handle HTTP GET Requests
  */
 function doGet(e) {
-  const action = e.parameter ? e.parameter.action : "PING";
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-
+  const action = (e && e.parameter) ? e.parameter.action : "PING";
+  
   try {
+    const ss = getSS();
     setupAllSheets(ss);
 
     if (action === "SETUP_SHEETS") {
@@ -107,7 +119,7 @@ function doGet(e) {
     }
 
     if (action === "GET_TAB") {
-      const tab = e.parameter.tab;
+      const tab = e.parameter ? e.parameter.tab : null;
       if (!tab) return responseJSON({ success: false, error: "Missing tab parameter" });
       const targetSheet = STORE_KEY_MAP[tab] || tab;
       const data = getSheetData(ss, targetSheet);
@@ -124,9 +136,8 @@ function doGet(e) {
  * Handle HTTP POST Requests (CRUD / Actions)
  */
 function doPost(e) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  
   try {
+    const ss = getSS();
     setupAllSheets(ss);
 
     const contents = JSON.parse((e && e.postData && e.postData.contents) ? e.postData.contents : "{}");
@@ -208,11 +219,12 @@ function doPost(e) {
  * Initialize all 26 required sheets with formatted headers
  */
 function setupAllSheets(ss) {
+  const targetSS = getSS(ss);
   const created = [];
   SHEET_NAMES.forEach(sheetName => {
-    let sheet = ss.getSheetByName(sheetName);
+    let sheet = targetSS.getSheetByName(sheetName);
     if (!sheet) {
-      sheet = ss.insertSheet(sheetName);
+      sheet = targetSS.insertSheet(sheetName);
     }
     const headers = HEADERS_MAP[sheetName] || [];
     if (headers.length > 0 && sheet.getLastRow() === 0) {
@@ -224,13 +236,31 @@ function setupAllSheets(ss) {
     }
     created.push(sheetName);
   });
+
+  // Activate Users sheet by default
+  const usersSheet = targetSS.getSheetByName("Users");
+  if (usersSheet) {
+    targetSS.setActiveSheet(usersSheet);
+  }
+
+  // Remove default empty "Sheet1" or "Lembar1" if empty and other sheets exist
+  const defaultSheet = targetSS.getSheetByName("Sheet1") || targetSS.getSheetByName("Lembar1");
+  if (defaultSheet && targetSS.getSheets().length > 1 && defaultSheet.getLastRow() === 0) {
+    try {
+      targetSS.deleteSheet(defaultSheet);
+    } catch (e) {
+      // ignore
+    }
+  }
+
   return created;
 }
 
 function getOrCreateSheet(ss, tab) {
-  let sheet = ss.getSheetByName(tab);
+  const targetSS = getSS(ss);
+  let sheet = targetSS.getSheetByName(tab);
   if (!sheet) {
-    sheet = ss.insertSheet(tab);
+    sheet = targetSS.insertSheet(tab);
     const headers = HEADERS_MAP[tab] || ["id"];
     sheet.appendRow(headers);
   }
@@ -238,7 +268,8 @@ function getOrCreateSheet(ss, tab) {
 }
 
 function getSheetData(ss, tab) {
-  const sheet = ss.getSheetByName(tab);
+  const targetSS = getSS(ss);
+  const sheet = targetSS.getSheetByName(tab);
   if (!sheet) return [];
   const values = sheet.getDataRange().getValues();
   if (values.length <= 1) return [];
@@ -258,13 +289,37 @@ function getSheetData(ss, tab) {
 function setSheetData(ss, tab, records) {
   const sheet = getOrCreateSheet(ss, tab);
   sheet.clearContents();
-  const headers = HEADERS_MAP[tab] || (records.length > 0 ? Object.keys(records[0]) : ["id"]);
+  
+  let headers = HEADERS_MAP[tab] || [];
+  if (records && records.length > 0) {
+    const recKeys = Object.keys(records[0]);
+    if (!headers || headers.length === 0) {
+      headers = recKeys;
+    } else {
+      recKeys.forEach(function(k) {
+        if (headers.indexOf(k) === -1) {
+          headers.push(k);
+        }
+      });
+    }
+  }
+  if (!headers || headers.length === 0) headers = ["id"];
+
   sheet.appendRow(headers);
   const headerRange = sheet.getRange(1, 1, 1, headers.length);
   headerRange.setFontWeight("bold").setBackground("#1e293b").setFontColor("#ffffff");
 
   if (records && records.length > 0) {
-    const rows = records.map(rec => headers.map(h => rec[h] !== undefined ? rec[h] : ""));
+    const rows = records.map(function(rec) {
+      return headers.map(function(h) {
+        const val = rec[h];
+        if (val === undefined || val === null) return "";
+        if (typeof val === "object") {
+          return JSON.stringify(val);
+        }
+        return String(val);
+      });
+    });
     sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
   }
 }

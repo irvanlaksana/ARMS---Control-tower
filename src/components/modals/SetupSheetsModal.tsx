@@ -63,7 +63,7 @@ export const SetupSheetsModal: React.FC<SetupSheetsModalProps> = ({
 
         // Also trigger full sync to push current store
         if (store) {
-          await fetch('/api/gas/proxy', {
+          const syncRes = await fetch('/api/gas/proxy', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -72,6 +72,10 @@ export const SetupSheetsModal: React.FC<SetupSheetsModalProps> = ({
               data: store,
             }),
           });
+          const syncJson = await syncRes.json();
+          if (syncJson && syncJson.success === false) {
+            throw new Error(syncJson.error || 'Gagal menyinkronkan data ke Google Sheets.');
+          }
         }
 
         // Save settings to store

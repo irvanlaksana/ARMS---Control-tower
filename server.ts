@@ -135,7 +135,12 @@ async function startServer() {
           const headers = Object.keys(records[0]);
           const rows = [
             headers,
-            ...records.map((r: any) => headers.map(h => r[h] !== undefined ? String(r[h]) : ""))
+            ...records.map((r: any) => headers.map(h => {
+              const val = r[h];
+              if (val === undefined || val === null) return "";
+              if (typeof val === 'object') return JSON.stringify(val);
+              return String(val);
+            }))
           ];
 
           await sheets.spreadsheets.values.update({
