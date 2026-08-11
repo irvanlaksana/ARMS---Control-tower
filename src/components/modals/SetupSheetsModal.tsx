@@ -56,9 +56,19 @@ export const SetupSheetsModal: React.FC<SetupSheetsModalProps> = ({
           }),
         });
 
-        const json = await res.json();
-        if (!json.success && json.error) {
-          throw new Error(json.error);
+        let json: any;
+        try {
+          json = await res.json();
+        } catch {
+          throw new Error(
+            'Google Apps Script mengembalikan halaman HTML/Akses Ditolak.\n\nPastikan Web App disebarkan (Deploy) dengan:\n1. Execute as: Me (Saya)\n2. Who has access: Anyone (Siapa saja)\n3. Gunakan URL berakhiran /exec (bukan /dev)'
+          );
+        }
+
+        if (!res.ok || !json.success) {
+          throw new Error(
+            json.error || json.message || 'Gagal terhubung ke Google Apps Script Web App.'
+          );
         }
 
         // Also trigger full sync to push current store
@@ -72,9 +82,20 @@ export const SetupSheetsModal: React.FC<SetupSheetsModalProps> = ({
               data: store,
             }),
           });
-          const syncJson = await syncRes.json();
-          if (syncJson && syncJson.success === false) {
-            throw new Error(syncJson.error || 'Gagal menyinkronkan data ke Google Sheets.');
+
+          let syncJson: any;
+          try {
+            syncJson = await syncRes.json();
+          } catch {
+            throw new Error(
+              'Gagal menyinkronkan data: Respon dari Web App Google Apps Script bukan format JSON yang valid.'
+            );
+          }
+
+          if (!syncRes.ok || (syncJson && syncJson.success === false)) {
+            throw new Error(
+              syncJson?.error || 'Gagal menyinkronkan data ke Google Sheets.'
+            );
           }
         }
 
@@ -211,15 +232,20 @@ export const SetupSheetsModal: React.FC<SetupSheetsModalProps> = ({
 
           {activeMode === 'GAS' ? (
             <div className="space-y-3">
-              <div className="bg-indigo-950/40 p-3 rounded-lg border border-indigo-900/60 text-indigo-200">
-                <p className="font-semibold text-indigo-300 mb-1">Metode Live Google Apps Script Web App:</p>
-                <p className="text-slate-300 leading-relaxed text-[11px]">
-                  Buka Google Sheet Anda → Klik <b className="text-white">Extensions</b> → <b className="text-white">Apps Script</b> → Paste kode backend dari tombol GAS Code → Deploy sebagai Web App → Tempelkan Web App URL di bawah ini.
-                </p>
+              <div className="bg-indigo-950/40 p-3.5 rounded-lg border border-indigo-900/60 text-indigo-200 space-y-2">
+                <p className="font-semibold text-indigo-300">Langkah Penting Hubungkan Google Apps Script Web App:</p>
+                <ol className="list-decimal list-inside space-y-1 text-slate-300 text-[11px] leading-relaxed pl-1">
+                  <li>Buka Google Sheet Anda → Klik <b>Extensions</b> → <b>Apps Script</b></li>
+                  <li>Paste seluruh kode backend generator ke <b>Code.gs</b></li>
+                  <li>Klik <b>Deploy</b> → <b>New deployment</b> → Pilih jenis <b>Web app</b></li>
+                  <li>Execute as: <b className="text-emerald-400">Me (Saya)</b></li>
+                  <li>Who has access: <b className="text-amber-300 font-bold">Anyone (Siapa saja)</b> <span className="text-amber-400 font-normal">(Wajib diset 'Siapa Saja' agar tidak diblokir Google!)</span></li>
+                  <li>Salin Web App URL (berakhiran <code className="text-indigo-300 bg-indigo-900/50 px-1 rounded">/exec</code>) dan tempel di bawah ini.</li>
+                </ol>
                 {onOpenGASModal && (
                   <button
                     onClick={onOpenGASModal}
-                    className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold rounded transition"
+                    className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold rounded transition shadow"
                   >
                     <FileCode className="w-3.5 h-3.5" />
                     <span>Buka Generator Kode Apps Script</span>

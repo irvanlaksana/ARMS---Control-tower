@@ -170,9 +170,18 @@ async function startServer() {
   // API Route: Google Apps Script Web App Proxy
   app.post("/api/gas/proxy", async (req, res) => {
     try {
-      const { webAppUrl, action, tab, payload, data, auditInfo } = req.body;
+      let { webAppUrl, action, tab, payload, data, auditInfo } = req.body;
       if (!webAppUrl) {
-        return res.status(400).json({ error: "Missing webAppUrl" });
+        return res.status(400).json({ success: false, error: "Missing webAppUrl" });
+      }
+
+      webAppUrl = webAppUrl.trim();
+
+      if (webAppUrl.endsWith("/dev")) {
+        return res.status(400).json({
+          success: false,
+          error: "URL berakhiran /dev membutuhkan login Google. Gunakan URL Web App resmi berakhiran /exec dari menu Deploy -> New deployment.",
+        });
       }
 
       const response = await fetch(webAppUrl, {
@@ -186,15 +195,29 @@ async function startServer() {
       try {
         jsonRes = JSON.parse(text);
       } catch {
-        jsonRes = { success: true, message: text };
+        // Handle non-JSON HTML response from Google
+        if (text.includes("The page") || text.includes("<html") || text.includes("<!DOCTYPE") || text.includes("Google Accounts")) {
+          return res.status(400).json({
+            success: false,
+            error: "Google Apps Script mengembalikan halaman HTML/Akses Ditolak.\n\nPastikan Web App disebarkan (Deploy) dengan pengaturan:\n1. Execute as: Me (Saya)\n2. Who has access: Anyone (Siapa saja)\n3. Gunakan URL berakhiran /exec",
+          });
+        }
+        return res.status(400).json({
+          success: false,
+          error: `Respon dari Google Apps Script tidak valid: ${text.slice(0, 150)}`,
+        });
       }
 
-      res.json(jsonRes);
+      if (jsonRes.success === false) {
+        return res.status(400).json(jsonRes);
+      }
+
+      return res.json(jsonRes);
     } catch (err: any) {
       console.error("GAS Proxy Error:", err?.message || err);
       res.status(500).json({
         success: false,
-        error: err?.message || "Failed to communicate with Google Apps Script Web App URL",
+        error: err?.message || "Gagal berkomunikasi dengan Web App Google Apps Script.",
       });
     }
   });

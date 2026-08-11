@@ -58,8 +58,8 @@ export const GASCodeModal: React.FC<GASCodeModalProps> = ({ isOpen, onClose }) =
             <li>Open your Google Sheet → Click <span className="text-slate-200 font-medium">Extensions</span> → <span className="text-slate-200 font-medium">Apps Script</span>.</li>
             <li>Replace everything in <span className="text-slate-200 font-medium">Code.gs</span> with the code below.</li>
             <li>Click <span className="text-slate-200 font-medium font-semibold text-emerald-400">Deploy</span> → <span className="text-slate-200 font-medium">New deployment</span> → Select type <span className="text-slate-200 font-medium">Web app</span>.</li>
-            <li>Set <span className="text-slate-200 font-medium">Execute as: Me</span> and <span className="text-slate-200 font-medium">Who has access: Anyone</span>.</li>
-            <li>Copy the Web App URL and paste it into <span className="text-slate-200 font-medium text-indigo-300">Settings</span> tab in this ARMS App!</li>
+            <li>Set <span className="text-slate-200 font-medium">Execute as: Me (Saya)</span> and <span className="text-amber-300 font-bold">Who has access: Anyone (Siapa saja)</span> <span className="text-amber-400 font-normal">(Wajib diset 'Siapa Saja' agar dapat diakses oleh server)</span>.</li>
+            <li>Copy the Web App URL (berakhiran <code className="text-indigo-300 bg-indigo-900/50 px-1 rounded">/exec</code>) and paste it into <span className="text-slate-200 font-medium text-indigo-300">Settings</span> tab in this ARMS App!</li>
           </ol>
         </div>
 
