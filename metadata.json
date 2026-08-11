@@ -1,0 +1,6 @@
+{
+  "name": "ARMS — Agency Recovery Management System",
+  "description": "Control Tower Agency DC & Recovery Management System with Google Sheets backend integration for Multifinance & B2B Asset Recovery",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
