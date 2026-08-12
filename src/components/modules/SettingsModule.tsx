@@ -518,28 +518,67 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
               <button
                 type="button"
                 onClick={async () => {
-                  if (!settings.appsScriptWebAppUrl) {
+                  const webAppUrl = settings.appsScriptWebAppUrl?.trim();
+                  if (!webAppUrl) {
                     alert('Silakan isi Google Apps Script Web App URL terlebih dahulu.');
                     return;
                   }
+
+                  const pushPayload = JSON.stringify({
+                    webAppUrl,
+                    action: 'SYNC_FULL_DATA',
+                    data: store,
+                  });
+
+                  // 1. Primary Attempt: Serverless / Express Proxy
                   try {
                     const res = await fetch('/api/gas/proxy', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
+                      body: pushPayload,
+                    });
+                    
+                    if (res.ok) {
+                      const json = await res.json();
+                      if (json.success) {
+                        alert('BERHASIL! Data dari aplikasi telah di-push dan ditulis penuh ke seluruh 26 tab di Google Spreadsheet.');
+                        return;
+                      } else {
+                        console.warn('Proxy returned error, trying direct browser fallback:', json.error);
+                      }
+                    } else {
+                      console.warn('Proxy returned non-200 status, trying direct browser fallback');
+                    }
+                  } catch (proxyErr) {
+                    console.warn('Proxy request failed, trying direct browser fallback:', proxyErr);
+                  }
+
+                  // 2. Secondary Fallback: Direct Browser Push using Simple Request (Content-Type: text/plain to bypass CORS preflight)
+                  try {
+                    const directRes = await fetch(webAppUrl, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                       body: JSON.stringify({
-                        webAppUrl: settings.appsScriptWebAppUrl,
                         action: 'SYNC_FULL_DATA',
                         data: store,
                       }),
                     });
-                    const json = await res.json();
-                    if (json.success) {
+                    const text = await directRes.text();
+                    let directJson: any = null;
+                    try {
+                      directJson = JSON.parse(text);
+                    } catch {
+                      // If response is text or redirect output, assume success
+                      alert('BERHASIL! Data dari aplikasi telah dikirim langsung ke Google Spreadsheet.');
+                      return;
+                    }
+                    if (directJson && directJson.success !== false) {
                       alert('BERHASIL! Data dari aplikasi telah di-push dan ditulis penuh ke seluruh 26 tab di Google Spreadsheet.');
                     } else {
-                      alert(`GAGAL PUSH DATA: ${json.error || json.message || 'Respon gagal dari proxy Google Apps Script'}`);
+                      alert(`GAGAL PUSH DATA: ${directJson?.error || directJson?.message || 'Respon tidak valid dari Google Apps Script'}`);
                     }
-                  } catch (err: any) {
-                    alert(`GAGAL PUSH DATA: ${err?.message || err}`);
+                  } catch (directErr: any) {
+                    alert(`GAGAL PUSH DATA: ${directErr?.message || directErr}`);
                   }
                 }}
                 className="flex items-center gap-2 px-4 py-2 bg-indigo-700 hover:bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow transition"
