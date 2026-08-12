@@ -5,7 +5,7 @@
 
 import {
   User, Client, Personnel, Service, FeeConfig, Contract, Lead, Customer, Case,
-  Assignment, SK, CommunicationLog, Asset, Collection, AssetRecovery, DanaTalangan,
+  Assignment, SK, LawyerNotice, CommunicationLog, Asset, Collection, AssetRecovery, DanaTalangan,
   Payment, Expense, Settlement, LedgerEntry, CashAccount, DocumentRecord,
   ApprovalRequest, NotificationItem, AuditLogEntry, AppSettings
 } from '../types/arms';
@@ -407,6 +407,9 @@ export const INITIAL_CASES: Case[] = [
     feeTypeSnapshot: 'PERCENT',
     feePercentSnapshot: 20,
     status: 'FIELD_ACTION',
+    lawyerStatus: 'Dikirim Somasi 1 (Lawyer)',
+    lawyerNoticeCount: 1,
+    lastLawyerNoticeType: 'SOMASI_1',
     currentPersonnelId: 'PRT-002',
     currentPersonnelName: 'Mitra Sinergi Nusantara Agency',
     createdAt: '2026-03-01T11:00:00Z',
@@ -430,6 +433,9 @@ export const INITIAL_CASES: Case[] = [
     feeTypeSnapshot: 'FIXED',
     feeFixedSnapshot: 2500000,
     status: 'IN_MEDIATION',
+    lawyerStatus: 'Surat Klarifikasi (Lawyer)',
+    lawyerNoticeCount: 1,
+    lastLawyerNoticeType: 'SURAT_KLARIFIKASI',
     currentPersonnelId: 'PRT-001',
     currentPersonnelName: 'PT Garuda Eagle Recovery Services',
     createdAt: '2026-04-15T09:30:00Z',
@@ -932,6 +938,49 @@ export const INITIAL_AUDIT_LOGS: AuditLogEntry[] = [
     details: 'Menyetujui klaim biaya towing truk Fuso Cikarang Rp 3.500.000.',
     ipAddress: '180.252.100.12',
   },
+];
+
+export const INITIAL_LAWYER_NOTICES: LawyerNotice[] = [
+  {
+    id: 'LGL-001',
+    noticeNo: 'SOMASI/MJI-LEGAL/2026/08/001',
+    caseId: 'CAS-002',
+    caseNo: 'CAS-2026-FIF-008',
+    debtorName: 'Hendra Gunawan',
+    debtorAddress: 'Komp. Margahayu Raya Block B2 No. 8, Bandung',
+    clientName: 'PT Federal International Finance (FIFGROUP)',
+    multifinanceContractNo: 'FIF-CTR-11223344',
+    noticeType: 'SOMASI_1',
+    requestedDate: '2026-08-01',
+    lawyerFirmName: 'Advokat & Tim Legal Counsel PT MITRA JASATRIA INDONESIA',
+    lawyerName: 'Dr. Hendra Wijaya, S.H., M.H.',
+    principalDebtAmount: 65000000,
+    status: 'SENT_TO_DEBTOR',
+    letterContentDraft: `SURAT SOMASI I (PERINGATAN HUKUM PERTAMA)\n\nNomor: SOMASI/MJI-LEGAL/2026/08/001\nTanggal: 1 Agustus 2026\n\nKepada Yth.\nBpk/Ibu Hendra Gunawan\nAlamat: Komp. Margahayu Raya Block B2 No. 8, Bandung\n\nPerihal: SOMASI I — Peringatan Hukum atas Wanprestasi Perjanjian Pembiayaan No. FIF-CTR-11223344\n\nDengan hormat,\nKami yang bertanda tangan di bawah ini, Tim Advokat & Kuasa Hukum PT MITRA JASATRIA INDONESIA bertindak untuk dan atas nama Klien kami PT Federal International Finance (FIFGROUP).\n\nBerdasarkan catatan keuangan Klien kami, Saudara terbukti telah melalaikan kewajiban pembayaran angsuran atas objek jaminan fidusia Honda PCX 160 ABS 2023 (D 4512 ABD) dengan total tunggakan pokok sebesar Rp 65.000.000,-.\n\nMelalui Surat Somasi I ini, kami memperingatkan Saudara untuk segera melakukan pelunasan atau penyelesaian secara musyawarah dalam waktu 3x24 jam.\n\nHormat Kami,\nKuasa Hukum PT MITRA JASATRIA INDONESIA`,
+    notes: 'Surat Somasi 1 telah resmi dikirimkan via kurir dan WhatsApp.',
+    createdBy: 'Bambang Soeprapto',
+    createdAt: '2026-08-01T10:00:00Z',
+  },
+  {
+    id: 'LGL-002',
+    noticeNo: 'KLARIFIKASI/MJI-LEGAL/2026/08/002',
+    caseId: 'CAS-003',
+    caseNo: 'CAS-2026-WOM-015',
+    debtorName: 'Supriadi Mangkuto',
+    debtorAddress: 'Jl. Palmerah Barat No. 45, Jakarta Barat',
+    clientName: 'PT Wahana Ottomulti Artha Tbk (WOM Finance)',
+    multifinanceContractNo: 'WOM-CTR-77889900',
+    noticeType: 'SURAT_KLARIFIKASI',
+    requestedDate: '2026-08-05',
+    lawyerFirmName: 'Advokat & Tim Legal Counsel PT MITRA JASATRIA INDONESIA',
+    lawyerName: 'Bambang Soeprapto, S.H.',
+    principalDebtAmount: 140000000,
+    status: 'APPROVED_BY_LAWYER',
+    letterContentDraft: `SURAT KLARIFIKASI & UNDANGAN KONFIRMASI PIUTANG\n\nNomor: KLARIFIKASI/MJI-LEGAL/2026/08/002\nTanggal: 5 Agustus 2026\n\nKepada Yth.\nSdr. Supriadi Mangkuto\nAlamat: Jl. Palmerah Barat No. 45, Jakarta Barat\n\nPerihal: Undangan Klarifikasi & Musyawarah Penanganan Piutang Pembiayaan\n\nDengan hormat,\nSehubungan dengan outstanding kewajiban fasilitas pembiayaan pada PT Wahana Ottomulti Artha Tbk No. WOM-CTR-77889900 sejumlah Rp 140.000.000,-.\n\nKami mengundang Saudara untuk hadir pada sesi klarifikasi dan musyawarah penyelesaian kewajiban.\n\nHormat Kami,\nTim Legal Counsel PT MITRA JASATRIA INDONESIA`,
+    notes: 'Disetujui Tim Advokat untuk proses pengiriman.',
+    createdBy: 'Bambang Soeprapto',
+    createdAt: '2026-08-05T11:30:00Z',
+  }
 ];
 
 export const INITIAL_SETTINGS: AppSettings = {

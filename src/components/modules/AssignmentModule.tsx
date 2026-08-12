@@ -15,7 +15,12 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
   onUpdateStore,
 }) => {
   const [showModal, setShowModal] = useState(false);
-  const [caseId, setCaseId] = useState(store.cases[0]?.id || '');
+  // Active unfinished cases for new assignments
+  const activeCases = store.cases.filter(
+    (c) => !['CLOSED', 'SETTLED', 'FULL_PAID', 'CANCELLED'].includes(c.status)
+  );
+
+  const [caseId, setCaseId] = useState(activeCases[0]?.id || '');
   const [personnelId, setPartnerId] = useState(store.personnel?.[0]?.id || '');
   const [slaDays, setSlaDays] = useState(14);
   const [instructions, setInstructions] = useState('');
@@ -26,6 +31,8 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
     e.preventDefault();
     const c = store.cases.find((cs) => cs.id === caseId);
     const p = (store.personnel || []).find((pr) => pr.id === personnelId);
+
+    if (!c) return;
 
     const newAssignment: Assignment = {
       id: `ASN-${Date.now()}`,
@@ -100,26 +107,37 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {store.assignments.map((a) => (
-                <tr key={a.id} className="hover:bg-slate-800/40 transition">
-                  <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">{a.assignmentNo}</td>
-                  <td className="py-3.5 px-4 space-y-0.5">
-                    <div className="font-bold text-white">{a.caseNo}</div>
-                    <div className="text-[11px] text-slate-400">{a.debtorName}</div>
-                  </td>
-                  <td className="py-3.5 px-4 font-medium text-slate-200">{a.personnelName}</td>
-                  <td className="py-3.5 px-4 text-slate-400">{a.assignedDate}</td>
-                  <td className="py-3.5 px-4 text-amber-400 font-medium">
-                    {a.targetDate} ({a.slaDays} days SLA)
-                  </td>
-                  <td className="py-3.5 px-4 text-slate-300 max-w-[200px] truncate">{a.instructions}</td>
-                  <td className="py-3.5 px-4 text-center">
-                    <span className="bg-indigo-950 text-indigo-300 text-[10px] px-2.5 py-1 rounded-full border border-indigo-800 font-semibold">
-                      {a.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {store.assignments.map((a) => {
+                const parentCase = store.cases.find((c) => c.id === a.caseId || c.caseNo === a.caseNo);
+                const hasLawyerNotice = Boolean(parentCase?.lawyerStatus);
+                return (
+                  <tr key={a.id} className="hover:bg-slate-800/40 transition">
+                    <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">{a.assignmentNo}</td>
+                    <td className="py-3.5 px-4 space-y-1">
+                      <div className="font-bold text-white flex items-center gap-1.5 flex-wrap">
+                        <span>{a.caseNo}</span>
+                        {hasLawyerNotice && (
+                          <span className="bg-purple-950 text-purple-300 text-[10px] px-1.5 py-0.2 rounded border border-purple-800 font-medium">
+                            ⚖️ {parentCase?.lawyerStatus || 'Dikirim Surat Lawyer'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-slate-400">{a.debtorName}</div>
+                    </td>
+                    <td className="py-3.5 px-4 font-medium text-slate-200">{a.personnelName}</td>
+                    <td className="py-3.5 px-4 text-slate-400">{a.assignedDate}</td>
+                    <td className="py-3.5 px-4 text-amber-400 font-medium">
+                      {a.targetDate} ({a.slaDays} hari SLA)
+                    </td>
+                    <td className="py-3.5 px-4 text-slate-300 max-w-[200px] truncate">{a.instructions}</td>
+                    <td className="py-3.5 px-4 text-center">
+                      <span className="bg-indigo-950 text-indigo-300 text-[10px] px-2.5 py-1 rounded-full border border-indigo-800 font-semibold">
+                        {a.status}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -128,21 +146,29 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
           <form onSubmit={handleCreateAssignment} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <h3 className="font-bold text-white text-base">Assign Case to Field Partner</h3>
+            <h3 className="font-bold text-white text-base">Buat Penugasan Baru Mitra Lapangan</h3>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Select Case</label>
-              <select
-                value={caseId}
-                onChange={(e) => setCaseId(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
-              >
-                {store.cases.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.caseNo} - {c.debtorName} ({c.clientName})
-                  </option>
-                ))}
-              </select>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                Pilih Kasus Belum Selesai (Kasus Aktif) <span className="text-red-400">*</span>
+              </label>
+              {activeCases.length === 0 ? (
+                <div className="p-3 bg-amber-950/60 border border-amber-800 rounded-lg text-xs text-amber-300">
+                  ⚠️ Semua kasus telah selesai/lunas. Tidak ada pekerjaan kasus aktif untuk penugasan baru.
+                </div>
+              ) : (
+                <select
+                  value={caseId}
+                  onChange={(e) => setCaseId(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                >
+                  {activeCases.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.caseNo} - {c.debtorName} ({c.clientName})
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div>

@@ -27,6 +27,7 @@ import { SettlementModule } from './components/modules/SettlementModule';
 import { CollectionModule } from './components/modules/CollectionModule';
 import { AssetRecoveryModule } from './components/modules/AssetRecoveryModule';
 import { ServicesModule } from './components/modules/ServicesModule';
+import { LawyerModule } from './components/modules/LawyerModule';
 import { LeadsModule } from './components/modules/LeadsModule';
 import { ReportsModule } from './components/modules/ReportsModule';
 import { DocumentsModule } from './components/modules/DocumentsModule';
@@ -181,8 +182,10 @@ export default function App() {
         return <CollectionModule store={store} currentUser={currentUser} onUpdateStore={handleUpdateStore} />;
       case 'RECOVERY':
         return <AssetRecoveryModule store={store} currentUser={currentUser} onUpdateStore={handleUpdateStore} />;
+      case 'LAWYER':
+        return <LawyerModule store={store} currentUser={currentUser} onUpdateStore={handleUpdateStore} />;
       case 'SERVICES':
-        return <ServicesModule store={store} />;
+        return <ServicesModule store={store} currentUser={currentUser} onUpdateStore={handleUpdateStore} />;
       case 'LEADS':
         return <LeadsModule store={store} currentUser={currentUser} onUpdateStore={handleUpdateStore} />;
       case 'REPORTS':

@@ -6,7 +6,7 @@
 
 import {
   User, Client, Personnel, Service, FeeConfig, Contract, Lead, Customer, Case,
-  Assignment, SK, CommunicationLog, Asset, Collection, AssetRecovery, DanaTalangan,
+  Assignment, SK, LawyerNotice, CommunicationLog, Asset, Collection, AssetRecovery, DanaTalangan,
   Payment, Expense, Settlement, LedgerEntry, CashAccount, DocumentRecord,
   ApprovalRequest, NotificationItem, AuditLogEntry, AppSettings, FeeType
 } from '../types/arms';
@@ -14,7 +14,7 @@ import {
 import {
   INITIAL_USERS, INITIAL_CLIENTS, INITIAL_PERSONNEL, INITIAL_SERVICES,
   INITIAL_FEES, INITIAL_CONTRACTS, INITIAL_LEADS, INITIAL_CUSTOMERS,
-  INITIAL_CASES, INITIAL_ASSIGNMENTS, INITIAL_SKS, INITIAL_COMM_LOGS,
+  INITIAL_CASES, INITIAL_ASSIGNMENTS, INITIAL_SKS, INITIAL_LAWYER_NOTICES, INITIAL_COMM_LOGS,
   INITIAL_ASSETS, INITIAL_COLLECTIONS, INITIAL_ASSET_RECOVERIES,
   INITIAL_DANA_TALANGAN, INITIAL_PAYMENTS, INITIAL_EXPENSES, INITIAL_SETTLEMENTS,
   INITIAL_LEDGER, INITIAL_CASH_ACCOUNTS, INITIAL_DOCUMENTS, INITIAL_APPROVALS,
@@ -33,6 +33,7 @@ export interface ARMSStore {
   cases: Case[];
   assignments: Assignment[];
   sks: SK[];
+  lawyerNotices: LawyerNotice[];
   commLogs: CommunicationLog[];
   assets: Asset[];
   collections: Collection[];
@@ -65,6 +66,7 @@ function normalizeStore(parsed: any): ARMSStore {
     cases: INITIAL_CASES,
     assignments: INITIAL_ASSIGNMENTS,
     sks: INITIAL_SKS,
+    lawyerNotices: INITIAL_LAWYER_NOTICES,
     commLogs: INITIAL_COMM_LOGS,
     assets: INITIAL_ASSETS,
     collections: INITIAL_COLLECTIONS,
@@ -96,6 +98,7 @@ function normalizeStore(parsed: any): ARMSStore {
     cases: Array.isArray(parsed.cases) ? parsed.cases : initial.cases,
     assignments: Array.isArray(parsed.assignments) ? parsed.assignments : initial.assignments,
     sks: Array.isArray(parsed.sks) ? parsed.sks : initial.sks,
+    lawyerNotices: Array.isArray(parsed.lawyerNotices) ? parsed.lawyerNotices : initial.lawyerNotices,
     commLogs: Array.isArray(parsed.commLogs) ? parsed.commLogs : initial.commLogs,
     assets: Array.isArray(parsed.assets) ? parsed.assets : initial.assets,
     collections: Array.isArray(parsed.collections) ? parsed.collections : initial.collections,

@@ -181,8 +181,15 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
                     </div>
                   </td>
                   <td className="py-3.5 px-4 font-medium text-white">{c.clientName}</td>
-                  <td className="py-3.5 px-4 space-y-0.5">
-                    <div className="font-bold text-slate-100">{c.debtorName}</div>
+                  <td className="py-3.5 px-4 space-y-1">
+                    <div className="font-bold text-slate-100 flex items-center gap-1.5 flex-wrap">
+                      <span>{c.debtorName}</span>
+                      {c.lawyerStatus && (
+                        <span className="bg-purple-950 text-purple-300 text-[10px] px-1.5 py-0.2 rounded border border-purple-800 font-semibold">
+                          ⚖️ {c.lawyerStatus}
+                        </span>
+                      )}
+                    </div>
                     <div className="text-[10px] text-slate-500 font-mono">NIK: {c.debtorNik}</div>
                   </td>
                   <td className="py-3.5 px-4 text-slate-300 max-w-[180px] truncate">{c.assetSummary}</td>

@@ -38,14 +38,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
     if (role === 'APPROVER_EXECUTIVE') {
       return [
-        'DASHBOARD', 'APPROVALS', 'CASES', 'CONTRACTS', 'SK', 'TALANGAN',
+        'DASHBOARD', 'APPROVALS', 'CASES', 'CONTRACTS', 'SK', 'LAWYER', 'TALANGAN',
         'EXPENSES', 'SETTLEMENT', 'FINANCE', 'REPORTS', 'DOCUMENTS', 'AUDIT', 'CLIENTS'
       ].includes(tab);
     }
 
     if (role === 'VIEWER_COMMISSIONER') {
       return [
-        'DASHBOARD', 'CASES', 'FINANCE', 'TALANGAN', 'REPORTS', 'DOCUMENTS', 'AUDIT'
+        'DASHBOARD', 'CASES', 'LAWYER', 'FINANCE', 'TALANGAN', 'REPORTS', 'DOCUMENTS', 'AUDIT'
       ].includes(tab);
     }
 
@@ -72,6 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { id: 'CASES', label: 'Cases / Piutang', icon: Briefcase },
         { id: 'ASSIGNMENTS', label: 'Assignments', icon: Users },
         { id: 'COMM_LOG', label: 'Communication Log', icon: PhoneCall },
+        { id: 'LAWYER', label: 'Layanan Lawyer & Somasi', icon: Scale },
         { id: 'COLLECTION', label: 'Collections', icon: Receipt },
         { id: 'RECOVERY', label: 'Asset Recovery', icon: ShieldAlert },
         { id: 'ASSETS', label: 'Assets Warehouse', icon: Car },

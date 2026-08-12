@@ -172,6 +172,9 @@ export interface Case {
     | 'SETTLED'
     | 'CLOSED'
     | 'CANCELLED';
+  lawyerStatus?: string; // e.g. "SOMASI_1_TERKIRIM", "SURAT_KLARIFIKASI"
+  lawyerNoticeCount?: number;
+  lastLawyerNoticeType?: string;
   currentPersonnelId?: string;
   currentPersonnelName?: string;
   createdAt: string;
@@ -208,6 +211,33 @@ export interface SK { // Surat Kuasa
   approvedBy?: string;
   approvedAt?: string;
   driveDocumentUrl?: string;
+  createdAt: string;
+}
+
+export interface LawyerNotice {
+  id: string;
+  noticeNo: string;
+  caseId: string;
+  caseNo: string;
+  debtorName: string;
+  debtorAddress?: string;
+  clientName: string;
+  multifinanceContractNo: string;
+  noticeType: 
+    | 'SURAT_KLARIFIKASI' 
+    | 'SOMASI_1' 
+    | 'SOMASI_2' 
+    | 'SOMASI_TERAKHIR' 
+    | 'UNDANGAN_MEDIASI_HUKUM' 
+    | 'GUGATAN_SEDERHANA';
+  requestedDate: string;
+  lawyerFirmName: string;
+  lawyerName?: string;
+  principalDebtAmount: number;
+  status: 'DRAFT_PROPOSED' | 'SUBMITTED_TO_LAWYER' | 'APPROVED_BY_LAWYER' | 'SENT_TO_DEBTOR' | 'COMPLETED';
+  letterContentDraft: string;
+  notes?: string;
+  createdBy: string;
   createdAt: string;
 }
 

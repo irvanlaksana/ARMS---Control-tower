@@ -107,12 +107,21 @@ export const CommLogModule: React.FC<CommLogModuleProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {store.commLogs.map((log) => (
-                <tr key={log.id} className="hover:bg-slate-800/40 transition">
-                  <td className="py-3.5 px-4 font-mono text-slate-400">
-                    {new Date(log.logDate).toLocaleString('id-ID')}
-                  </td>
-                  <td className="py-3.5 px-4 font-bold text-indigo-300">{log.caseNo}</td>
+              {store.commLogs.map((log) => {
+                const parentCase = store.cases.find((c) => c.id === log.caseId || c.caseNo === log.caseNo);
+                return (
+                  <tr key={log.id} className="hover:bg-slate-800/40 transition">
+                    <td className="py-3.5 px-4 font-mono text-slate-400">
+                      {new Date(log.logDate).toLocaleString('id-ID')}
+                    </td>
+                    <td className="py-3.5 px-4 space-y-0.5">
+                      <div className="font-bold text-indigo-300">{log.caseNo}</div>
+                      {parentCase?.lawyerStatus && (
+                        <div className="bg-purple-950 text-purple-300 text-[9px] px-1.5 py-0.2 rounded border border-purple-800 font-semibold w-fit">
+                          ⚖️ {parentCase.lawyerStatus}
+                        </div>
+                      )}
+                    </td>
                   <td className="py-3.5 px-4 space-y-0.5">
                     <div className="font-semibold text-white">{log.personnelName}</div>
                     <div className="text-[10px] text-slate-400">{log.contactPerson}</div>
@@ -146,8 +155,9 @@ export const CommLogModule: React.FC<CommLogModuleProps> = ({
                     )}
                   </td>
                 </tr>
-              ))}
-            </tbody>
+              );
+            })}
+          </tbody>
           </table>
         </div>
       </div>
