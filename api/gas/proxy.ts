@@ -20,7 +20,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     let { webAppUrl, action, tab, payload, data, auditInfo } = req.body || {};
     if (!webAppUrl) {
-      return res.status(400).json({ success: false, error: 'Missing webAppUrl' });
+      return res.status(400).json({ success: false, error: 'Missing webAppUrl parameter' });
     }
 
     webAppUrl = String(webAppUrl).trim();
@@ -32,11 +32,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    const response = await fetch(webAppUrl, {
+    const postPayload = JSON.stringify({ action, tab, payload, data, auditInfo });
+
+    // Step 1: Initial POST request with redirect manual to capture GAS 302 redirect
+    let response = await fetch(webAppUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, tab, payload, data, auditInfo }),
+      body: postPayload,
+      redirect: 'manual',
     });
+
+    // Step 2: Handle 301/302/307/308 redirect manually to preserve POST method & body
+    if (response.status === 301 || response.status === 302 || response.status === 307 || response.status === 308) {
+      const redirectUrl = response.headers.get('location');
+      if (redirectUrl) {
+        response = await fetch(redirectUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: postPayload,
+        });
+      }
+    }
 
     const text = await response.text();
     let jsonRes;
@@ -51,7 +67,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       return res.status(400).json({
         success: false,
-        error: `Respon dari Google Apps Script tidak valid: ${text.slice(0, 150)}`,
+        error: `Respon dari Google Apps Script tidak valid (Bukan JSON): ${text.slice(0, 150)}`,
       });
     }
 
@@ -68,3 +84,4 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 }
+

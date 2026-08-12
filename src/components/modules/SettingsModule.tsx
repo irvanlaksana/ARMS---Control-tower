@@ -534,36 +534,18 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
                     });
                     const json = await res.json();
                     if (json.success) {
-                      alert('BERHASIL! Data dari aplikasi VPS ini telah di-push dan ditulis penuh ke seluruh 26 tab di Google Spreadsheet.');
+                      alert('BERHASIL! Data dari aplikasi telah di-push dan ditulis penuh ke seluruh 26 tab di Google Spreadsheet.');
                     } else {
-                      throw new Error(json.error || json.message);
+                      alert(`GAGAL PUSH DATA: ${json.error || json.message || 'Respon gagal dari proxy Google Apps Script'}`);
                     }
                   } catch (err: any) {
-                    // Fallback to direct fetch
-                    try {
-                      const directRes = await fetch(settings.appsScriptWebAppUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                        body: JSON.stringify({
-                          action: 'SYNC_FULL_DATA',
-                          data: store,
-                        }),
-                      });
-                      const directJson = JSON.parse(await directRes.text());
-                      if (directJson.success) {
-                        alert('BERHASIL! Data telah dikirim langsung ke Google Apps Script Web App.');
-                      } else {
-                        throw new Error(directJson.error || directJson.message);
-                      }
-                    } catch (directErr: any) {
-                      alert(`GAGAL PUSH DATA: ${directErr?.message || directErr}`);
-                    }
+                    alert(`GAGAL PUSH DATA: ${err?.message || err}`);
                   }
                 }}
                 className="flex items-center gap-2 px-4 py-2 bg-indigo-700 hover:bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow transition"
               >
                 <Upload className="w-4 h-4" />
-                <span>Kirim / Push Data Local VPS ke Spreadsheet</span>
+                <span>Kirim / Push Data Local ke Spreadsheet</span>
               </button>
             </div>
 

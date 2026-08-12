@@ -195,11 +195,27 @@ async function startServer() {
         });
       }
 
-      const response = await fetch(webAppUrl, {
+      const postPayload = JSON.stringify({ action, tab, payload, data, auditInfo });
+
+      // Step 1: Initial POST request with redirect manual to capture GAS 302 redirect
+      let response = await fetch(webAppUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, tab, payload, data, auditInfo }),
+        body: postPayload,
+        redirect: "manual",
       });
+
+      // Step 2: Handle 301/302/307/308 redirect manually to preserve POST method & body
+      if (response.status === 301 || response.status === 302 || response.status === 307 || response.status === 308) {
+        const redirectUrl = response.headers.get("location");
+        if (redirectUrl) {
+          response = await fetch(redirectUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: postPayload,
+          });
+        }
+      }
 
       const text = await response.text();
       let jsonRes;

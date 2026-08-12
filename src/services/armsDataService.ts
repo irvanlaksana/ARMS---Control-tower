@@ -252,23 +252,17 @@ export async function fetchDataFromGoogleSheets(webAppUrl: string, currentStore:
     console.warn('Proxy fetch failed, attempting direct fetch:', e);
   }
 
-  // 2. Direct client fetch fallback
+  // 2. Direct client fetch fallback via GET (no CORS preflight)
   if (!rawData) {
     try {
-      const directRes = await fetch(cleanUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          action: 'GET_ALL_DATA',
-        }),
-      });
-      const text = await directRes.text();
-      const directJson = JSON.parse(text);
+      const getUrl = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=GET_ALL_DATA`;
+      const directRes = await fetch(getUrl, { method: 'GET' });
+      const directJson = await directRes.json();
       if (directJson.success && directJson.data) {
         rawData = directJson.data;
       }
     } catch (e) {
-      console.error('Direct fetch to GAS failed:', e);
+      console.error('Direct GET fetch to GAS failed:', e);
     }
   }
 
