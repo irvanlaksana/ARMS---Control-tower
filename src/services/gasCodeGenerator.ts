@@ -151,6 +151,21 @@ function doPost(e) {
       return responseJSON({ success: true, message: "Initialized all 26 sheets with formatted headers", result });
     }
 
+    if (action === "GET_ALL_DATA") {
+      const allData = {};
+      SHEET_NAMES.forEach(sheetName => {
+        allData[sheetName] = getSheetData(ss, sheetName);
+      });
+      return responseJSON({ success: true, data: allData });
+    }
+
+    if (action === "GET_TAB") {
+      const targetSheet = STORE_KEY_MAP[tab] || tab;
+      if (!targetSheet) return responseJSON({ success: false, error: "Missing tab parameter" });
+      const data = getSheetData(ss, targetSheet);
+      return responseJSON({ success: true, tab: targetSheet, data });
+    }
+
     if (action === "SYNC_FULL_DATA") {
       // Overwrite / sync full dataset from web app
       const fullData = contents.data;

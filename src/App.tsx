@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { initializeARMSStore, ARMSStore, getStoredStore, saveStore } from './services/armsDataService';
+import { initializeARMSStore, ARMSStore, getStoredStore, saveStore, fetchDataFromGoogleSheets, mapGasDataToStore } from './services/armsDataService';
 import { User, UserRole } from './types/arms';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
@@ -58,6 +58,16 @@ export default function App() {
       }
     }
   }, [store.users]);
+
+  // Initial Data Pull from Google Sheets on app startup
+  useEffect(() => {
+    const webAppUrl = store.settings?.appsScriptWebAppUrl;
+    if (webAppUrl) {
+      fetchDataFromGoogleSheets(webAppUrl, store).then((updatedStore) => {
+        setStore(updatedStore);
+      }).catch((e) => console.warn('Initial GAS pull failed:', e));
+    }
+  }, []);
   const [activeTab, setActiveTab] = useState('DASHBOARD');
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [showGASModal, setShowGASModal] = useState(false);
@@ -117,18 +127,23 @@ export default function App() {
   const handleSyncData = async () => {
     if (store.settings.appsScriptWebAppUrl) {
       try {
+        // First pull latest data from Google Sheets
+        const refreshedStore = await fetchDataFromGoogleSheets(store.settings.appsScriptWebAppUrl, store);
+        setStore(refreshedStore);
+
+        // Then push full data back to Google Sheets
         const res = await fetch('/api/gas/proxy', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             webAppUrl: store.settings.appsScriptWebAppUrl,
             action: 'SYNC_FULL_DATA',
-            data: store,
+            data: refreshedStore,
           }),
         });
         if (!res.ok) throw new Error('Proxy returned non-200');
       } catch (e) {
-        console.warn('Proxy failed, attempting direct fetch to GAS Web App:', e);
+        console.warn('Proxy failed, attempting direct push to GAS Web App:', e);
         try {
           await fetch(store.settings.appsScriptWebAppUrl, {
             method: 'POST',

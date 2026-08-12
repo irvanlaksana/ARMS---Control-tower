@@ -159,6 +159,129 @@ export function saveStore(store: ARMSStore): void {
 }
 
 /**
+ * Maps raw data object returned from Google Sheets / Google Apps Script (by Sheet Name)
+ * to ARMSStore camelCase structure.
+ */
+export function mapGasDataToStore(gasData: Record<string, any[]>, currentStore: ARMSStore): ARMSStore {
+  if (!gasData || typeof gasData !== 'object') return currentStore;
+
+  const REVERSE_MAP: Record<string, keyof ARMSStore> = {
+    Users: 'users',
+    Clients: 'clients',
+    Partners: 'personnel',
+    Services: 'services',
+    Fees: 'fees',
+    Contracts: 'contracts',
+    Leads: 'leads',
+    Customers: 'customers',
+    Cases: 'cases',
+    Assignments: 'assignments',
+    SK: 'sks',
+    Communication_Log: 'commLogs',
+    Assets: 'assets',
+    Collections: 'collections',
+    Payments: 'payments',
+    Funding: 'danaTalangan',
+    Expenses: 'expenses',
+    Settlements: 'settlements',
+    Ledger: 'ledger',
+    Cash: 'cashAccounts',
+    Documents: 'documents',
+    Approvals: 'approvals',
+    Notifications: 'notifications',
+    Audit_Log: 'auditLogs',
+  };
+
+  const newStore: any = { ...currentStore };
+
+  Object.entries(REVERSE_MAP).forEach(([sheetName, storeKey]) => {
+    const sheetRows = gasData[sheetName] || gasData[storeKey];
+    if (Array.isArray(sheetRows) && sheetRows.length > 0) {
+      newStore[storeKey] = sheetRows.map((row) => {
+        const cleanedRow: any = { ...row };
+        Object.keys(cleanedRow).forEach((k) => {
+          if (cleanedRow[k] === 'true') cleanedRow[k] = true;
+          if (cleanedRow[k] === 'false') cleanedRow[k] = false;
+        });
+        return cleanedRow;
+      });
+    }
+  });
+
+  // Handle Settings tab (array of { key: string, value: string })
+  const settingsRows = gasData['Settings'] || gasData['settings'];
+  if (Array.isArray(settingsRows) && settingsRows.length > 0) {
+    const settingsObj: any = { ...currentStore.settings };
+    settingsRows.forEach((row) => {
+      if (row.key && row.value !== undefined) {
+        settingsObj[row.key] = row.value;
+      }
+    });
+    newStore.settings = settingsObj;
+  }
+
+  return normalizeStore(newStore);
+}
+
+/**
+ * Fetches all sheets data from Google Apps Script Web App (via proxy or direct fetch)
+ */
+export async function fetchDataFromGoogleSheets(webAppUrl: string, currentStore: ARMSStore): Promise<ARMSStore> {
+  if (!webAppUrl) return currentStore;
+  const cleanUrl = webAppUrl.trim();
+
+  let rawData: any = null;
+
+  // 1. Try Express backend proxy
+  try {
+    const res = await fetch('/api/gas/proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        webAppUrl: cleanUrl,
+        action: 'GET_ALL_DATA',
+      }),
+    });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success && json.data) {
+        rawData = json.data;
+      }
+    }
+  } catch (e) {
+    console.warn('Proxy fetch failed, attempting direct fetch:', e);
+  }
+
+  // 2. Direct client fetch fallback
+  if (!rawData) {
+    try {
+      const directRes = await fetch(cleanUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'GET_ALL_DATA',
+        }),
+      });
+      const text = await directRes.text();
+      const directJson = JSON.parse(text);
+      if (directJson.success && directJson.data) {
+        rawData = directJson.data;
+      }
+    } catch (e) {
+      console.error('Direct fetch to GAS failed:', e);
+    }
+  }
+
+  if (rawData) {
+    const updated = mapGasDataToStore(rawData, currentStore);
+    saveStore(updated);
+    return updated;
+  }
+
+  return currentStore;
+}
+
+/**
  * Fee Calculation Helper (No hardcoding - uses fee snapshot or custom configuration)
  */
 export function calculateAgencyFee(

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ARMSStore, createAuditEntry, resetStoreToInitial } from '../../services/armsDataService';
+import { ARMSStore, createAuditEntry, resetStoreToInitial, fetchDataFromGoogleSheets } from '../../services/armsDataService';
 import { User, AppSettings } from '../../types/arms';
 import {
   Settings as SettingsIcon,
@@ -8,6 +8,8 @@ import {
   CheckCircle,
   Save,
   Upload,
+  Download,
+  AlertTriangle,
   RefreshCw,
   Image as ImageIcon,
   Trash2,
@@ -435,7 +437,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
         <div className="space-y-4">
           <h3 className="font-bold text-white text-sm border-b border-slate-800 pb-2 flex items-center gap-2">
             <Database className="w-4 h-4 text-emerald-400" />
-            <span>4. Google Sheets & Apps Script Integration</span>
+            <span>4. Google Sheets & Apps Script Integration (VPS / Cloud Live Sync)</span>
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -472,6 +474,116 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
                 onChange={(e) => setSettings({ ...settings, defaultFeePercent: Number(e.target.value) })}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono"
               />
+            </div>
+          </div>
+
+          {/* VPS & Multi-User Sync Action Panel */}
+          <div className="p-4 bg-slate-950 border border-emerald-900/60 rounded-xl space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
+                <RefreshCw className="w-4 h-4 text-emerald-400" />
+                <span>Uji & Sinkronkan Data Spreadsheet VPS Live</span>
+              </div>
+              <span className="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded font-mono">
+                {settings.appsScriptWebAppUrl ? 'URL Terkonfigurasi' : 'Belum Dikonfigurasi'}
+              </span>
+            </div>
+
+            <p className="text-[11px] text-slate-300 leading-relaxed">
+              Jika aplikasi dideploy di server VPS dan data belum muncul/tersinkronisasi dengan Spreadsheet, gunakan dua tombol kontrol di bawah ini untuk menarik data terbaru dari Google Sheets atau mengirimkan data local VPS ke Spreadsheet secara manual.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!settings.appsScriptWebAppUrl) {
+                    alert('Silakan isi Google Apps Script Web App URL terlebih dahulu.');
+                    return;
+                  }
+                  try {
+                    const updated = await fetchDataFromGoogleSheets(settings.appsScriptWebAppUrl, store);
+                    onUpdateStore(updated);
+                    alert('BERHASIL! Data seluruh 26 tab dari Google Spreadsheet telah berhasil ditarik dan disinkronkan ke aplikasi VPS ini.');
+                  } catch (err: any) {
+                    alert(`GAGAL MENARIK DATA: ${err?.message || err}`);
+                  }
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg shadow transition"
+              >
+                <Download className="w-4 h-4" />
+                <span>Tarik Data Terbaru dari Spreadsheet</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!settings.appsScriptWebAppUrl) {
+                    alert('Silakan isi Google Apps Script Web App URL terlebih dahulu.');
+                    return;
+                  }
+                  try {
+                    const res = await fetch('/api/gas/proxy', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        webAppUrl: settings.appsScriptWebAppUrl,
+                        action: 'SYNC_FULL_DATA',
+                        data: store,
+                      }),
+                    });
+                    const json = await res.json();
+                    if (json.success) {
+                      alert('BERHASIL! Data dari aplikasi VPS ini telah di-push dan ditulis penuh ke seluruh 26 tab di Google Spreadsheet.');
+                    } else {
+                      throw new Error(json.error || json.message);
+                    }
+                  } catch (err: any) {
+                    // Fallback to direct fetch
+                    try {
+                      const directRes = await fetch(settings.appsScriptWebAppUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({
+                          action: 'SYNC_FULL_DATA',
+                          data: store,
+                        }),
+                      });
+                      const directJson = JSON.parse(await directRes.text());
+                      if (directJson.success) {
+                        alert('BERHASIL! Data telah dikirim langsung ke Google Apps Script Web App.');
+                      } else {
+                        throw new Error(directJson.error || directJson.message);
+                      }
+                    } catch (directErr: any) {
+                      alert(`GAGAL PUSH DATA: ${directErr?.message || directErr}`);
+                    }
+                  }
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-700 hover:bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow transition"
+              >
+                <Upload className="w-4 h-4" />
+                <span>Kirim / Push Data Local VPS ke Spreadsheet</span>
+              </button>
+            </div>
+
+            {/* Troubleshooting Checklist Box for VPS Deployment */}
+            <div className="mt-3 p-3 bg-amber-950/40 border border-amber-800/60 rounded-lg text-amber-200 text-xs space-y-1.5">
+              <div className="font-bold text-amber-300 flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Panduan Solusi Mengapa Data Tidak Sinkron di VPS:</span>
+              </div>
+              <ul className="list-disc list-inside space-y-1 text-[11px] text-amber-200/90 pl-1 leading-relaxed">
+                <li>
+                  <strong>Langkah 1 (Persyaratan URL Web App Google Apps Script)</strong>: Saat melakukan <em>Deploy -&gt; New deployment</em> pada Google Apps Script, pastikan opsi <strong>Execute as: Me (Saya)</strong> dan <strong>Who has access: Anyone (Siapa saja)</strong> dipilih. Gunakan URL yang berakhiran <code>/exec</code> (bukan <code>/dev</code>).
+                </li>
+                <li>
+                  <strong>Langkah 2 (Versi Kode Apps Script Terbaru)</strong>: Jika menggunakan Apps Script lama, pastikan Anda menyalin kode Apps Script terbaru dari tombol <strong>"GAS Code"</strong> di header atas aplikasi, lalu lakukan <em>Manage deployments -&gt; Edit -&gt; New Version -&gt; Deploy</em>.
+                </li>
+                <li>
+                  <strong>Langkah 3 (Command VPS Node Server)</strong>: Apabila aplikasi dideploy di VPS Linux (Ubuntu/Debian) menggunakan PM2/Docker, pastikan menjalankan server Node dengan perintah <code>npm run build && npm start</code> (port 3000) agar endpoint proxy <code>/api/gas/proxy</code> aktif dan bebas blokir CORS.
+                </li>
+              </ul>
             </div>
           </div>
         </div>
