@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ARMSStore, createAuditEntry, calculateAgencyFee } from '../../services/armsDataService';
 import { User, Case, FeeType } from '../../types/arms';
-import { Briefcase, Plus, Search, Filter, ShieldCheck, ArrowRight, UserCheck } from 'lucide-react';
+import { Briefcase, Plus, CheckCircle, Search, Filter, ShieldCheck, ArrowRight, UserCheck } from 'lucide-react';
 
 interface CasesModuleProps {
   store: ARMSStore;
@@ -26,7 +26,7 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
   const [principalDebtOS, setPrincipalDebtOS] = useState(150000000);
   const [overdueDays, setOverdueDays] = useState(120);
   const [assetSummary, setAssetSummary] = useState('Honda HR-V Turbo 2022 (B 1234 XYZ)');
-  const [partnerId, setPartnerId] = useState(store.partners[0]?.id || '');
+  const [personnelId, setPartnerId] = useState(store.personnel?.[0]?.id || '');
 
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS';
 
@@ -35,7 +35,7 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
     const client = store.clients.find((c) => c.id === clientId);
     const customer = store.customers.find((cu) => cu.id === customerId);
     const service = store.services.find((s) => s.id === serviceId);
-    const partner = store.partners.find((p) => p.id === partnerId);
+    const partner = (store.personnel || []).find((p) => p.id === personnelId);
 
     // Get fee configuration for snapshot
     const feeConfig = store.fees.find((f) => f.clientId === clientId && f.serviceId === serviceId);
@@ -63,8 +63,8 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
       feePercentSnapshot,
       feeFixedSnapshot,
       status: 'ASSIGNED',
-      currentPartnerId: partnerId,
-      currentPartnerName: partner?.name,
+      currentPersonnelId: personnelId,
+      currentPersonnelName: partner?.fullName,
       createdAt: new Date().toISOString(),
     };
 
@@ -170,9 +170,16 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {filteredCases.map((c) => (
-                <tr key={c.id} className="hover:bg-slate-800/40 transition">
-                  <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">{c.caseNo}</td>
+              {filteredCases.map((c) => {
+                const isCompleted = ['CLOSED', 'SETTLED', 'FULL_PAID', 'UNIT_RECOVERED'].includes(c.status);
+                return (
+                <tr key={c.id} className={`transition ${isCompleted ? 'bg-emerald-950/20 hover:bg-emerald-950/40 border-l-2 border-emerald-500' : 'hover:bg-slate-800/40'}`}>
+                  <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">
+                    <div className="flex items-center gap-2">
+                      {c.caseNo}
+                      {isCompleted && <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />}
+                    </div>
+                  </td>
                   <td className="py-3.5 px-4 font-medium text-white">{c.clientName}</td>
                   <td className="py-3.5 px-4 space-y-0.5">
                     <div className="font-bold text-slate-100">{c.debtorName}</div>
@@ -187,14 +194,18 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
                       {c.feeTypeSnapshot} ({c.feePercentSnapshot}% / Rp {c.feeFixedSnapshot?.toLocaleString('id-ID') || 0})
                     </span>
                   </td>
-                  <td className="py-3.5 px-4 text-slate-400">{c.currentPartnerName || 'Unassigned'}</td>
+                  <td className="py-3.5 px-4 text-slate-400">{c.currentPersonnelName || 'Unassigned'}</td>
                   <td className="py-3.5 px-4 text-center">
-                    <span className="bg-indigo-950 text-indigo-300 text-[10px] px-2.5 py-1 rounded-full border border-indigo-800 font-semibold">
+                    <span className={`text-[10px] px-2.5 py-1 rounded-full border font-semibold ${
+                      isCompleted 
+                        ? 'bg-emerald-950 text-emerald-300 border-emerald-800' 
+                        : 'bg-indigo-950 text-indigo-300 border-indigo-800'
+                    }`}>
                       {(c.status || '').replace(/_/g, ' ')}
                     </span>
                   </td>
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
         </div>
@@ -296,13 +307,13 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
             <div>
               <label className="block text-xs text-slate-400 mb-1">Assign Initial Field Partner</label>
               <select
-                value={partnerId}
+                value={personnelId}
                 onChange={(e) => setPartnerId(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
               >
-                {store.partners.map((p) => (
+                {(store.personnel || []).map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name} ({p.coverageRegion})
+                    {p.fullName}
                   </option>
                 ))}
               </select>

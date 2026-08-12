@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/api/health",
+      "destination": "/api/health"
+    },
+    {
+      "source": "/api/gas/proxy",
+      "destination": "/api/gas/proxy"
+    },
+    {
+      "source": "/api/sheets/setup",
+      "destination": "/api/sheets/setup"
+    },
+    {
+      "source": "/api/sheets/sync",
+      "destination": "/api/sheets/sync"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

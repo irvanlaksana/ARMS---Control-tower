@@ -16,7 +16,7 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
 }) => {
   const [showModal, setShowModal] = useState(false);
   const [caseId, setCaseId] = useState(store.cases[0]?.id || '');
-  const [partnerId, setPartnerId] = useState(store.partners[0]?.id || '');
+  const [personnelId, setPartnerId] = useState(store.personnel?.[0]?.id || '');
   const [slaDays, setSlaDays] = useState(14);
   const [instructions, setInstructions] = useState('');
 
@@ -25,7 +25,7 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
   const handleCreateAssignment = (e: React.FormEvent) => {
     e.preventDefault();
     const c = store.cases.find((cs) => cs.id === caseId);
-    const p = store.partners.find((pr) => pr.id === partnerId);
+    const p = (store.personnel || []).find((pr) => pr.id === personnelId);
 
     const newAssignment: Assignment = {
       id: `ASN-${Date.now()}`,
@@ -33,8 +33,8 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
       caseId,
       caseNo: c?.caseNo || 'CAS-001',
       debtorName: c?.debtorName || 'Debtor',
-      partnerId,
-      partnerName: p?.name || 'Partner',
+      personnelId,
+      personnelName: p?.fullName || 'Partner',
       assignedDate: new Date().toISOString().split('T')[0],
       targetDate: new Date(Date.now() + slaDays * 86400000).toISOString().split('T')[0],
       slaDays,
@@ -49,7 +49,7 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
       'CREATE',
       'Assignments',
       newAssignment.id,
-      `Assigned Case ${newAssignment.caseNo} to Partner ${newAssignment.partnerName}`
+      `Assigned Case ${newAssignment.caseNo} to Partner ${newAssignment.personnelName}`
     );
 
     onUpdateStore({
@@ -107,7 +107,7 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
                     <div className="font-bold text-white">{a.caseNo}</div>
                     <div className="text-[11px] text-slate-400">{a.debtorName}</div>
                   </td>
-                  <td className="py-3.5 px-4 font-medium text-slate-200">{a.partnerName}</td>
+                  <td className="py-3.5 px-4 font-medium text-slate-200">{a.personnelName}</td>
                   <td className="py-3.5 px-4 text-slate-400">{a.assignedDate}</td>
                   <td className="py-3.5 px-4 text-amber-400 font-medium">
                     {a.targetDate} ({a.slaDays} days SLA)
@@ -148,13 +148,13 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
             <div>
               <label className="block text-xs text-slate-400 mb-1">Select Field Partner / Agency</label>
               <select
-                value={partnerId}
+                value={personnelId}
                 onChange={(e) => setPartnerId(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
               >
-                {store.partners.map((p) => (
+                {(store.personnel || []).map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name} ({p.coverageRegion})
+                    {p.fullName}
                   </option>
                 ))}
               </select>

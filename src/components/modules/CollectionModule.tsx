@@ -27,8 +27,8 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({ store, curre
       caseId,
       caseNo: c?.caseNo || 'CAS-001',
       debtorName: c?.debtorName || 'Debtor',
-      partnerId: c?.currentPartnerId || store.partners[0]?.id || 'PRT-001',
-      partnerName: c?.currentPartnerName || 'Partner Agency',
+      personnelId: c?.currentPersonnelId || store.personnel?.[0]?.id || 'PRT-001',
+      personnelName: c?.currentPersonnelName || 'Partner Agency',
       amountCollected: 15000000,
       collectionDate: new Date().toISOString().split('T')[0],
       paymentMethod: 'TRANSFER',
@@ -92,7 +92,7 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({ store, curre
                     <div className="font-bold text-white">{act.caseNo}</div>
                     <div className="text-[11px] text-slate-400">{act.debtorName}</div>
                   </td>
-                  <td className="py-3.5 px-4 font-medium text-slate-300">{act.partnerName}</td>
+                  <td className="py-3.5 px-4 font-medium text-slate-300">{act.personnelName}</td>
                   <td className="py-3.5 px-4">
                     <span className="bg-indigo-950 text-indigo-300 text-[10px] px-2 py-0.5 rounded border border-indigo-800 font-semibold">
                       {act.paymentMethod}

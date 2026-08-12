@@ -36,20 +36,23 @@ export interface Client {
   createdAt: string;
 }
 
-export interface Partner {
+export type PersonnelType = 'KARYAWAN' | 'MITRA_DC';
+
+export interface Personnel {
   id: string;
-  partnerCode: string;
-  name: string; // Agency / Law Firm / Repossession Partner
-  type: 'DC_AGENCY' | 'LAW_FIRM' | 'RECOVERY_SPECIALIST' | 'MEDIATOR';
-  coverageRegion: string; // e.g. Jabodetabek, Jawa Barat, Jawa Timur
-  contactPerson: string;
-  phoneWhatsApp: string; // WhatsApp number for manual comms
+  type: PersonnelType;
+  fullName: string;
+  nikKtp: string;
+  birthPlaceDate: string; // Tempat, Tanggal Lahir
+  address: string;
+  phoneNumber: string;
+  email: string;
   bankName: string;
-  bankAccountNo: string;
-  bankAccountName: string;
-  ratingNotes: string;
-  activeAssignmentsCount: number;
-  status: 'ACTIVE' | 'SUSPENDED';
+  accountNumber: string;
+  accountName: string;
+  emergencyContact: string;
+  position?: string; // e.g. SPV, Field Collector
+  status: 'ACTIVE' | 'INACTIVE';
   createdAt: string;
 }
 
@@ -169,8 +172,8 @@ export interface Case {
     | 'SETTLED'
     | 'CLOSED'
     | 'CANCELLED';
-  currentPartnerId?: string;
-  currentPartnerName?: string;
+  currentPersonnelId?: string;
+  currentPersonnelName?: string;
   createdAt: string;
 }
 
@@ -180,8 +183,8 @@ export interface Assignment {
   caseId: string;
   caseNo: string;
   debtorName: string;
-  partnerId: string;
-  partnerName: string;
+  personnelId: string;
+  personnelName: string;
   assignedDate: string;
   targetDate: string;
   slaDays: number;
@@ -197,8 +200,8 @@ export interface SK { // Surat Kuasa
   caseId: string;
   caseNo: string;
   debtorName: string;
-  partnerId: string;
-  partnerName: string;
+  personnelId: string;
+  personnelName: string;
   issuedDate: string;
   expiryDate: string;
   status: 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'ACTIVE' | 'EXPIRED' | 'REVOKED' | 'REJECTED';
@@ -212,8 +215,8 @@ export interface CommunicationLog {
   id: string;
   caseId: string;
   caseNo: string;
-  partnerId: string;
-  partnerName: string;
+  personnelId: string;
+  personnelName: string;
   logDate: string;
   channel: 'WHATSAPP' | 'PHONE' | 'IN_PERSON' | 'LETTER' | 'EMAIL';
   contactPerson: string;
@@ -249,8 +252,8 @@ export interface Collection {
   caseId: string;
   caseNo: string;
   debtorName: string;
-  partnerId: string;
-  partnerName: string;
+  personnelId: string;
+  personnelName: string;
   amountCollected: number;
   collectionDate: string;
   paymentMethod: 'TRANSFER' | 'CASH_RECEIPT' | 'MEDIATION_ESCROW';
@@ -267,8 +270,8 @@ export interface AssetRecovery {
   caseNo: string;
   assetId: string;
   assetDescription: string;
-  partnerId: string;
-  partnerName: string;
+  personnelId: string;
+  personnelName: string;
   recoveryDate: string;
   warehouseLocation: string;
   physicalCondition: 'EXCELLENT' | 'GOOD' | 'FAIR' | 'DAMAGED' | 'PARTS_MISSING';
@@ -435,6 +438,7 @@ export interface AppSettings {
   companyPhone: string;
   companyEmail: string;
   companyAddress: string;
+  companyLogo?: string;
   defaultFeePercent: number;
   autoSyncWithGoogleSheets: boolean;
   lastSyncedAt?: string;

@@ -46,56 +46,78 @@ export const SetupSheetsModal: React.FC<SetupSheetsModalProps> = ({
           throw new Error('Silakan masukkan URL Web App Google Apps Script.');
         }
 
-        const res = await fetch('/api/gas/proxy', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            webAppUrl,
-            action: 'SETUP_SHEETS',
-            data: store,
-          }),
-        });
-
-        let json: any;
+        let isConnected = false;
         try {
-          json = await res.json();
-        } catch {
-          throw new Error(
-            'Google Apps Script mengembalikan halaman HTML/Akses Ditolak.\n\nPastikan Web App disebarkan (Deploy) dengan:\n1. Execute as: Me (Saya)\n2. Who has access: Anyone (Siapa saja)\n3. Gunakan URL berakhiran /exec (bukan /dev)'
-          );
-        }
-
-        if (!res.ok || !json.success) {
-          throw new Error(
-            json.error || json.message || 'Gagal terhubung ke Google Apps Script Web App.'
-          );
-        }
-
-        // Also trigger full sync to push current store
-        if (store) {
-          const syncRes = await fetch('/api/gas/proxy', {
+          const res = await fetch('/api/gas/proxy', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               webAppUrl,
-              action: 'SYNC_FULL_DATA',
+              action: 'SETUP_SHEETS',
               data: store,
             }),
           });
 
-          let syncJson: any;
+          let json: any;
           try {
-            syncJson = await syncRes.json();
+            json = await res.json();
           } catch {
-            throw new Error(
-              'Gagal menyinkronkan data: Respon dari Web App Google Apps Script bukan format JSON yang valid.'
-            );
+            throw new Error('Google Apps Script mengembalikan halaman HTML/Akses Ditolak.');
           }
 
-          if (!syncRes.ok || (syncJson && syncJson.success === false)) {
+          if (res.ok && json.success) {
+            isConnected = true;
+          } else {
+            throw new Error(json.error || json.message || 'Server proxy failed');
+          }
+        } catch (proxyError: any) {
+          // Direct fetch fallback from client
+          console.warn('Proxy failed, attempting direct fetch:', proxyError);
+          const directRes = await fetch(webAppUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+              action: 'SETUP_SHEETS',
+              data: store,
+            }),
+          });
+          const text = await directRes.text();
+          let directJson: any;
+          try {
+            directJson = JSON.parse(text);
+          } catch {
             throw new Error(
-              syncJson?.error || 'Gagal menyinkronkan data ke Google Sheets.'
+              'Google Apps Script mengembalikan halaman HTML/Akses Ditolak.\n\nPastikan Web App disebarkan (Deploy) dengan:\n1. Execute as: Me (Saya)\n2. Who has access: Anyone (Siapa saja)\n3. Gunakan URL berakhiran /exec (bukan /dev)'
             );
+          }
+          if (!directRes.ok || directJson.success === false) {
+            throw new Error(directJson?.error || directJson?.message || 'Gagal terhubung ke Google Apps Script Web App.');
+          }
+          isConnected = true;
+        }
+
+        // Also trigger full sync to push current store
+        if (store) {
+          try {
+            await fetch('/api/gas/proxy', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                webAppUrl,
+                action: 'SYNC_FULL_DATA',
+                data: store,
+              }),
+            });
+          } catch {
+            // Direct fetch fallback for sync
+            await fetch(webAppUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify({
+                action: 'SYNC_FULL_DATA',
+                data: store,
+              }),
+            });
           }
         }
 

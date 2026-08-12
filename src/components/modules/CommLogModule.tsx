@@ -16,7 +16,7 @@ export const CommLogModule: React.FC<CommLogModuleProps> = ({
 }) => {
   const [showModal, setShowModal] = useState(false);
   const [caseId, setCaseId] = useState(store.cases[0]?.id || '');
-  const [partnerId, setPartnerId] = useState(store.partners[0]?.id || '');
+  const [personnelId, setPartnerId] = useState(store.personnel?.[0]?.id || '');
   const [channel, setChannel] = useState<'WHATSAPP' | 'PHONE' | 'IN_PERSON'>('WHATSAPP');
   const [contactPerson, setContactPerson] = useState('Komandan Eko Wibowo');
   const [summary, setSummary] = useState('');
@@ -29,14 +29,14 @@ export const CommLogModule: React.FC<CommLogModuleProps> = ({
   const handleAddLog = (e: React.FormEvent) => {
     e.preventDefault();
     const c = store.cases.find((cs) => cs.id === caseId);
-    const p = store.partners.find((pr) => pr.id === partnerId);
+    const p = (store.personnel || []).find((pr) => pr.id === personnelId);
 
     const newLog: CommunicationLog = {
       id: `LOG-${Date.now()}`,
       caseId,
       caseNo: c?.caseNo || 'CAS-001',
-      partnerId,
-      partnerName: p?.name || 'Partner',
+      personnelId,
+      personnelName: p?.fullName || 'Partner',
       logDate: new Date().toISOString(),
       channel,
       contactPerson,
@@ -114,7 +114,7 @@ export const CommLogModule: React.FC<CommLogModuleProps> = ({
                   </td>
                   <td className="py-3.5 px-4 font-bold text-indigo-300">{log.caseNo}</td>
                   <td className="py-3.5 px-4 space-y-0.5">
-                    <div className="font-semibold text-white">{log.partnerName}</div>
+                    <div className="font-semibold text-white">{log.personnelName}</div>
                     <div className="text-[10px] text-slate-400">{log.contactPerson}</div>
                   </td>
                   <td className="py-3.5 px-4">
@@ -176,13 +176,13 @@ export const CommLogModule: React.FC<CommLogModuleProps> = ({
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Partner Agency</label>
                 <select
-                  value={partnerId}
+                  value={personnelId}
                   onChange={(e) => setPartnerId(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
                 >
-                  {store.partners.map((p) => (
+                  {(store.personnel || []).map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.name}
+                      {p.fullName}
                     </option>
                   ))}
                 </select>

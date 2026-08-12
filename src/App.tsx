@@ -16,7 +16,7 @@ import { FeeConfigModule } from './components/modules/FeeConfigModule';
 import { CommLogModule } from './components/modules/CommLogModule';
 import { AssignmentModule } from './components/modules/AssignmentModule';
 import { ClientsModule } from './components/modules/ClientsModule';
-import { PartnersModule } from './components/modules/PartnersModule';
+import { PersonnelModule } from './components/modules/PersonnelModule';
 import { ContractsModule } from './components/modules/ContractsModule';
 import { CustomersModule } from './components/modules/CustomersModule';
 import { AssetsModule } from './components/modules/AssetsModule';
@@ -60,7 +60,17 @@ export default function App() {
           action: 'SYNC_FULL_DATA',
           data: newStore,
         }),
-      }).catch((e) => console.error('Auto sync GAS error:', e));
+      }).catch(() => {
+        // Direct browser fetch fallback
+        fetch(newStore.settings.appsScriptWebAppUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'SYNC_FULL_DATA',
+            data: newStore,
+          }),
+        }).catch((e) => console.error('Auto sync GAS error:', e));
+      });
     } else if (newStore.settings?.googleSheetId) {
       fetch('/api/sheets/sync', {
         method: 'POST',
@@ -89,7 +99,7 @@ export default function App() {
   const handleSyncData = async () => {
     if (store.settings.appsScriptWebAppUrl) {
       try {
-        await fetch('/api/gas/proxy', {
+        const res = await fetch('/api/gas/proxy', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -98,8 +108,21 @@ export default function App() {
             data: store,
           }),
         });
+        if (!res.ok) throw new Error('Proxy returned non-200');
       } catch (e) {
-        console.error('Failed sync to GAS Web App:', e);
+        console.warn('Proxy failed, attempting direct fetch to GAS Web App:', e);
+        try {
+          await fetch(store.settings.appsScriptWebAppUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+              action: 'SYNC_FULL_DATA',
+              data: store,
+            }),
+          });
+        } catch (err) {
+          console.error('Failed sync to GAS Web App:', err);
+        }
       }
     } else if (store.settings.googleSheetId) {
       try {
@@ -138,8 +161,8 @@ export default function App() {
         return <AssignmentModule store={store} currentUser={currentUser} onUpdateStore={handleUpdateStore} />;
       case 'CLIENTS':
         return <ClientsModule store={store} currentUser={currentUser} onUpdateStore={handleUpdateStore} />;
-      case 'PARTNERS':
-        return <PartnersModule store={store} currentUser={currentUser} onUpdateStore={handleUpdateStore} />;
+      case 'PERSONNEL':
+        return <PersonnelModule store={store} currentUser={currentUser} onUpdateStore={handleUpdateStore} />;
       case 'CONTRACTS':
         return <ContractsModule store={store} currentUser={currentUser} onUpdateStore={handleUpdateStore} />;
       case 'CUSTOMERS':
@@ -192,20 +215,27 @@ export default function App() {
         currentUser={currentUser}
         usersList={store.users || []}
         onSwitchUser={(u) => setCurrentUser(u)}
-        isSheetsConnected={Boolean(store.settings.googleSheetId || store.settings.appsScriptWebAppUrl)}
-        sheetId={store.settings.googleSheetId || (store.settings.appsScriptWebAppUrl ? 'GAS Connected' : '')}
+        isSheetsConnected={Boolean(store.settings?.googleSheetId || store.settings?.appsScriptWebAppUrl)}
+        sheetId={store.settings?.googleSheetId || (store.settings?.appsScriptWebAppUrl ? 'GAS Connected' : '')}
         onOpenGASModal={() => setShowGASModal(true)}
         onOpenSheetsModal={() => setShowSetupModal(true)}
         onSyncData={handleSyncData}
         pendingApprovalsCount={(store.approvals || []).filter((a) => a.status === 'PENDING').length}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        settings={store.settings}
       />
 
       {/* Main Layout Body */}
       <div className="flex-1 flex overflow-hidden">
         {/* Navigation Sidebar */}
         {isSidebarOpen && (
-          <Sidebar activeTab={activeTab} onSelectTab={setActiveTab} currentUserRole={currentUser.role} />
+          <Sidebar
+            activeTab={activeTab}
+            onSelectTab={setActiveTab}
+            currentUserRole={currentUser.role}
+            companyLogo={store.settings?.companyLogo}
+            companyName={store.settings?.companyName}
+          />
         )}
 
         {/* Dynamic Content Panel */}

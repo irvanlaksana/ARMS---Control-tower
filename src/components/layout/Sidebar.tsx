@@ -2,7 +2,7 @@ import React from 'react';
 import { UserRole } from '../../types/arms';
 import { 
   LayoutDashboard, CheckSquare, Briefcase, Users, PhoneCall, Receipt, ShieldAlert,
-  Car, FileText, UserPlus, Building2, Handshake, DollarSign, Wallet, FileSpreadsheet,
+  Car, FileText, UserPlus, Building2, DollarSign, Wallet, FileSpreadsheet,
   Settings, FolderGit2, ShieldCheck, Scale, PieChart, Coins, Lock, Eye, AlertCircle
 } from 'lucide-react';
 
@@ -18,6 +18,8 @@ interface SidebarProps {
   userRole?: UserRole;
   currentUserRole?: UserRole;
   pendingApprovalsCount?: number;
+  companyLogo?: string;
+  companyName?: string;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -26,6 +28,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   userRole,
   currentUserRole,
   pendingApprovalsCount = 0,
+  companyLogo,
+  companyName,
 }) => {
   const role = userRole || currentUserRole || 'SUPER_ADMIN_OPS';
 
@@ -75,11 +79,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ],
     },
     {
-      title: 'CRM, CLIENTS & PARTNERS',
+      title: 'CRM, CLIENTS & PERSONNEL',
       items: [
         { id: 'LEADS', label: 'Leads / CRM', icon: UserPlus },
         { id: 'CLIENTS', label: 'Clients / Multifinance', icon: Building2 },
-        { id: 'PARTNERS', label: 'Partners & Field DC', icon: Handshake },
+        { id: 'PERSONNEL', label: 'Karyawan & Mitra DC', icon: Users },
         { id: 'CUSTOMERS', label: 'Customers / Debtors', icon: Users },
       ],
     },
@@ -110,8 +114,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0 h-[calc(100vh-57px)] overflow-y-auto text-slate-300">
-      <div className="p-4 border-b border-slate-800/80 bg-slate-900/50">
-        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+      {/* Brand & Logo Header */}
+      <div className="p-3.5 border-b border-slate-800 bg-slate-950/60 flex items-center gap-3">
+        <div className="w-9 h-9 rounded-lg bg-slate-900 flex items-center justify-center text-white shadow border border-amber-500/30 overflow-hidden shrink-0">
+          {companyLogo ? (
+            <img src={companyLogo} alt={companyName || 'Logo'} className="w-full h-full object-contain p-0.5" />
+          ) : (
+            <span className="font-bold text-amber-400 text-sm">{(companyName || 'ARMS').charAt(0)}</span>
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-xs font-bold text-white truncate">{companyName || 'MJ Agency Recovery'}</div>
+          <div className="text-[10px] text-amber-400 font-medium">Control Tower DC</div>
+        </div>
+      </div>
+
+      <div className="p-3.5 border-b border-slate-800/80 bg-slate-900/30">
+        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
           Active Role Level
         </div>
         <div className="flex items-center gap-2 text-xs font-semibold text-indigo-300 bg-indigo-950/60 p-2 rounded border border-indigo-900/50">

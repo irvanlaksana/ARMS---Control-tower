@@ -5,14 +5,14 @@
  */
 
 import {
-  User, Client, Partner, Service, FeeConfig, Contract, Lead, Customer, Case,
+  User, Client, Personnel, Service, FeeConfig, Contract, Lead, Customer, Case,
   Assignment, SK, CommunicationLog, Asset, Collection, AssetRecovery, DanaTalangan,
   Payment, Expense, Settlement, LedgerEntry, CashAccount, DocumentRecord,
   ApprovalRequest, NotificationItem, AuditLogEntry, AppSettings, FeeType
 } from '../types/arms';
 
 import {
-  INITIAL_USERS, INITIAL_CLIENTS, INITIAL_PARTNERS, INITIAL_SERVICES,
+  INITIAL_USERS, INITIAL_CLIENTS, INITIAL_PERSONNEL, INITIAL_SERVICES,
   INITIAL_FEES, INITIAL_CONTRACTS, INITIAL_LEADS, INITIAL_CUSTOMERS,
   INITIAL_CASES, INITIAL_ASSIGNMENTS, INITIAL_SKS, INITIAL_COMM_LOGS,
   INITIAL_ASSETS, INITIAL_COLLECTIONS, INITIAL_ASSET_RECOVERIES,
@@ -24,7 +24,7 @@ import {
 export interface ARMSStore {
   users: User[];
   clients: Client[];
-  partners: Partner[];
+  personnel: Personnel[];
   services: Service[];
   fees: FeeConfig[];
   contracts: Contract[];
@@ -56,7 +56,7 @@ function normalizeStore(parsed: any): ARMSStore {
   const initial = {
     users: INITIAL_USERS,
     clients: INITIAL_CLIENTS,
-    partners: INITIAL_PARTNERS,
+    personnel: INITIAL_PERSONNEL,
     services: INITIAL_SERVICES,
     fees: INITIAL_FEES,
     contracts: INITIAL_CONTRACTS,
@@ -87,7 +87,7 @@ function normalizeStore(parsed: any): ARMSStore {
   return {
     users: Array.isArray(parsed.users) ? parsed.users : initial.users,
     clients: Array.isArray(parsed.clients) ? parsed.clients : initial.clients,
-    partners: Array.isArray(parsed.partners) ? parsed.partners : initial.partners,
+    personnel: Array.isArray(parsed.personnel) ? parsed.personnel : initial.personnel,
     services: Array.isArray(parsed.services) ? parsed.services : initial.services,
     fees: Array.isArray(parsed.fees) ? parsed.fees : initial.fees,
     contracts: Array.isArray(parsed.contracts) ? parsed.contracts : initial.contracts,

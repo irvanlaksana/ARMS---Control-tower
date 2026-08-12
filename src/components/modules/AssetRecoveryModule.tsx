@@ -29,8 +29,8 @@ export const AssetRecoveryModule: React.FC<AssetRecoveryModuleProps> = ({ store,
       caseNo: c?.caseNo || 'CAS-001',
       assetId: store.assets[0]?.id || 'AST-001',
       assetDescription: c?.assetSummary || 'Vehicle Asset',
-      partnerId: c?.currentPartnerId || store.partners[0]?.id || 'PRT-001',
-      partnerName: c?.currentPartnerName || 'Partner Agency',
+      personnelId: c?.currentPersonnelId || store.personnel?.[0]?.id || 'PRT-001',
+      personnelName: c?.currentPersonnelName || 'Partner Agency',
       recoveryDate: new Date().toISOString().split('T')[0],
       warehouseLocation,
       physicalCondition: 'GOOD',
@@ -91,7 +91,7 @@ export const AssetRecoveryModule: React.FC<AssetRecoveryModuleProps> = ({ store,
                   <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">{r.recoveryNo}</td>
                   <td className="py-3.5 px-4 space-y-0.5">
                     <div className="font-bold text-white">{r.caseNo}</div>
-                    <div className="text-[11px] text-slate-400">{r.partnerName}</div>
+                    <div className="text-[11px] text-slate-400">{r.personnelName}</div>
                   </td>
                   <td className="py-3.5 px-4 font-semibold text-slate-200">{r.assetDescription}</td>
                   <td className="py-3.5 px-4 text-slate-400">{r.recoveryDate}</td>
