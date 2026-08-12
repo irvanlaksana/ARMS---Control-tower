@@ -52,6 +52,9 @@ export interface Personnel {
   accountName: string;
   emergencyContact: string;
   position?: string; // e.g. SPV, Field Collector
+  ktpPhotoUrl?: string; // Base64 Data URL or direct link
+  ktpDriveFileId?: string; // Google Drive file ID
+  ktpDriveFolderUrl?: string; // Google Drive direct file/folder link
   status: 'ACTIVE' | 'INACTIVE';
   createdAt: string;
 }
@@ -464,6 +467,7 @@ export interface AppSettings {
   googleSheetId: string;
   appsScriptWebAppUrl: string;
   googleDriveFolderId: string;
+  googleDriveFolderUrl?: string;
   companyName: string;
   companyPhone: string;
   companyEmail: string;

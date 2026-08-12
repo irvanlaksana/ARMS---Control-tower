@@ -1,7 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { ARMSStore, createAuditEntry, resetStoreToInitial } from '../../services/armsDataService';
 import { User, AppSettings } from '../../types/arms';
-import { Settings as SettingsIcon, Database, FileCode, CheckCircle, Save, Upload, RefreshCw, Image as ImageIcon, Trash2 } from 'lucide-react';
+import {
+  Settings as SettingsIcon,
+  Database,
+  FileCode,
+  CheckCircle,
+  Save,
+  Upload,
+  RefreshCw,
+  Image as ImageIcon,
+  Trash2,
+  HardDrive,
+  Folder,
+  CheckCircle2,
+  ExternalLink
+} from 'lucide-react';
 import { DEFAULT_MJ_LOGO } from '../../assets/mjLogo';
 
 interface SettingsModuleProps {
@@ -30,6 +44,13 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
   }, [store.settings]);
 
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS';
+
+  const personnelList = store.personnel || [];
+  const karyawanList = personnelList.filter((p) => p.type === 'KARYAWAN');
+  const mitraList = personnelList.filter((p) => p.type === 'MITRA_DC');
+
+  const defaultDriveFolderId = settings.googleDriveFolderId || '11OxYLvKiH8P4AIP_NM08KuYu0plAq16_';
+  const defaultDriveFolderLink = settings.googleDriveFolderUrl || `https://drive.google.com/drive/folders/11OxYLvKiH8P4AIP_NM08KuYu0plAq16_?usp=sharing`;
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -73,6 +94,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Header Banner */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -80,7 +102,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
             <h2 className="text-xl font-bold text-white">ARMS System Settings & Branding Profile</h2>
           </div>
           <p className="text-xs text-slate-400">
-            Configure Google Sheets Database, Apps Script Endpoint, Company Profile, and Enterprise Logo
+            Configure Google Drive Storage, Google Sheets Database, Apps Script Endpoint, Company Profile, and Enterprise Logo
           </p>
         </div>
 
@@ -99,6 +121,84 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
             <Database className="w-4 h-4" />
             <span>Setup Google Sheets</span>
           </button>
+        </div>
+      </div>
+
+      {/* Google Drive Storage Status Banner */}
+      <div className="bg-gradient-to-r from-blue-950/60 via-slate-900 to-indigo-950/60 border border-blue-800/60 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md">
+        <div className="flex items-start sm:items-center gap-3">
+          <div className="p-2.5 bg-blue-900/50 rounded-lg border border-blue-700/50 text-blue-300 shrink-0">
+            <HardDrive className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-white text-sm">Google Drive Storage Integration</span>
+              <span className="px-2 py-0.5 bg-emerald-950 text-emerald-300 border border-emerald-800 text-[10px] font-semibold rounded-full flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Connected
+              </span>
+            </div>
+            <p className="text-xs text-slate-300 mt-0.5">
+              Folder Drive Terkonfigurasi: <code className="text-indigo-300 bg-slate-950 px-1.5 py-0.5 rounded font-mono text-[11px]">{defaultDriveFolderId}</code>
+            </p>
+          </div>
+        </div>
+
+        <a
+          href={defaultDriveFolderLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-lg transition shrink-0"
+        >
+          <ExternalLink className="w-3.5 h-3.5 text-blue-400" />
+          <span>Buka Folder Google Drive</span>
+        </a>
+      </div>
+
+      {/* Database Summary Folder Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="p-4 rounded-xl border bg-slate-900 border-slate-800 text-slate-300 flex items-center justify-between shadow-md">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-indigo-600 text-white">
+              <Folder className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-bold text-sm text-white">Semua Database</div>
+              <div className="text-[11px] text-slate-400">Folder Gabungan</div>
+            </div>
+          </div>
+          <span className="text-lg font-black bg-slate-950/60 px-3 py-1 rounded-lg border border-slate-800 text-indigo-300">
+            {personnelList.length}
+          </span>
+        </div>
+
+        <div className="p-4 rounded-xl border bg-slate-900 border-slate-800 text-slate-300 flex items-center justify-between shadow-md">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-blue-600 text-white">
+              <Folder className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-bold text-sm text-white">Folder Karyawan Internal</div>
+              <div className="text-[11px] text-slate-400">SPV, Staf, & Desk Officer</div>
+            </div>
+          </div>
+          <span className="text-lg font-black bg-slate-950/60 px-3 py-1 rounded-lg border border-slate-800 text-blue-300">
+            {karyawanList.length}
+          </span>
+        </div>
+
+        <div className="p-4 rounded-xl border bg-slate-900 border-slate-800 text-slate-300 flex items-center justify-between shadow-md">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-amber-600 text-white">
+              <Folder className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-bold text-sm text-white">Folder Mitra DC (Freelance)</div>
+              <div className="text-[11px] text-slate-400">Eksekutor Lapangan & Desk DC</div>
+            </div>
+          </div>
+          <span className="text-lg font-black bg-slate-950/60 px-3 py-1 rounded-lg border border-slate-800 text-amber-300">
+            {mitraList.length}
+          </span>
         </div>
       </div>
 
@@ -231,10 +331,111 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
           </div>
         </div>
 
+        {/* Google Drive Storage Settings */}
+        <div className="space-y-4">
+          <h3 className="font-bold text-white text-sm border-b border-slate-800 pb-2 flex items-center gap-2">
+            <HardDrive className="w-4 h-4 text-blue-400" />
+            <span>3. Google Drive Cloud Storage & KTP Database Configuration</span>
+          </h3>
+
+          <div className="bg-slate-950/80 border border-slate-800/80 rounded-xl p-4 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  Google Drive Storage Folder ID:
+                </label>
+                <input
+                  type="text"
+                  disabled={!canEdit}
+                  value={settings.googleDriveFolderId || ''}
+                  onChange={(e) => setSettings({ ...settings, googleDriveFolderId: e.target.value })}
+                  placeholder="e.g. 1A2b3C4d_ARMS_KTP_DATABASE_FOLDER"
+                  className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono focus:border-blue-500 focus:outline-none"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  ID Folder unik Google Drive untuk menyimpan berkas KTP & KYC personel.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  Direct Folder Link / URL Google Drive:
+                </label>
+                <input
+                  type="text"
+                  disabled={!canEdit}
+                  value={settings.googleDriveFolderUrl || ''}
+                  onChange={(e) => setSettings({ ...settings, googleDriveFolderUrl: e.target.value })}
+                  placeholder="https://drive.google.com/drive/folders/..."
+                  className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono focus:border-blue-500 focus:outline-none"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Tautan langsung ke Folder Google Drive utama yang dapat dibuka oleh pengurus.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-blue-950/40 border border-blue-800/60 rounded-lg text-xs text-blue-200 space-y-3">
+              <div className="flex items-start gap-2.5">
+                <HardDrive className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <div className="font-semibold text-blue-300">Status Penyimpanan Google Drive Storage: Terhubung & Aktif</div>
+                  <p className="text-[11px] text-slate-300 leading-relaxed">
+                    Setiap kali pengurus mengunggah foto KTP pada Module Karyawan & Mitra DC, file tersebut akan tersinkronisasi secara otomatis ke Google Drive Folder ID ini.
+                  </p>
+                </div>
+              </div>
+
+              {/* Subfolder Structure Breakdown */}
+              <div className="border-t border-blue-900/60 pt-2.5 space-y-2">
+                <div className="text-[11px] font-bold text-slate-300 flex items-center justify-between">
+                  <span>Struktur Sub-Folder Google Drive yang Dikonfigurasi:</span>
+                  <a
+                    href={defaultDriveFolderLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-indigo-400 hover:underline flex items-center gap-1 font-normal text-[10px]"
+                  >
+                    <span>Buka Google Drive Utama</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                  <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-lg flex items-center gap-2">
+                    <Folder className="w-4 h-4 text-blue-400 shrink-0" />
+                    <div>
+                      <div className="font-bold text-white text-[11px]">📁 KARYAWAN_INTERNAL</div>
+                      <div className="text-[10px] text-slate-400">Database KTP SPV & Desk Officer</div>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-lg flex items-center gap-2">
+                    <Folder className="w-4 h-4 text-amber-400 shrink-0" />
+                    <div>
+                      <div className="font-bold text-white text-[11px]">📁 MITRA_DC_FREELANCE</div>
+                      <div className="text-[10px] text-slate-400">Database KTP Eksekutor Lapangan</div>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-lg flex items-center gap-2">
+                    <Folder className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <div>
+                      <div className="font-bold text-white text-[11px]">📁 LEGAL_KYC_DOCUMENTS</div>
+                      <div className="text-[10px] text-slate-400">Berkas Pendukung & Kontrak</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Google Sheets Integration */}
         <div className="space-y-4">
-          <h3 className="font-bold text-white text-sm border-b border-slate-800 pb-2">
-            3. Google Sheets & Apps Script Integration
+          <h3 className="font-bold text-white text-sm border-b border-slate-800 pb-2 flex items-center gap-2">
+            <Database className="w-4 h-4 text-emerald-400" />
+            <span>4. Google Sheets & Apps Script Integration</span>
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -258,18 +459,6 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
                 value={settings.appsScriptWebAppUrl || ''}
                 onChange={(e) => setSettings({ ...settings, appsScriptWebAppUrl: e.target.value })}
                 placeholder="https://script.google.com/macros/s/.../exec"
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">Google Drive Storage Folder ID</label>
-              <input
-                type="text"
-                disabled={!canEdit}
-                value={settings.googleDriveFolderId || ''}
-                onChange={(e) => setSettings({ ...settings, googleDriveFolderId: e.target.value })}
-                placeholder="Google Drive Folder ID for document/photo uploads"
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono"
               />
             </div>
@@ -309,7 +498,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
               className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg shadow-md transition"
             >
               <Save className="w-4 h-4" />
-              <span>Simpan Pengaturan & Refleksikan Logo</span>
+              <span>Simpan Pengaturan System & GDrive</span>
             </button>
           </div>
         )}

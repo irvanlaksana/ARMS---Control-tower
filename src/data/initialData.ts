@@ -78,7 +78,13 @@ export const INITIAL_AUDIT_LOGS: AuditLogEntry[] = [];
 export const INITIAL_SETTINGS: AppSettings = {
   googleSheetId: '',
   appsScriptWebAppUrl: '',
-  autoSyncEnabled: true,
-  lastSyncTime: undefined,
-  companyLogoUrl: DEFAULT_MJ_LOGO,
+  googleDriveFolderId: '11OxYLvKiH8P4AIP_NM08KuYu0plAq16_',
+  googleDriveFolderUrl: 'https://drive.google.com/drive/folders/11OxYLvKiH8P4AIP_NM08KuYu0plAq16_?usp=sharing',
+  companyName: 'PT MJ Agency Recovery Indonesia',
+  companyPhone: '021-555-8989',
+  companyEmail: 'admin@arms-controltower.co.id',
+  companyAddress: 'Gedung Control Tower Ops Lt. 12, Jakarta',
+  companyLogo: DEFAULT_MJ_LOGO,
+  defaultFeePercent: 15,
+  autoSyncWithGoogleSheets: true,
 };
