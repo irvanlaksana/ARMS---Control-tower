@@ -28,6 +28,7 @@ const STORE_KEY_MAP = {
   "users": "Users",
   "roles": "Roles",
   "clients": "Clients",
+  "personnel": "Partners",
   "partners": "Partners",
   "services": "Services",
   "fees": "Fees",
@@ -38,6 +39,7 @@ const STORE_KEY_MAP = {
   "assignments": "Assignments",
   "sks": "SK",
   "commLogs": "Communication_Log",
+  "lawyerNotices": "Communication_Log",
   "assets": "Assets",
   "collections": "Collections",
   "assetRecoveries": "Collections",
@@ -86,11 +88,18 @@ const HEADERS_MAP = {
 /**
  * Helper to safely resolve Spreadsheet instance
  */
-function getSS(ss) {
+function getSS(ss, spreadsheetId) {
   if (ss) return ss;
+  if (spreadsheetId && String(spreadsheetId).trim().length > 5) {
+    try {
+      return SpreadsheetApp.openById(String(spreadsheetId).trim());
+    } catch (e) {
+      // Fallback to active spreadsheet
+    }
+  }
   var active = SpreadsheetApp.getActiveSpreadsheet() || SpreadsheetApp.getActive();
   if (!active) {
-    throw new Error("Spreadsheet tidak ditemukan. Pastikan Apps Script ini dibuka melalui Extensions -> Apps Script pada Google Sheet Anda.");
+    throw new Error("Spreadsheet tidak ditemukan. Buka Apps Script dari Google Sheet (Extensions -> Apps Script) atau sertakan Spreadsheet ID.");
   }
   return active;
 }
@@ -100,9 +109,10 @@ function getSS(ss) {
  */
 function doGet(e) {
   const action = (e && e.parameter) ? e.parameter.action : "PING";
+  const spreadsheetId = (e && e.parameter) ? (e.parameter.spreadsheetId || e.parameter.googleSpreadsheetId) : null;
   
   try {
-    const ss = getSS();
+    const ss = getSS(null, spreadsheetId);
     setupAllSheets(ss);
 
     if (action === "SETUP_SHEETS") {
@@ -137,14 +147,31 @@ function doGet(e) {
  */
 function doPost(e) {
   try {
-    const ss = getSS();
-    setupAllSheets(ss);
+    var contents = {};
+    if (e && e.postData && e.postData.contents) {
+      var raw = e.postData.contents;
+      if (typeof raw === "string") {
+        try {
+          contents = JSON.parse(raw);
+          if (typeof contents === "string") {
+            contents = JSON.parse(contents);
+          }
+        } catch (pErr) {
+          contents = {};
+        }
+      } else if (typeof raw === "object") {
+        contents = raw;
+      }
+    }
 
-    const contents = JSON.parse((e && e.postData && e.postData.contents) ? e.postData.contents : "{}");
-    const action = contents.action;
-    const tab = contents.tab;
-    const payload = contents.payload;
-    const auditInfo = contents.auditInfo;
+    var action = contents.action || (e && e.parameter && e.parameter.action);
+    var tab = contents.tab || (e && e.parameter && e.parameter.tab);
+    var payload = contents.payload;
+    var auditInfo = contents.auditInfo;
+    var spreadsheetId = contents.spreadsheetId || contents.googleSpreadsheetId || (e && e.parameter && (e.parameter.spreadsheetId || e.parameter.googleSpreadsheetId));
+
+    var ss = getSS(null, spreadsheetId);
+    setupAllSheets(ss);
 
     if (action === "SETUP_SHEETS") {
       const result = setupAllSheets(ss);
@@ -167,24 +194,36 @@ function doPost(e) {
     }
 
     if (action === "SYNC_FULL_DATA") {
-      // Overwrite / sync full dataset from web app
-      const fullData = contents.data;
-      if (fullData) {
-        Object.keys(fullData).forEach(key => {
-          const sheetName = STORE_KEY_MAP[key] || (SHEET_NAMES.includes(key) ? key : null);
-          if (sheetName) {
-            let val = fullData[key];
-            if (key === "settings" && val && typeof val === "object" && !Array.isArray(val)) {
-              val = Object.keys(val).map(k => ({ key: k, value: String(val[k]), updatedAt: new Date().toISOString() }));
-            }
-            if (Array.isArray(val)) {
-              setSheetData(ss, sheetName, val);
-            }
-          }
-        });
-        if (auditInfo) logAudit(ss, auditInfo);
-        return responseJSON({ success: true, message: "Full dataset synchronized to all 26 Google Sheets!" });
+      var fullData = contents.data;
+      if (typeof fullData === "string") {
+        try { fullData = JSON.parse(fullData); } catch(err){}
       }
+      if (!fullData || typeof fullData !== "object") {
+        return responseJSON({ success: false, error: "Data payload kosong atau format tidak sesuai." });
+      }
+
+      var updatedSheets = [];
+      Object.keys(fullData).forEach(function(key) {
+        var sheetName = STORE_KEY_MAP[key] || (SHEET_NAMES.indexOf(key) >= 0 ? key : null);
+        if (sheetName) {
+          var val = fullData[key];
+          if (key === "settings" && val && typeof val === "object" && !Array.isArray(val)) {
+            val = Object.keys(val).map(function(k) {
+              return { key: k, value: String(val[k]), updatedAt: new Date().toISOString() };
+            });
+          }
+          if (Array.isArray(val)) {
+            setSheetData(ss, sheetName, val);
+            updatedSheets.push(sheetName);
+          }
+        }
+      });
+      if (auditInfo) logAudit(ss, auditInfo);
+      return responseJSON({
+        success: true,
+        message: "Berhasil menyinkronkan data ke " + updatedSheets.length + " tab Google Sheets!",
+        updatedSheets: updatedSheets
+      });
     }
 
     if (action === "CREATE_RECORD") {

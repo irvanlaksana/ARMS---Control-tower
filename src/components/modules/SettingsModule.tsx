@@ -524,8 +524,10 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
                     return;
                   }
 
+                  let lastProxyError = '';
                   const pushPayload = JSON.stringify({
                     webAppUrl,
+                    googleSpreadsheetId: settings.googleSpreadsheetId,
                     action: 'SYNC_FULL_DATA',
                     data: store,
                   });
@@ -538,47 +540,55 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
                       body: pushPayload,
                     });
                     
-                    if (res.ok) {
-                      const json = await res.json();
-                      if (json.success) {
-                        alert('BERHASIL! Data dari aplikasi telah di-push dan ditulis penuh ke seluruh 26 tab di Google Spreadsheet.');
-                        return;
-                      } else {
-                        console.warn('Proxy returned error, trying direct browser fallback:', json.error);
-                      }
-                    } else {
-                      console.warn('Proxy returned non-200 status, trying direct browser fallback');
+                    const json = await res.json().catch(() => null);
+                    if (res.ok && json && json.success) {
+                      alert(`BERHASIL! ${json.message || 'Data dari aplikasi telah di-push dan ditulis penuh ke seluruh tab di Google Spreadsheet.'}`);
+                      return;
+                    } else if (json && json.error) {
+                      lastProxyError = json.error;
+                      console.warn('Proxy returned error, trying direct browser fallback:', json.error);
                     }
-                  } catch (proxyErr) {
+                  } catch (proxyErr: any) {
+                    lastProxyError = proxyErr?.message || String(proxyErr);
                     console.warn('Proxy request failed, trying direct browser fallback:', proxyErr);
                   }
 
-                  // 2. Secondary Fallback: Direct Browser Push using Simple Request (Content-Type: text/plain to bypass CORS preflight)
+                  // 2. Secondary Fallback: Direct Browser Push (Content-Type: text/plain to bypass CORS preflight)
                   try {
                     const directRes = await fetch(webAppUrl, {
                       method: 'POST',
                       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                       body: JSON.stringify({
                         action: 'SYNC_FULL_DATA',
+                        googleSpreadsheetId: settings.googleSpreadsheetId,
                         data: store,
                       }),
                     });
+
                     const text = await directRes.text();
                     let directJson: any = null;
                     try {
                       directJson = JSON.parse(text);
                     } catch {
-                      // If response is text or redirect output, assume success
-                      alert('BERHASIL! Data dari aplikasi telah dikirim langsung ke Google Spreadsheet.');
+                      if (text.includes('Google Accounts') || text.includes('Sign in') || text.includes('<html') || text.includes('<!DOCTYPE')) {
+                        alert(
+                          `GAGAL PUSH DATA:\nGoogle Apps Script menolak akses (Mengembalikan halaman login Google / HTML).\n\n` +
+                          `Penyebab: Google Apps Script Web App belum diset 'Anyone' (Siapa saja) atau Anda menggunakan URL /dev.\n\n` +
+                          `Solusi:\n1. Buka Apps Script -> Deploy -> Manage Deployments\n2. Pilih 'New version' (Versi Baru)\n3. Execute as: Me (Saya)\n4. Who has access: Anyone (Siapa Saja)\n5. Gunakan URL berakhiran /exec.`
+                        );
+                        return;
+                      }
+                      alert(`GAGAL PUSH DATA:\nGoogle Apps Script mengembalikan respon tidak valid (Bukan JSON).\nDetail: ${text.slice(0, 150)}`);
                       return;
                     }
-                    if (directJson && directJson.success !== false) {
-                      alert('BERHASIL! Data dari aplikasi telah di-push dan ditulis penuh ke seluruh 26 tab di Google Spreadsheet.');
+
+                    if (directJson && directJson.success) {
+                      alert(`BERHASIL! ${directJson.message || 'Data dari aplikasi telah di-push dan ditulis penuh ke Google Spreadsheet.'}`);
                     } else {
-                      alert(`GAGAL PUSH DATA: ${directJson?.error || directJson?.message || 'Respon tidak valid dari Google Apps Script'}`);
+                      alert(`GAGAL PUSH DATA:\n${directJson?.error || lastProxyError || 'Terjadi kesalahan pada Google Apps Script.'}`);
                     }
                   } catch (directErr: any) {
-                    alert(`GAGAL PUSH DATA: ${directErr?.message || directErr}`);
+                    alert(`GAGAL PUSH DATA:\n${directErr?.message || lastProxyError || directErr}`);
                   }
                 }}
                 className="flex items-center gap-2 px-4 py-2 bg-indigo-700 hover:bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow transition"

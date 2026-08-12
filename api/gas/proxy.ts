@@ -18,7 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    let { webAppUrl, action, tab, payload, data, auditInfo } = req.body || {};
+    let { webAppUrl, googleSpreadsheetId, action, tab, payload, data, auditInfo } = req.body || {};
     if (!webAppUrl) {
       return res.status(400).json({ success: false, error: 'Missing webAppUrl parameter' });
     }
@@ -32,7 +32,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    const postPayload = JSON.stringify({ action, tab, payload, data, auditInfo });
+    const spreadsheetId = googleSpreadsheetId || data?.settings?.googleSpreadsheetId;
+    const postPayload = JSON.stringify({ action, tab, payload, data, auditInfo, googleSpreadsheetId: spreadsheetId, spreadsheetId });
 
     // Step 1: Send POST request to Google Apps Script.
     // GAS will execute doPost(e) and return a 302 redirect to script-usercontent.google.com where output is hosted.
