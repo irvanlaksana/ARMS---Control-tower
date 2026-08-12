@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, UserRole } from '../../types/arms';
-import { ShieldCheck, Plus, UserX, AlertCircle } from 'lucide-react';
+import { ShieldCheck, Plus, AlertCircle, Pencil, Trash2 } from 'lucide-react';
 
 interface UserManagementModuleProps {
   store: ARMSStore;
@@ -11,34 +11,134 @@ interface UserManagementModuleProps {
 
 export const UserManagementModule: React.FC<UserManagementModuleProps> = ({ store, currentUser, onUpdateStore }) => {
   const [showModal, setShowModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+
   const [username, setUsername] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<UserRole>('VIEWER_INVESTOR');
+  const [role, setRole] = useState<UserRole>('SUPER_ADMIN_OPS');
+  const [department, setDepartment] = useState('Control Tower Operations');
+  const [status, setStatus] = useState<'ACTIVE' | 'SUSPENDED'>('ACTIVE');
 
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS' || currentUser.role === 'APPROVER_EXECUTIVE';
 
-  const handleCreateUser = (e: React.FormEvent) => {
-    e.preventDefault();
-    const newUser: User = {
-      id: `USR-${Date.now()}`,
-      username,
-      name,
-      email,
-      role,
-      department: 'Control Tower',
-      status: 'ACTIVE',
-      createdAt: new Date().toISOString(),
-    };
+  const resetForm = () => {
+    setEditingUser(null);
+    setUsername('');
+    setName('');
+    setEmail('');
+    setRole('SUPER_ADMIN_OPS');
+    setDepartment('Control Tower Operations');
+    setStatus('ACTIVE');
+  };
 
-    const audit = createAuditEntry(currentUser.username, currentUser.role, 'CREATE', 'Users', newUser.id, `Created User Account ${username} with role ${role}`);
+  const handleOpenAdd = () => {
+    resetForm();
+    setShowModal(true);
+  };
+
+  const handleOpenEdit = (user: User) => {
+    setEditingUser(user);
+    setUsername(user.username);
+    setName(user.name);
+    setEmail(user.email);
+    setRole(user.role);
+    setDepartment(user.department || 'Control Tower Operations');
+    setStatus((user.status as 'ACTIVE' | 'SUSPENDED') || 'ACTIVE');
+    setShowModal(true);
+  };
+
+  const handleDeleteUser = (user: User) => {
+    if (user.id === currentUser.id) {
+      alert('Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif login.');
+      return;
+    }
+
+    const superAdminCount = store.users.filter((u) => u.role === 'SUPER_ADMIN_OPS' && u.status === 'ACTIVE').length;
+    if (user.role === 'SUPER_ADMIN_OPS' && superAdminCount <= 1) {
+      alert('Tidak dapat menghapus satu-satunya Super Admin aktif di dalam sistem.');
+      return;
+    }
+
+    if (!window.confirm(`Apakah Anda yakin ingin menghapus akun pengguna "${user.name}" (${user.username})?`)) return;
+
+    const updatedUsers = store.users.filter((u) => u.id !== user.id);
+    const audit = createAuditEntry(
+      currentUser.username,
+      currentUser.role,
+      'DELETE',
+      'Users',
+      user.id,
+      `Hapus Akun Pengguna ${user.username} (${user.name})`
+    );
 
     onUpdateStore({
       ...store,
-      users: [newUser, ...store.users],
+      users: updatedUsers,
       auditLogs: [audit, ...store.auditLogs],
     });
+  };
+
+  const handleSaveUser = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (editingUser) {
+      const updatedUser: User = {
+        ...editingUser,
+        username,
+        name,
+        email,
+        role,
+        department,
+        status,
+      };
+
+      const updatedList = store.users.map((u) => (u.id === editingUser.id ? updatedUser : u));
+
+      const audit = createAuditEntry(
+        currentUser.username,
+        currentUser.role,
+        'UPDATE',
+        'Users',
+        editingUser.id,
+        `Update User Account ${username} (${role})`
+      );
+
+      onUpdateStore({
+        ...store,
+        users: updatedList,
+        auditLogs: [audit, ...store.auditLogs],
+      });
+    } else {
+      const newUser: User = {
+        id: `USR-${Date.now()}`,
+        username,
+        name,
+        email,
+        role,
+        department,
+        status,
+        createdAt: new Date().toISOString(),
+      };
+
+      const audit = createAuditEntry(
+        currentUser.username,
+        currentUser.role,
+        'CREATE',
+        'Users',
+        newUser.id,
+        `Created User Account ${username} with role ${role}`
+      );
+
+      onUpdateStore({
+        ...store,
+        users: [newUser, ...store.users],
+        auditLogs: [audit, ...store.auditLogs],
+      });
+    }
+
     setShowModal(false);
+    resetForm();
   };
 
   return (
@@ -56,11 +156,11 @@ export const UserManagementModule: React.FC<UserManagementModuleProps> = ({ stor
 
         {canEdit && (
           <button
-            onClick={() => setShowModal(true)}
+            onClick={handleOpenAdd}
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-md transition"
           >
             <Plus className="w-4 h-4" />
-            <span>Create User Account</span>
+            <span>Tambah User Account</span>
           </button>
         )}
       </div>
@@ -86,36 +186,76 @@ export const UserManagementModule: React.FC<UserManagementModuleProps> = ({ stor
                 <th className="py-3 px-4">Username</th>
                 <th className="py-3 px-4">Full Name</th>
                 <th className="py-3 px-4">Email</th>
+                <th className="py-3 px-4">Departemen</th>
                 <th className="py-3 px-4">System Role</th>
                 <th className="py-3 px-4 text-center">Status</th>
+                {canEdit && <th className="py-3 px-4 text-center">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {store.users.map((u) => (
-                <tr key={u.id} className="hover:bg-slate-800/40 transition">
-                  <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">{u.username}</td>
-                  <td className="py-3.5 px-4 font-bold text-white">{u.name}</td>
-                  <td className="py-3.5 px-4 text-slate-400">{u.email}</td>
-                  <td className="py-3.5 px-4">
-                    <span
-                      className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${
-                        u.role === 'SUPER_ADMIN_OPS'
-                          ? 'bg-indigo-950 text-indigo-300 border-indigo-800'
-                          : u.role === 'APPROVER_EXECUTIVE'
-                          ? 'bg-amber-950 text-amber-300 border-amber-800'
-                          : 'bg-slate-800 text-slate-300 border-slate-700'
-                      }`}
-                    >
-                      {u.role}
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-4 text-center">
-                    <span className="bg-emerald-950 text-emerald-300 text-[10px] px-2.5 py-1 rounded-full border border-emerald-800 font-semibold">
-                      {u.status}
-                    </span>
+              {store.users.length === 0 ? (
+                <tr>
+                  <td colSpan={canEdit ? 7 : 6} className="py-8 text-center text-slate-500 text-xs">
+                    Belum ada akun pengguna tersimpan.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                store.users.map((u) => (
+                  <tr key={u.id} className="hover:bg-slate-800/40 transition">
+                    <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">{u.username}</td>
+                    <td className="py-3.5 px-4 font-bold text-white">{u.name}</td>
+                    <td className="py-3.5 px-4 text-slate-400">{u.email}</td>
+                    <td className="py-3.5 px-4 text-slate-300">{u.department || 'Control Tower Operations'}</td>
+                    <td className="py-3.5 px-4">
+                      <span
+                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${
+                          u.role === 'SUPER_ADMIN_OPS'
+                            ? 'bg-indigo-950 text-indigo-300 border-indigo-800'
+                            : u.role === 'APPROVER_EXECUTIVE'
+                            ? 'bg-amber-950 text-amber-300 border-amber-800'
+                            : 'bg-slate-800 text-slate-300 border-slate-700'
+                        }`}
+                      >
+                        {u.role}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 text-center">
+                      <span
+                        className={`text-[10px] px-2.5 py-1 rounded-full border font-semibold ${
+                          u.status === 'ACTIVE'
+                            ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
+                            : 'bg-rose-950 text-rose-300 border-rose-800'
+                        }`}
+                      >
+                        {u.status || 'ACTIVE'}
+                      </span>
+                    </td>
+                    {canEdit && (
+                      <td className="py-3.5 px-4 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => handleOpenEdit(u)}
+                            title="Edit User"
+                            className="flex items-center gap-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-800 px-2.5 py-1 rounded text-[11px] font-semibold transition"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                            <span>Edit</span>
+                          </button>
+                          {u.id !== currentUser.id && (
+                            <button
+                              onClick={() => handleDeleteUser(u)}
+                              title="Hapus User"
+                              className="flex items-center gap-1 bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 px-2 py-1 rounded text-[11px] font-semibold transition"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -123,8 +263,22 @@ export const UserManagementModule: React.FC<UserManagementModuleProps> = ({ stor
 
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <form onSubmit={handleCreateUser} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <h3 className="font-bold text-white text-base">Create Authorized System User</h3>
+          <form onSubmit={handleSaveUser} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="font-bold text-white text-base">
+                {editingUser ? 'Edit User Account & Access' : 'Create Authorized System User'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowModal(false);
+                  resetForm();
+                }}
+                className="text-slate-400 hover:text-white text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
 
             <div>
               <label className="block text-xs text-slate-400 mb-1">Username</label>
@@ -133,7 +287,7 @@ export const UserManagementModule: React.FC<UserManagementModuleProps> = ({ stor
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
               />
             </div>
 
@@ -144,7 +298,7 @@ export const UserManagementModule: React.FC<UserManagementModuleProps> = ({ stor
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
               />
             </div>
 
@@ -155,7 +309,17 @@ export const UserManagementModule: React.FC<UserManagementModuleProps> = ({ stor
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Department</label>
+              <input
+                type="text"
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
               />
             </div>
 
@@ -163,8 +327,8 @@ export const UserManagementModule: React.FC<UserManagementModuleProps> = ({ stor
               <label className="block text-xs text-slate-400 mb-1">Select System Role</label>
               <select
                 value={role}
-                onChange={(e) => setRole(e.target.value as any)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                onChange={(e) => setRole(e.target.value as UserRole)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
               >
                 <option value="SUPER_ADMIN_OPS">SUPER_ADMIN_OPS (Control Tower)</option>
                 <option value="APPROVER_EXECUTIVE">APPROVER_EXECUTIVE (Direktur Utama)</option>
@@ -173,19 +337,34 @@ export const UserManagementModule: React.FC<UserManagementModuleProps> = ({ stor
               </select>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Status Akun</label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as 'ACTIVE' | 'SUSPENDED')}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+              >
+                <option value="ACTIVE">ACTIVE (Aktif)</option>
+                <option value="SUSPENDED">SUSPENDED (Ditangguhkan)</option>
+              </select>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
               <button
                 type="button"
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
+                onClick={() => {
+                  setShowModal(false);
+                  resetForm();
+                }}
+                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700 font-semibold transition"
               >
-                Cancel
+                Batal
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500"
+                className="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500 shadow-md transition"
               >
-                Create Account
+                {editingUser ? 'Simpan Perubahan' : 'Create Account'}
               </button>
             </div>
           </form>

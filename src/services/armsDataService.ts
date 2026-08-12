@@ -51,7 +51,14 @@ export interface ARMSStore {
   settings: AppSettings;
 }
 
-const STORAGE_KEY = 'ARMS_SINGLE_SOURCE_DATA_V1';
+const STORAGE_KEY = 'ARMS_SINGLE_SOURCE_DATA_V3';
+
+export function resetStoreToInitial(): ARMSStore {
+  localStorage.removeItem(STORAGE_KEY);
+  const cleanStore = normalizeStore(null);
+  saveStore(cleanStore);
+  return cleanStore;
+}
 
 function normalizeStore(parsed: any): ARMSStore {
   const initial = {

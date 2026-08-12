@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Personnel, PersonnelType } from '../../types/arms';
-import { Users, Plus, UserCheck } from 'lucide-react';
+import { Users, Plus, UserCheck, Pencil, Trash2 } from 'lucide-react';
 
 interface PersonnelModuleProps {
   store: ARMSStore;
@@ -11,6 +11,8 @@ interface PersonnelModuleProps {
 
 export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, currentUser, onUpdateStore }) => {
   const [showModal, setShowModal] = useState(false);
+  const [editingPersonnel, setEditingPersonnel] = useState<Personnel | null>(null);
+
   const [type, setType] = useState<PersonnelType>('KARYAWAN');
   const [fullName, setFullName] = useState('');
   const [nikKtp, setNikKtp] = useState('');
@@ -23,44 +25,146 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
   const [accountName, setAccountName] = useState('');
   const [emergencyContact, setEmergencyContact] = useState('');
   const [position, setPosition] = useState('');
+  const [status, setStatus] = useState<'ACTIVE' | 'INACTIVE'>('ACTIVE');
 
-  const canEdit = currentUser.role === 'SUPER_ADMIN_OPS';
+  const canEdit = currentUser.role === 'SUPER_ADMIN_OPS' || currentUser.role === 'APPROVER_EXECUTIVE';
 
-  const handleAddPersonnel = (e: React.FormEvent) => {
-    e.preventDefault();
-    const newPersonnel: Personnel = {
-      id: `PRT-${Date.now()}`,
-      type,
-      fullName,
-      nikKtp,
-      birthPlaceDate,
-      address,
-      phoneNumber,
-      email,
-      bankName,
-      accountNumber,
-      accountName,
-      emergencyContact,
-      position,
-      status: 'ACTIVE',
-      createdAt: new Date().toISOString(),
-    };
+  const resetForm = () => {
+    setEditingPersonnel(null);
+    setType('KARYAWAN');
+    setFullName('');
+    setNikKtp('');
+    setBirthPlaceDate('');
+    setAddress('');
+    setPhoneNumber('');
+    setEmail('');
+    setBankName('');
+    setAccountNumber('');
+    setAccountName('');
+    setEmergencyContact('');
+    setPosition('');
+    setStatus('ACTIVE');
+  };
 
+  const handleOpenAdd = () => {
+    resetForm();
+    setShowModal(true);
+  };
+
+  const handleOpenEdit = (personnel: Personnel) => {
+    setEditingPersonnel(personnel);
+    setType(personnel.type);
+    setFullName(personnel.fullName);
+    setNikKtp(personnel.nikKtp);
+    setBirthPlaceDate(personnel.birthPlaceDate);
+    setAddress(personnel.address);
+    setPhoneNumber(personnel.phoneNumber);
+    setEmail(personnel.email);
+    setBankName(personnel.bankName);
+    setAccountNumber(personnel.accountNumber);
+    setAccountName(personnel.accountName);
+    setEmergencyContact(personnel.emergencyContact);
+    setPosition(personnel.position);
+    setStatus(personnel.status || 'ACTIVE');
+    setShowModal(true);
+  };
+
+  const handleDeletePersonnel = (p: Personnel) => {
+    if (!window.confirm(`Apakah Anda yakin ingin menghapus data ${p.fullName}?`)) return;
+
+    const updatedList = (store.personnel || []).filter((item) => item.id !== p.id);
     const audit = createAuditEntry(
       currentUser.username,
       currentUser.role,
-      'CREATE',
+      'DELETE',
       'Personnel',
-      newPersonnel.id,
-      `Added Personnel ${fullName} (${type})`
+      p.id,
+      `Hapus data ${p.fullName} (${p.type})`
     );
 
     onUpdateStore({
       ...store,
-      personnel: [newPersonnel, ...(store.personnel || [])],
+      personnel: updatedList,
       auditLogs: [audit, ...store.auditLogs],
     });
+  };
+
+  const handleSavePersonnel = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (editingPersonnel) {
+      const updatedPersonnel: Personnel = {
+        ...editingPersonnel,
+        type,
+        fullName,
+        nikKtp,
+        birthPlaceDate,
+        address,
+        phoneNumber,
+        email,
+        bankName,
+        accountNumber,
+        accountName,
+        emergencyContact,
+        position,
+        status,
+      };
+
+      const updatedList = (store.personnel || []).map((p) =>
+        p.id === editingPersonnel.id ? updatedPersonnel : p
+      );
+
+      const audit = createAuditEntry(
+        currentUser.username,
+        currentUser.role,
+        'UPDATE',
+        'Personnel',
+        editingPersonnel.id,
+        `Update data ${fullName} (${type})`
+      );
+
+      onUpdateStore({
+        ...store,
+        personnel: updatedList,
+        auditLogs: [audit, ...store.auditLogs],
+      });
+    } else {
+      const newPersonnel: Personnel = {
+        id: `PRT-${Date.now()}`,
+        type,
+        fullName,
+        nikKtp,
+        birthPlaceDate,
+        address,
+        phoneNumber,
+        email,
+        bankName,
+        accountNumber,
+        accountName,
+        emergencyContact,
+        position,
+        status,
+        createdAt: new Date().toISOString(),
+      };
+
+      const audit = createAuditEntry(
+        currentUser.username,
+        currentUser.role,
+        'CREATE',
+        'Personnel',
+        newPersonnel.id,
+        `Tambah Karyawan/Mitra ${fullName} (${type})`
+      );
+
+      onUpdateStore({
+        ...store,
+        personnel: [newPersonnel, ...(store.personnel || [])],
+        auditLogs: [audit, ...store.auditLogs],
+      });
+    }
+
     setShowModal(false);
+    resetForm();
   };
 
   return (
@@ -77,7 +181,7 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
         </div>
         {canEdit && (
           <button
-            onClick={() => setShowModal(true)}
+            onClick={handleOpenAdd}
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-md transition"
           >
             <Plus className="w-4 h-4" />
@@ -98,48 +202,84 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
                 <th className="py-3 px-4">Kontak</th>
                 <th className="py-3 px-4">Rekening Bank</th>
                 <th className="py-3 px-4 text-center">Status</th>
+                {canEdit && <th className="py-3 px-4 text-center">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {(store.personnel || []).map((p) => (
-                <tr key={p.id} className="hover:bg-slate-800/40 transition">
-                  <td className="py-3.5 px-4">
-                    <div className="font-bold text-white">{p.fullName}</div>
-                    <div className="text-[10px] text-indigo-300 font-medium">{p.position}</div>
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <span
-                      className={`px-2 py-0.5 rounded border text-[10px] font-semibold ${
-                        p.type === 'KARYAWAN'
-                          ? 'bg-blue-950/50 text-blue-300 border-blue-800'
-                          : 'bg-amber-950/50 text-amber-300 border-amber-800'
-                      }`}
-                    >
-                      {p.type.replace('_', ' ')}
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-4 font-mono text-slate-200">
-                    {p.nikKtp}
-                  </td>
-                  <td className="py-3.5 px-4 space-y-0.5">
-                    <div className="text-slate-200">{p.birthPlaceDate}</div>
-                    <div className="text-[10px] text-slate-400 max-w-[200px] truncate">{p.address}</div>
-                  </td>
-                  <td className="py-3.5 px-4 space-y-0.5">
-                    <div className="text-emerald-400 font-semibold">{p.phoneNumber}</div>
-                    <div className="text-[10px] text-slate-400">{p.email}</div>
-                  </td>
-                  <td className="py-3.5 px-4 text-slate-400 font-mono text-[11px]">
-                    <div className="text-slate-200">{p.bankName} - {p.accountNumber}</div>
-                    <div className="text-[10px]">A.N: {p.accountName}</div>
-                  </td>
-                  <td className="py-3.5 px-4 text-center">
-                    <span className="bg-emerald-950 text-emerald-300 text-[10px] px-2.5 py-1 rounded-full border border-emerald-800 font-semibold">
-                      {p.status}
-                    </span>
+              {(!store.personnel || store.personnel.length === 0) ? (
+                <tr>
+                  <td colSpan={canEdit ? 8 : 7} className="py-8 text-center text-slate-500 text-xs">
+                    Belum ada data Karyawan / Mitra DC. Klik "Tambah Karyawan / Mitra" untuk memasukkan data baru.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                store.personnel.map((p) => (
+                  <tr key={p.id} className="hover:bg-slate-800/40 transition">
+                    <td className="py-3.5 px-4">
+                      <div className="font-bold text-white">{p.fullName}</div>
+                      <div className="text-[10px] text-indigo-300 font-medium">{p.position}</div>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <span
+                        className={`px-2 py-0.5 rounded border text-[10px] font-semibold ${
+                          p.type === 'KARYAWAN'
+                            ? 'bg-blue-950/50 text-blue-300 border-blue-800'
+                            : 'bg-amber-950/50 text-amber-300 border-amber-800'
+                        }`}
+                      >
+                        {p.type.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 font-mono text-slate-200">
+                      {p.nikKtp}
+                    </td>
+                    <td className="py-3.5 px-4 space-y-0.5">
+                      <div className="text-slate-200">{p.birthPlaceDate}</div>
+                      <div className="text-[10px] text-slate-400 max-w-[200px] truncate">{p.address}</div>
+                    </td>
+                    <td className="py-3.5 px-4 space-y-0.5">
+                      <div className="text-emerald-400 font-semibold">{p.phoneNumber}</div>
+                      <div className="text-[10px] text-slate-400">{p.email}</div>
+                    </td>
+                    <td className="py-3.5 px-4 text-slate-400 font-mono text-[11px]">
+                      <div className="text-slate-200">{p.bankName} - {p.accountNumber}</div>
+                      <div className="text-[10px]">A.N: {p.accountName}</div>
+                    </td>
+                    <td className="py-3.5 px-4 text-center">
+                      <span
+                        className={`text-[10px] px-2.5 py-1 rounded-full border font-semibold ${
+                          p.status === 'ACTIVE'
+                            ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
+                            : 'bg-slate-800 text-slate-400 border-slate-700'
+                        }`}
+                      >
+                        {p.status || 'ACTIVE'}
+                      </span>
+                    </td>
+                    {canEdit && (
+                      <td className="py-3.5 px-4 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => handleOpenEdit(p)}
+                            title="Edit Data"
+                            className="flex items-center gap-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-800 px-2.5 py-1 rounded text-[11px] font-semibold transition"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            onClick={() => handleDeletePersonnel(p)}
+                            title="Hapus Data"
+                            className="flex items-center gap-1 bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 px-2 py-1 rounded text-[11px] font-semibold transition"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -148,12 +288,26 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
           <form
-            onSubmit={handleAddPersonnel}
+            onSubmit={handleSavePersonnel}
             className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-2xl p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto"
           >
-            <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
-              <UserCheck className="w-5 h-5 text-indigo-400" />
-              <h3 className="font-bold text-white text-base">Registrasi Karyawan / Mitra DC Baru</h3>
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <UserCheck className="w-5 h-5 text-indigo-400" />
+                <h3 className="font-bold text-white text-base">
+                  {editingPersonnel ? 'Edit Data Karyawan / Mitra DC' : 'Registrasi Karyawan / Mitra DC Baru'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowModal(false);
+                  resetForm();
+                }}
+                className="text-slate-400 hover:text-white text-sm font-bold"
+              >
+                ✕
+              </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -162,7 +316,7 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
                 <select
                   value={type}
                   onChange={(e) => setType(e.target.value as PersonnelType)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                 >
                   <option value="KARYAWAN">KARYAWAN INTERNAL (SPV, dll)</option>
                   <option value="MITRA_DC">MITRA DC / FREELANCE</option>
@@ -175,7 +329,7 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
                   required
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
@@ -186,7 +340,7 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
                   required
                   value={nikKtp}
                   onChange={(e) => setNikKtp(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
               <div>
@@ -197,7 +351,7 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
                   value={birthPlaceDate}
                   onChange={(e) => setBirthPlaceDate(e.target.value)}
                   placeholder="e.g. Jakarta, 17 Agustus 1990"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
@@ -208,7 +362,7 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
                   required
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
@@ -219,7 +373,7 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
                   required
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
               <div>
@@ -228,7 +382,7 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
@@ -239,7 +393,7 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
                   value={emergencyContact}
                   onChange={(e) => setEmergencyContact(e.target.value)}
                   placeholder="e.g. 0812xxx (Istri/Suami)"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
               <div>
@@ -249,8 +403,20 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
                   value={position}
                   onChange={(e) => setPosition(e.target.value)}
                   placeholder="e.g. Mitra Eksekusi / Supervisor"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Status Keaktifan</label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as 'ACTIVE' | 'INACTIVE')}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="ACTIVE">ACTIVE (Aktif)</option>
+                  <option value="INACTIVE">INACTIVE (Non-Aktif)</option>
+                </select>
               </div>
 
               <div className="md:col-span-2 border-t border-slate-800 pt-3 mt-1">
@@ -264,7 +430,7 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
                       value={bankName}
                       onChange={(e) => setBankName(e.target.value)}
                       placeholder="e.g. BCA / Mandiri"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                     />
                   </div>
                   <div>
@@ -274,7 +440,7 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
                       required
                       value={accountNumber}
                       onChange={(e) => setAccountNumber(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                     />
                   </div>
                   <div>
@@ -284,7 +450,7 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
                       required
                       value={accountName}
                       onChange={(e) => setAccountName(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                     />
                   </div>
                 </div>
@@ -294,16 +460,19 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
             <div className="flex justify-end gap-2 pt-4 border-t border-slate-800">
               <button
                 type="button"
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700 font-semibold"
+                onClick={() => {
+                  setShowModal(false);
+                  resetForm();
+                }}
+                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700 font-semibold transition"
               >
                 Batal
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500 shadow-md"
+                className="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500 shadow-md transition"
               >
-                Simpan Data KYC
+                {editingPersonnel ? 'Simpan Perubahan' : 'Simpan Data KYC'}
               </button>
             </div>
           </form>

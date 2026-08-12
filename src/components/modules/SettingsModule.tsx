@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
+import { ARMSStore, createAuditEntry, resetStoreToInitial } from '../../services/armsDataService';
 import { User, AppSettings } from '../../types/arms';
-import { Settings as SettingsIcon, Database, FileCode, CheckCircle, Save, Upload, RefreshCw, Image as ImageIcon } from 'lucide-react';
+import { Settings as SettingsIcon, Database, FileCode, CheckCircle, Save, Upload, RefreshCw, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { DEFAULT_MJ_LOGO } from '../../assets/mjLogo';
 
 interface SettingsModuleProps {
@@ -288,7 +288,22 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
         </div>
 
         {canEdit && (
-          <div className="flex justify-end pt-4 border-t border-slate-800">
+          <div className="flex flex-wrap items-center justify-between pt-4 border-t border-slate-800 gap-4">
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm('PERINGATAN: Apakah Anda yakin ingin mengosongkan SELURUH DATA operasional dan menyisakan 1 User Super Admin? Tindakan ini tidak dapat dibatalkan.')) {
+                  const cleanStore = resetStoreToInitial();
+                  onUpdateStore(cleanStore);
+                  alert('Seluruh data operasional berhasil dikosongkan dan disisakan 1 akun Super Admin!');
+                }
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-rose-950/80 hover:bg-rose-900 border border-rose-800 text-rose-300 text-xs font-semibold rounded-lg transition"
+            >
+              <Trash2 className="w-4 h-4 text-rose-400" />
+              <span>Kosongkan Semua Data (Sisa 1 Super Admin)</span>
+            </button>
+
             <button
               type="submit"
               className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg shadow-md transition"

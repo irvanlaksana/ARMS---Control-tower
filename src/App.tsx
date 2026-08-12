@@ -40,7 +40,24 @@ export default function App() {
     return getStoredStore() || initializeARMSStore();
   });
 
-  const [currentUser, setCurrentUser] = useState<User>(() => store.users[0]);
+  const [currentUser, setCurrentUser] = useState<User>(() => store.users[0] || {
+    id: 'USR-001',
+    username: 'superadmin',
+    name: 'Super Admin Control Tower',
+    email: 'admin@arms-controltower.co.id',
+    role: 'SUPER_ADMIN_OPS',
+    department: 'Control Tower Operations',
+    status: 'ACTIVE',
+  });
+
+  useEffect(() => {
+    if (store.users && store.users.length > 0) {
+      const exists = store.users.find((u) => u.id === currentUser?.id);
+      if (!exists) {
+        setCurrentUser(store.users[0]);
+      }
+    }
+  }, [store.users]);
   const [activeTab, setActiveTab] = useState('DASHBOARD');
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [showGASModal, setShowGASModal] = useState(false);
