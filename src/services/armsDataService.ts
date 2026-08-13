@@ -167,8 +167,10 @@ export function mapGasDataToStore(gasData: Record<string, any[]>, currentStore: 
 
   const REVERSE_MAP: Record<string, keyof ARMSStore> = {
     Users: 'users',
+    UsersTable: 'users',
     Clients: 'clients',
     Partners: 'personnel',
+    Personnel: 'personnel',
     Services: 'services',
     Fees: 'fees',
     Contracts: 'contracts',
@@ -177,19 +179,27 @@ export function mapGasDataToStore(gasData: Record<string, any[]>, currentStore: 
     Cases: 'cases',
     Assignments: 'assignments',
     SK: 'sks',
+    Lawyer_Notices: 'lawyerNotices',
+    LawyerNotices: 'lawyerNotices',
     Communication_Log: 'commLogs',
+    CommunicationLog: 'commLogs',
     Assets: 'assets',
     Collections: 'collections',
+    Asset_Recoveries: 'assetRecoveries',
+    AssetRecoveries: 'assetRecoveries',
     Payments: 'payments',
     Funding: 'danaTalangan',
+    DanaTalangan: 'danaTalangan',
     Expenses: 'expenses',
     Settlements: 'settlements',
     Ledger: 'ledger',
     Cash: 'cashAccounts',
+    CashAccounts: 'cashAccounts',
     Documents: 'documents',
     Approvals: 'approvals',
     Notifications: 'notifications',
     Audit_Log: 'auditLogs',
+    AuditLog: 'auditLogs',
   };
 
   const newStore: any = { ...currentStore };
