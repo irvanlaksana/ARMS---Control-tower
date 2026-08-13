@@ -197,8 +197,8 @@ function doPost(e) {
     }
 
     if (action === "SYNC_TAB") {
-      var targetTab = STORE_KEY_MAP[tab] || (SHEET_NAMES.indexOf(tab) >= 0 ? tab : null);
-      if (!targetTab) return responseJSON({ success: false, error: "Tab tidak valid: " + tab });
+      var targetSheets = getTargetSheetNames(ss, tab);
+      if (targetSheets.length === 0) return responseJSON({ success: false, error: "Tab tidak valid: " + tab });
       var tabData = payload !== undefined ? payload : contents.data;
       if (tab === "settings" && tabData && typeof tabData === "object" && !Array.isArray(tabData)) {
         tabData = Object.keys(tabData).map(function(k) {
@@ -206,11 +206,13 @@ function doPost(e) {
         });
       }
       if (Array.isArray(tabData)) {
-        setSheetData(ss, targetTab, tabData);
+        targetSheets.forEach(function(tSheet) {
+          setSheetData(ss, tSheet, tabData);
+        });
         if (auditInfo) logAudit(ss, auditInfo);
-        return responseJSON({ success: true, message: "Tab " + targetTab + " berhasil disinkronkan!", tab: targetTab });
+        return responseJSON({ success: true, message: "Tab " + targetSheets.join(", ") + " berhasil disinkronkan!", tab: targetSheets[0] });
       }
-      return responseJSON({ success: false, error: "Payload data untuk tab " + targetTab + " tidak valid." });
+      return responseJSON({ success: false, error: "Payload data untuk tab " + tab + " tidak valid." });
     }
 
     if (action === "SYNC_FULL_DATA") {
@@ -224,8 +226,8 @@ function doPost(e) {
 
       var updatedSheets = [];
       Object.keys(fullData).forEach(function(key) {
-        var sheetName = STORE_KEY_MAP[key] || (SHEET_NAMES.indexOf(key) >= 0 ? key : null);
-        if (sheetName) {
+        var targetSheets = getTargetSheetNames(ss, key);
+        if (targetSheets.length > 0) {
           var val = fullData[key];
           if (key === "settings" && val && typeof val === "object" && !Array.isArray(val)) {
             val = Object.keys(val).map(function(k) {
@@ -233,8 +235,12 @@ function doPost(e) {
             });
           }
           if (Array.isArray(val)) {
-            setSheetData(ss, sheetName, val);
-            updatedSheets.push(sheetName);
+            targetSheets.forEach(function(tSheet) {
+              setSheetData(ss, tSheet, val);
+              if (updatedSheets.indexOf(tSheet) === -1) {
+                updatedSheets.push(tSheet);
+              }
+            });
           }
         }
       });
@@ -330,6 +336,40 @@ function setupAllSheets(ss) {
   return created;
 }
 
+function getTargetSheetNames(ss, key) {
+  var ALIAS_MAP = {
+    "personnel": ["Personnel", "Partners"],
+    "partners": ["Partners", "Personnel"],
+    "lawyerNotices": ["Lawyer_Notices", "LawyerNotices"],
+    "commLogs": ["Communication_Log", "CommunicationLog"],
+    "assetRecoveries": ["Asset_Recoveries", "AssetRecoveries"],
+    "collections": ["Collections"],
+    "danaTalangan": ["Funding", "DanaTalangan"],
+    "cashAccounts": ["Cash", "CashAccounts"],
+    "auditLogs": ["Audit_Log", "AuditLog"],
+    "users": ["Users", "UsersTable"]
+  };
+
+  var primary = STORE_KEY_MAP[key] || (SHEET_NAMES.indexOf(key) >= 0 ? key : null);
+  if (!primary) return [];
+
+  var candidates = ALIAS_MAP[key] || [primary];
+  var targetSS = getSS(ss);
+  var existingSheets = targetSS.getSheets().map(function(s) { return s.getName(); });
+
+  var matched = [];
+  candidates.forEach(function(sName) {
+    if (existingSheets.indexOf(sName) >= 0) {
+      matched.push(sName);
+    }
+  });
+
+  if (matched.length === 0) {
+    matched.push(primary);
+  }
+  return matched;
+}
+
 function getOrCreateSheet(ss, tab) {
   const targetSS = getSS(ss);
   let sheet = targetSS.getSheetByName(tab);
@@ -364,18 +404,17 @@ function setSheetData(ss, tab, records) {
   const sheet = getOrCreateSheet(ss, tab);
   sheet.clearContents();
   
-  let headers = HEADERS_MAP[tab] || [];
+  let headers = HEADERS_MAP[tab] ? HEADERS_MAP[tab].slice() : [];
   if (records && records.length > 0) {
-    const recKeys = Object.keys(records[0]);
-    if (!headers || headers.length === 0) {
-      headers = recKeys;
-    } else {
-      recKeys.forEach(function(k) {
-        if (headers.indexOf(k) === -1) {
-          headers.push(k);
-        }
-      });
-    }
+    records.forEach(function(rec) {
+      if (rec && typeof rec === "object") {
+        Object.keys(rec).forEach(function(k) {
+          if (headers.indexOf(k) === -1) {
+            headers.push(k);
+          }
+        });
+      }
+    });
   }
   if (!headers || headers.length === 0) headers = ["id"];
 

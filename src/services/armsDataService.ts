@@ -207,7 +207,7 @@ export function mapGasDataToStore(gasData: Record<string, any[]>, currentStore: 
   Object.entries(REVERSE_MAP).forEach(([sheetName, storeKey]) => {
     const sheetRows = gasData[sheetName] || gasData[storeKey];
     if (Array.isArray(sheetRows) && sheetRows.length > 0) {
-      newStore[storeKey] = sheetRows.map((row) => {
+      const cleanedFetched = sheetRows.map((row) => {
         const cleanedRow: any = { ...row };
         Object.keys(cleanedRow).forEach((k) => {
           if (cleanedRow[k] === 'true') cleanedRow[k] = true;
@@ -215,6 +215,33 @@ export function mapGasDataToStore(gasData: Record<string, any[]>, currentStore: 
         });
         return cleanedRow;
       });
+
+      const existingRows = currentStore[storeKey] || [];
+      if (Array.isArray(existingRows) && existingRows.length > 0) {
+        const rowMap = new Map<string, any>();
+        // Add existing local rows
+        existingRows.forEach((r: any) => {
+          if (r && (r.id || r.roleCode || r.key)) {
+            const key = String(r.id || r.roleCode || r.key);
+            rowMap.set(key, r);
+          }
+        });
+        // Merge/override with fetched rows from GAS
+        cleanedFetched.forEach((r: any) => {
+          if (r && (r.id || r.roleCode || r.key)) {
+            const key = String(r.id || r.roleCode || r.key);
+            rowMap.set(key, { ...rowMap.get(key), ...r });
+          }
+        });
+
+        if (rowMap.size > 0) {
+          newStore[storeKey] = Array.from(rowMap.values());
+        } else {
+          newStore[storeKey] = cleanedFetched;
+        }
+      } else {
+        newStore[storeKey] = cleanedFetched;
+      }
     }
   });
 

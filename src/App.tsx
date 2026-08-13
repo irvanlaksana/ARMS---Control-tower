@@ -73,32 +73,42 @@ export default function App() {
   const [showGASModal, setShowGASModal] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  const syncTimeoutRef = React.useRef<any>(null);
+
   // Sync state changes to local storage & connected Google Sheets
   const handleUpdateStore = (newStore: ARMSStore) => {
     setStore(newStore);
     saveStore(newStore);
 
-    // Auto-sync to Google Sheets in background if connected
+    // Auto-sync to Google Sheets in background with debouncing to avoid race conditions
     if (newStore.settings?.appsScriptWebAppUrl) {
-      fetch('/api/gas/proxy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          webAppUrl: newStore.settings.appsScriptWebAppUrl,
-          action: 'SYNC_FULL_DATA',
-          data: newStore,
-        }),
-      }).catch(() => {
-        // Direct browser fetch fallback
-        fetch(newStore.settings.appsScriptWebAppUrl, {
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+      }
+
+      syncTimeoutRef.current = setTimeout(() => {
+        fetch('/api/gas/proxy', {
           method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            webAppUrl: newStore.settings.appsScriptWebAppUrl,
+            googleSpreadsheetId: newStore.settings.googleSheetId,
             action: 'SYNC_FULL_DATA',
             data: newStore,
           }),
-        }).catch((e) => console.error('Auto sync GAS error:', e));
-      });
+        }).catch(() => {
+          // Direct browser fetch fallback
+          fetch(newStore.settings.appsScriptWebAppUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+              action: 'SYNC_FULL_DATA',
+              googleSpreadsheetId: newStore.settings.googleSheetId,
+              data: newStore,
+            }),
+          }).catch((e) => console.error('Auto sync GAS error:', e));
+        });
+      }, 400);
     } else if (newStore.settings?.googleSheetId) {
       fetch('/api/sheets/sync', {
         method: 'POST',
