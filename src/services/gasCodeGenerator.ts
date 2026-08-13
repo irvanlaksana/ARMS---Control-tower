@@ -171,7 +171,6 @@ function doPost(e) {
     var spreadsheetId = contents.spreadsheetId || contents.googleSpreadsheetId || (e && e.parameter && (e.parameter.spreadsheetId || e.parameter.googleSpreadsheetId));
 
     var ss = getSS(null, spreadsheetId);
-    setupAllSheets(ss);
 
     if (action === "SETUP_SHEETS") {
       const result = setupAllSheets(ss);
@@ -191,6 +190,23 @@ function doPost(e) {
       if (!targetSheet) return responseJSON({ success: false, error: "Missing tab parameter" });
       const data = getSheetData(ss, targetSheet);
       return responseJSON({ success: true, tab: targetSheet, data });
+    }
+
+    if (action === "SYNC_TAB") {
+      var targetTab = STORE_KEY_MAP[tab] || (SHEET_NAMES.indexOf(tab) >= 0 ? tab : null);
+      if (!targetTab) return responseJSON({ success: false, error: "Tab tidak valid: " + tab });
+      var tabData = payload !== undefined ? payload : contents.data;
+      if (tab === "settings" && tabData && typeof tabData === "object" && !Array.isArray(tabData)) {
+        tabData = Object.keys(tabData).map(function(k) {
+          return { key: k, value: String(tabData[k]), updatedAt: new Date().toISOString() };
+        });
+      }
+      if (Array.isArray(tabData)) {
+        setSheetData(ss, targetTab, tabData);
+        if (auditInfo) logAudit(ss, auditInfo);
+        return responseJSON({ success: true, message: "Tab " + targetTab + " berhasil disinkronkan!", tab: targetTab });
+      }
+      return responseJSON({ success: false, error: "Payload data untuk tab " + targetTab + " tidak valid." });
     }
 
     if (action === "SYNC_FULL_DATA") {
@@ -359,23 +375,22 @@ function setSheetData(ss, tab, records) {
   }
   if (!headers || headers.length === 0) headers = ["id"];
 
-  sheet.appendRow(headers);
-  const headerRange = sheet.getRange(1, 1, 1, headers.length);
-  headerRange.setFontWeight("bold").setBackground("#1e293b").setFontColor("#ffffff");
-
+  var fullMatrix = [headers];
   if (records && records.length > 0) {
-    const rows = records.map(function(rec) {
-      return headers.map(function(h) {
-        const val = rec[h];
+    records.forEach(function(rec) {
+      var row = headers.map(function(h) {
+        var val = rec[h];
         if (val === undefined || val === null) return "";
         if (typeof val === "object") {
           return JSON.stringify(val);
         }
         return String(val);
       });
+      fullMatrix.push(row);
     });
-    sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
   }
+
+  sheet.getRange(1, 1, fullMatrix.length, headers.length).setValues(fullMatrix);
 }
 
 function logAudit(ss, audit) {

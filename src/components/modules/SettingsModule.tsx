@@ -37,6 +37,9 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
 }) => {
   const [settings, setSettings] = useState<AppSettings>(store.settings);
   const [savedMsg, setSavedMsg] = useState(false);
+  const [isPulling, setIsPulling] = useState(false);
+  const [isPushing, setIsPushing] = useState(false);
+  const [pushStatusMsg, setPushStatusMsg] = useState('');
 
   // Synchronize internal state when store changes
   useEffect(() => {
@@ -496,33 +499,41 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <button
                 type="button"
+                disabled={isPulling || isPushing}
                 onClick={async () => {
                   if (!settings.appsScriptWebAppUrl) {
                     alert('Silakan isi Google Apps Script Web App URL terlebih dahulu.');
                     return;
                   }
+                  setIsPulling(true);
                   try {
                     const updated = await fetchDataFromGoogleSheets(settings.appsScriptWebAppUrl, store);
                     onUpdateStore(updated);
-                    alert('BERHASIL! Data seluruh 26 tab dari Google Spreadsheet telah berhasil ditarik dan disinkronkan ke aplikasi VPS ini.');
+                    alert('BERHASIL! Data seluruh 26 tab dari Google Spreadsheet telah berhasil ditarik dan disinkronkan ke aplikasi ini.');
                   } catch (err: any) {
                     alert(`GAGAL MENARIK DATA: ${err?.message || err}`);
+                  } finally {
+                    setIsPulling(false);
                   }
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg shadow transition"
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white text-xs font-semibold rounded-lg shadow transition"
               >
-                <Download className="w-4 h-4" />
-                <span>Tarik Data Terbaru dari Spreadsheet</span>
+                {isPulling ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                <span>{isPulling ? 'Menarik Data...' : 'Tarik Data Terbaru dari Spreadsheet'}</span>
               </button>
 
               <button
                 type="button"
+                disabled={isPulling || isPushing}
                 onClick={async () => {
                   const webAppUrl = settings.appsScriptWebAppUrl?.trim();
                   if (!webAppUrl) {
                     alert('Silakan isi Google Apps Script Web App URL terlebih dahulu.');
                     return;
                   }
+
+                  setIsPushing(true);
+                  setPushStatusMsg('Memulai pengiriman data...');
 
                   let lastProxyError = '';
                   const pushPayload = JSON.stringify({
@@ -534,6 +545,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
 
                   // 1. Primary Attempt: Serverless / Express Proxy
                   try {
+                    setPushStatusMsg('Mengirim via Server Proxy...');
                     const res = await fetch('/api/gas/proxy', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
@@ -542,6 +554,8 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
                     
                     const json = await res.json().catch(() => null);
                     if (res.ok && json && json.success) {
+                      setIsPushing(false);
+                      setPushStatusMsg('');
                       alert(`BERHASIL! ${json.message || 'Data dari aplikasi telah di-push dan ditulis penuh ke seluruh tab di Google Spreadsheet.'}`);
                       return;
                     } else if (json && json.error) {
@@ -555,6 +569,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
 
                   // 2. Secondary Fallback: Direct Browser Push (Content-Type: text/plain to bypass CORS preflight)
                   try {
+                    setPushStatusMsg('Proxy tidak merespon, mencoba pengiriman langsung dari Browser...');
                     const directRes = await fetch(webAppUrl, {
                       method: 'POST',
                       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -571,6 +586,8 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
                       directJson = JSON.parse(text);
                     } catch {
                       if (text.includes('Google Accounts') || text.includes('Sign in') || text.includes('<html') || text.includes('<!DOCTYPE')) {
+                        setIsPushing(false);
+                        setPushStatusMsg('');
                         alert(
                           `GAGAL PUSH DATA:\nGoogle Apps Script menolak akses (Mengembalikan halaman login Google / HTML).\n\n` +
                           `Penyebab: Google Apps Script Web App belum diset 'Anyone' (Siapa saja) atau Anda menggunakan URL /dev.\n\n` +
@@ -578,23 +595,65 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
                         );
                         return;
                       }
-                      alert(`GAGAL PUSH DATA:\nGoogle Apps Script mengembalikan respon tidak valid (Bukan JSON).\nDetail: ${text.slice(0, 150)}`);
-                      return;
                     }
 
                     if (directJson && directJson.success) {
+                      setIsPushing(false);
+                      setPushStatusMsg('');
                       alert(`BERHASIL! ${directJson.message || 'Data dari aplikasi telah di-push dan ditulis penuh ke Google Spreadsheet.'}`);
-                    } else {
-                      alert(`GAGAL PUSH DATA:\n${directJson?.error || lastProxyError || 'Terjadi kesalahan pada Google Apps Script.'}`);
+                      return;
                     }
                   } catch (directErr: any) {
-                    alert(`GAGAL PUSH DATA:\n${directErr?.message || lastProxyError || directErr}`);
+                    console.warn('Direct push failed, starting sequential tab sync:', directErr);
+                  }
+
+                  // 3. Fail-Safe Tertiary Fallback: Sequential Tab-by-Tab Sync
+                  try {
+                    const keys = Object.keys(store) as (keyof ARMSStore)[];
+                    let successCount = 0;
+                    for (let i = 0; i < keys.length; i++) {
+                      const key = keys[i];
+                      setPushStatusMsg(`Memproses tab ${i + 1}/${keys.length}: ${key}...`);
+                      
+                      try {
+                        const tabRes = await fetch('/api/gas/proxy', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            webAppUrl,
+                            googleSpreadsheetId: settings.googleSpreadsheetId,
+                            action: 'SYNC_TAB',
+                            tab: key,
+                            payload: store[key],
+                          }),
+                        });
+                        const tabJson = await tabRes.json().catch(() => null);
+                        if (tabJson && tabJson.success) {
+                          successCount++;
+                        }
+                      } catch {
+                        // ignore single tab error and continue
+                      }
+                    }
+
+                    setIsPushing(false);
+                    setPushStatusMsg('');
+
+                    if (successCount > 0) {
+                      alert(`BERHASIL! Data berhasil disinkronkan secara bertahap (${successCount}/${keys.length} tab terbarui di Google Spreadsheet).`);
+                    } else {
+                      alert(`GAGAL PUSH DATA:\nTidak dapat terhubung ke Google Apps Script Web App.\n\nDetail: ${lastProxyError || 'Periksa koneksi internet atau Web App URL Anda.'}`);
+                    }
+                  } catch (seqErr: any) {
+                    setIsPushing(false);
+                    setPushStatusMsg('');
+                    alert(`GAGAL PUSH DATA:\n${seqErr?.message || lastProxyError || 'Terjadi kesalahan sistem.'}`);
                   }
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-700 hover:bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow transition"
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-700 hover:bg-indigo-600 disabled:opacity-50 text-white text-xs font-semibold rounded-lg shadow transition"
               >
-                <Upload className="w-4 h-4" />
-                <span>Kirim / Push Data Local ke Spreadsheet</span>
+                {isPushing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                <span>{isPushing ? pushStatusMsg || 'Mengirim Data...' : 'Kirim / Push Data Local ke Spreadsheet'}</span>
               </button>
             </div>
 

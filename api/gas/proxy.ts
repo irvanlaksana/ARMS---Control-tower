@@ -18,7 +18,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    let { webAppUrl, googleSpreadsheetId, action, tab, payload, data, auditInfo } = req.body || {};
+    let body = req.body;
+    if (typeof body === 'string') {
+      try { body = JSON.parse(body); } catch {}
+    }
+    let { webAppUrl, googleSpreadsheetId, action, tab, payload, data, auditInfo } = body || {};
     if (!webAppUrl) {
       return res.status(400).json({ success: false, error: 'Missing webAppUrl parameter' });
     }
@@ -35,14 +39,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const spreadsheetId = googleSpreadsheetId || data?.settings?.googleSpreadsheetId;
     const postPayload = JSON.stringify({ action, tab, payload, data, auditInfo, googleSpreadsheetId: spreadsheetId, spreadsheetId });
 
-    // Step 1: Send POST request to Google Apps Script.
-    // GAS will execute doPost(e) and return a 302 redirect to script-usercontent.google.com where output is hosted.
-    let response = await fetch(webAppUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: postPayload,
-      redirect: 'follow',
-    });
+    // Step 1: Send POST request to Google Apps Script with 25s timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
+
+    let response: Response;
+    try {
+      response = await fetch(webAppUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: postPayload,
+        redirect: 'follow',
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     // Step 2: Fallback manual redirect handling if status is 301/302/307/308
     if (response.status === 301 || response.status === 302 || response.status === 307 || response.status === 308) {
