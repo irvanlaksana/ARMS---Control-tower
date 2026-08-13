@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { initializeARMSStore, ARMSStore, getStoredStore, saveStore, fetchDataFromGoogleSheets, mapGasDataToStore } from './services/armsDataService';
+import { ARMSStore } from './services/armsDataService';
+import { useFirebaseStore } from './hooks/useFirebaseStore';
 import { User, UserRole } from './types/arms';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
-import { SetupSheetsModal } from './components/modals/SetupSheetsModal';
-import { GASCodeModal } from './components/modals/GASCodeModal';
 
 // Modules
 import { DashboardModule } from './components/modules/DashboardModule';
@@ -36,9 +35,7 @@ import { AuditLogModule } from './components/modules/AuditLogModule';
 import { SettingsModule } from './components/modules/SettingsModule';
 
 export default function App() {
-  const [store, setStore] = useState<ARMSStore>(() => {
-    return getStoredStore() || initializeARMSStore();
-  });
+  const { store, updateStore: handleUpdateStore, forceSync, pushFullData, isSyncing } = useFirebaseStore();
 
   const [currentUser, setCurrentUser] = useState<User>(() => store.users[0] || {
     id: 'USR-001',
@@ -59,67 +56,10 @@ export default function App() {
     }
   }, [store.users]);
 
-  // Initial Data Pull from Google Sheets on app startup
-  useEffect(() => {
-    const webAppUrl = store.settings?.appsScriptWebAppUrl;
-    if (webAppUrl) {
-      fetchDataFromGoogleSheets(webAppUrl, store).then((updatedStore) => {
-        setStore(updatedStore);
-      }).catch((e) => console.warn('Initial GAS pull failed:', e));
-    }
-  }, []);
   const [activeTab, setActiveTab] = useState('DASHBOARD');
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [showGASModal, setShowGASModal] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  const syncTimeoutRef = React.useRef<any>(null);
-
-  // Sync state changes to local storage & connected Google Sheets
-  const handleUpdateStore = (newStore: ARMSStore) => {
-    setStore(newStore);
-    saveStore(newStore);
-
-    // Auto-sync to Google Sheets in background with debouncing to avoid race conditions
-    if (newStore.settings?.appsScriptWebAppUrl) {
-      if (syncTimeoutRef.current) {
-        clearTimeout(syncTimeoutRef.current);
-      }
-
-      syncTimeoutRef.current = setTimeout(() => {
-        fetch('/api/gas/proxy', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            webAppUrl: newStore.settings.appsScriptWebAppUrl,
-            googleSpreadsheetId: newStore.settings.googleSheetId,
-            action: 'SYNC_FULL_DATA',
-            data: newStore,
-          }),
-        }).catch(() => {
-          // Direct browser fetch fallback
-          fetch(newStore.settings.appsScriptWebAppUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-              action: 'SYNC_FULL_DATA',
-              googleSpreadsheetId: newStore.settings.googleSheetId,
-              data: newStore,
-            }),
-          }).catch((e) => console.error('Auto sync GAS error:', e));
-        });
-      }, 400);
-    } else if (newStore.settings?.googleSheetId) {
-      fetch('/api/sheets/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          spreadsheetId: newStore.settings.googleSheetId,
-          data: newStore,
-        }),
-      }).catch((e) => console.error('Auto sync Sheets error:', e));
-    }
-  };
 
   const handleRoleChange = (role: UserRole) => {
     const matchingUser = store.users.find((u) => u.role === role) || {
@@ -134,55 +74,7 @@ export default function App() {
     setCurrentUser(matchingUser);
   };
 
-  const handleSyncData = async () => {
-    if (store.settings.appsScriptWebAppUrl) {
-      try {
-        // First pull latest data from Google Sheets
-        const refreshedStore = await fetchDataFromGoogleSheets(store.settings.appsScriptWebAppUrl, store);
-        setStore(refreshedStore);
-
-        // Then push full data back to Google Sheets
-        const res = await fetch('/api/gas/proxy', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            webAppUrl: store.settings.appsScriptWebAppUrl,
-            action: 'SYNC_FULL_DATA',
-            data: refreshedStore,
-          }),
-        });
-        if (!res.ok) throw new Error('Proxy returned non-200');
-      } catch (e) {
-        console.warn('Proxy failed, attempting direct push to GAS Web App:', e);
-        try {
-          await fetch(store.settings.appsScriptWebAppUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-              action: 'SYNC_FULL_DATA',
-              data: store,
-            }),
-          });
-        } catch (err) {
-          console.error('Failed sync to GAS Web App:', err);
-        }
-      }
-    } else if (store.settings.googleSheetId) {
-      try {
-        await fetch('/api/sheets/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            spreadsheetId: store.settings.googleSheetId,
-            data: store,
-          }),
-        });
-      } catch (e) {
-        console.error('Failed sync to Google Sheets:', e);
-      }
-    }
-    handleUpdateStore({ ...store });
-  };
+  const handleSyncData = forceSync;
 
   const renderModule = () => {
     switch (activeTab) {
@@ -246,6 +138,8 @@ export default function App() {
             onUpdateStore={handleUpdateStore}
             onOpenSheetsModal={() => setShowSetupModal(true)}
             onOpenGASModal={() => setShowGASModal(true)}
+            onPushFullFirebase={pushFullData}
+            onSyncData={forceSync}
           />
         );
       default:
@@ -268,6 +162,7 @@ export default function App() {
         pendingApprovalsCount={(store.approvals || []).filter((a) => a.status === 'PENDING').length}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         settings={store.settings}
+        isSyncing={isSyncing}
       />
 
       {/* Main Layout Body */}
@@ -289,23 +184,6 @@ export default function App() {
         </main>
       </div>
 
-      {/* Setup Modals */}
-      <SetupSheetsModal
-        isOpen={showSetupModal}
-        onClose={() => setShowSetupModal(false)}
-        store={store}
-        onUpdateStore={handleUpdateStore}
-        onOpenGASModal={() => {
-          setShowSetupModal(false);
-          setShowGASModal(true);
-        }}
-      />
-
-      <GASCodeModal
-        isOpen={showGASModal}
-        onClose={() => setShowGASModal(false)}
-        googleSheetId={store.settings.googleSheetId}
-      />
     </div>
   );
 }

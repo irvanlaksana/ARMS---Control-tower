@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ARMSStore, createAuditEntry, resetStoreToInitial, fetchDataFromGoogleSheets } from '../../services/armsDataService';
+import { ARMSStore, createAuditEntry, resetStoreToInitial} from '../../services/armsDataService';
 import { User, AppSettings } from '../../types/arms';
 import {
   Settings as SettingsIcon,
@@ -26,6 +26,8 @@ interface SettingsModuleProps {
   onUpdateStore: (newStore: ARMSStore) => void;
   onOpenSheetsModal: () => void;
   onOpenGASModal: () => void;
+  onPushFullFirebase?: () => Promise<{ totalItems: number; collectionsCount: number }>;
+  onSyncData?: () => Promise<void>;
 }
 
 export const SettingsModule: React.FC<SettingsModuleProps> = ({
@@ -34,12 +36,28 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
   onUpdateStore,
   onOpenSheetsModal,
   onOpenGASModal,
+  onPushFullFirebase,
+  onSyncData,
 }) => {
   const [settings, setSettings] = useState<AppSettings>(store.settings);
   const [savedMsg, setSavedMsg] = useState(false);
   const [isPulling, setIsPulling] = useState(false);
   const [isPushing, setIsPushing] = useState(false);
   const [pushStatusMsg, setPushStatusMsg] = useState('');
+
+  const handlePushFullFirebase = async () => {
+    if (!onPushFullFirebase) return;
+    setIsPushing(true);
+    setPushStatusMsg('Sedang menginisialisasi tabel (koleksi) dan memicu Push Data Otomatis ke Firebase...');
+    try {
+      const res = await onPushFullFirebase();
+      setPushStatusMsg(`✅ Sukses! ${res.totalItems} dokumen di ${res.collectionsCount} koleksi/tabel berhasil dikirim dan dibuat otomatis di Firebase Firestore.`);
+    } catch (err: any) {
+      setPushStatusMsg(`❌ Gagal Push Data: ${err.message || String(err)}`);
+    } finally {
+      setIsPushing(false);
+    }
+  };
 
   // Synchronize internal state when store changes
   useEffect(() => {
@@ -110,23 +128,55 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
             Configure Google Drive Storage, Google Sheets Database, Apps Script Endpoint, Company Profile, and Enterprise Logo
           </p>
         </div>
+      </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onOpenGASModal}
-            className="flex items-center gap-2 bg-indigo-950 text-indigo-300 border border-indigo-800 px-3 py-2 rounded-lg text-xs font-semibold hover:bg-indigo-900 transition"
-          >
-            <FileCode className="w-4 h-4 text-indigo-400" />
-            <span>Get GAS Code</span>
-          </button>
-          <button
-            onClick={onOpenSheetsModal}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-xs font-semibold transition"
-          >
-            <Database className="w-4 h-4" />
-            <span>Setup Google Sheets</span>
-          </button>
+      {/* Firebase Database Push & Auto-Table Creation Banner */}
+      <div className="bg-gradient-to-r from-emerald-950/70 via-slate-900 to-teal-950/70 border border-emerald-800/80 rounded-xl p-5 shadow-lg space-y-3">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="p-3 bg-emerald-900/60 rounded-xl border border-emerald-700/60 text-emerald-300 shrink-0 shadow-inner">
+              <Database className="w-6 h-6 text-emerald-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-white text-base">Firebase Cloud Database Control & Push Otomatis</h3>
+                <span className="px-2.5 py-0.5 bg-emerald-900/80 text-emerald-200 border border-emerald-700 text-[10px] font-bold rounded-full animate-pulse">
+                  ONLINE LIVE
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                Database Target: <code className="text-emerald-300 bg-slate-950 px-2 py-0.5 rounded font-mono text-[11px] border border-slate-800">ai-studio-armsptmitrajasat-52aae9e1-5f32-4716-863f-a8a1a969eef9</code>
+              </p>
+              <p className="text-[11px] text-slate-400 mt-1">
+                Klik tombol di bawah untuk membuat seluruh tabel/koleksi data secara otomatis dan memicu push data penuh ke Firebase Firestore.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              disabled={isPushing}
+              onClick={handlePushFullFirebase}
+              className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white font-bold text-xs rounded-lg shadow-lg shadow-emerald-950/50 border border-emerald-400/30 transition transform active:scale-95 cursor-pointer"
+            >
+              <RefreshCw className={`w-4 h-4 ${isPushing ? 'animate-spin text-amber-300' : 'text-emerald-200'}`} />
+              <span>{isPushing ? 'Mengirim & Membuat Tabel...' : '🚀 Push Data Otomatis & Buat Tabel Firebase'}</span>
+            </button>
+          </div>
         </div>
+
+        {pushStatusMsg && (
+          <div className={`p-3 rounded-lg border text-xs font-semibold flex items-center gap-2 ${
+            pushStatusMsg.startsWith('✅')
+              ? 'bg-emerald-950/90 text-emerald-200 border-emerald-700'
+              : pushStatusMsg.startsWith('❌')
+              ? 'bg-rose-950/90 text-rose-200 border-rose-700'
+              : 'bg-indigo-950/90 text-indigo-200 border-indigo-700 animate-pulse'
+          }`}>
+            <span>{pushStatusMsg}</span>
+          </div>
+        )}
       </div>
 
       {/* Google Drive Storage Status Banner */}
@@ -436,38 +486,14 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
           </div>
         </div>
 
-        {/* Google Sheets Integration */}
+        {/* Default Settings */}
         <div className="space-y-4">
           <h3 className="font-bold text-white text-sm border-b border-slate-800 pb-2 flex items-center gap-2">
-            <Database className="w-4 h-4 text-emerald-400" />
-            <span>4. Google Sheets & Apps Script Integration (VPS / Cloud Live Sync)</span>
+            <SettingsIcon className="w-4 h-4 text-emerald-400" />
+            <span>4. Pengaturan Sistem Lainnya</span>
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">Google Spreadsheet ID</label>
-              <input
-                type="text"
-                disabled={!canEdit}
-                value={settings.googleSheetId || ''}
-                onChange={(e) => setSettings({ ...settings, googleSheetId: e.target.value })}
-                placeholder="e.g. 1a2b3c4d5e6f7g8h9i0j..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">Google Apps Script Web App URL</label>
-              <input
-                type="text"
-                disabled={!canEdit}
-                value={settings.appsScriptWebAppUrl || ''}
-                onChange={(e) => setSettings({ ...settings, appsScriptWebAppUrl: e.target.value })}
-                placeholder="https://script.google.com/macros/s/.../exec"
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono"
-              />
-            </div>
-
             <div>
               <label className="block text-xs text-slate-400 mb-1">Default Agency Fee %</label>
               <input
@@ -477,203 +503,6 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
                 onChange={(e) => setSettings({ ...settings, defaultFeePercent: Number(e.target.value) })}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono"
               />
-            </div>
-          </div>
-
-          {/* VPS & Multi-User Sync Action Panel */}
-          <div className="p-4 bg-slate-950 border border-emerald-900/60 rounded-xl space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
-                <RefreshCw className="w-4 h-4 text-emerald-400" />
-                <span>Uji & Sinkronkan Data Spreadsheet VPS Live</span>
-              </div>
-              <span className="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded font-mono">
-                {settings.appsScriptWebAppUrl ? 'URL Terkonfigurasi' : 'Belum Dikonfigurasi'}
-              </span>
-            </div>
-
-            <p className="text-[11px] text-slate-300 leading-relaxed">
-              Jika aplikasi dideploy di server VPS dan data belum muncul/tersinkronisasi dengan Spreadsheet, gunakan dua tombol kontrol di bawah ini untuk menarik data terbaru dari Google Sheets atau mengirimkan data local VPS ke Spreadsheet secara manual.
-            </p>
-
-            <div className="flex flex-wrap items-center gap-3 pt-1">
-              <button
-                type="button"
-                disabled={isPulling || isPushing}
-                onClick={async () => {
-                  if (!settings.appsScriptWebAppUrl) {
-                    alert('Silakan isi Google Apps Script Web App URL terlebih dahulu.');
-                    return;
-                  }
-                  setIsPulling(true);
-                  try {
-                    const updated = await fetchDataFromGoogleSheets(settings.appsScriptWebAppUrl, store);
-                    onUpdateStore(updated);
-                    alert('BERHASIL! Data seluruh 26 tab dari Google Spreadsheet telah berhasil ditarik dan disinkronkan ke aplikasi ini.');
-                  } catch (err: any) {
-                    alert(`GAGAL MENARIK DATA: ${err?.message || err}`);
-                  } finally {
-                    setIsPulling(false);
-                  }
-                }}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white text-xs font-semibold rounded-lg shadow transition"
-              >
-                {isPulling ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                <span>{isPulling ? 'Menarik Data...' : 'Tarik Data Terbaru dari Spreadsheet'}</span>
-              </button>
-
-              <button
-                type="button"
-                disabled={isPulling || isPushing}
-                onClick={async () => {
-                  const webAppUrl = settings.appsScriptWebAppUrl?.trim();
-                  if (!webAppUrl) {
-                    alert('Silakan isi Google Apps Script Web App URL terlebih dahulu.');
-                    return;
-                  }
-
-                  setIsPushing(true);
-                  setPushStatusMsg('Memulai pengiriman data...');
-
-                  let lastProxyError = '';
-                  const pushPayload = JSON.stringify({
-                    webAppUrl,
-                    googleSpreadsheetId: settings.googleSpreadsheetId,
-                    action: 'SYNC_FULL_DATA',
-                    data: store,
-                  });
-
-                  // 1. Primary Attempt: Serverless / Express Proxy
-                  try {
-                    setPushStatusMsg('Mengirim via Server Proxy...');
-                    const res = await fetch('/api/gas/proxy', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: pushPayload,
-                    });
-                    
-                    const json = await res.json().catch(() => null);
-                    if (res.ok && json && json.success) {
-                      setIsPushing(false);
-                      setPushStatusMsg('');
-                      alert(`BERHASIL! ${json.message || 'Data dari aplikasi telah di-push dan ditulis penuh ke seluruh tab di Google Spreadsheet.'}`);
-                      return;
-                    } else if (json && json.error) {
-                      lastProxyError = json.error;
-                      console.warn('Proxy returned error, trying direct browser fallback:', json.error);
-                    }
-                  } catch (proxyErr: any) {
-                    lastProxyError = proxyErr?.message || String(proxyErr);
-                    console.warn('Proxy request failed, trying direct browser fallback:', proxyErr);
-                  }
-
-                  // 2. Secondary Fallback: Direct Browser Push (Content-Type: text/plain to bypass CORS preflight)
-                  try {
-                    setPushStatusMsg('Proxy tidak merespon, mencoba pengiriman langsung dari Browser...');
-                    const directRes = await fetch(webAppUrl, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                      body: JSON.stringify({
-                        action: 'SYNC_FULL_DATA',
-                        googleSpreadsheetId: settings.googleSpreadsheetId,
-                        data: store,
-                      }),
-                    });
-
-                    const text = await directRes.text();
-                    let directJson: any = null;
-                    try {
-                      directJson = JSON.parse(text);
-                    } catch {
-                      if (text.includes('Google Accounts') || text.includes('Sign in') || text.includes('<html') || text.includes('<!DOCTYPE')) {
-                        setIsPushing(false);
-                        setPushStatusMsg('');
-                        alert(
-                          `GAGAL PUSH DATA:\nGoogle Apps Script menolak akses (Mengembalikan halaman login Google / HTML).\n\n` +
-                          `Penyebab: Google Apps Script Web App belum diset 'Anyone' (Siapa saja) atau Anda menggunakan URL /dev.\n\n` +
-                          `Solusi:\n1. Buka Apps Script -> Deploy -> Manage Deployments\n2. Pilih 'New version' (Versi Baru)\n3. Execute as: Me (Saya)\n4. Who has access: Anyone (Siapa Saja)\n5. Gunakan URL berakhiran /exec.`
-                        );
-                        return;
-                      }
-                    }
-
-                    if (directJson && directJson.success) {
-                      setIsPushing(false);
-                      setPushStatusMsg('');
-                      alert(`BERHASIL! ${directJson.message || 'Data dari aplikasi telah di-push dan ditulis penuh ke Google Spreadsheet.'}`);
-                      return;
-                    }
-                  } catch (directErr: any) {
-                    console.warn('Direct push failed, starting sequential tab sync:', directErr);
-                  }
-
-                  // 3. Fail-Safe Tertiary Fallback: Sequential Tab-by-Tab Sync
-                  try {
-                    const keys = Object.keys(store) as (keyof ARMSStore)[];
-                    let successCount = 0;
-                    for (let i = 0; i < keys.length; i++) {
-                      const key = keys[i];
-                      setPushStatusMsg(`Memproses tab ${i + 1}/${keys.length}: ${key}...`);
-                      
-                      try {
-                        const tabRes = await fetch('/api/gas/proxy', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            webAppUrl,
-                            googleSpreadsheetId: settings.googleSpreadsheetId,
-                            action: 'SYNC_TAB',
-                            tab: key,
-                            payload: store[key],
-                          }),
-                        });
-                        const tabJson = await tabRes.json().catch(() => null);
-                        if (tabJson && tabJson.success) {
-                          successCount++;
-                        }
-                      } catch {
-                        // ignore single tab error and continue
-                      }
-                    }
-
-                    setIsPushing(false);
-                    setPushStatusMsg('');
-
-                    if (successCount > 0) {
-                      alert(`BERHASIL! Data berhasil disinkronkan secara bertahap (${successCount}/${keys.length} tab terbarui di Google Spreadsheet).`);
-                    } else {
-                      alert(`GAGAL PUSH DATA:\nTidak dapat terhubung ke Google Apps Script Web App.\n\nDetail: ${lastProxyError || 'Periksa koneksi internet atau Web App URL Anda.'}`);
-                    }
-                  } catch (seqErr: any) {
-                    setIsPushing(false);
-                    setPushStatusMsg('');
-                    alert(`GAGAL PUSH DATA:\n${seqErr?.message || lastProxyError || 'Terjadi kesalahan sistem.'}`);
-                  }
-                }}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-700 hover:bg-indigo-600 disabled:opacity-50 text-white text-xs font-semibold rounded-lg shadow transition"
-              >
-                {isPushing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                <span>{isPushing ? pushStatusMsg || 'Mengirim Data...' : 'Kirim / Push Data Local ke Spreadsheet'}</span>
-              </button>
-            </div>
-
-            {/* Troubleshooting Checklist Box for VPS Deployment */}
-            <div className="mt-3 p-3 bg-amber-950/40 border border-amber-800/60 rounded-lg text-amber-200 text-xs space-y-1.5">
-              <div className="font-bold text-amber-300 flex items-center gap-1.5">
-                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>Panduan Solusi Mengapa Data Tidak Sinkron di VPS:</span>
-              </div>
-              <ul className="list-disc list-inside space-y-1 text-[11px] text-amber-200/90 pl-1 leading-relaxed">
-                <li>
-                  <strong>Langkah 1 (Persyaratan URL Web App Google Apps Script)</strong>: Saat melakukan <em>Deploy -&gt; New deployment</em> pada Google Apps Script, pastikan opsi <strong>Execute as: Me (Saya)</strong> dan <strong>Who has access: Anyone (Siapa saja)</strong> dipilih. Gunakan URL yang berakhiran <code>/exec</code> (bukan <code>/dev</code>).
-                </li>
-                <li>
-                  <strong>Langkah 2 (Versi Kode Apps Script Terbaru)</strong>: Jika menggunakan Apps Script lama, pastikan Anda menyalin kode Apps Script terbaru dari tombol <strong>"GAS Code"</strong> di header atas aplikasi, lalu lakukan <em>Manage deployments -&gt; Edit -&gt; New Version -&gt; Deploy</em>.
-                </li>
-                <li>
-                  <strong>Langkah 3 (Command VPS Node Server)</strong>: Apabila aplikasi dideploy di VPS Linux (Ubuntu/Debian) menggunakan PM2/Docker, pastikan menjalankan server Node dengan perintah <code>npm run build && npm start</code> (port 3000) agar endpoint proxy <code>/api/gas/proxy</code> aktif dan bebas blokir CORS.
-                </li>
-              </ul>
             </div>
           </div>
         </div>

@@ -6,28 +6,22 @@ interface HeaderProps {
   currentUser: User;
   usersList: User[];
   onSwitchUser: (user: User) => void;
-  isSheetsConnected: boolean;
-  sheetId: string;
-  onOpenGASModal: () => void;
-  onOpenSheetsModal: () => void;
   onSyncData: () => void;
   pendingApprovalsCount: number;
   onToggleSidebar?: () => void;
   settings?: AppSettings;
+  isSyncing?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   currentUser,
   usersList = [],
   onSwitchUser,
-  isSheetsConnected,
-  sheetId,
-  onOpenGASModal,
-  onOpenSheetsModal,
   onSyncData,
   pendingApprovalsCount = 0,
   onToggleSidebar,
   settings,
+  isSyncing = false,
 }) => {
   const getRoleBadge = (role: UserRole) => {
     switch (role) {
@@ -78,42 +72,31 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        {/* Google Sheets Connection Pill */}
-        <button
-          onClick={onOpenSheetsModal}
+        {/* Firebase Connection Pill */}
+        <div
           className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-md border transition ${
-            isSheetsConnected && sheetId
-              ? 'bg-emerald-950/70 text-emerald-300 border-emerald-800/80 hover:bg-emerald-900/80'
-              : 'bg-slate-800/80 text-amber-300 border-slate-700 hover:bg-slate-800'
+            true
+              ? 'bg-emerald-950/70 text-emerald-300 border-emerald-800/80'
+              : 'bg-slate-800/80 text-amber-300 border-slate-700'
           }`}
-          title="Google Sheets Single Source of Truth Connection"
+          title={isSyncing ? "Syncing..." : "Firebase Live"}
         >
-          <Database className={`w-3.5 h-3.5 ${isSheetsConnected && sheetId ? 'text-emerald-400' : 'text-amber-400'}`} />
+          <Database className={`w-3.5 h-3.5 text-emerald-400 ${isSyncing ? "animate-pulse" : ""}`} />
           <span className="font-medium">
-            {isSheetsConnected && sheetId ? 'Google Sheets Active' : 'Setup Google Sheets'}
+            {isSyncing ? "Syncing..." : "Firebase Live"}
           </span>
-          {sheetId && (
-            <span className="text-[10px] text-slate-400 max-w-[80px] truncate">({sheetId.substring(0, 8)}...)</span>
-          )}
-        </button>
+        </div>
 
         {/* Sync Button */}
         <button
           onClick={onSyncData}
           className="p-1.5 rounded-md bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300 transition"
-          title="Manual Sync Store to Google Sheets"
+          title="Manual Sync with Firebase"
         >
           <RefreshCw className="w-4 h-4" />
         </button>
 
-        {/* Apps Script Code Modal Trigger */}
-        <button
-          onClick={onOpenGASModal}
-          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md bg-indigo-950/70 text-indigo-300 border border-indigo-800/80 hover:bg-indigo-900/80 transition"
-        >
-          <FileCode className="w-3.5 h-3.5 text-indigo-400" />
-          <span>GAS Code</span>
-        </button>
+        
 
         {/* Role Quick Switcher */}
         <div className="flex items-center gap-2 pl-2 border-l border-slate-800">

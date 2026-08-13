@@ -158,6 +158,16 @@ export function saveStore(store: ARMSStore): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
 }
 
+function getRecordKey(r: any): string | null {
+  if (!r || typeof r !== 'object') return null;
+  const rawKey = r.id || r.roleCode || r.key || r.clientCode || r.caseNo || 
+                 r.partnerCode || r.serviceCode || r.contractNo || r.customerId || 
+                 r.assignmentNo || r.skNumber || r.noticeNo || r.assetCode || 
+                 r.collectionNo || r.recoveryNo || r.paymentNo || r.fundingNo || 
+                 r.expenseNo || r.settlementNo || r.accountNumber || r.docNo;
+  return rawKey ? String(rawKey) : null;
+}
+
 /**
  * Maps raw data object returned from Google Sheets / Google Apps Script (by Sheet Name)
  * to ARMSStore camelCase structure.
@@ -216,31 +226,35 @@ export function mapGasDataToStore(gasData: Record<string, any[]>, currentStore: 
         return cleanedRow;
       });
 
-      const existingRows = currentStore[storeKey] || [];
-      if (Array.isArray(existingRows) && existingRows.length > 0) {
-        const rowMap = new Map<string, any>();
-        // Add existing local rows
-        existingRows.forEach((r: any) => {
-          if (r && (r.id || r.roleCode || r.key)) {
-            const key = String(r.id || r.roleCode || r.key);
-            rowMap.set(key, r);
-          }
-        });
-        // Merge/override with fetched rows from GAS
-        cleanedFetched.forEach((r: any) => {
-          if (r && (r.id || r.roleCode || r.key)) {
-            const key = String(r.id || r.roleCode || r.key);
-            rowMap.set(key, { ...rowMap.get(key), ...r });
-          }
-        });
+      const existingRows = newStore[storeKey] || [];
+      const rowMap = new Map<string, any>();
+      const unkeyedRows: any[] = [];
 
-        if (rowMap.size > 0) {
-          newStore[storeKey] = Array.from(rowMap.values());
+      // 1. Add existing local rows
+      if (Array.isArray(existingRows)) {
+        existingRows.forEach((r: any) => {
+          const k = getRecordKey(r);
+          if (k) {
+            rowMap.set(k, r);
+          } else {
+            unkeyedRows.push(r);
+          }
+        });
+      }
+
+      // 2. Add/merge fetched rows from GAS
+      cleanedFetched.forEach((r: any) => {
+        const k = getRecordKey(r);
+        if (k) {
+          const prev = rowMap.get(k) || {};
+          rowMap.set(k, { ...prev, ...r });
         } else {
-          newStore[storeKey] = cleanedFetched;
+          unkeyedRows.push(r);
         }
-      } else {
-        newStore[storeKey] = cleanedFetched;
+      });
+
+      if (rowMap.size > 0 || unkeyedRows.length > 0) {
+        newStore[storeKey] = [...Array.from(rowMap.values()), ...unkeyedRows];
       }
     }
   });
