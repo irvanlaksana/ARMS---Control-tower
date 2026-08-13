@@ -18,7 +18,7 @@ export const ApprovalCenterModule: React.FC<ApprovalCenterModuleProps> = ({
   const [rejectReason, setRejectReason] = useState('');
   const [filterModule, setFilterModule] = useState<string>('ALL');
 
-  const canApprove = currentUser.role === 'APPROVER_EXECUTIVE' || currentUser.role === 'SUPER_ADMIN_OPS';
+  const canApprove = true; // Admin inputs approval manually after asking director
 
   const handleAction = (request: ApprovalRequest, status: 'APPROVED' | 'REJECTED') => {
     const updatedApprovals = store.approvals.map((app) => {
@@ -109,10 +109,10 @@ export const ApprovalCenterModule: React.FC<ApprovalCenterModuleProps> = ({
         <div>
           <div className="flex items-center gap-2 mb-1">
             <CheckSquare className="w-5 h-5 text-amber-400" />
-            <h2 className="text-xl font-bold text-white">Approval Center — Direktur Utama Control</h2>
+            <h2 className="text-xl font-bold text-white">Approval Center (Konfirmasi Manual)</h2>
           </div>
           <p className="text-xs text-slate-400">
-            Formal Approval Hub for Contracts, Surat Kuasa, Expenses, Dana Talangan & Settlements
+            Admin menginput status Approval atau Reject secara manual setelah mendapat instruksi dari Direktur Utama.
           </p>
         </div>
 
@@ -131,13 +131,6 @@ export const ApprovalCenterModule: React.FC<ApprovalCenterModuleProps> = ({
           </select>
         </div>
       </div>
-
-      {!canApprove && (
-        <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl text-xs text-amber-300 flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-          <span>Notice: You are in Read-Only mode. Approval actions are reserved for Direktur Utama & Control Tower.</span>
-        </div>
-      )}
 
       {/* Approvals Table */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">

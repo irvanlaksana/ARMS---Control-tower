@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Payment, LedgerEntry } from '../../types/arms';
-import { DollarSign, Plus, CheckCircle } from 'lucide-react';
+import { DollarSign, Plus, CheckCircle, FileText } from 'lucide-react';
+import { PaymentReceipt } from './PaymentReceipt';
 
 interface PaymentsModuleProps {
   store: ARMSStore;
@@ -14,7 +15,13 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
   const [caseId, setCaseId] = useState(store.cases[0]?.id || '');
   const [paymentAmount, setPaymentAmount] = useState(25000000);
   const [paymentType, setPaymentType] = useState<'FULL_PAYMENT' | 'PARTIAL_PAYMENT' | 'SETTLEMENT_NEGOTIATED'>('PARTIAL_PAYMENT');
+  const [paymentMethod, setPaymentMethod] = useState<'TRANSFER' | 'CASH'>('TRANSFER');
+  const [totalPaidByDebitur, setTotalPaidByDebitur] = useState(25000000);
+  const [successFeeAmount, setSuccessFeeAmount] = useState(0);
+  const [executionFeeAmount, setExecutionFeeAmount] = useState(0);
+  const [passThroughFee, setPassThroughFee] = useState(0);
   const [proofDriveUrl, setProofDriveUrl] = useState('');
+  const [selectedPaymentForReceipt, setSelectedPaymentForReceipt] = useState<Payment | null>(null);
 
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS';
 
@@ -23,8 +30,7 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
     const c = store.cases.find((cs) => cs.id === caseId);
 
     const receiptNo = `PAY-2026-${Math.floor(100 + Math.random() * 900)}`;
-    const feeSnapshot = c?.feePercentSnapshot || 15;
-    const agencyFeeCalculated = (paymentAmount * feeSnapshot) / 100;
+    const totalCompanyRevenue = successFeeAmount + executionFeeAmount;
 
     const newPayment: Payment = {
       id: `PAY-${Date.now()}`,
@@ -33,14 +39,34 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
       caseNo: c?.caseNo || 'CAS-001',
       debtorName: c?.debtorName || 'Debtor',
       paymentDate: new Date().toISOString().split('T')[0],
-      amount: paymentAmount,
+      amount: totalPaidByDebitur,
       paymentType: 'DEBTOR_REPAYMENT',
+      paymentMethod,
+      totalPaidByDebitur,
+      successFeeAmount,
+      executionFeeAmount,
+      passThroughFee,
       proofUrl: proofDriveUrl,
-      allocationSummary: `Principal: Rp ${(paymentAmount - agencyFeeCalculated).toLocaleString('id-ID')}, Agency Fee (${feeSnapshot}%): Rp ${agencyFeeCalculated.toLocaleString('id-ID')}`,
+      allocationSummary: `Success Fee: Rp ${successFeeAmount.toLocaleString('id-ID')}, Execution Fee: Rp ${executionFeeAmount.toLocaleString('id-ID')}, Pass-Through: Rp ${passThroughFee.toLocaleString('id-ID')}`,
       verificationStatus: 'VERIFIED',
       verifiedBy: currentUser.name,
       createdAt: new Date().toISOString(),
     };
+
+    // Update Case & Assignment status to CLOSED if full payment or settlement
+    const shouldClose = paymentType === 'FULL_PAYMENT' || paymentType === 'SETTLEMENT_NEGOTIATED';
+    
+    let updatedCases = store.cases;
+    let updatedAssignments = store.assignments;
+
+    if (shouldClose) {
+      updatedCases = store.cases.map(caseItem => 
+        caseItem.id === caseId ? { ...caseItem, status: 'CLOSED' as const } : caseItem
+      );
+      updatedAssignments = store.assignments.map(assignment => 
+        assignment.caseId === caseId ? { ...assignment, status: 'COMPLETED' as const } : assignment
+      );
+    }
 
     // Post Double-Entry Ledger
     const ledgerEntry1: LedgerEntry = {
@@ -49,7 +75,7 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
       date: new Date().toISOString().split('T')[0],
       account: 'CASH',
       type: 'DEBIT',
-      amount: paymentAmount,
+      amount: totalPaidByDebitur,
       referenceModule: 'PAYMENT',
       referenceId: newPayment.id,
       description: `Debtor Payment Receipt ${receiptNo} for ${c?.caseNo}`,
@@ -62,10 +88,10 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
       date: new Date().toISOString().split('T')[0],
       account: 'REVENUE_FEE',
       type: 'CREDIT',
-      amount: agencyFeeCalculated,
+      amount: totalCompanyRevenue,
       referenceModule: 'PAYMENT',
       referenceId: newPayment.id,
-      description: `Agency Fee Recognized ${feeSnapshot}% on Receipt ${receiptNo}`,
+      description: `Revenue recognized (Success+Execution Fee) on Receipt ${receiptNo}`,
       createdAt: new Date().toISOString(),
     };
 
@@ -75,11 +101,13 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
       'PAYMENT',
       'Payments',
       newPayment.id,
-      `Recorded Debtor Payment ${receiptNo} Rp ${paymentAmount.toLocaleString('id-ID')} with Fee Rp ${agencyFeeCalculated.toLocaleString('id-ID')}`
+      `Recorded Debtor Payment ${receiptNo} Rp ${totalPaidByDebitur.toLocaleString('id-ID')} with Revenue Rp ${totalCompanyRevenue.toLocaleString('id-ID')}`
     );
 
     onUpdateStore({
       ...store,
+      cases: updatedCases,
+      assignments: updatedAssignments,
       payments: [newPayment, ...store.payments],
       ledger: [ledgerEntry1, ledgerEntry2, ...store.ledger],
       auditLogs: [audit, ...store.auditLogs],
@@ -122,6 +150,7 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
                 <th className="py-3 px-4 font-mono">Fee %</th>
                 <th className="py-3 px-4 text-right">Agency Fee</th>
                 <th className="py-3 px-4 text-center">Status</th>
+                <th className="py-3 px-4 text-center">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
@@ -142,12 +171,28 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
                       {p.verificationStatus}
                     </span>
                   </td>
+                  <td className="py-3.5 px-4 text-center">
+                    <button
+                      onClick={() => setSelectedPaymentForReceipt(p)}
+                      className="text-slate-400 hover:text-emerald-400 transition"
+                      title="Cetak Kuitansi"
+                    >
+                      <FileText className="w-4 h-4 mx-auto" />
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
+
+      {selectedPaymentForReceipt && (
+        <PaymentReceipt 
+          payment={selectedPaymentForReceipt} 
+          onClose={() => setSelectedPaymentForReceipt(null)} 
+        />
+      )}
 
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -170,26 +215,72 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Payment Amount (Rp)</label>
+              <label className="block text-xs text-slate-400 mb-1">Total Paid by Debitur (Rp) - Uang Muka Nasabah</label>
               <input
                 type="number"
                 required
-                value={paymentAmount}
-                onChange={(e) => setPaymentAmount(Number(e.target.value))}
+                value={totalPaidByDebitur}
+                onChange={(e) => setTotalPaidByDebitur(Number(e.target.value))}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono"
               />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Payment Type</label>
+              <label className="block text-xs text-slate-400 mb-1">Payment Method</label>
+              <select
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value as any)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+              >
+                <option value="TRANSFER">Transfer</option>
+                <option value="CASH">Cash</option>
+              </select>
+            </div>
+
+            <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50 space-y-3">
+              <h4 className="text-xs font-bold text-amber-400">Manual Splitting Fee</h4>
+              
+              <div>
+                <label className="block text-[10px] text-slate-400 mb-1">Success Fee Amount (Pendapatan Sah Perusahaan)</label>
+                <input
+                  type="number"
+                  value={successFeeAmount}
+                  onChange={(e) => setSuccessFeeAmount(Number(e.target.value))}
+                  className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-emerald-300 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-slate-400 mb-1">Execution Fee Amount (Biaya Tarik / Tim DC)</label>
+                <input
+                  type="number"
+                  value={executionFeeAmount}
+                  onChange={(e) => setExecutionFeeAmount(Number(e.target.value))}
+                  className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-emerald-300 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-slate-400 mb-1">Pass-Through Fee (Titipan, misal Biaya Buka Blokir)</label>
+                <input
+                  type="number"
+                  value={passThroughFee}
+                  onChange={(e) => setPassThroughFee(Number(e.target.value))}
+                  className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-300 font-mono"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Payment Type (For Classification)</label>
               <select
                 value={paymentType}
                 onChange={(e) => setPaymentType(e.target.value as any)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
               >
                 <option value="PARTIAL_PAYMENT">Angsuran / Partial Payment</option>
-                <option value="FULL_PAYMENT">Pelunasan / Full Payment</option>
-                <option value="SETTLEMENT_NEGOTIATED">Settlement Negosiasi</option>
+                <option value="FULL_PAYMENT">Pelunasan / Full Payment (Will CLOSE Case)</option>
+                <option value="SETTLEMENT_NEGOTIATED">Settlement Negosiasi (Will CLOSE Case)</option>
               </select>
             </div>
 

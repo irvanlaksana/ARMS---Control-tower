@@ -16,9 +16,11 @@ import {
   HardDrive,
   Folder,
   CheckCircle2,
-  ExternalLink
+  ExternalLink,
+  Network
 } from 'lucide-react';
 import { DEFAULT_MJ_LOGO } from '../../assets/mjLogo';
+import { SettingsWorkflowTab } from './SettingsWorkflowTab';
 
 interface SettingsModuleProps {
   store: ARMSStore;
@@ -44,6 +46,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
   const [isPulling, setIsPulling] = useState(false);
   const [isPushing, setIsPushing] = useState(false);
   const [pushStatusMsg, setPushStatusMsg] = useState('');
+  const [activeTab, setActiveTab] = useState<'SYSTEM' | 'WORKFLOW'>('SYSTEM');
 
   const handlePushFullFirebase = async () => {
     if (!onPushFullFirebase) return;
@@ -130,6 +133,39 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex items-center gap-2 border-b border-slate-800 pb-px">
+        <button
+          type="button"
+          onClick={() => setActiveTab('SYSTEM')}
+          className={`px-4 py-2 text-sm font-bold border-b-2 transition ${
+            activeTab === 'SYSTEM'
+              ? 'border-indigo-500 text-indigo-400'
+              : 'border-transparent text-slate-400 hover:text-slate-300'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <SettingsIcon className="w-4 h-4" />
+            <span>Pengaturan Sistem</span>
+          </div>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('WORKFLOW')}
+          className={`px-4 py-2 text-sm font-bold border-b-2 transition ${
+            activeTab === 'WORKFLOW'
+              ? 'border-emerald-500 text-emerald-400'
+              : 'border-transparent text-slate-400 hover:text-slate-300'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Network className="w-4 h-4" />
+            <span>Alur Kerja (Workflow)</span>
+          </div>
+        </button>
+      </div>
+
+      <div className={activeTab === 'SYSTEM' ? 'space-y-6' : 'hidden'}>
       {/* Firebase Database Push & Auto-Table Creation Banner */}
       <div className="bg-gradient-to-r from-emerald-950/70 via-slate-900 to-teal-950/70 border border-emerald-800/80 rounded-xl p-5 shadow-lg space-y-3">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -534,6 +570,9 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
           </div>
         )}
       </form>
+      </div>
+      
+      {activeTab === 'WORKFLOW' && <SettingsWorkflowTab />}
     </div>
   );
 };

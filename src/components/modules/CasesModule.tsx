@@ -27,8 +27,13 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
   const [overdueDays, setOverdueDays] = useState(120);
   const [assetSummary, setAssetSummary] = useState('Honda HR-V Turbo 2022 (B 1234 XYZ)');
   const [personnelId, setPartnerId] = useState(store.personnel?.[0]?.id || '');
+  const [gDriveFolderUrl, setGDriveFolderUrl] = useState('');
 
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS';
+
+  const selectedClient = store.clients.find((c) => c.id === clientId);
+  const selectedCustomer = store.customers.find((cu) => cu.id === customerId);
+  const computedFolderName = `${selectedCustomer?.fullName || 'Debitur'} - ${selectedClient?.companyName || 'Multifinance'} - ${assetSummary}`;
 
   const handleCreateCase = (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,6 +64,8 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
       overdueDays,
       dpdBucket: overdueDays > 180 ? '180+' : overdueDays > 90 ? '90-180' : '60-90',
       assetSummary,
+      gDriveFolderName: computedFolderName,
+      gDriveFolderUrl,
       feeTypeSnapshot,
       feePercentSnapshot,
       feeFixedSnapshot,
@@ -166,6 +173,7 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
                 <th className="py-3 px-4 text-right">OS Principal Debt</th>
                 <th className="py-3 px-4">Fee Snapshot</th>
                 <th className="py-3 px-4">Assigned Partner</th>
+                <th className="py-3 px-4 text-center">Berkas (GDrive)</th>
                 <th className="py-3 px-4 text-center">Status</th>
               </tr>
             </thead>
@@ -202,6 +210,20 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
                     </span>
                   </td>
                   <td className="py-3.5 px-4 text-slate-400">{c.currentPersonnelName || 'Unassigned'}</td>
+                  <td className="py-3.5 px-4 text-center">
+                    {c.gDriveFolderUrl ? (
+                      <a
+                        href={c.gDriveFolderUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-400 hover:text-indigo-300 inline-flex items-center gap-1 text-[11px] bg-indigo-950/40 px-2 py-1 rounded border border-indigo-900/50"
+                      >
+                        📁 View
+                      </a>
+                    ) : (
+                      <span className="text-[10px] text-slate-500">-</span>
+                    )}
+                  </td>
                   <td className="py-3.5 px-4 text-center">
                     <span className={`text-[10px] px-2.5 py-1 rounded-full border font-semibold ${
                       isCompleted 
@@ -326,7 +348,23 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
               </select>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700 mt-4 col-span-2">
+              <h4 className="text-xs font-bold text-amber-400 mb-2">Google Drive Folder Integration</h4>
+              <p className="text-[10px] text-slate-300 mb-2">Buat folder di Google Drive dengan nama berikut untuk menyimpan berkas debitur ini:</p>
+              <div className="bg-slate-900 border border-slate-700 p-2 rounded text-[11px] font-mono text-emerald-300 mb-3 select-all">
+                {computedFolderName}
+              </div>
+              <label className="block text-[10px] text-slate-400 mb-1">Paste Link Folder GDrive di sini:</label>
+              <input
+                type="text"
+                value={gDriveFolderUrl}
+                onChange={(e) => setGDriveFolderUrl(e.target.value)}
+                placeholder="https://drive.google.com/drive/folders/..."
+                className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-white"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 col-span-2">
               <button
                 type="button"
                 onClick={() => setShowAddModal(false)}

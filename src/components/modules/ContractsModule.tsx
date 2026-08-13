@@ -15,6 +15,11 @@ export const ContractsModule: React.FC<ContractsModuleProps> = ({ store, current
   const [title, setTitle] = useState('');
   const [feeStructureSummary, setFeeStructureSummary] = useState('');
   const [driveDocumentUrl, setDriveDocumentUrl] = useState('');
+  const [draftContent, setDraftContent] = useState('');
+
+  React.useEffect(() => {
+    setDraftContent(`MEMORANDUM OF UNDERSTANDING (MoU) JASA PENAGIHAN\n\nPada hari ini, disepakati perjanjian kerjasama penagihan antara:\n1. KLIEN (Multi Finance)\n2. MJ AGENCY RECOVERY\n\nBahwa KLIEN menyerahkan kuasa penagihan portofolio macet (DPD 90+) kepada MJ AGENCY dengan struktur biaya:\n${feeStructureSummary || '[Isi struktur biaya]'}\n\nDemikian MoU ini dibuat untuk dilaksanakan dengan penuh tanggung jawab.\n\nTtd,\n\n( KLIEN )          ( MJ AGENCY )`);
+  }, [feeStructureSummary]);
 
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS';
 
@@ -181,7 +186,7 @@ export const ContractsModule: React.FC<ContractsModuleProps> = ({ store, current
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Google Drive Document Link</label>
+              <label className="block text-xs text-slate-400 mb-1">Google Drive Document Link (Upload draft to GDrive and paste link here)</label>
               <input
                 type="text"
                 value={driveDocumentUrl}
@@ -189,6 +194,17 @@ export const ContractsModule: React.FC<ContractsModuleProps> = ({ store, current
                 placeholder="https://drive.google.com/file/d/..."
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
               />
+            </div>
+            
+            <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700 mt-4">
+               <h4 className="text-xs font-bold text-amber-400 mb-2">Draft MoU Template (Copy & Paste to GDocs)</h4>
+               <textarea
+                  rows={6}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-[10px] text-slate-300 font-mono"
+                  value={draftContent}
+                  onChange={(e) => setDraftContent(e.target.value)}
+               />
+               <p className="text-[10px] text-slate-400 mt-1 italic">*Copy teks ini, buat di Google Docs, lalu paste link-nya di atas.</p>
             </div>
 
             <div className="flex justify-end gap-2 pt-2">

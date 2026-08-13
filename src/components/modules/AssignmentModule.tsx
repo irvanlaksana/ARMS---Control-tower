@@ -47,6 +47,7 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
       slaDays,
       instructions,
       status: 'IN_PROGRESS',
+      gDriveFolderUrl: c?.gDriveFolderUrl,
       createdAt: new Date().toISOString(),
     };
 
@@ -103,6 +104,7 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
                 <th className="py-3 px-4">Assigned Date</th>
                 <th className="py-3 px-4">SLA Target</th>
                 <th className="py-3 px-4">Instructions</th>
+                <th className="py-3 px-4 text-center">Berkas (GDrive)</th>
                 <th className="py-3 px-4 text-center">Status</th>
               </tr>
             </thead>
@@ -130,6 +132,20 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
                       {a.targetDate} ({a.slaDays} hari SLA)
                     </td>
                     <td className="py-3.5 px-4 text-slate-300 max-w-[200px] truncate">{a.instructions}</td>
+                    <td className="py-3.5 px-4 text-center">
+                      {a.gDriveFolderUrl ? (
+                        <a
+                          href={a.gDriveFolderUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-400 hover:text-indigo-300 inline-flex items-center gap-1 text-[11px] bg-indigo-950/40 px-2 py-1 rounded border border-indigo-900/50"
+                        >
+                          📁 View
+                        </a>
+                      ) : (
+                        <span className="text-[10px] text-slate-500">-</span>
+                      )}
+                    </td>
                     <td className="py-3.5 px-4 text-center">
                       <span className="bg-indigo-950 text-indigo-300 text-[10px] px-2.5 py-1 rounded-full border border-indigo-800 font-semibold">
                         {a.status}

@@ -139,6 +139,7 @@ export interface Customer {
   emergencyContactName: string;
   emergencyContactPhone: string;
   riskNotes: string;
+  gDriveFolderUrl?: string;
   createdAt: string;
 }
 
@@ -158,6 +159,8 @@ export interface Case {
   overdueDays: number;
   dpdBucket: '30-60' | '60-90' | '90-180' | '180+' | 'WO';
   assetSummary: string;
+  gDriveFolderName?: string;
+  gDriveFolderUrl?: string;
   
   // Fee snapshot
   feeTypeSnapshot: FeeType;
@@ -197,6 +200,7 @@ export interface Assignment {
   instructions: string;
   status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'REASSIGNED';
   fieldReportSummary?: string;
+  gDriveFolderUrl?: string;
   createdAt: string;
 }
 

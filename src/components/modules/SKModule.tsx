@@ -17,6 +17,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
   const [caseId, setCaseId] = useState(store.cases[0]?.id || '');
   const [personnelId, setPartnerId] = useState(store.personnel?.[0]?.id || '');
   const [driveDocumentUrl, setDriveDocumentUrl] = useState('');
+  const [draftContent, setDraftContent] = useState('');
 
   const printRef = useRef<HTMLDivElement>(null);
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS';
@@ -24,6 +25,10 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
   const selectedCase = store.cases.find((cs) => cs.id === caseId);
   const selectedPersonnel = (store.personnel || []).find((pr) => pr.id === personnelId);
   const settings = store.settings;
+
+  React.useEffect(() => {
+    setDraftContent(`SURAT KUASA PENAGIHAN\n\nYang bertanda tangan di bawah ini mewakili MJ AGENCY RECOVERY memberikan kuasa penuh kepada:\nNama (Kolektor): ${selectedPersonnel?.fullName || '......................'}\nNIK: ${selectedPersonnel?.nikKtp || '......................'}\n\nUntuk melakukan penagihan/penarikan unit kepada:\nNama Debitur: ${selectedCase?.debtorName || '......................'}\nNo Kontrak: ${selectedCase?.multifinanceContractNo || '......................'}\nObjek: ${selectedCase?.assetSummary || '......................'}\n\nSurat Kuasa ini berlaku selama 90 hari.\n\nTtd,\n\n( MJ AGENCY )          ( Penerima Kuasa )`);
+  }, [selectedCase, selectedPersonnel]);
 
   const handlePrint = () => {
     if (printRef.current) {
@@ -250,7 +255,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                 </div>
 
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Upload Draft PDF Link (Opsional)</label>
+                  <label className="block text-xs text-slate-400 mb-1">Google Drive Document Link (Upload draft to GDrive and paste link here)</label>
                   <input
                     type="text"
                     value={driveDocumentUrl}
@@ -258,6 +263,17 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                     placeholder="https://drive.google.com/file/d/..."
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
                   />
+                </div>
+                
+                <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700 mt-4 col-span-2">
+                  <h4 className="text-xs font-bold text-amber-400 mb-2">Draft Surat Kuasa (Copy & Paste to GDocs)</h4>
+                  <textarea
+                    rows={8}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-[10px] text-slate-300 font-mono"
+                    value={draftContent}
+                    onChange={(e) => setDraftContent(e.target.value)}
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1 italic">*Copy teks ini, buat di Google Docs, lalu paste link-nya di atas.</p>
                 </div>
 
                 <div className="pt-4 space-y-2">

@@ -82,7 +82,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       title: 'CRM, CLIENTS & PERSONNEL',
       items: [
-        { id: 'LEADS', label: 'Leads / CRM', icon: UserPlus },
         { id: 'CLIENTS', label: 'Clients / Multifinance', icon: Building2 },
         { id: 'PERSONNEL', label: 'Karyawan & Mitra DC', icon: Users },
         { id: 'CUSTOMERS', label: 'Customers / Debtors', icon: Users },

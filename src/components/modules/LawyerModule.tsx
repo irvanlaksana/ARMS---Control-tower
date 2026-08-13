@@ -182,6 +182,24 @@ ${firm}
     }
   };
 
+  const handleUpdateNoticeContent = (noticeId: string, newContent: string) => {
+    const updatedNotices = (store.lawyerNotices || []).map((n) => {
+      if (n.id === noticeId) {
+        return { ...n, letterContentDraft: newContent };
+      }
+      return n;
+    });
+
+    onUpdateStore({
+      ...store,
+      lawyerNotices: updatedNotices,
+    });
+
+    if (viewNotice && viewNotice.id === noticeId) {
+      setViewNotice({ ...viewNotice, letterContentDraft: newContent });
+    }
+  };
+
   const handleCopyText = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -547,9 +565,11 @@ ${firm}
             </div>
 
             {/* Letter Content Preview Box */}
-            <div className="bg-slate-950 border border-slate-800 rounded-lg p-5 font-mono text-xs text-slate-200 whitespace-pre-wrap leading-relaxed max-h-96 overflow-y-auto border-l-4 border-l-indigo-500">
-              {viewNotice.letterContentDraft}
-            </div>
+            <textarea
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg p-5 font-mono text-xs text-slate-200 whitespace-pre-wrap leading-relaxed min-h-[24rem] border-l-4 border-l-indigo-500 focus:outline-none focus:border-indigo-500"
+              value={viewNotice.letterContentDraft}
+              onChange={(e) => handleUpdateNoticeContent(viewNotice.id, e.target.value)}
+            />
 
             <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
               <div className="text-xs text-slate-400">
