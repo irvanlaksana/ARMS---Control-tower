@@ -345,6 +345,11 @@ export interface Payment {
   amount: number;
   paymentDate: string;
   paymentType: 'DEBTOR_REPAYMENT' | 'CLIENT_REMITTANCE' | 'TALANGAN_REPAYMENT' | 'ASSET_LIQUIDATION_PAYMENT';
+  paymentMethod?: 'TRANSFER' | 'CASH';
+  totalPaidByDebitur?: number;
+  successFeeAmount?: number;
+  executionFeeAmount?: number;
+  passThroughFee?: number;
   proofUrl?: string;
   allocationSummary: string; // e.g. Principal: 80%, Agency Fee: 20%
   verificationStatus: 'PENDING' | 'VERIFIED' | 'REJECTED';
