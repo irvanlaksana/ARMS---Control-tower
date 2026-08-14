@@ -1,6 +1,7 @@
 import React from 'react';
 import { Payment } from '../../types/arms';
 import { Printer, X, CheckCircle } from 'lucide-react';
+import { OfficialLetterhead } from '../common/OfficialLetterhead';
 
 interface PaymentReceiptProps {
   payment: Payment;
@@ -23,7 +24,7 @@ export const PaymentReceipt: React.FC<PaymentReceiptProps> = ({ payment, onClose
         <div className="flex items-center justify-between px-6 py-4 bg-slate-100 border-b border-slate-200 print:hidden">
           <div className="flex items-center gap-2">
             <CheckCircle className="w-5 h-5 text-emerald-600" />
-            <span className="font-bold text-sm text-slate-800">Kuitansi Pembayaran / Tanda Terima</span>
+            <span className="font-bold text-sm text-slate-800">Kuitansi Pembayaran Resmi</span>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -31,7 +32,7 @@ export const PaymentReceipt: React.FC<PaymentReceiptProps> = ({ payment, onClose
               className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow-sm"
             >
               <Printer className="w-4 h-4" />
-              <span>Cetak / Print PDF</span>
+              <span>Cetak F4 (PDF)</span>
             </button>
             <button
               onClick={onClose}
@@ -43,21 +44,18 @@ export const PaymentReceipt: React.FC<PaymentReceiptProps> = ({ payment, onClose
         </div>
 
         {/* Printable Receipt Body */}
-        <div className="p-8 space-y-6 font-sans">
-          {/* Header */}
-          <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4">
+        <div className="p-8 space-y-5 font-serif" style={{ fontFamily: '"Times New Roman", Times, Georgia, serif' }}>
+          {/* Kop Surat Resmi */}
+          <OfficialLetterhead className="mb-4" />
+
+          <div className="flex justify-between items-center border-b border-slate-300 pb-2">
             <div>
-              <h1 className="text-xl font-extrabold uppercase tracking-wider text-slate-900">
-                MJ AGENCY RECOVERY
-              </h1>
-              <p className="text-xs text-slate-600">Asset Recovery & Debt Collection Management</p>
-              <p className="text-[11px] text-slate-500">Gedung Sudirman Lantai 12, Jakarta Selatan</p>
+              <span className="inline-block bg-emerald-100 text-emerald-800 font-bold px-2.5 py-0.5 rounded text-xs uppercase tracking-wide">
+                KUITANSI RESMI PEMBAYARAN
+              </span>
             </div>
-            <div className="text-right">
-              <div className="inline-block bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded text-xs border border-emerald-300 uppercase tracking-wide">
-                KUITANSI RESMI
-              </div>
-              <div className="text-xs font-mono font-bold text-slate-800 mt-2">
+            <div className="text-right text-xs">
+              <div className="font-mono font-bold text-slate-800">
                 No: {payment.paymentNo}
               </div>
               <div className="text-[11px] text-slate-500">
@@ -70,39 +68,39 @@ export const PaymentReceipt: React.FC<PaymentReceiptProps> = ({ payment, onClose
           <table className="w-full text-xs text-slate-800 border-collapse">
             <tbody>
               <tr className="border-b border-slate-200">
-                <td className="py-2.5 font-semibold text-slate-600 w-44">Telah Terima Dari</td>
-                <td className="py-2.5 font-bold text-slate-900">: {payment.debtorName}</td>
+                <td className="py-2 font-semibold text-slate-600 w-44">Telah Terima Dari</td>
+                <td className="py-2 font-bold text-slate-900">: {payment.debtorName}</td>
               </tr>
               <tr className="border-b border-slate-200">
-                <td className="py-2.5 font-semibold text-slate-600">Nomor Perkara / Case</td>
-                <td className="py-2.5 font-mono font-medium">: {payment.caseNo}</td>
+                <td className="py-2 font-semibold text-slate-600">Nomor Perkara / Case No</td>
+                <td className="py-2 font-mono font-medium">: {payment.caseNo}</td>
               </tr>
               <tr className="border-b border-slate-200">
-                <td className="py-2.5 font-semibold text-slate-600">Jumlah Pembayaran</td>
-                <td className="py-2.5 font-extrabold text-emerald-700 text-sm">: {formatRupiah(payment.amount)}</td>
+                <td className="py-2 font-semibold text-slate-600">Jumlah Pembayaran</td>
+                <td className="py-2 font-extrabold text-emerald-700 text-sm">: {formatRupiah(payment.amount)}</td>
               </tr>
               <tr className="border-b border-slate-200">
-                <td className="py-2.5 font-semibold text-slate-600">Metode Pembayaran</td>
-                <td className="py-2.5">: {payment.paymentMethod || 'TRANSFER'}</td>
+                <td className="py-2 font-semibold text-slate-600">Metode Pembayaran</td>
+                <td className="py-2">: {payment.paymentMethod || 'TRANSFER'}</td>
               </tr>
               <tr className="border-b border-slate-200">
-                <td className="py-2.5 font-semibold text-slate-600">Keterangan / Alokasi</td>
-                <td className="py-2.5">: {payment.allocationSummary || payment.paymentType}</td>
+                <td className="py-2 font-semibold text-slate-600">Keterangan / Alokasi</td>
+                <td className="py-2">: {payment.allocationSummary || payment.paymentType}</td>
               </tr>
               {payment.verifiedBy && (
                 <tr className="border-b border-slate-200">
-                  <td className="py-2.5 font-semibold text-slate-600">Diverifikasi Oleh</td>
-                  <td className="py-2.5">: {payment.verifiedBy} ({payment.verificationStatus})</td>
+                  <td className="py-2 font-semibold text-slate-600">Diverifikasi Oleh</td>
+                  <td className="py-2">: {payment.verifiedBy} ({payment.verificationStatus})</td>
                 </tr>
               )}
             </tbody>
           </table>
 
           {/* Amount Box */}
-          <div className="bg-slate-50 border-2 border-dashed border-slate-300 rounded-lg p-4 flex justify-between items-center">
+          <div className="bg-slate-50 border-2 border-dashed border-slate-300 rounded-lg p-3.5 flex justify-between items-center">
             <div>
-              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">TOTAL NOMINAL</div>
-              <div className="text-xl font-mono font-black text-slate-900">{formatRupiah(payment.amount)}</div>
+              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">TOTAL NOMINAL DITERIMA</div>
+              <div className="text-lg font-mono font-black text-slate-900">{formatRupiah(payment.amount)}</div>
             </div>
             <div className="text-right">
               <span className="text-[11px] font-semibold bg-emerald-600 text-white px-2.5 py-1 rounded">
@@ -112,29 +110,30 @@ export const PaymentReceipt: React.FC<PaymentReceiptProps> = ({ payment, onClose
           </div>
 
           {/* Signatures */}
-          <div className="pt-8 flex justify-between text-center text-xs">
-            <div className="space-y-16">
+          <div className="pt-6 flex justify-between text-center text-xs">
+            <div className="space-y-12">
               <p className="font-semibold text-slate-600">Penyetor / Debitur</p>
               <div>
                 <p className="font-bold underline text-slate-900">{payment.debtorName}</p>
               </div>
             </div>
 
-            <div className="space-y-16">
-              <p className="font-semibold text-slate-600">Penerima (Kasir / Petugas)</p>
+            <div className="space-y-12">
+              <p className="font-semibold text-slate-600">Penerima Kasir / Tim Keuangan</p>
               <div>
-                <p className="font-bold underline text-slate-900">{payment.verifiedBy || 'MJ Agency Finance'}</p>
-                <p className="text-[10px] text-slate-500">Finance & Recovery Dept</p>
+                <p className="font-bold underline text-slate-900">{payment.verifiedBy || 'PT. MITRAJASA SATRIA INDONESIA'}</p>
+                <p className="text-[10px] text-slate-500">Divisi Keuangan & Recovery</p>
               </div>
             </div>
           </div>
 
           {/* Footer Note */}
           <div className="pt-4 border-t border-slate-200 text-[10px] text-slate-400 text-center font-mono">
-            Dokumen ini merupakan bukti pembayaran yang sah dan dicatat dalam sistem ARMS Control Tower.
+            PT. MITRAJASA SATRIA INDONESIA • Bukti Pembayaran Resmi ARMS • Ukuran F4 (215mm x 330mm)
           </div>
         </div>
       </div>
     </div>
   );
 };
+

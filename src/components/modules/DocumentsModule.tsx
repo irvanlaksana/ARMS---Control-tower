@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { ARMSStore } from '../../services/armsDataService';
 import { Contract, SK, Case } from '../../types/arms';
-import { Folder, ExternalLink, HardDrive, Eye, X, FileText } from 'lucide-react';
+import { Folder, ExternalLink, HardDrive, Eye, X, FileText, Printer } from 'lucide-react';
+import { OfficialLetterhead } from '../common/OfficialLetterhead';
+import { angkaKeTerbilang } from '../../utils/terbilang';
 
 interface DocumentsModuleProps {
   store: ARMSStore;
@@ -101,130 +103,208 @@ export const DocumentsModule: React.FC<DocumentsModuleProps> = ({ store }) => {
         </div>
       </div>
 
-      {/* Document Preview Modal */}
+      {/* Document Preview Modal - F4 Paper Format */}
       {previewType && previewData && (
-        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-sm flex justify-center py-10 px-4 overflow-y-auto">
-          <div className="bg-white w-full max-w-2xl min-h-[800px] shadow-2xl relative flex flex-col text-slate-900">
+        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-sm flex justify-center py-6 px-4 overflow-y-auto">
+          <div className="f4-page-preview rounded-xl relative flex flex-col text-slate-900 my-auto">
             {/* Modal Actions */}
-            <div className="absolute top-4 right-4 flex gap-2 print:hidden">
+            <div className="absolute top-4 right-4 flex gap-2 print:hidden z-10">
               <button 
                 onClick={() => window.print()} 
-                className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded text-xs font-semibold shadow-sm border border-slate-300 transition"
+                className="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-md flex items-center gap-1.5 transition"
               >
-                Print PDF
+                <Printer className="w-3.5 h-3.5" />
+                <span>Cetak F4 (PDF)</span>
               </button>
               <button 
                 onClick={closePreview}
-                className="bg-rose-100 hover:bg-rose-200 text-rose-700 p-1.5 rounded shadow-sm border border-rose-200 transition"
+                className="bg-slate-100 hover:bg-slate-200 text-slate-700 p-1.5 rounded-lg shadow-sm border border-slate-300 transition"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* A4 Document Content */}
-            <div className="p-12 font-serif flex-1 flex flex-col">
+            {/* F4 Document Content */}
+            <div className="p-8 sm:p-12 font-serif flex-1 flex flex-col justify-between" style={{ fontFamily: '"Times New Roman", Times, Georgia, serif' }}>
               
-              {/* Common Header */}
-              <div className="text-center border-b-2 border-slate-900 pb-4 mb-8">
-                <h1 className="text-2xl font-black uppercase tracking-widest text-slate-900">MJ AGENCY RECOVERY</h1>
-                <p className="text-xs text-slate-600 mt-1">Gedung Perkantoran Sudirman, Lt. 12, Jakarta Selatan</p>
-                <p className="text-xs text-slate-600">Telp: (021) 555-0199 | Email: legal@mjagency.co.id</p>
+              <div>
+                {/* Official Letterhead */}
+                <OfficialLetterhead className="mb-6" />
+
+                {/* MOU Template */}
+                {previewType === 'MOU' && (
+                  <div className="space-y-5 text-[12px] leading-relaxed text-justify mt-4">
+                    <div className="text-center space-y-1 mb-6">
+                      <h2 className="font-bold text-base underline decoration-2 uppercase tracking-wide">
+                        MEMORANDUM OF UNDERSTANDING (MoU)
+                      </h2>
+                      <p className="font-mono text-xs">Nomor: {previewData.contractNo}</p>
+                    </div>
+
+                    <p>Pada hari ini, tanggal <strong>{new Date(previewData.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>, telah disepakati perjanjian kerjasama layanan penagihan dan pemulihan aset (Asset Recovery) antara:</p>
+                    
+                    <div className="pl-4 space-y-2">
+                      <p><strong>1. {previewData.clientName}</strong><br/><span className="text-slate-600">Sebagai Lembaga Pembiayaan / Multifinance Pemberi Kuasa, selanjutnya disebut sebagai <strong>KLIEN</strong>.</span></p>
+                      <p><strong>2. PT. MITRAJASA SATRIA INDONESIA</strong><br/><span className="text-slate-600">Badan Hukum Pengelola Jasa Penagihan & Recovery, Nomor AHU-.056731.AH.01.01., selanjutnya disebut sebagai <strong>PIHAK KEDUA</strong>.</span></p>
+                    </div>
+
+                    <p>Bahwa <strong>KLIEN</strong> menyerahkan penanganan portofolio piutang bermasalah (NPL) kepada <strong>PIHAK KEDUA</strong> dengan skema penugasan dan struktur imbal jasa (fee structure) sebagai berikut:</p>
+                    
+                    <div className="bg-slate-50 p-4 border border-slate-300 rounded font-mono text-[11px] text-slate-800">
+                      {previewData.feeStructureSummary || '[Struktur biaya belum diatur]'}
+                    </div>
+
+                    <p>Demikian Memorandum of Understanding (MoU) ini dibuat rangkap 2 (dua) dan ditandatangani oleh kedua belah pihak di atas meterai yang cukup untuk dilaksanakan dengan penuh itikad baik dan tanggung jawab.</p>
+
+                    <div className="mt-14 flex justify-between px-6">
+                      <div className="text-center">
+                        <p className="mb-14 font-bold">PIHAK PERTAMA (KLIEN)</p>
+                        <p className="font-bold underline">{previewData.clientName}</p>
+                        <p className="text-[11px] text-slate-600">Perwakilan Manajemen</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="mb-14 font-bold">PIHAK KEDUA</p>
+                        <p className="font-bold underline">PT. MITRAJASA SATRIA INDONESIA</p>
+                        <p className="text-[11px] text-slate-600">Direktur Utama</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* SK Template */}
+                {previewType === 'SK' && (() => {
+                  const targetCase = store.cases.find((cs: Case) => cs.id === previewData.caseId);
+                  const targetPersonnel = (store.personnel || []).find((pr) => pr.id === previewData.personnelId);
+                  const targetCustomer = store.customers.find((c) => c.id === targetCase?.customerId);
+                  const debtorAddr = targetCustomer?.addressCurrent || targetCustomer?.addressKtp || 'Alamat Debitur Sesuai Kontrak';
+                  const amount = targetCase?.principalDebtOS || 75000000;
+                  const compName = store.settings.companyName || 'PT. MITRAJASA SATRIA INDONESIA';
+                  const compAddr = store.settings.companyAddress || 'JL. Menteri Supeno No. 07, Sokaraja Tengah, Banyumas, Jawa Tengah 53181';
+
+                  return (
+                    <div className="space-y-4 text-[12px] leading-relaxed text-justify mt-2" style={{ fontFamily: '"Times New Roman", Times, Georgia, serif' }}>
+                      <div className="text-center space-y-1 mb-4">
+                        <h2 className="font-bold text-base underline decoration-2 uppercase tracking-wide text-slate-950">
+                          SURAT KUASA KHUSUS
+                        </h2>
+                        <p className="font-mono text-xs text-slate-700">No. Surat: {previewData.skNumber}</p>
+                      </div>
+
+                      <p className="font-semibold text-slate-900">Yang bertanda tangan di bawah ini:</p>
+                      
+                      <table className="w-full my-2 ml-3 text-slate-900">
+                        <tbody>
+                          <tr>
+                            <td className="w-44 py-0.5 align-top font-medium">Nama Perusahaan</td>
+                            <td className="w-4 py-0.5 align-top">:</td>
+                            <td className="py-0.5 font-bold">{compName}</td>
+                          </tr>
+                          <tr>
+                            <td className="w-44 py-0.5 align-top font-medium">Alamat Perusahaan</td>
+                            <td className="w-4 py-0.5 align-top">:</td>
+                            <td className="py-0.5">{compAddr}</td>
+                          </tr>
+                          <tr>
+                            <td className="w-44 py-0.5 align-top font-medium">Diwakili Oleh</td>
+                            <td className="w-4 py-0.5 align-top">:</td>
+                            <td className="py-0.5 font-bold">Irvan Indralaksana</td>
+                          </tr>
+                          <tr>
+                            <td className="w-44 py-0.5 align-top font-medium">Jabatan</td>
+                            <td className="w-4 py-0.5 align-top">:</td>
+                            <td className="py-0.5">Direktur Utama</td>
+                          </tr>
+                        </tbody>
+                      </table>
+
+                      <p>Dalam hal ini bertindak untuk dan atas nama <strong>{compName}</strong>, yang selanjutnya disebut sebagai <strong>PEMBERI KUASA</strong>.</p>
+                      <p className="font-semibold text-slate-900 mt-2">Dengan ini memberikan kuasa penuh kepada karyawan perusahaan:</p>
+
+                      <table className="w-full my-2 ml-3 text-slate-900">
+                        <tbody>
+                          <tr>
+                            <td className="w-44 py-0.5 align-top font-medium">Nama Karyawan</td>
+                            <td className="w-4 py-0.5 align-top">:</td>
+                            <td className="py-0.5 font-bold">{previewData.personnelName}</td>
+                          </tr>
+                          <tr>
+                            <td className="w-44 py-0.5 align-top font-medium">NIK / ID Karyawan</td>
+                            <td className="w-4 py-0.5 align-top">:</td>
+                            <td className="py-0.5 font-mono">{previewData.personnelId}</td>
+                          </tr>
+                          <tr>
+                            <td className="w-44 py-0.5 align-top font-medium">Jabatan</td>
+                            <td className="w-4 py-0.5 align-top">:</td>
+                            <td className="py-0.5">{targetPersonnel?.position || 'Finance & Collection Staff'}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+
+                      <p>Yang selanjutnya disebut sebagai <strong>PENERIMA KUASA</strong>.</p>
+
+                      <div className="text-center font-bold my-2 tracking-widest text-xs underline">
+                        KHUSUS
+                      </div>
+
+                      <p>Untuk dan atas nama Pemberi Kuasa, melakukan tindakan penagihan, penerimaan pembayaran, serta penyelesaian transaksi piutang usaha perusahaan kepada:</p>
+
+                      <table className="w-full my-2 ml-3 bg-slate-50 p-2.5 border border-slate-300 rounded text-slate-900 text-[11px]">
+                        <tbody>
+                          <tr>
+                            <td className="w-44 py-0.5 align-top font-bold">Nama Debitur</td>
+                            <td className="w-4 py-0.5 align-top">:</td>
+                            <td className="py-0.5 font-bold">{previewData.debtorName}</td>
+                          </tr>
+                          <tr>
+                            <td className="w-44 py-0.5 align-top font-bold">Alamat Debitur</td>
+                            <td className="w-4 py-0.5 align-top">:</td>
+                            <td className="py-0.5">{debtorAddr}</td>
+                          </tr>
+                          <tr>
+                            <td className="w-44 py-0.5 align-top font-bold">Jumlah Piutang</td>
+                            <td className="w-4 py-0.5 align-top">:</td>
+                            <td className="py-0.5 font-bold">
+                              Rp {amount.toLocaleString('id-ID')} ({angkaKeTerbilang(amount)})
+                            </td>
+                          </tr>
+                          <tr>
+                            <td className="w-44 py-0.5 align-top font-bold">Dasar Penagihan</td>
+                            <td className="w-4 py-0.5 align-top">:</td>
+                            <td className="py-0.5">Perjanjian Kontrak No. {targetCase?.multifinanceContractNo || '-'} / Objek: {targetCase?.assetSummary || '-'}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+
+                      <p className="text-justify">
+                        Demikian Surat Kuasa Khusus ini dibuat dengan sebenarnya dan untuk dipergunakan sebagaimana mestinya.
+                      </p>
+
+                      <div className="mt-10 flex justify-between px-4">
+                        <div className="text-center">
+                          <p className="mb-12 font-bold">PEMBERI KUASA</p>
+                          <p className="font-bold underline">{compName}</p>
+                          <p className="text-[11px] text-slate-600">Direktur Utama</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="mb-12 font-bold">PENERIMA KUASA</p>
+                          <p className="font-bold underline">{previewData.personnelName}</p>
+                          <p className="text-[11px] text-slate-600">{targetPersonnel?.position || 'Collection Staff'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
-              {/* MOU Template */}
-              {previewType === 'MOU' && (
-                <div className="space-y-6 text-sm leading-relaxed text-justify">
-                  <h2 className="text-center font-bold text-lg underline decoration-2 underline-offset-4">MEMORANDUM OF UNDERSTANDING</h2>
-                  <p className="text-center font-mono text-xs mb-8">No: {previewData.contractNo}</p>
-
-                  <p>Pada hari ini, tanggal <strong>{new Date(previewData.startDate).toLocaleDateString('id-ID')}</strong>, telah disepakati perjanjian kerjasama penagihan antara:</p>
-                  
-                  <div className="pl-6 space-y-4">
-                    <p><strong>1. {previewData.clientName}</strong><br/>Selanjutnya disebut sebagai <strong>KLIEN</strong>.</p>
-                    <p><strong>2. MJ AGENCY RECOVERY</strong><br/>Selanjutnya disebut sebagai <strong>PIHAK KEDUA</strong>.</p>
-                  </div>
-
-                  <p>Bahwa <strong>KLIEN</strong> menyerahkan kuasa penagihan portofolio macet kepada <strong>PIHAK KEDUA</strong> dengan ketentuan dan struktur biaya sebagai berikut:</p>
-                  
-                  <div className="bg-slate-50 p-4 border border-slate-300 rounded font-mono text-xs">
-                    {previewData.feeStructureSummary || '[Struktur biaya belum diatur]'}
-                  </div>
-
-                  <p>Demikian Memorandum of Understanding (MoU) ini dibuat dan ditandatangani oleh kedua belah pihak untuk dilaksanakan dengan penuh tanggung jawab.</p>
-
-                  <div className="mt-16 flex justify-between px-10">
-                    <div className="text-center">
-                      <p className="mb-16 font-bold">KLIEN</p>
-                      <p className="font-bold underline">{previewData.clientName}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="mb-16 font-bold">PIHAK KEDUA</p>
-                      <p className="font-bold underline">MJ AGENCY RECOVERY</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* SK Template */}
-              {previewType === 'SK' && (
-                <div className="space-y-6 text-sm leading-relaxed text-justify">
-                  <h2 className="text-center font-bold text-lg underline decoration-2 underline-offset-4">SURAT KUASA PENAGIHAN</h2>
-                  <p className="text-center font-mono text-xs mb-8">No: {previewData.skNumber}</p>
-
-                  <p>Yang bertanda tangan di bawah ini mewakili <strong>MJ AGENCY RECOVERY</strong>, dengan ini memberikan kuasa penuh kepada:</p>
-                  
-                  <table className="w-full my-4 ml-6">
-                    <tbody>
-                      <tr><td className="w-40 py-1 font-bold">Nama (Kolektor)</td><td>: {previewData.personnelName}</td></tr>
-                      <tr><td className="py-1 font-bold">ID / NIK</td><td>: {previewData.personnelId}</td></tr>
-                    </tbody>
-                  </table>
-
-                  <p>Untuk melakukan tindakan penagihan, negosiasi, dan/atau penarikan unit kendaraan secara sah sesuai hukum yang berlaku terhadap debitur berikut:</p>
-                  
-                  <table className="w-full my-4 ml-6 bg-slate-50 p-4 border border-slate-300">
-                    <tbody className="block p-4">
-                      <tr><td className="w-40 py-1 font-bold">Nama Debitur</td><td>: {previewData.debtorName}</td></tr>
-                      <tr><td className="py-1 font-bold">Nomor Kasus</td><td>: {previewData.caseNo}</td></tr>
-                      {(() => {
-                        const c = store.cases.find((cs: Case) => cs.id === previewData.caseId);
-                        return (
-                          <>
-                            <tr><td className="py-1 font-bold">No. Kontrak</td><td>: {c?.multifinanceContractNo || '-'}</td></tr>
-                            <tr><td className="py-1 font-bold">Objek Jaminan</td><td>: {c?.assetSummary || '-'}</td></tr>
-                          </>
-                        );
-                      })()}
-                    </tbody>
-                  </table>
-
-                  <p>Surat Kuasa ini berlaku mulai tanggal <strong>{new Date(previewData.issuedDate).toLocaleDateString('id-ID')}</strong> sampai dengan <strong>{new Date(previewData.expiryDate).toLocaleDateString('id-ID')}</strong>.</p>
-                  <p>Demikian Surat Kuasa ini dibuat untuk dipergunakan sebagaimana mestinya.</p>
-
-                  <div className="mt-16 flex justify-between px-10">
-                    <div className="text-center">
-                      <p className="mb-16 font-bold">PEMBERI KUASA</p>
-                      <p className="font-bold underline">MJ AGENCY RECOVERY</p>
-                      <p className="text-xs">Direktur Operasional</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="mb-16 font-bold">PENERIMA KUASA</p>
-                      <p className="font-bold underline">{previewData.personnelName}</p>
-                      <p className="text-xs">Field Partner / Kolektor</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-            </div>
-            
-            {/* Watermark / Footer */}
-            <div className="p-4 border-t border-slate-200 text-center text-[10px] text-slate-400 font-mono">
-              Generated by ARMS Control Tower • {new Date().toLocaleString()} • CONFIDENTIAL
+              {/* Watermark / Footer */}
+              <div className="pt-6 border-t border-slate-200 text-center text-[10px] text-slate-400 font-mono">
+                PT. MITRAJASA SATRIA INDONESIA • ARMS Control Tower • Dokumen Resmi F4 (215mm x 330mm)
+              </div>
             </div>
           </div>
         </div>
       )}
+
     </div>
   );
 };

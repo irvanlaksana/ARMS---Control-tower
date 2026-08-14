@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, LawyerNotice } from '../../types/arms';
-import { Scale, Plus, FileText, CheckCircle2, Clock, Send, ShieldAlert, Eye, Copy, Check, Printer } from 'lucide-react';
+import { Scale, Plus, FileText, CheckCircle2, Clock, Send, ShieldAlert, Eye, Copy, Check, Printer, Edit3 } from 'lucide-react';
 
 interface LawyerModuleProps {
   store: ARMSStore;
@@ -17,6 +17,80 @@ export const LawyerModule: React.FC<LawyerModuleProps> = ({
   const [showAddModal, setShowAddModal] = useState(false);
   const [viewNotice, setViewNotice] = useState<LawyerNotice | null>(null);
   const [copied, setCopied] = useState(false);
+  const [noticeViewMode, setNoticeViewMode] = useState<'edit' | 'f4_preview'>('edit');
+  const printNoticeRef = useRef<HTMLDivElement>(null);
+
+  const handlePrintNotice = () => {
+    if (printNoticeRef.current) {
+      const printContent = printNoticeRef.current.innerHTML;
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      document.body.appendChild(iframe);
+
+      const doc = iframe.contentWindow?.document;
+      if (doc) {
+        doc.open();
+        doc.write(`
+          <html>
+            <head>
+              <title>Surat Somasi & Dokumen Hukum - Kantor Advokat</title>
+              <style>
+                @page {
+                  size: 215mm 330mm;
+                  margin: 12mm 15mm 15mm 15mm;
+                }
+                body {
+                  font-family: "Times New Roman", Times, Georgia, serif;
+                  font-size: 11pt;
+                  line-height: 1.45;
+                  color: black;
+                  background: white;
+                  margin: 0;
+                  padding: 8mm 12mm;
+                  width: 215mm;
+                  box-sizing: border-box;
+                }
+                h1, h2, h3, h4, p { margin: 0; padding: 0; }
+                .text-center { text-align: center; }
+                .text-justify { text-align: justify; }
+                .font-bold { font-weight: bold; }
+                .underline { text-decoration: underline; }
+                .uppercase { text-transform: uppercase; }
+                .flex { display: flex; }
+                .items-center { align-items: center; }
+                .justify-between { justify-content: space-between; }
+                .gap-5 { gap: 1.25rem; }
+                .w-full { width: 100%; }
+                .whitespace-pre-wrap { white-space: pre-wrap; }
+                .text-slate-950 { color: #020617; }
+                .text-slate-900 { color: #0f172a; }
+                .text-sm { font-size: 0.875rem; }
+                .text-xs { font-size: 0.75rem; }
+                .text-xl { font-size: 1.25rem; }
+                .font-black { font-weight: 900; }
+                .keep-together { page-break-inside: avoid; break-inside: avoid; }
+              </style>
+            </head>
+            <body>
+              ${printContent}
+            </body>
+          </html>
+        `);
+        doc.close();
+
+        iframe.contentWindow?.focus();
+        setTimeout(() => {
+          iframe.contentWindow?.print();
+          document.body.removeChild(iframe);
+        }, 500);
+      }
+    }
+  };
 
   // Form State
   const activeCases = store.cases.filter(
@@ -25,8 +99,8 @@ export const LawyerModule: React.FC<LawyerModuleProps> = ({
 
   const [selectedCaseId, setSelectedCaseId] = useState(activeCases[0]?.id || '');
   const [noticeType, setNoticeType] = useState<LawyerNotice['noticeType']>('SOMASI_1');
-  const [lawyerFirmName, setLawyerFirmName] = useState('Advokat & Tim Legal Counsel PT MITRA JASATRIA INDONESIA');
-  const [lawyerName, setLawyerName] = useState('Dr. Hendra Wijaya, S.H., M.H.');
+  const [lawyerFirmName, setLawyerFirmName] = useState('KANTOR ADVOKAT & KONSULTAN HUKUM WIJAYA & REKAN (Mitra Hukum)');
+  const [lawyerName, setLawyerName] = useState('Dr. Hendra Wijaya, S.H., M.H. & Tim Advokat');
   const [notes, setNotes] = useState('Debitur menunggak pembayaran dan belum memberikan respon kooperatif.');
 
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS' || currentUser.role === 'APPROVER_EXECUTIVE';
@@ -57,7 +131,7 @@ export const LawyerModule: React.FC<LawyerModuleProps> = ({
     if (type === 'GUGATAN_SEDERHANA') typeTitle = 'DRAFT PENDAFTARAN GUGATAN SEDERHANA (PERDATA)';
 
     return `${typeTitle}
-Nomor: ${type}/MJI-LEGAL/${new Date().getFullYear()}/${(store.lawyerNotices?.length || 0) + 1}
+Nomor: ${type}/LEGAL-ADV/${new Date().getFullYear()}/${(store.lawyerNotices?.length || 0) + 1}
 Tanggal: ${todayStr}
 
 Kepada Yth.
@@ -67,22 +141,23 @@ Alamat: ${debtorAddr || 'Alamat Sesuai Kontrak Perjanjian'}
 Perihal: ${typeTitle} — Atas Perjanjian Pembiayaan No. ${contractNo}
 
 Dengan hormat,
-Kami yang bertanda tangan di bawah ini, ${lawyer || 'Kuasa Hukum'}, bertindak untuk dan atas nama ${firm} selaku Kuasa Hukum Resmi dari Klien kami, ${clientName}.
+Kami yang bertanda tangan di bawah ini, ${lawyer || 'Kuasa Hukum'}, dari ${firm} selaku Advokat & Konsultan Hukum (Kuasa Hukum Mitra) bertindak untuk dan atas nama Klien kami, ${clientName}.
 
-Berdasarkan data operasional dan rekapitulasi keuangan Klien kami, Saudara terdaftar masih memiliki sisa kewajiban penunggakan fasilitas pembiayaan dengan jumlah tunggakan pokok sebesar ${formattedAmount}.
+Berdasarkan dokumen operasional dan catatan keuangan Klien kami, Saudara terdaftar masih memiliki sisa kewajiban penunggakan fasilitas pembiayaan/piutang dengan jumlah tunggakan pokok sebesar ${formattedAmount}.
 
-Sehubungan dengan hal tersebut di atas, melalui Surat Hukum ini kami menyampaikan hal-hal sebagai berikut:
+Sehubungan dengan hal tersebut di atas, melalui Surat Peringatan Hukum ini kami menyampaikan hal-hal sebagai berikut:
 1. Saudara telah cidera janji (wanprestasi) atas kewajiban pembayaran yang telah disepakati dalam Kontrak Perjanjian No. ${contractNo}.
 2. Kami memperingatkan dan meminta Saudara untuk segera melakukan pelunasan atau hadir beritikad baik menyelesaikan kewajiban dalam waktu paling lambat 3 (tiga) hari kerja sejak surat ini diterima.
-3. Apabila Saudara mengabaikan peringatan hukum ini, maka Klien kami melalui Kuasa Hukum akan mengambil tindakan hukum tegas sesuai peraturan perundang-undangan yang berlaku, termasuk pelaporan dugaan tindak pidana Penggelapan Objek Jaminan Fidusia (UU No. 42 Tahun 1999) serta Pendaftaran Gugatan Perdata di Pengadilan Negeri.
+3. Apabila Saudara mengabaikan peringatan hukum ini, maka Klien kami melalui Kuasa Hukum Advokat akan mengambil tindakan hukum tegas sesuai peraturan perundang-undangan Republik Indonesia, termasuk pelaporan dugaan tindak pidana Penggelapan Objek Jaminan Fidusia (UU No. 42 Tahun 1999) serta Pendaftaran Gugatan Perdata di Pengadilan Negeri.
 
 Demikian Surat ini disampaikan untuk menjadi perhatian serius dan dilaksanakan sebagaimana mestinya.
 
 Hormat Kami,
-Kuasa Hukum & Advokat ${clientName}
+Kuasa Hukum & Advokat Mitra
 ${firm}
 
-(${lawyer || 'Tim Advokat Legal Counsel'})`;
+
+(${lawyer || 'Tim Advokat & Legal Counsel'})`;
   };
 
   const handleCreateNotice = (e: React.FormEvent) => {
@@ -520,24 +595,53 @@ ${firm}
 
       {/* View & Edit Notice Modal */}
       {viewNotice && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-2xl p-6 space-y-4 shadow-2xl my-8">
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-4xl p-6 space-y-4 shadow-2xl my-8">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
                   <Scale className="w-5 h-5 text-indigo-400" />
-                  <h3 className="font-bold text-white text-base">Draft Surat Resmi Legal / Lawyer</h3>
+                  <h3 className="font-bold text-white text-base">Surat Resmi Legal / Lawyer</h3>
                 </div>
                 <div className="text-xs text-slate-400">
                   {viewNotice.noticeNo} • Ref Kasus: {viewNotice.caseNo}
                 </div>
               </div>
-              <button
-                onClick={() => setViewNotice(null)}
-                className="text-slate-400 hover:text-white text-sm"
-              >
-                ✕
-              </button>
+
+              {/* Toggle Mode & Close */}
+              <div className="flex items-center gap-2">
+                <div className="flex bg-slate-950 p-0.5 rounded-lg border border-slate-800 text-xs">
+                  <button
+                    onClick={() => setNoticeViewMode('edit')}
+                    className={`px-3 py-1 rounded-md font-medium transition flex items-center gap-1.5 ${
+                      noticeViewMode === 'edit'
+                        ? 'bg-indigo-600 text-white'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Edit Draft</span>
+                  </button>
+                  <button
+                    onClick={() => setNoticeViewMode('f4_preview')}
+                    className={`px-3 py-1 rounded-md font-medium transition flex items-center gap-1.5 ${
+                      noticeViewMode === 'f4_preview'
+                        ? 'bg-indigo-600 text-white'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>Preview F4</span>
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => setViewNotice(null)}
+                  className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-950 rounded-lg border border-slate-800">
@@ -564,12 +668,49 @@ ${firm}
               )}
             </div>
 
-            {/* Letter Content Preview Box */}
-            <textarea
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg p-5 font-mono text-xs text-slate-200 whitespace-pre-wrap leading-relaxed min-h-[24rem] border-l-4 border-l-indigo-500 focus:outline-none focus:border-indigo-500"
-              value={viewNotice.letterContentDraft}
-              onChange={(e) => handleUpdateNoticeContent(viewNotice.id, e.target.value)}
-            />
+            {noticeViewMode === 'edit' ? (
+              /* Editable Textarea */
+              <div className="space-y-2">
+                <p className="text-[11px] text-slate-400">Teks draft surat dapat diedit langsung sesuai kebutuhan pengacara / kasus:</p>
+                <textarea
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-5 font-mono text-xs text-slate-200 whitespace-pre-wrap leading-relaxed min-h-[22rem] border-l-4 border-l-indigo-500 focus:outline-none focus:border-indigo-500"
+                  value={viewNotice.letterContentDraft}
+                  onChange={(e) => handleUpdateNoticeContent(viewNotice.id, e.target.value)}
+                />
+              </div>
+            ) : (
+              /* Official F4 Preview Box (No Company Letterhead, Lawyer Partner Format) */
+              <div className="max-h-[26rem] overflow-y-auto bg-slate-950/70 p-4 rounded-xl flex justify-center border border-slate-800">
+                <div
+                  ref={printNoticeRef}
+                  className="f4-page-preview rounded-lg p-8 space-y-4 text-[12px] leading-relaxed"
+                  style={{ fontFamily: '"Times New Roman", Times, Georgia, serif' }}
+                >
+                  {/* Mitra Advokat Document Header */}
+                  <div className="border-b-2 border-slate-900 pb-3 mb-4 text-center keep-together">
+                    <h3 className="font-bold text-base uppercase tracking-wider text-slate-950">
+                      KANTOR ADVOKAT & KONSULTAN HUKUM
+                    </h3>
+                    <p className="font-bold text-xs uppercase tracking-wide text-indigo-950">
+                      {viewNotice.lawyerFirmName || 'Mitra Advokat & Legal Counsel'}
+                    </p>
+                    <p className="text-[10px] text-slate-600 italic">
+                      Advocates, Legal Counsel & Dispute Resolution
+                    </p>
+                    <div className="h-0.5 bg-slate-900 mt-2"></div>
+                    <div className="h-px bg-slate-500 mt-0.5"></div>
+                  </div>
+
+                  <div className="pt-2 whitespace-pre-wrap text-justify text-slate-900 leading-relaxed">
+                    {viewNotice.letterContentDraft}
+                  </div>
+
+                  <div className="pt-8 border-t border-slate-200 text-center text-[10px] text-slate-400 font-mono keep-together">
+                    DOKUMEN HUKUM RESMI MITRA ADVOKAT & LEGAL COUNSEL • Format F4 (215mm x 330mm)
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
               <div className="text-xs text-slate-400">
@@ -586,17 +727,21 @@ ${firm}
                 </button>
 
                 <button
-                  onClick={() => window.print()}
-                  className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3.5 py-1.5 rounded-lg font-semibold transition"
+                  onClick={noticeViewMode === 'f4_preview' ? handlePrintNotice : () => {
+                    setNoticeViewMode('f4_preview');
+                    setTimeout(() => handlePrintNotice(), 200);
+                  }}
+                  className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3.5 py-1.5 rounded-lg font-semibold transition shadow-md"
                 >
                   <Printer className="w-3.5 h-3.5" />
-                  <span>Cetak Surat</span>
+                  <span>Cetak Surat F4 (PDF)</span>
                 </button>
               </div>
             </div>
           </div>
         </div>
       )}
+
     </div>
   );
 };
