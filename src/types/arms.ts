@@ -215,6 +215,12 @@ export interface SK { // Surat Kuasa
   caseId: string;
   caseNo: string;
   debtorName: string;
+  clientType?: ClientType;
+  clientName?: string;
+  pemberiKuasaType?: 'PERUSAHAAN' | 'KREDITUR_PERORANGAN';
+  krediturName?: string;
+  krediturNik?: string;
+  krediturAddress?: string;
   personnelId: string;
   personnelName: string;
   issuedDate: string;
