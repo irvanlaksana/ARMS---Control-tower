@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, SK, ApprovalRequest, ClientType } from '../../types/arms';
-import { FileText, Plus, ExternalLink, Printer, Edit3, UserCheck, Building2, User as UserIcon, Search } from 'lucide-react';
+import { FileText, Plus, ExternalLink, Printer, Edit3, UserCheck, Building2, User as UserIcon, Search, Edit2, Trash2 } from 'lucide-react';
 import { OfficialLetterhead } from '../common/OfficialLetterhead';
 import { angkaKeTerbilang } from '../../utils/terbilang';
 
@@ -13,6 +13,8 @@ interface SKModuleProps {
 
 export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdateStore }) => {
   const [showModal, setShowModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'preview' | 'edit_text'>('preview');
   const [clientTypeFilter, setClientTypeFilter] = useState<'ALL' | 'MULTIFINANCE' | 'PERORANGAN'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -333,26 +335,64 @@ ${employeeJob}`;
     const skNumber = skNumberDraft;
     const isPer = selectedCase.clientType === 'PERORANGAN';
 
-    const newSK: SK = {
-      id: `SK-${Date.now()}`,
-      skNumber,
-      caseId: selectedCase.id,
-      caseNo: selectedCase.caseNo,
-      debtorName: selectedCase.debtorName,
-      clientType: selectedCase.clientType || 'MULTIFINANCE',
-      clientName: selectedCase.clientName,
-      pemberiKuasaType: isPer ? pemberiKuasaType : 'PERUSAHAAN',
-      krediturName: isPer ? (krediturName || selectedCase.clientName) : undefined,
-      krediturNik: isPer ? krediturNik : undefined,
-      krediturAddress: isPer ? krediturAddress : undefined,
-      personnelId: selectedPersonnel.id,
-      personnelName: selectedPersonnel.fullName,
-      issuedDate: new Date().toISOString().split('T')[0],
-      expiryDate: new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0],
-      status: 'PENDING_APPROVAL',
-      driveDocumentUrl,
-      createdAt: new Date().toISOString(),
-    };
+    if (isEditing && editId) {
+      const updatedSKs = store.sks.map(sk => {
+        if (sk.id === editId) {
+          return {
+            ...sk,
+            skNumber,
+            caseId: selectedCase.id,
+            caseNo: selectedCase.caseNo,
+            debtorName: selectedCase.debtorName,
+            clientType: selectedCase.clientType || 'MULTIFINANCE',
+            clientName: selectedCase.clientName,
+            pemberiKuasaType: isPer ? pemberiKuasaType : 'PERUSAHAAN',
+            krediturName: isPer ? (krediturName || selectedCase.clientName) : undefined,
+            krediturNik: isPer ? krediturNik : undefined,
+            krediturAddress: isPer ? krediturAddress : undefined,
+            personnelId: selectedPersonnel.id,
+            personnelName: selectedPersonnel.fullName,
+            driveDocumentUrl,
+          };
+        }
+        return sk;
+      });
+
+      const audit = createAuditEntry(
+        currentUser.username,
+        currentUser.role,
+        'UPDATE',
+        'SK',
+        editId,
+        `Updated Surat Kuasa Khusus ${skNumber} (${isPer ? 'Perorangan: ' + selectedCase.clientName : 'Multifinance'})`
+      );
+
+      onUpdateStore({
+        ...store,
+        sks: updatedSKs,
+        auditLogs: [audit, ...(store.auditLogs || [])],
+      });
+    } else {
+      const newSK: SK = {
+        id: `SK-${Date.now()}`,
+        skNumber,
+        caseId: selectedCase.id,
+        caseNo: selectedCase.caseNo,
+        debtorName: selectedCase.debtorName,
+        clientType: selectedCase.clientType || 'MULTIFINANCE',
+        clientName: selectedCase.clientName,
+        pemberiKuasaType: isPer ? pemberiKuasaType : 'PERUSAHAAN',
+        krediturName: isPer ? (krediturName || selectedCase.clientName) : undefined,
+        krediturNik: isPer ? krediturNik : undefined,
+        krediturAddress: isPer ? krediturAddress : undefined,
+        personnelId: selectedPersonnel.id,
+        personnelName: selectedPersonnel.fullName,
+        issuedDate: new Date().toISOString().split('T')[0],
+        expiryDate: new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0],
+        status: 'PENDING_APPROVAL',
+        driveDocumentUrl,
+        createdAt: new Date().toISOString(),
+      };
 
     const approvalReq: ApprovalRequest = {
       id: `APP-SK-${Date.now()}`,
@@ -382,11 +422,31 @@ ${employeeJob}`;
       approvals: [approvalReq, ...(store.approvals || [])],
       auditLogs: [audit, ...(store.auditLogs || [])],
     });
+    }
 
     setShowModal(false);
   };
 
-  const handleOpenForExistingSK = (sk: SK) => {
+  const handleDeleteSK = (id: string, skNo: string) => {
+    if (!window.confirm(`Are you sure you want to delete SK "${skNo}"?`)) return;
+
+    const audit = createAuditEntry(
+      currentUser.username,
+      currentUser.role,
+      'DELETE',
+      'SK',
+      id,
+      `Deleted SK ${skNo}`
+    );
+
+    onUpdateStore({
+      ...store,
+      sks: (store.sks || []).filter(s => s.id !== id),
+      auditLogs: [audit, ...store.auditLogs],
+    });
+  };
+
+  const handleOpenForExistingSK = (sk: SK, editMode: boolean = false) => {
     setCaseId(sk.caseId);
     setPartnerId(sk.personnelId);
     setDriveDocumentUrl(sk.driveDocumentUrl || '');
@@ -397,6 +457,13 @@ ${employeeJob}`;
       if (sk.krediturAddress) setKrediturAddress(sk.krediturAddress);
     } else {
       setPemberiKuasaType('PERUSAHAAN');
+    }
+    if (editMode) {
+      setIsEditing(true);
+      setEditId(sk.id);
+    } else {
+      setIsEditing(false);
+      setEditId(null);
     }
     setShowModal(true);
   };
@@ -625,8 +692,26 @@ ${employeeJob}`;
 
                       <td className="p-3.5 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          {canEdit && (
+                            <>
+                              <button
+                                onClick={() => handleOpenForExistingSK(sk, true)}
+                                className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-indigo-400 transition"
+                                title="Edit SK"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteSK(sk.id, sk.skNumber)}
+                                className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-red-400 transition"
+                                title="Delete SK"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
                           <button
-                            onClick={() => handleOpenForExistingSK(sk)}
+                            onClick={() => handleOpenForExistingSK(sk, false)}
                             className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-indigo-300 hover:text-white rounded border border-slate-700 text-[11px] font-medium transition shadow-sm"
                             title="Preview / Cetak Format F4"
                           >
@@ -666,7 +751,9 @@ ${employeeJob}`;
               <div className="border-b border-slate-800 pb-3">
                 <div className="flex items-center gap-2 mb-1">
                   <FileText className="w-4 h-4 text-indigo-400" />
-                  <h3 className="text-base font-bold text-white">Generator Surat Kuasa Khusus</h3>
+                  <h3 className="text-base font-bold text-white">
+                    {isEditing ? 'Edit Surat Kuasa Khusus' : 'Generator Surat Kuasa Khusus'}
+                  </h3>
                 </div>
                 <p className="text-xs text-slate-400">
                   Parameter kuasa khusus & preview format resmi F4 untuk Klien Multifinance & Perorangan
@@ -865,7 +952,7 @@ ${employeeJob}`;
                     type="submit"
                     className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white font-semibold rounded-lg hover:from-indigo-500 hover:to-indigo-400 transition shadow-lg active:scale-95"
                   >
-                    Ajukan Approval Executive (SK {isPerorangan ? 'Perorangan' : 'Multifinance'})
+                    {isEditing ? 'Simpan Perubahan' : `Ajukan Approval Executive (SK ${isPerorangan ? 'Perorangan' : 'Multifinance'})`}
                   </button>
                   <button
                     type="button"

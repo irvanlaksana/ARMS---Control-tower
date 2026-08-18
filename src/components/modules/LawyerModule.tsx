@@ -3,7 +3,7 @@ import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, LawyerNotice, ClientType } from '../../types/arms';
 import { 
   Scale, Plus, FileText, CheckCircle2, Clock, Send, ShieldAlert, Eye, 
-  Copy, Check, Printer, Edit3, Building2, UserCheck, Search, Filter 
+  Copy, Check, Printer, Edit3, Building2, UserCheck, Search, Filter, Edit2, Trash2 
 } from 'lucide-react';
 
 interface LawyerModuleProps {
@@ -110,11 +110,53 @@ export const LawyerModule: React.FC<LawyerModuleProps> = ({
   const [lawyerFirmName, setLawyerFirmName] = useState('KANTOR ADVOKAT & KONSULTAN HUKUM WIJAYA & REKAN (Mitra Hukum)');
   const [lawyerName, setLawyerName] = useState('Dr. Hendra Wijaya, S.H., M.H. & Tim Advokat');
   const [notes, setNotes] = useState('Debitur menunggak pembayaran dan belum memberikan respon kooperatif.');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
 
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS' || currentUser.role === 'APPROVER_EXECUTIVE';
 
   const selectedCase = store.cases.find((c) => c.id === selectedCaseId);
   const isPerorangan = selectedCase?.clientType === 'PERORANGAN';
+
+  const handleOpenModal = (notice?: LawyerNotice) => {
+    if (notice) {
+      setIsEditing(true);
+      setEditId(notice.id);
+      setSelectedCaseId(notice.caseId);
+      setNoticeType(notice.noticeType);
+      setLawyerFirmName(notice.lawyerFirmName || 'KANTOR ADVOKAT & KONSULTAN HUKUM WIJAYA & REKAN (Mitra Hukum)');
+      setLawyerName(notice.lawyerName || 'Dr. Hendra Wijaya, S.H., M.H. & Tim Advokat');
+      setNotes(notice.notes || '');
+    } else {
+      setIsEditing(false);
+      setEditId(null);
+      if (activeCases.length > 0) setSelectedCaseId(activeCases[0].id);
+      setNoticeType('SOMASI_1');
+      setLawyerFirmName('KANTOR ADVOKAT & KONSULTAN HUKUM WIJAYA & REKAN (Mitra Hukum)');
+      setLawyerName('Dr. Hendra Wijaya, S.H., M.H. & Tim Advokat');
+      setNotes('Debitur menunggak pembayaran dan belum memberikan respon kooperatif.');
+    }
+    setShowAddModal(true);
+  };
+
+  const handleDeleteNotice = (id: string, noticeNo: string) => {
+    if (!window.confirm(`Are you sure you want to delete Notice "${noticeNo}"?`)) return;
+
+    const audit = createAuditEntry(
+      currentUser.username,
+      currentUser.role,
+      'DELETE',
+      'Lawyer_Notices',
+      id,
+      `Deleted Notice ${noticeNo}`
+    );
+
+    onUpdateStore({
+      ...store,
+      lawyerNotices: (store.lawyerNotices || []).filter(n => n.id !== id),
+      auditLogs: [audit, ...store.auditLogs],
+    });
+  };
 
   // Tailored Legal Draft Generator
   const generateLetterDraft = (
@@ -237,55 +279,106 @@ ${firm}
     if (noticeType === 'UNDANGAN_MEDIASI_HUKUM') noticeTypeLabel = 'Undangan Mediasi';
     if (noticeType === 'GUGATAN_SEDERHANA') noticeTypeLabel = 'Gugatan Sederhana';
 
-    const newNotice: LawyerNotice = {
-      id: `LGL-${Date.now()}`,
-      noticeNo: `${noticeType}/${isPerorangan ? 'LEGAL-PER' : 'LEGAL-CORP'}/${new Date().getFullYear()}/${Math.floor(100 + Math.random() * 900)}`,
-      caseId: selectedCase.id,
-      caseNo: selectedCase.caseNo,
-      debtorName: selectedCase.debtorName,
-      debtorAddress: debtorAddr,
-      clientName: selectedCase.clientName,
-      multifinanceContractNo: selectedCase.multifinanceContractNo,
-      noticeType,
-      requestedDate: new Date().toISOString().split('T')[0],
-      lawyerFirmName,
-      lawyerName,
-      principalDebtAmount: selectedCase.principalDebtOS,
-      status: 'SENT_TO_DEBTOR',
-      letterContentDraft: draftText,
-      notes,
-      createdBy: currentUser.name,
-      createdAt: new Date().toISOString(),
-    };
+    if (isEditing && editId) {
+      const updatedNotices = (store.lawyerNotices || []).map(n => {
+        if (n.id === editId) {
+          return {
+            ...n,
+            caseId: selectedCase.id,
+            caseNo: selectedCase.caseNo,
+            debtorName: selectedCase.debtorName,
+            debtorAddress: debtorAddr,
+            clientName: selectedCase.clientName,
+            multifinanceContractNo: selectedCase.multifinanceContractNo,
+            noticeType,
+            lawyerFirmName,
+            lawyerName,
+            principalDebtAmount: selectedCase.principalDebtOS,
+            letterContentDraft: draftText,
+            notes,
+          };
+        }
+        return n;
+      });
 
-    // Update target case with lawyer notice indicator
-    const updatedCases = store.cases.map((c) => {
-      if (c.id === selectedCase.id) {
-        return {
-          ...c,
-          lawyerStatus: `Dikirim ${noticeTypeLabel} (Lawyer)`,
-          lawyerNoticeCount: (c.lawyerNoticeCount || 0) + 1,
-          lastLawyerNoticeType: noticeType,
-        };
-      }
-      return c;
-    });
+      // Update target case with lawyer notice indicator
+      const updatedCases = store.cases.map((c) => {
+        if (c.id === selectedCase.id) {
+          return {
+            ...c,
+            lawyerStatus: `Dikirim ${noticeTypeLabel} (Lawyer)`,
+            lastLawyerNoticeType: noticeType,
+          };
+        }
+        return c;
+      });
 
-    const audit = createAuditEntry(
-      currentUser.username,
-      currentUser.role,
-      'CREATE',
-      'Lawyer_Notices',
-      newNotice.id,
-      `Membuat Pengajuan Surat Legal (${noticeTypeLabel} - ${isPerorangan ? 'Perorangan' : 'Multifinance'}) untuk Nasabah ${newNotice.debtorName} (${newNotice.caseNo})`
-    );
+      const audit = createAuditEntry(
+        currentUser.username,
+        currentUser.role,
+        'UPDATE',
+        'Lawyer_Notices',
+        editId,
+        `Updated Pengajuan Surat Legal (${noticeTypeLabel} - ${isPerorangan ? 'Perorangan' : 'Multifinance'}) untuk Nasabah ${selectedCase.debtorName} (${selectedCase.caseNo})`
+      );
 
-    onUpdateStore({
-      ...store,
-      cases: updatedCases,
-      lawyerNotices: [newNotice, ...(store.lawyerNotices || [])],
-      auditLogs: [audit, ...store.auditLogs],
-    });
+      onUpdateStore({
+        ...store,
+        cases: updatedCases,
+        lawyerNotices: updatedNotices,
+        auditLogs: [audit, ...store.auditLogs],
+      });
+    } else {
+      const newNotice: LawyerNotice = {
+        id: `LGL-${Date.now()}`,
+        noticeNo: `${noticeType}/${isPerorangan ? 'LEGAL-PER' : 'LEGAL-CORP'}/${new Date().getFullYear()}/${Math.floor(100 + Math.random() * 900)}`,
+        caseId: selectedCase.id,
+        caseNo: selectedCase.caseNo,
+        debtorName: selectedCase.debtorName,
+        debtorAddress: debtorAddr,
+        clientName: selectedCase.clientName,
+        multifinanceContractNo: selectedCase.multifinanceContractNo,
+        noticeType,
+        requestedDate: new Date().toISOString().split('T')[0],
+        lawyerFirmName,
+        lawyerName,
+        principalDebtAmount: selectedCase.principalDebtOS,
+        status: 'SENT_TO_DEBTOR',
+        letterContentDraft: draftText,
+        notes,
+        createdBy: currentUser.name,
+        createdAt: new Date().toISOString(),
+      };
+
+      // Update target case with lawyer notice indicator
+      const updatedCases = store.cases.map((c) => {
+        if (c.id === selectedCase.id) {
+          return {
+            ...c,
+            lawyerStatus: `Dikirim ${noticeTypeLabel} (Lawyer)`,
+            lawyerNoticeCount: (c.lawyerNoticeCount || 0) + 1,
+            lastLawyerNoticeType: noticeType,
+          };
+        }
+        return c;
+      });
+
+      const audit = createAuditEntry(
+        currentUser.username,
+        currentUser.role,
+        'CREATE',
+        'Lawyer_Notices',
+        newNotice.id,
+        `Membuat Pengajuan Surat Legal (${noticeTypeLabel} - ${isPerorangan ? 'Perorangan' : 'Multifinance'}) untuk Nasabah ${newNotice.debtorName} (${newNotice.caseNo})`
+      );
+
+      onUpdateStore({
+        ...store,
+        cases: updatedCases,
+        lawyerNotices: [newNotice, ...(store.lawyerNotices || [])],
+        auditLogs: [audit, ...store.auditLogs],
+      });
+    }
 
     setShowAddModal(false);
   };
@@ -582,13 +675,33 @@ ${firm}
                       <td className="py-3.5 px-4 text-center">{getStatusBadge(n.status)}</td>
 
                       <td className="py-3.5 px-4 text-center">
-                        <button
-                          onClick={() => setViewNotice(n)}
-                          className="inline-flex items-center gap-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-800 px-2.5 py-1 rounded text-[11px] font-semibold transition"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>Lihat Draft</span>
-                        </button>
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => setViewNotice(n)}
+                            className="inline-flex items-center gap-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-800 px-2.5 py-1 rounded text-[11px] font-semibold transition"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Lihat Draft</span>
+                          </button>
+                          {canEdit && (
+                            <>
+                              <button
+                                onClick={() => handleOpenModal(n)}
+                                className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-indigo-400 transition"
+                                title="Edit Notice"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteNotice(n.id, n.noticeNo)}
+                                className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-red-400 transition"
+                                title="Delete Notice"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -606,7 +719,9 @@ ${firm}
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <Scale className="w-5 h-5 text-indigo-400" />
-                <h3 className="font-bold text-white text-base">Buat Pengajuan Surat Legal / Lawyer</h3>
+                <h3 className="font-bold text-white text-base">
+                  {isEditing ? 'Edit Pengajuan Surat Legal / Lawyer' : 'Buat Pengajuan Surat Legal / Lawyer'}
+                </h3>
               </div>
               <button
                 type="button"
@@ -764,7 +879,7 @@ ${firm}
                     className="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-lg flex items-center gap-1.5"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    <span>Generate & Kirim Pengajuan</span>
+                    <span>{isEditing ? 'Simpan Perubahan' : 'Generate & Kirim Pengajuan'}</span>
                   </button>
                 </div>
               </>

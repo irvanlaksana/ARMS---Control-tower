@@ -29,11 +29,51 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
   const [personnelId, setPartnerId] = useState(store.personnel?.[0]?.id || '');
   const [slaDays, setSlaDays] = useState(14);
   const [instructions, setInstructions] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
 
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS';
 
   const selectedCase = store.cases.find((cs) => cs.id === caseId);
   const isPerorangan = selectedCase?.clientType === 'PERORANGAN';
+
+  const handleOpenModal = (assignment?: Assignment) => {
+    if (assignment) {
+      setIsEditing(true);
+      setEditId(assignment.id);
+      setCaseId(assignment.caseId);
+      setPartnerId(assignment.personnelId);
+      setSlaDays(assignment.slaDays);
+      setInstructions(assignment.instructions);
+    } else {
+      setIsEditing(false);
+      setEditId(null);
+      if (activeCases.length > 0) setCaseId(activeCases[0].id);
+      if (store.personnel && store.personnel.length > 0) setPartnerId(store.personnel[0].id);
+      setSlaDays(14);
+      setInstructions('');
+    }
+    setShowModal(true);
+  };
+
+  const handleDeleteAssignment = (id: string, assignmentNo: string) => {
+    if (!window.confirm(`Are you sure you want to delete Assignment "${assignmentNo}"?`)) return;
+
+    const audit = createAuditEntry(
+      currentUser.username,
+      currentUser.role,
+      'DELETE',
+      'Assignments',
+      id,
+      `Deleted Assignment ${assignmentNo}`
+    );
+
+    onUpdateStore({
+      ...store,
+      assignments: store.assignments.filter(a => a.id !== id),
+      auditLogs: [audit, ...store.auditLogs],
+    });
+  };
 
   const handleCreateAssignment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,37 +81,71 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
 
     const p = (store.personnel || []).find((pr) => pr.id === personnelId);
 
-    const newAssignment: Assignment = {
-      id: `ASN-${Date.now()}`,
-      assignmentNo: `ASN-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-      caseId: selectedCase.id,
-      caseNo: selectedCase.caseNo,
-      debtorName: selectedCase.debtorName,
-      personnelId,
-      personnelName: p?.fullName || 'Mitra Lapangan',
-      assignedDate: new Date().toISOString().split('T')[0],
-      targetDate: new Date(Date.now() + slaDays * 86400000).toISOString().split('T')[0],
-      slaDays,
-      instructions: instructions || (isPerorangan ? 'Lakukan kunjungan lapangan, verifikasi domisili, dan mediasi penagihan piutang perorangan secara profesional.' : 'Lakukan penelusuran unit jaminan fidusia dan negosiasi penyerahan unit.'),
-      status: 'IN_PROGRESS',
-      gDriveFolderUrl: selectedCase.gDriveFolderUrl,
-      createdAt: new Date().toISOString(),
-    };
+    if (isEditing && editId) {
+      const updatedAssignments = store.assignments.map(a => {
+        if (a.id === editId) {
+          return {
+            ...a,
+            caseId: selectedCase.id,
+            caseNo: selectedCase.caseNo,
+            debtorName: selectedCase.debtorName,
+            personnelId,
+            personnelName: p?.fullName || 'Mitra Lapangan',
+            slaDays,
+            instructions: instructions || (isPerorangan ? 'Lakukan kunjungan lapangan, verifikasi domisili, dan mediasi penagihan piutang perorangan secara profesional.' : 'Lakukan penelusuran unit jaminan fidusia dan negosiasi penyerahan unit.'),
+            gDriveFolderUrl: selectedCase.gDriveFolderUrl,
+          };
+        }
+        return a;
+      });
 
-    const audit = createAuditEntry(
-      currentUser.username,
-      currentUser.role,
-      'CREATE',
-      'Assignments',
-      newAssignment.id,
-      `Assigned Case ${newAssignment.caseNo} (${selectedCase.clientType || 'MULTIFINANCE'}) to Partner ${newAssignment.personnelName}`
-    );
+      const audit = createAuditEntry(
+        currentUser.username,
+        currentUser.role,
+        'UPDATE',
+        'Assignments',
+        editId,
+        `Updated Assignment for Case ${selectedCase.caseNo}`
+      );
 
-    onUpdateStore({
-      ...store,
-      assignments: [newAssignment, ...store.assignments],
-      auditLogs: [audit, ...store.auditLogs],
-    });
+      onUpdateStore({
+        ...store,
+        assignments: updatedAssignments,
+        auditLogs: [audit, ...store.auditLogs],
+      });
+    } else {
+      const newAssignment: Assignment = {
+        id: `ASN-${Date.now()}`,
+        assignmentNo: `ASN-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+        caseId: selectedCase.id,
+        caseNo: selectedCase.caseNo,
+        debtorName: selectedCase.debtorName,
+        personnelId,
+        personnelName: p?.fullName || 'Mitra Lapangan',
+        assignedDate: new Date().toISOString().split('T')[0],
+        targetDate: new Date(Date.now() + slaDays * 86400000).toISOString().split('T')[0],
+        slaDays,
+        instructions: instructions || (isPerorangan ? 'Lakukan kunjungan lapangan, verifikasi domisili, dan mediasi penagihan piutang perorangan secara profesional.' : 'Lakukan penelusuran unit jaminan fidusia dan negosiasi penyerahan unit.'),
+        status: 'IN_PROGRESS',
+        gDriveFolderUrl: selectedCase.gDriveFolderUrl,
+        createdAt: new Date().toISOString(),
+      };
+
+      const audit = createAuditEntry(
+        currentUser.username,
+        currentUser.role,
+        'CREATE',
+        'Assignments',
+        newAssignment.id,
+        `Assigned Case ${newAssignment.caseNo} (${selectedCase.clientType || 'MULTIFINANCE'}) to Partner ${newAssignment.personnelName}`
+      );
+
+      onUpdateStore({
+        ...store,
+        assignments: [newAssignment, ...store.assignments],
+        auditLogs: [audit, ...store.auditLogs],
+      });
+    }
 
     setInstructions('');
     setShowModal(false);
@@ -108,15 +182,7 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
 
         {canEdit && (
           <button
-            onClick={() => {
-              if (activeCases.length > 0 && !caseId) {
-                setCaseId(activeCases[0].id);
-              }
-              if (store.personnel && store.personnel.length > 0 && !personnelId) {
-                setPartnerId(store.personnel[0].id);
-              }
-              setShowModal(true);
-            }}
+            onClick={() => handleOpenModal()}
             className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-md transition active:scale-95"
           >
             <Plus className="w-4 h-4" />
@@ -187,6 +253,7 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
                 <th className="py-3 px-4">Instruksi Khusus</th>
                 <th className="py-3 px-4 text-center">Berkas (Drive)</th>
                 <th className="py-3 px-4 text-center">Status</th>
+                {canEdit && <th className="py-3 px-4 text-right">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
@@ -283,6 +350,27 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
                           {a.status}
                         </span>
                       </td>
+
+                      {canEdit && (
+                        <td className="py-3.5 px-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleOpenModal(a)}
+                              className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-indigo-400 transition"
+                              title="Edit Assignment"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteAssignment(a.id, a.assignmentNo)}
+                              className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-red-400 transition"
+                              title="Delete Assignment"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })
@@ -302,7 +390,7 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
             <div className="border-b border-slate-800 pb-3">
               <h3 className="font-bold text-white text-base flex items-center gap-2">
                 <Users className="w-5 h-5 text-indigo-400" />
-                Buat Penugasan Baru Mitra Lapangan
+                {isEditing ? 'Edit Penugasan Mitra Lapangan' : 'Buat Penugasan Baru Mitra Lapangan'}
               </h3>
               <p className="text-xs text-slate-400">
                 Pilih berkas perkara (Klien Multifinance atau Klien Perorangan) untuk diterbitkan surat penugasan lapangan.
@@ -448,10 +536,10 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
               </button>
               <button
                 type="submit"
-                disabled={activeCases.length === 0}
+                disabled={activeCases.length === 0 && !isEditing}
                 className="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500 shadow-md transition disabled:opacity-50"
               >
-                Terbitkan Penugasan
+                {isEditing ? 'Simpan Perubahan' : 'Terbitkan Penugasan'}
               </button>
             </div>
           </form>

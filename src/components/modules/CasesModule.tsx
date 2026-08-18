@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Case, FeeType, Client, ClientType } from '../../types/arms';
-import { Briefcase, Plus, CheckCircle, Search, Building2, User as UserIcon, UserCheck, ShieldCheck } from 'lucide-react';
+import { Briefcase, Plus, CheckCircle, Search, Building2, User as UserIcon, UserCheck, ShieldCheck, Edit2, Trash2 } from 'lucide-react';
 
 interface CasesModuleProps {
   store: ARMSStore;
@@ -18,6 +18,8 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [filterClientType, setFilterClientType] = useState<'ALL' | 'MULTIFINANCE' | 'PERORANGAN'>('ALL');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
 
   // Form State
   const [clientCategory, setClientCategory] = useState<ClientType>('MULTIFINANCE');
@@ -75,22 +77,67 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
     }
   };
 
-  const handleOpenAddModal = () => {
-    // Sync default IDs
-    if (multifinanceClients.length > 0 && !multifinanceClients.some(c => c.id === clientId)) {
-      setClientId(multifinanceClients[0].id);
-    }
-    if (peroranganClients.length > 0 && !peroranganClients.some(c => c.id === peroranganClientId)) {
-      setPeroranganClientId(peroranganClients[0].id);
-    }
-    if (clientCategory === 'PERORANGAN') {
-      const peroranganSrv = store.services.find(s => s.category === 'PENAGIHAN_PERORANGAN' || s.serviceCode.includes('PERORANGAN') || s.name.toLowerCase().includes('perorangan'));
-      if (peroranganSrv) setServiceId(peroranganSrv.id);
+  const handleOpenAddModal = (c?: Case) => {
+    if (c) {
+      setIsEditing(true);
+      setEditId(c.id);
+      setClientCategory(c.clientType || 'MULTIFINANCE');
+      if (c.clientType === 'PERORANGAN') {
+        setPeroranganClientId(c.clientId);
+      } else {
+        setClientId(c.clientId);
+      }
+      setCustomerId(c.customerId);
+      setContractNo(c.multifinanceContractNo);
+      setServiceId(c.serviceId);
+      setPrincipalDebtOS(c.principalDebtOS);
+      setOverdueDays(c.overdueDays);
+      setAssetSummary(c.assetSummary);
+      setPartnerId(c.currentPersonnelId || '');
+      setGDriveFolderUrl(c.gDriveFolderUrl || '');
     } else {
-      const multiSrv = store.services.find(s => s.category !== 'PENAGIHAN_PERORANGAN' && !s.serviceCode.includes('PERORANGAN') && !s.name.toLowerCase().includes('perorangan'));
-      if (multiSrv) setServiceId(multiSrv.id);
+      setIsEditing(false);
+      setEditId(null);
+      // Sync default IDs
+      if (multifinanceClients.length > 0 && !multifinanceClients.some(c => c.id === clientId)) {
+        setClientId(multifinanceClients[0].id);
+      }
+      if (peroranganClients.length > 0 && !peroranganClients.some(c => c.id === peroranganClientId)) {
+        setPeroranganClientId(peroranganClients[0].id);
+      }
+      if (clientCategory === 'PERORANGAN') {
+        const peroranganSrv = store.services.find(s => s.category === 'PENAGIHAN_PERORANGAN' || s.serviceCode.includes('PERORANGAN') || s.name.toLowerCase().includes('perorangan'));
+        if (peroranganSrv) setServiceId(peroranganSrv.id);
+      } else {
+        const multiSrv = store.services.find(s => s.category !== 'PENAGIHAN_PERORANGAN' && !s.serviceCode.includes('PERORANGAN') && !s.name.toLowerCase().includes('perorangan'));
+        if (multiSrv) setServiceId(multiSrv.id);
+      }
+      setContractNo(clientCategory === 'PERORANGAN' ? 'SPH-PER/2026/01' : 'ADR-CTR-2026-99');
+      setPrincipalDebtOS(150000000);
+      setOverdueDays(120);
+      setAssetSummary(clientCategory === 'MULTIFINANCE' ? 'Honda HR-V Turbo 2022 (B 1234 XYZ)' : 'Surat Pengakuan Hutang');
+      setGDriveFolderUrl('');
     }
     setShowAddModal(true);
+  };
+
+  const handleDeleteCase = (id: string, caseNo: string) => {
+    if (!window.confirm(`Are you sure you want to delete case "${caseNo}"?`)) return;
+
+    const audit = createAuditEntry(
+      currentUser.username,
+      currentUser.role,
+      'DELETE',
+      'Cases',
+      id,
+      `Deleted Case ${caseNo}`
+    );
+
+    onUpdateStore({
+      ...store,
+      cases: store.cases.filter(c => c.id !== id),
+      auditLogs: [audit, ...store.auditLogs],
+    });
   };
 
   const handleCreateCase = (e: React.FormEvent) => {
@@ -106,64 +153,107 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
       clientCodeForCase = peroranganClient?.clientCode || 'PER';
     }
 
-    // Update active cases count for selected client
-    const updatedClients = store.clients.map((c) => 
-      c.id === actualClientId ? { ...c, activeCasesCount: (c.activeCasesCount || 0) + 1 } : c
-    );
-
     const customer = store.customers.find((cu) => cu.id === customerId);
     const service = store.services.find((s) => s.id === serviceId);
     const partner = (store.personnel || []).find((p) => p.id === personnelId);
 
-    // Get fee configuration for snapshot
-    const feeConfig = store.fees.find((f) => f.clientId === actualClientId && f.serviceId === serviceId);
-    const feeTypeSnapshot: FeeType = feeConfig ? feeConfig.feeType : (service?.defaultFeeType || 'PERCENT');
-    const feePercentSnapshot = feeConfig?.percentageValue || 15;
-    const feeFixedSnapshot = feeConfig?.fixedAmount || 2500000;
+    if (isEditing && editId) {
+      const updatedCases = store.cases.map(c => {
+        if (c.id === editId) {
+          return {
+            ...c,
+            clientId: actualClientId,
+            clientName: actualClientName,
+            clientType: clientCategory,
+            customerId,
+            debtorName: customer?.fullName || 'Debtor Name',
+            debtorNik: customer?.nikKtp || '3171000000000000',
+            multifinanceContractNo: contractNo,
+            serviceId,
+            serviceName: service?.name || 'Recovery Service',
+            principalDebtOS,
+            overdueDays,
+            dpdBucket: overdueDays > 180 ? '180+' : overdueDays > 90 ? '90-180' : '60-90',
+            assetSummary,
+            gDriveFolderName: computedFolderName,
+            gDriveFolderUrl,
+            currentPersonnelId: personnelId,
+            currentPersonnelName: partner?.fullName,
+          };
+        }
+        return c;
+      });
 
-    const newCase: Case = {
-      id: `CAS-${Date.now()}`,
-      caseNo: `CAS-2026-${clientCodeForCase}-${Math.floor(100 + Math.random() * 900)}`,
-      clientId: actualClientId,
-      clientName: actualClientName,
-      clientType: clientCategory,
-      contractId: store.contracts[0]?.id || 'CTR-001',
-      customerId,
-      debtorName: customer?.fullName || 'Debtor Name',
-      debtorNik: customer?.nikKtp || '3171000000000000',
-      multifinanceContractNo: contractNo,
-      serviceId,
-      serviceName: service?.name || 'Recovery Service',
-      principalDebtOS,
-      overdueDays,
-      dpdBucket: overdueDays > 180 ? '180+' : overdueDays > 90 ? '90-180' : '60-90',
-      assetSummary,
-      gDriveFolderName: computedFolderName,
-      gDriveFolderUrl,
-      feeTypeSnapshot,
-      feePercentSnapshot,
-      feeFixedSnapshot,
-      status: 'ASSIGNED',
-      currentPersonnelId: personnelId,
-      currentPersonnelName: partner?.fullName,
-      createdAt: new Date().toISOString(),
-    };
+      const audit = createAuditEntry(
+        currentUser.username,
+        currentUser.role,
+        'UPDATE',
+        'Cases',
+        editId,
+        `Updated Case ${clientCategory} for ${customer?.fullName}`
+      );
 
-    const audit = createAuditEntry(
-      currentUser.username,
-      currentUser.role,
-      'CREATE',
-      'Cases',
-      newCase.id,
-      `Created ${clientCategory === 'PERORANGAN' ? 'Individual (Perorangan)' : 'Multifinance'} Case ${newCase.caseNo} for ${newCase.debtorName} [Client: ${actualClientName}]`
-    );
+      onUpdateStore({
+        ...store,
+        cases: updatedCases,
+        auditLogs: [audit, ...store.auditLogs],
+      });
+    } else {
+      // Update active cases count for selected client
+      const updatedClients = store.clients.map((c) => 
+        c.id === actualClientId ? { ...c, activeCasesCount: (c.activeCasesCount || 0) + 1 } : c
+      );
 
-    onUpdateStore({
-      ...store,
-      clients: updatedClients,
-      cases: [newCase, ...store.cases],
-      auditLogs: [audit, ...store.auditLogs],
-    });
+      // Get fee configuration for snapshot
+      const feeConfig = store.fees.find((f) => f.clientId === actualClientId && f.serviceId === serviceId);
+      const feeTypeSnapshot: FeeType = feeConfig ? feeConfig.feeType : (service?.defaultFeeType || 'PERCENT');
+      const feePercentSnapshot = feeConfig?.percentageValue || 15;
+      const feeFixedSnapshot = feeConfig?.fixedAmount || 2500000;
+
+      const newCase: Case = {
+        id: `CAS-${Date.now()}`,
+        caseNo: `CAS-2026-${clientCodeForCase}-${Math.floor(100 + Math.random() * 900)}`,
+        clientId: actualClientId,
+        clientName: actualClientName,
+        clientType: clientCategory,
+        contractId: store.contracts[0]?.id || 'CTR-001',
+        customerId,
+        debtorName: customer?.fullName || 'Debtor Name',
+        debtorNik: customer?.nikKtp || '3171000000000000',
+        multifinanceContractNo: contractNo,
+        serviceId,
+        serviceName: service?.name || 'Recovery Service',
+        principalDebtOS,
+        overdueDays,
+        dpdBucket: overdueDays > 180 ? '180+' : overdueDays > 90 ? '90-180' : '60-90',
+        assetSummary,
+        gDriveFolderName: computedFolderName,
+        gDriveFolderUrl,
+        feeTypeSnapshot,
+        feePercentSnapshot,
+        feeFixedSnapshot,
+        status: 'ASSIGNED',
+        currentPersonnelId: personnelId,
+        currentPersonnelName: partner?.fullName,
+        createdAt: new Date().toISOString(),
+      };
+
+      const audit = createAuditEntry(
+        currentUser.username,
+        currentUser.role,
+        'CREATE',
+        'Cases',
+        newCase.id,
+        `Created ${clientCategory === 'PERORANGAN' ? 'Individual (Perorangan)' : 'Multifinance'} Case ${newCase.caseNo} for ${newCase.debtorName} [Client: ${actualClientName}]`
+      );
+
+      onUpdateStore({
+        ...store,
+        clients: updatedClients,
+        cases: [newCase, ...store.cases],
+        auditLogs: [audit, ...store.auditLogs],
+      });
+    }
 
     setShowAddModal(false);
   };
@@ -209,7 +299,7 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
 
         {canEdit && (
           <button
-            onClick={handleOpenAddModal}
+            onClick={() => handleOpenAddModal()}
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-md transition"
           >
             <Plus className="w-4 h-4" />
@@ -274,6 +364,7 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
                 <th className="py-3 px-4">Assigned Partner</th>
                 <th className="py-3 px-4 text-center">Berkas (GDrive)</th>
                 <th className="py-3 px-4 text-center">Status</th>
+                {canEdit && <th className="py-3 px-4 text-center">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
@@ -355,6 +446,26 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
                           {(c.status || '').replace(/_/g, ' ')}
                         </span>
                       </td>
+                      {canEdit && (
+                        <td className="py-3.5 px-4 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => handleOpenAddModal(c)}
+                              className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-indigo-400 transition"
+                              title="Edit Case"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteCase(c.id, c.caseNo)}
+                              className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-red-400 transition"
+                              title="Delete Case"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })
@@ -369,7 +480,9 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <form onSubmit={handleCreateCase} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-2xl p-6 space-y-4 shadow-2xl my-8">
             <div className="border-b border-slate-800 pb-3">
-              <h3 className="font-bold text-white text-base">Register New Recovery Case</h3>
+              <h3 className="font-bold text-white text-base">
+                {isEditing ? 'Edit Recovery Case' : 'Register New Recovery Case'}
+              </h3>
               <p className="text-xs text-slate-400 mt-0.5">Daftarkan perkara penagihan/recovery dari Klien Multifinance atau Klien Perorangan</p>
             </div>
 
@@ -645,7 +758,7 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
                 type="submit"
                 className="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500 shadow-md"
               >
-                Simpan & Snapshot Fee Perkara
+                {isEditing ? 'Simpan Perubahan' : 'Simpan & Snapshot Fee Perkara'}
               </button>
             </div>
           </form>
