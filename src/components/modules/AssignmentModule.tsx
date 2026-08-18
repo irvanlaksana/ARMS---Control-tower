@@ -108,8 +108,16 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
 
         {canEdit && (
           <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-md transition"
+            onClick={() => {
+              if (activeCases.length > 0 && !caseId) {
+                setCaseId(activeCases[0].id);
+              }
+              if (store.personnel && store.personnel.length > 0 && !personnelId) {
+                setPartnerId(store.personnel[0].id);
+              }
+              setShowModal(true);
+            }}
+            className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-md transition active:scale-95"
           >
             <Plus className="w-4 h-4" />
             <span>Buat Penugasan Baru</span>
@@ -361,20 +369,22 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
                 <div className="grid grid-cols-2 gap-2 pt-1 text-slate-200">
                   <div>
                     <span className="text-[10px] text-slate-400 block">Kreditur / Klien:</span>
-                    <span className="font-bold">{selectedCase.clientName}</span>
+                    <span className="font-bold truncate block">{selectedCase.clientName || '-'}</span>
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-400 block">Debitur:</span>
-                    <span className="font-bold">{selectedCase.debtorName}</span>
+                    <span className="font-bold truncate block">{selectedCase.debtorName || '-'}</span>
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-400 block">Dasar Dokumen / Kontrak:</span>
-                    <span className="font-mono">{selectedCase.multifinanceContractNo}</span>
+                    <span className="font-mono truncate block">
+                      {selectedCase.multifinanceContractNo || selectedCase.contractId || '-'}
+                    </span>
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-400 block">Nilai Pokok (OS):</span>
                     <span className="font-bold text-emerald-400">
-                      Rp {selectedCase.principalDebtOS.toLocaleString('id-ID')}
+                      Rp {(selectedCase.principalDebtOS || 0).toLocaleString('id-ID')}
                     </span>
                   </div>
                 </div>
@@ -382,19 +392,22 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
             )}
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">
+              <label className="block text-xs text-slate-400 mb-1 font-semibold">
                 Pilih Mitra Lapangan / Agency Eksternal <span className="text-red-400">*</span>
               </label>
               <select
                 value={personnelId}
                 onChange={(e) => setPartnerId(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
               >
-                {(store.personnel || []).map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.fullName} — {p.role.replace(/_/g, ' ')}
-                  </option>
-                ))}
+                {(store.personnel || []).map((p) => {
+                  const roleLabel = p.position || (p.type ? p.type.replace(/_/g, ' ') : 'Mitra Lapangan');
+                  return (
+                    <option key={p.id} value={p.id}>
+                      {p.fullName} — {roleLabel}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
