@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Client, ClientType } from '../../types/arms';
-import { Building2, Plus, Search, User as UserIcon, UserCheck } from 'lucide-react';
+import { Building2, Plus, Search, User as UserIcon, UserCheck, Edit2, Trash2 } from 'lucide-react';
 
 interface ClientsModuleProps {
   store: ARMSStore;
@@ -11,6 +11,8 @@ interface ClientsModuleProps {
 
 export const ClientsModule: React.FC<ClientsModuleProps> = ({ store, currentUser, onUpdateStore }) => {
   const [showModal, setShowModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<'ALL' | 'MULTIFINANCE' | 'PERORANGAN'>('ALL');
 
@@ -27,54 +29,124 @@ export const ClientsModule: React.FC<ClientsModuleProps> = ({ store, currentUser
 
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS';
 
-  const handleOpenModal = () => {
-    setClientType('MULTIFINANCE');
-    setIndustry('MULTIFINANCE');
-    setClientCode('');
-    setCompanyName('');
-    setNikKtp('');
-    setContactPerson('');
-    setPhone('');
-    setEmail('');
-    setAddress('');
+  const handleOpenModal = (client?: Client) => {
+    if (client) {
+      setIsEditing(true);
+      setEditId(client.id);
+      setClientType(client.clientType || 'MULTIFINANCE');
+      setIndustry(client.industry as any || 'MULTIFINANCE');
+      setClientCode(client.clientCode);
+      setCompanyName(client.companyName);
+      setNikKtp(client.nikKtp || '');
+      setContactPerson(client.contactPerson || '');
+      setPhone(client.phone || '');
+      setEmail(client.email || '');
+      setAddress(client.address || '');
+    } else {
+      setIsEditing(false);
+      setEditId(null);
+      setClientType('MULTIFINANCE');
+      setIndustry('MULTIFINANCE');
+      setClientCode('');
+      setCompanyName('');
+      setNikKtp('');
+      setContactPerson('');
+      setPhone('');
+      setEmail('');
+      setAddress('');
+    }
     setShowModal(true);
   };
 
-  const handleAddClient = (e: React.FormEvent) => {
-    e.preventDefault();
-    const isPerorangan = clientType === 'PERORANGAN';
-
-    const newClient: Client = {
-      id: `CLI-${Date.now()}`,
-      clientCode: clientCode || (isPerorangan ? `PER-${Math.floor(100 + Math.random() * 900)}` : `CLI-${Math.floor(100 + Math.random() * 900)}`),
-      companyName,
-      industry: isPerorangan ? 'PERORANGAN' : industry,
-      clientType,
-      nikKtp: isPerorangan ? nikKtp : undefined,
-      contactPerson: contactPerson || (isPerorangan ? companyName : ''),
-      phone,
-      email,
-      address,
-      tier: 'TIER_1',
-      activeCasesCount: 0,
-      status: 'ACTIVE',
-      createdAt: new Date().toISOString(),
-    };
+  const handleDeleteClient = (id: string, name: string) => {
+    if (!window.confirm(`Are you sure you want to delete client "${name}"?`)) return;
 
     const audit = createAuditEntry(
-      currentUser.username, 
-      currentUser.role, 
-      'CREATE', 
-      'Clients', 
-      newClient.id, 
-      `Created ${isPerorangan ? 'Klien Perorangan' : 'Client Multifinance'} ${companyName}`
+      currentUser.username,
+      currentUser.role,
+      'DELETE',
+      'Clients',
+      id,
+      `Deleted client ${name}`
     );
 
     onUpdateStore({
       ...store,
-      clients: [newClient, ...store.clients],
+      clients: store.clients.filter(c => c.id !== id),
       auditLogs: [audit, ...store.auditLogs],
     });
+  };
+
+  const handleSaveClient = (e: React.FormEvent) => {
+    e.preventDefault();
+    const isPerorangan = clientType === 'PERORANGAN';
+
+    if (isEditing && editId) {
+      const updatedClients = store.clients.map(c => {
+        if (c.id === editId) {
+          return {
+            ...c,
+            clientCode: clientCode || c.clientCode,
+            companyName,
+            industry: isPerorangan ? 'PERORANGAN' : industry,
+            clientType,
+            nikKtp: isPerorangan ? nikKtp : undefined,
+            contactPerson: contactPerson || (isPerorangan ? companyName : ''),
+            phone,
+            email,
+            address,
+          };
+        }
+        return c;
+      });
+
+      const audit = createAuditEntry(
+        currentUser.username,
+        currentUser.role,
+        'UPDATE',
+        'Clients',
+        editId,
+        `Updated client ${companyName}`
+      );
+
+      onUpdateStore({
+        ...store,
+        clients: updatedClients,
+        auditLogs: [audit, ...store.auditLogs],
+      });
+    } else {
+      const newClient: Client = {
+        id: `CLI-${Date.now()}`,
+        clientCode: clientCode || (isPerorangan ? `PER-${Math.floor(100 + Math.random() * 900)}` : `CLI-${Math.floor(100 + Math.random() * 900)}`),
+        companyName,
+        industry: isPerorangan ? 'PERORANGAN' : industry,
+        clientType,
+        nikKtp: isPerorangan ? nikKtp : undefined,
+        contactPerson: contactPerson || (isPerorangan ? companyName : ''),
+        phone,
+        email,
+        address,
+        tier: 'TIER_1',
+        activeCasesCount: 0,
+        status: 'ACTIVE',
+        createdAt: new Date().toISOString(),
+      };
+
+      const audit = createAuditEntry(
+        currentUser.username, 
+        currentUser.role, 
+        'CREATE', 
+        'Clients', 
+        newClient.id, 
+        `Created ${isPerorangan ? 'Klien Perorangan' : 'Client Multifinance'} ${companyName}`
+      );
+
+      onUpdateStore({
+        ...store,
+        clients: [newClient, ...store.clients],
+        auditLogs: [audit, ...store.auditLogs],
+      });
+    }
     setShowModal(false);
   };
 
@@ -107,7 +179,7 @@ export const ClientsModule: React.FC<ClientsModuleProps> = ({ store, currentUser
 
         {canEdit && (
           <button
-            onClick={handleOpenModal}
+            onClick={() => handleOpenModal()}
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-md transition"
           >
             <Plus className="w-4 h-4" />
@@ -152,6 +224,7 @@ export const ClientsModule: React.FC<ClientsModuleProps> = ({ store, currentUser
                 <th className="py-3 px-4">Phone & Email</th>
                 <th className="py-3 px-4 text-center">Active Cases</th>
                 <th className="py-3 px-4 text-center">Status</th>
+                {canEdit && <th className="py-3 px-4 text-center">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
@@ -196,6 +269,26 @@ export const ClientsModule: React.FC<ClientsModuleProps> = ({ store, currentUser
                           {cli.status}
                         </span>
                       </td>
+                      {canEdit && (
+                        <td className="py-3.5 px-4 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => handleOpenModal(cli)}
+                              className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-indigo-400 transition"
+                              title="Edit Client"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteClient(cli.id, cli.companyName)}
+                              className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-red-400 transition"
+                              title="Delete Client"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })
@@ -207,8 +300,10 @@ export const ClientsModule: React.FC<ClientsModuleProps> = ({ store, currentUser
 
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <form onSubmit={handleAddClient} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <h3 className="font-bold text-white text-base">Register Client / Pemberi Kuasa</h3>
+          <form onSubmit={handleSaveClient} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <h3 className="font-bold text-white text-base">
+              {isEditing ? 'Edit Client / Pemberi Kuasa' : 'Register Client / Pemberi Kuasa'}
+            </h3>
 
             {/* Category Toggle */}
             <div className="grid grid-cols-2 gap-2 bg-slate-950 p-1 rounded-lg border border-slate-800">
@@ -351,7 +446,7 @@ export const ClientsModule: React.FC<ClientsModuleProps> = ({ store, currentUser
                 type="submit"
                 className="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500"
               >
-                Simpan Master Klien
+                {isEditing ? 'Simpan Perubahan' : 'Simpan Master Klien'}
               </button>
             </div>
           </form>

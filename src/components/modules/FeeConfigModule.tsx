@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, FeeConfig, FeeType } from '../../types/arms';
-import { Settings, Plus, CheckCircle, ShieldCheck } from 'lucide-react';
+import { Settings, Plus, CheckCircle, ShieldCheck, Edit2, Trash2 } from 'lucide-react';
 
 interface FeeConfigModuleProps {
   store: ARMSStore;
@@ -15,6 +15,8 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
   onUpdateStore,
 }) => {
   const [showModal, setShowModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [clientId, setClientId] = useState(store.clients[0]?.id || '');
   const [serviceId, setServiceId] = useState(store.services[0]?.id || '');
   const [feeType, setFeeType] = useState<FeeType>('PERCENT');
@@ -43,39 +45,115 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
     }
   };
 
-  const handleCreateFee = (e: React.FormEvent) => {
-    e.preventDefault();
-    const client = store.clients.find((c) => c.id === clientId);
-    const service = store.services.find((s) => s.id === serviceId);
+  const handleOpenModal = (fee?: FeeConfig) => {
+    if (fee) {
+      setIsEditing(true);
+      setEditId(fee.id);
+      setClientId(fee.clientId);
+      setServiceId(fee.serviceId);
+      setFeeType(fee.feeType);
+      setPercentageValue(fee.percentageValue || 15);
+      setFixedAmount(fee.fixedAmount || 2500000);
+      setCustomFormulaNotes(fee.customFormulaNotes || '');
+    } else {
+      setIsEditing(false);
+      setEditId(null);
+      setClientId(store.clients[0]?.id || '');
+      setServiceId(store.services[0]?.id || '');
+      setFeeType('PERCENT');
+      setPercentageValue(15);
+      setFixedAmount(2500000);
+      setCustomFormulaNotes('');
+    }
+    setShowModal(true);
+  };
 
-    const newFee: FeeConfig = {
-      id: `FEE-${Date.now()}`,
-      clientId,
-      clientName: client?.companyName || 'Client',
-      serviceId,
-      serviceName: service?.name || 'Service',
-      feeType,
-      percentageValue: feeType === 'PERCENT' || feeType === 'SUCCESS_FEE' ? percentageValue : undefined,
-      fixedAmount: feeType === 'FIXED' || feeType === 'SUCCESS_FEE' ? fixedAmount : undefined,
-      customFormulaNotes: feeType === 'CUSTOM' ? customFormulaNotes : undefined,
-      effectiveDate: new Date().toISOString().split('T')[0],
-      status: 'ACTIVE',
-    };
+  const handleDeleteFee = (id: string, clientName: string, serviceName: string) => {
+    if (!window.confirm(`Are you sure you want to delete fee configuration for ${clientName} - ${serviceName}?`)) return;
 
     const audit = createAuditEntry(
       currentUser.username,
       currentUser.role,
-      'CREATE',
+      'DELETE',
       'Fees',
-      newFee.id,
-      `Configured ${feeType} Fee Engine for ${newFee.clientName} (${newFee.serviceName})`
+      id,
+      `Deleted Fee Config for ${clientName}`
     );
 
     onUpdateStore({
       ...store,
-      fees: [newFee, ...store.fees],
+      fees: store.fees.filter(f => f.id !== id),
       auditLogs: [audit, ...store.auditLogs],
     });
+  };
+
+  const handleSaveFee = (e: React.FormEvent) => {
+    e.preventDefault();
+    const client = store.clients.find((c) => c.id === clientId);
+    const service = store.services.find((s) => s.id === serviceId);
+
+    if (isEditing && editId) {
+      const updatedFees = store.fees.map(f => {
+        if (f.id === editId) {
+          return {
+            ...f,
+            clientId,
+            clientName: client?.companyName || 'Client',
+            serviceId,
+            serviceName: service?.name || 'Service',
+            feeType,
+            percentageValue: feeType === 'PERCENT' || feeType === 'SUCCESS_FEE' ? percentageValue : undefined,
+            fixedAmount: feeType === 'FIXED' || feeType === 'SUCCESS_FEE' ? fixedAmount : undefined,
+            customFormulaNotes: feeType === 'CUSTOM' ? customFormulaNotes : undefined,
+          };
+        }
+        return f;
+      });
+
+      const audit = createAuditEntry(
+        currentUser.username,
+        currentUser.role,
+        'UPDATE',
+        'Fees',
+        editId,
+        `Updated ${feeType} Fee Engine for ${client?.companyName} (${service?.name})`
+      );
+
+      onUpdateStore({
+        ...store,
+        fees: updatedFees,
+        auditLogs: [audit, ...store.auditLogs],
+      });
+    } else {
+      const newFee: FeeConfig = {
+        id: `FEE-${Date.now()}`,
+        clientId,
+        clientName: client?.companyName || 'Client',
+        serviceId,
+        serviceName: service?.name || 'Service',
+        feeType,
+        percentageValue: feeType === 'PERCENT' || feeType === 'SUCCESS_FEE' ? percentageValue : undefined,
+        fixedAmount: feeType === 'FIXED' || feeType === 'SUCCESS_FEE' ? fixedAmount : undefined,
+        customFormulaNotes: feeType === 'CUSTOM' ? customFormulaNotes : undefined,
+        effectiveDate: new Date().toISOString().split('T')[0],
+        status: 'ACTIVE',
+      };
+
+      const audit = createAuditEntry(
+        currentUser.username,
+        currentUser.role,
+        'CREATE',
+        'Fees',
+        newFee.id,
+        `Configured ${feeType} Fee Engine for ${newFee.clientName} (${newFee.serviceName})`
+      );
+
+      onUpdateStore({
+        ...store,
+        fees: [newFee, ...store.fees],
+        auditLogs: [audit, ...store.auditLogs],
+      });
+    }
 
     setShowModal(false);
   };
@@ -95,7 +173,7 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
 
         {canEdit && (
           <button
-            onClick={() => setShowModal(true)}
+            onClick={() => handleOpenModal()}
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-md transition"
           >
             <Plus className="w-4 h-4" />
@@ -116,6 +194,7 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
                 <th className="py-3 px-4">Fixed Nominal</th>
                 <th className="py-3 px-4">Effective Date</th>
                 <th className="py-3 px-4 text-center">Status</th>
+                {canEdit && <th className="py-3 px-4 text-center">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
@@ -140,6 +219,26 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
                       {f.status}
                     </span>
                   </td>
+                  {canEdit && (
+                    <td className="py-3.5 px-4 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => handleOpenModal(f)}
+                          className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-indigo-400 transition"
+                          title="Edit Fee Config"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteFee(f.id, f.clientName, f.serviceName)}
+                          className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-red-400 transition"
+                          title="Delete Fee Config"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -149,8 +248,10 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
 
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <form onSubmit={handleCreateFee} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
-            <h3 className="font-bold text-white text-base">Configure Fee Engine Rule</h3>
+          <form onSubmit={handleSaveFee} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+            <h3 className="font-bold text-white text-base">
+              {isEditing ? 'Edit Fee Engine Rule' : 'Configure Fee Engine Rule'}
+            </h3>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -235,7 +336,7 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
                 type="submit"
                 className="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500"
               >
-                Save Fee Configuration
+                {isEditing ? 'Save Changes' : 'Save Fee Configuration'}
               </button>
             </div>
           </form>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Customer } from '../../types/arms';
-import { Users, Plus } from 'lucide-react';
+import { Users, Plus, Edit2, Trash2 } from 'lucide-react';
 
 interface CustomersModuleProps {
   store: ARMSStore;
@@ -11,6 +11,8 @@ interface CustomersModuleProps {
 
 export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, currentUser, onUpdateStore }) => {
   const [showModal, setShowModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [fullName, setFullName] = useState('');
   const [nikKtp, setNikKtp] = useState('');
   const [phone, setPhone] = useState('');
@@ -19,30 +21,104 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
 
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS';
 
-  const handleAddCustomer = (e: React.FormEvent) => {
-    e.preventDefault();
-    const newCustomer: Customer = {
-      id: `CUST-${Date.now()}`,
-      customerCode: `DEB-${nikKtp || Date.now()}`,
-      nikKtp,
-      fullName,
-      phone,
-      addressCurrent,
-      addressKtp: addressCurrent,
-      workplace,
-      emergencyContactName: 'Family Contact',
-      emergencyContactPhone: phone,
-      riskNotes: 'Normal recovery case profile',
-      createdAt: new Date().toISOString(),
-    };
+  const handleOpenModal = (customer?: Customer) => {
+    if (customer) {
+      setIsEditing(true);
+      setEditId(customer.id);
+      setFullName(customer.fullName);
+      setNikKtp(customer.nikKtp);
+      setPhone(customer.phone);
+      setAddressCurrent(customer.addressCurrent);
+      setWorkplace(customer.workplace);
+    } else {
+      setIsEditing(false);
+      setEditId(null);
+      setFullName('');
+      setNikKtp('');
+      setPhone('');
+      setAddressCurrent('');
+      setWorkplace('');
+    }
+    setShowModal(true);
+  };
 
-    const audit = createAuditEntry(currentUser.username, currentUser.role, 'CREATE', 'Customers', newCustomer.id, `Created Debtor Profile ${fullName}`);
+  const handleDeleteCustomer = (id: string, name: string) => {
+    if (!window.confirm(`Are you sure you want to delete customer "${name}"?`)) return;
+
+    const audit = createAuditEntry(
+      currentUser.username,
+      currentUser.role,
+      'DELETE',
+      'Customers',
+      id,
+      `Deleted customer ${name}`
+    );
 
     onUpdateStore({
       ...store,
-      customers: [newCustomer, ...store.customers],
+      customers: store.customers.filter(c => c.id !== id),
       auditLogs: [audit, ...store.auditLogs],
     });
+  };
+
+  const handleSaveCustomer = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (isEditing && editId) {
+      const updatedCustomers = store.customers.map(c => {
+        if (c.id === editId) {
+          return {
+            ...c,
+            fullName,
+            nikKtp,
+            phone,
+            addressCurrent,
+            addressKtp: addressCurrent,
+            workplace,
+          };
+        }
+        return c;
+      });
+
+      const audit = createAuditEntry(
+        currentUser.username,
+        currentUser.role,
+        'UPDATE',
+        'Customers',
+        editId,
+        `Updated Debtor Profile ${fullName}`
+      );
+
+      onUpdateStore({
+        ...store,
+        customers: updatedCustomers,
+        auditLogs: [audit, ...store.auditLogs],
+      });
+    } else {
+      const newCustomer: Customer = {
+        id: `CUST-${Date.now()}`,
+        customerCode: `DEB-${nikKtp || Date.now()}`,
+        nikKtp,
+        fullName,
+        phone,
+        addressCurrent,
+        addressKtp: addressCurrent,
+        workplace,
+        emergencyContactName: 'Family Contact',
+        emergencyContactPhone: phone,
+        riskNotes: 'Normal recovery case profile',
+        createdAt: new Date().toISOString(),
+      };
+
+      const audit = createAuditEntry(currentUser.username, currentUser.role, 'CREATE', 'Customers', newCustomer.id, `Created Debtor Profile ${fullName}`);
+
+      onUpdateStore({
+        ...store,
+        customers: [newCustomer, ...store.customers],
+        auditLogs: [audit, ...store.auditLogs],
+      });
+    }
+
     setShowModal(false);
   };
 
@@ -59,7 +135,7 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
 
         {canEdit && (
           <button
-            onClick={() => setShowModal(true)}
+            onClick={() => handleOpenModal()}
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-md transition"
           >
             <Plus className="w-4 h-4" />
@@ -80,6 +156,7 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                 <th className="py-3 px-4">Current Address</th>
                 <th className="py-3 px-4">Workplace</th>
                 <th className="py-3 px-4">Risk Notes</th>
+                {canEdit && <th className="py-3 px-4 text-center">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
@@ -92,6 +169,26 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                   <td className="py-3.5 px-4 text-slate-300 max-w-[200px] truncate">{c.addressCurrent}</td>
                   <td className="py-3.5 px-4 text-slate-400">{c.workplace}</td>
                   <td className="py-3.5 px-4 text-amber-300 text-[11px]">{c.riskNotes}</td>
+                  {canEdit && (
+                    <td className="py-3.5 px-4 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => handleOpenModal(c)}
+                          className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-indigo-400 transition"
+                          title="Edit Customer"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCustomer(c.id, c.fullName)}
+                          className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-red-400 transition"
+                          title="Delete Customer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -101,8 +198,10 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
 
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <form onSubmit={handleAddCustomer} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <h3 className="font-bold text-white text-base">Register Debtor Profile</h3>
+          <form onSubmit={handleSaveCustomer} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <h3 className="font-bold text-white text-base">
+              {isEditing ? 'Edit Debtor Profile' : 'Register Debtor Profile'}
+            </h3>
 
             <div>
               <label className="block text-xs text-slate-400 mb-1">Full Name</label>
@@ -161,7 +260,7 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                 type="submit"
                 className="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500"
               >
-                Save Debtor
+                {isEditing ? 'Save Changes' : 'Save Debtor'}
               </button>
             </div>
           </form>
