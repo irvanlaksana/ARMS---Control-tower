@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Payment, LedgerEntry } from '../../types/arms';
-import { DollarSign, Plus, CheckCircle, FileText } from 'lucide-react';
+import { DollarSign, Plus, CheckCircle, FileText, X } from 'lucide-react';
 import { PaymentReceipt } from './PaymentReceipt';
 
 interface PaymentsModuleProps {
@@ -20,6 +20,7 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
   const [successFeeAmount, setSuccessFeeAmount] = useState(0);
   const [executionFeeAmount, setExecutionFeeAmount] = useState(0);
   const [passThroughFee, setPassThroughFee] = useState(0);
+  const [manualSplits, setManualSplits] = useState<{name: string, amount: number}[]>([]);
   const [proofDriveUrl, setProofDriveUrl] = useState('');
   const [selectedPaymentForReceipt, setSelectedPaymentForReceipt] = useState<Payment | null>(null);
 
@@ -31,6 +32,10 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
 
     const receiptNo = `PAY-2026-${Math.floor(100 + Math.random() * 900)}`;
     const totalCompanyRevenue = successFeeAmount + executionFeeAmount;
+
+    const customSplitsStr = manualSplits.length > 0 
+      ? ', ' + manualSplits.map(s => `${s.name}: Rp ${s.amount.toLocaleString('id-ID')}`).join(', ') 
+      : '';
 
     const newPayment: Payment = {
       id: `PAY-${Date.now()}`,
@@ -47,7 +52,8 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
       executionFeeAmount,
       passThroughFee,
       proofUrl: proofDriveUrl,
-      allocationSummary: `Success Fee: Rp ${successFeeAmount.toLocaleString('id-ID')}, Execution Fee: Rp ${executionFeeAmount.toLocaleString('id-ID')}, Pass-Through: Rp ${passThroughFee.toLocaleString('id-ID')}`,
+      manualSplits,
+      allocationSummary: `Success Fee: Rp ${successFeeAmount.toLocaleString('id-ID')}, Execution Fee: Rp ${executionFeeAmount.toLocaleString('id-ID')}, Pass-Through: Rp ${passThroughFee.toLocaleString('id-ID')}${customSplitsStr}`,
       verificationStatus: 'VERIFIED',
       verifiedBy: currentUser.name,
       createdAt: new Date().toISOString(),
@@ -238,7 +244,16 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
             </div>
 
             <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50 space-y-3">
-              <h4 className="text-xs font-bold text-amber-400">Manual Splitting Fee</h4>
+              <div className="flex justify-between items-center">
+                <h4 className="text-xs font-bold text-amber-400">Manual Splitting Fee</h4>
+                <button
+                  type="button"
+                  onClick={() => setManualSplits([...manualSplits, { name: '', amount: 0 }])}
+                  className="flex items-center gap-1 text-[10px] text-amber-400 hover:text-amber-300 font-semibold"
+                >
+                  <Plus className="w-3 h-3" /> Tambah Split
+                </button>
+              </div>
               
               <div>
                 <label className="block text-[10px] text-slate-400 mb-1">Success Fee Amount (Pendapatan Sah Perusahaan)</label>
@@ -269,6 +284,52 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
                   className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-300 font-mono"
                 />
               </div>
+
+              {manualSplits.length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-slate-700">
+                  {manualSplits.map((split, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          placeholder="Nama Split Manual"
+                          value={split.name}
+                          onChange={(e) => {
+                            const newSplits = [...manualSplits];
+                            newSplits[index].name = e.target.value;
+                            setManualSplits(newSplits);
+                          }}
+                          className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-white"
+                        />
+                      </div>
+                      <div className="w-32">
+                        <input
+                          type="number"
+                          placeholder="Rp 0"
+                          value={split.amount}
+                          onChange={(e) => {
+                            const newSplits = [...manualSplits];
+                            newSplits[index].amount = Number(e.target.value);
+                            setManualSplits(newSplits);
+                          }}
+                          className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-amber-300 font-mono"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newSplits = [...manualSplits];
+                          newSplits.splice(index, 1);
+                          setManualSplits(newSplits);
+                        }}
+                        className="p-1 text-slate-500 hover:text-red-400"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div>
