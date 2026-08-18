@@ -21,11 +21,15 @@ export interface User {
   createdAt: string;
 }
 
+export type ClientType = 'MULTIFINANCE' | 'PERORANGAN';
+
 export interface Client {
   id: string;
   clientCode: string;
-  companyName: string; // e.g. PT Adira Dinamika Multi Finance Tbk
-  industry: 'MULTIFINANCE' | 'BANKING' | 'FINTECH' | 'OTHER';
+  companyName: string; // e.g. PT Adira Dinamika Multi Finance Tbk or Nama Kreditur Perorangan
+  industry: 'MULTIFINANCE' | 'BANKING' | 'FINTECH' | 'PERORANGAN' | 'OTHER';
+  clientType?: ClientType;
+  nikKtp?: string; // NIK untuk Klien Perorangan
   contactPerson: string;
   phone: string;
   email: string;
@@ -148,6 +152,7 @@ export interface Case {
   caseNo: string;
   clientId: string;
   clientName: string;
+  clientType?: ClientType;
   contractId: string;
   customerId: string;
   debtorName: string;

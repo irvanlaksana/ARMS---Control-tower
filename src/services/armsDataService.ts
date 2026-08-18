@@ -97,7 +97,12 @@ function normalizeStore(parsed: any): ARMSStore {
     users: Array.isArray(parsed.users) ? parsed.users : initial.users,
     clients: Array.isArray(parsed.clients) ? parsed.clients : initial.clients,
     personnel: Array.isArray(parsed.personnel) ? parsed.personnel : initial.personnel,
-    services: Array.isArray(parsed.services) ? parsed.services : initial.services,
+    services: Array.isArray(parsed.services) 
+      ? [
+          ...parsed.services,
+          ...INITIAL_SERVICES.filter(initSrv => !parsed.services.some((s: any) => s.id === initSrv.id || s.category === initSrv.category))
+        ]
+      : initial.services,
     fees: Array.isArray(parsed.fees) ? parsed.fees : initial.fees,
     contracts: Array.isArray(parsed.contracts) ? parsed.contracts : initial.contracts,
     leads: Array.isArray(parsed.leads) ? parsed.leads : initial.leads,

@@ -24,6 +24,25 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
 
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS';
 
+  const selectedClient = store.clients.find((c) => c.id === clientId);
+  const isPeroranganClient = selectedClient?.clientType === 'PERORANGAN' || selectedClient?.industry === 'PERORANGAN';
+
+  const availableServices = isPeroranganClient
+    ? store.services.filter(s => s.category === 'PENAGIHAN_PERORANGAN' || s.serviceCode.includes('PERORANGAN') || s.name.toLowerCase().includes('perorangan'))
+    : store.services.filter(s => s.category !== 'PENAGIHAN_PERORANGAN' && !s.serviceCode.includes('PERORANGAN') && !s.name.toLowerCase().includes('perorangan'));
+
+  const handleClientChange = (newClientId: string) => {
+    setClientId(newClientId);
+    const client = store.clients.find(c => c.id === newClientId);
+    const isPer = client?.clientType === 'PERORANGAN' || client?.industry === 'PERORANGAN';
+    const srv = isPer
+      ? store.services.find(s => s.category === 'PENAGIHAN_PERORANGAN' || s.serviceCode.includes('PERORANGAN') || s.name.toLowerCase().includes('perorangan'))
+      : store.services.find(s => s.category !== 'PENAGIHAN_PERORANGAN' && !s.serviceCode.includes('PERORANGAN') && !s.name.toLowerCase().includes('perorangan'));
+    if (srv) {
+      setServiceId(srv.id);
+    }
+  };
+
   const handleCreateFee = (e: React.FormEvent) => {
     e.preventDefault();
     const client = store.clients.find((c) => c.id === clientId);
@@ -135,30 +154,34 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Select Multifinance Client</label>
+                <label className="block text-xs text-slate-400 mb-1">
+                  Pilih Klien ({isPeroranganClient ? 'Perorangan' : 'Multifinance'})
+                </label>
                 <select
                   value={clientId}
-                  onChange={(e) => setClientId(e.target.value)}
+                  onChange={(e) => handleClientChange(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
                 >
                   {store.clients.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.companyName}
+                      {c.companyName} {c.clientType === 'PERORANGAN' || c.industry === 'PERORANGAN' ? '(Perorangan)' : ''}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Select Service</label>
+                <label className="block text-xs text-slate-400 mb-1">
+                  Pilih Produk Layanan {isPeroranganClient && <span className="text-amber-400 font-semibold">(Khusus Perorangan)</span>}
+                </label>
                 <select
                   value={serviceId}
                   onChange={(e) => setServiceId(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
                 >
-                  {store.services.map((s) => (
+                  {availableServices.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.name}
+                      {s.name} ({s.serviceCode || (s as any).code})
                     </option>
                   ))}
                 </select>
