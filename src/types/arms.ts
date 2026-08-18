@@ -253,6 +253,14 @@ export interface LawyerNotice {
   createdAt: string;
 }
 
+export interface FieldPhoto {
+  id: string;
+  url: string;
+  caption: string;
+  category: 'RUMAH_DEBITUR' | 'TEMU_DEBITUR' | 'UNIT_KENDARAAN' | 'SURAT_BERITA_ACARA' | 'KWITANSI_BAYAR' | 'LOKASI_KANTOR' | 'LAINNYA';
+  timestamp: string;
+}
+
 export interface CommunicationLog {
   id: string;
   caseId: string;
@@ -267,6 +275,7 @@ export interface CommunicationLog {
   followUpAction: string;
   nextFollowUpDate?: string;
   attachmentDriveUrl?: string;
+  photos?: FieldPhoto[];
   recordedBy: string; // Control Tower user
   createdAt: string;
 }
@@ -294,6 +303,9 @@ export interface Collection {
   caseId: string;
   caseNo: string;
   debtorName: string;
+  clientType?: ClientType;
+  clientName?: string;
+  actionType?: 'FIELD_VISIT' | 'SURAT_PERINGATAN' | 'MEDIATION' | 'SEIZURE_WARNING' | 'REPOSSESSION_EXECUTED' | 'PENAGIHAN_PERORANGAN';
   personnelId: string;
   personnelName: string;
   amountCollected: number;
@@ -302,6 +314,8 @@ export interface Collection {
   receiptNo: string;
   verificationStatus: 'PENDING_VERIFICATION' | 'VERIFIED' | 'REJECTED';
   notes: string;
+  photos?: FieldPhoto[];
+  driveFolderUrl?: string;
   createdAt: string;
 }
 

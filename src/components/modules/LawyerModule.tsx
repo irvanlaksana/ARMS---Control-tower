@@ -1,7 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
-import { User, LawyerNotice } from '../../types/arms';
-import { Scale, Plus, FileText, CheckCircle2, Clock, Send, ShieldAlert, Eye, Copy, Check, Printer, Edit3 } from 'lucide-react';
+import { User, LawyerNotice, ClientType } from '../../types/arms';
+import { 
+  Scale, Plus, FileText, CheckCircle2, Clock, Send, ShieldAlert, Eye, 
+  Copy, Check, Printer, Edit3, Building2, UserCheck, Search, Filter 
+} from 'lucide-react';
 
 interface LawyerModuleProps {
   store: ARMSStore;
@@ -18,6 +21,8 @@ export const LawyerModule: React.FC<LawyerModuleProps> = ({
   const [viewNotice, setViewNotice] = useState<LawyerNotice | null>(null);
   const [copied, setCopied] = useState(false);
   const [noticeViewMode, setNoticeViewMode] = useState<'edit' | 'f4_preview'>('edit');
+  const [clientFilter, setClientFilter] = useState<'ALL' | 'MULTIFINANCE' | 'PERORANGAN'>('ALL');
+  const [searchTerm, setSearchTerm] = useState('');
   const printNoticeRef = useRef<HTMLDivElement>(null);
 
   const handlePrintNotice = () => {
@@ -92,11 +97,14 @@ export const LawyerModule: React.FC<LawyerModuleProps> = ({
     }
   };
 
-  // Form State
+  // Active cases
   const activeCases = store.cases.filter(
     (c) => !['CLOSED', 'SETTLED', 'FULL_PAID', 'CANCELLED'].includes(c.status)
   );
+  const multifinanceCases = activeCases.filter((c) => c.clientType === 'MULTIFINANCE' || !c.clientType);
+  const peroranganCases = activeCases.filter((c) => c.clientType === 'PERORANGAN');
 
+  // Form State
   const [selectedCaseId, setSelectedCaseId] = useState(activeCases[0]?.id || '');
   const [noticeType, setNoticeType] = useState<LawyerNotice['noticeType']>('SOMASI_1');
   const [lawyerFirmName, setLawyerFirmName] = useState('KANTOR ADVOKAT & KONSULTAN HUKUM WIJAYA & REKAN (Mitra Hukum)');
@@ -105,6 +113,10 @@ export const LawyerModule: React.FC<LawyerModuleProps> = ({
 
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS' || currentUser.role === 'APPROVER_EXECUTIVE';
 
+  const selectedCase = store.cases.find((c) => c.id === selectedCaseId);
+  const isPerorangan = selectedCase?.clientType === 'PERORANGAN';
+
+  // Tailored Legal Draft Generator
   const generateLetterDraft = (
     debtorName: string,
     debtorAddr: string,
@@ -113,7 +125,8 @@ export const LawyerModule: React.FC<LawyerModuleProps> = ({
     amount: number,
     type: LawyerNotice['noticeType'],
     firm: string,
-    lawyer: string
+    lawyer: string,
+    isPer: boolean
   ): string => {
     const todayStr = new Date().toLocaleDateString('id-ID', {
       day: 'numeric',
@@ -130,6 +143,44 @@ export const LawyerModule: React.FC<LawyerModuleProps> = ({
     if (type === 'UNDANGAN_MEDIASI_HUKUM') typeTitle = 'UNDANGAN MEDIASI & MUSYAWARAH HUKUM FORMAL';
     if (type === 'GUGATAN_SEDERHANA') typeTitle = 'DRAFT PENDAFTARAN GUGATAN SEDERHANA (PERDATA)';
 
+    if (isPer) {
+      // PERORANGAN LEGAL LETTER
+      return `${typeTitle}
+Nomor: ${type}/LEGAL-PERORANGAN/${new Date().getFullYear()}/${(store.lawyerNotices?.length || 0) + 1}
+Tanggal: ${todayStr}
+
+Kepada Yth.
+Bpk/Ibu ${debtorName}
+Alamat: ${debtorAddr || 'Alamat Domisili Sesuai Dokumen Kesepakatan'}
+
+Perihal: ${typeTitle} — Atas Surat Pengakuan Hutang (SPH) / Dokumen Perjanjian No. ${contractNo}
+
+Dengan hormat,
+Kami yang bertanda tangan di bawah ini, ${lawyer || 'Kuasa Hukum & Tim Advokat'}, dari ${firm} selaku Advokat & Konsultan Hukum bertindak untuk dan atas nama serta mewakili kepentingan hukum Klien kami:
+
+Nama Kreditur : ${clientName} (Pemberi Kuasa / Pemilik Sah Hak Tagih)
+
+Berdasarkan Surat Kuasa Khusus serta dokumen bukti transaksi dan Surat Pengakuan Hutang (SPH) No. ${contractNo}, dengan ini kami sampaikan bahwa Saudara terdaftar memiliki kewajiban pinjaman/piutang yang telah jatuh tempo dengan sisa pokok tertunggak sebesar ${formattedAmount}.
+
+Sehubungan dengan kewajiban tersebut yang hingga saat ini belum diselesaikan dengan baik, melalui Surat Somasi/Peringatan Hukum Resmi ini kami menegaskan hal-hal sebagai berikut:
+
+1. Saudara telah lalai dan cidera janji (wanprestasi) sebagaimana diatur dalam Pasal 1243 dan Pasal 1338 KUHPerdata atas kesepakatan pengembalian pinjaman yang telah jatuh tempo.
+2. Kami memberikan kesempatan terakhir bagi Saudara untuk segera melunasi kewajiban tersebut atau hadir bermusyawarah menyelesaikan komitmen pembayaran dalam waktu paling lambat 3 (tiga) hari kerja sejak surat ini diterima.
+3. Apabila dalam batas waktu yang ditentukan Saudara tetap tidak beritikad baik atau mengabaikan peringatan ini, maka Klien kami melalui Kuasa Hukum akan segera mengambil tindakan hukum formal:
+   a. Mengajukan Gugatan Sederhana (Small Claim Court) / Gugatan Perdata Wanprestasi di Pengadilan Negeri; serta
+   b. Melakukan proses pelaporan hukum atas dugaan tindak pidana Penipuan dan/atau Penggelapan sesuai Pasal 378 dan Pasal 372 Kitab Undang-Undang Hukum Pidana (KUHP) ke Kepolisian Negara Republik Indonesia.
+
+Demikian Surat Somasi Hukum ini kami sampaikan agar menjadi perhatian serius dan segera ditindaklanjuti dengan itikad baik demi menghindari proses hukum perdata maupun pidana lebih lanjut.
+
+Hormat Kami,
+Kuasa Hukum Klien Perorangan
+${firm}
+
+
+(${lawyer || 'Tim Advokat & Legal Counsel'})`;
+    }
+
+    // MULTIFINANCE LEGAL LETTER
     return `${typeTitle}
 Nomor: ${type}/LEGAL-ADV/${new Date().getFullYear()}/${(store.lawyerNotices?.length || 0) + 1}
 Tanggal: ${todayStr}
@@ -138,7 +189,7 @@ Kepada Yth.
 Bpk/Ibu ${debtorName}
 Alamat: ${debtorAddr || 'Alamat Sesuai Kontrak Perjanjian'}
 
-Perihal: ${typeTitle} — Atas Perjanjian Pembiayaan No. ${contractNo}
+Perihal: ${typeTitle} — Atas Perjanjian Pembiayaan Konsumen No. ${contractNo}
 
 Dengan hormat,
 Kami yang bertanda tangan di bawah ini, ${lawyer || 'Kuasa Hukum'}, dari ${firm} selaku Advokat & Konsultan Hukum (Kuasa Hukum Mitra) bertindak untuk dan atas nama Klien kami, ${clientName}.
@@ -146,7 +197,7 @@ Kami yang bertanda tangan di bawah ini, ${lawyer || 'Kuasa Hukum'}, dari ${firm}
 Berdasarkan dokumen operasional dan catatan keuangan Klien kami, Saudara terdaftar masih memiliki sisa kewajiban penunggakan fasilitas pembiayaan/piutang dengan jumlah tunggakan pokok sebesar ${formattedAmount}.
 
 Sehubungan dengan hal tersebut di atas, melalui Surat Peringatan Hukum ini kami menyampaikan hal-hal sebagai berikut:
-1. Saudara telah cidera janji (wanprestasi) atas kewajiban pembayaran yang telah disepakati dalam Kontrak Perjanjian No. ${contractNo}.
+1. Saudara telah cidera janji (wanprestasi) atas kewajiban pembayaran yang telah disepakati dalam Kontrak Perjanjian Pembiayaan No. ${contractNo}.
 2. Kami memperingatkan dan meminta Saudara untuk segera melakukan pelunasan atau hadir beritikad baik menyelesaikan kewajiban dalam waktu paling lambat 3 (tiga) hari kerja sejak surat ini diterima.
 3. Apabila Saudara mengabaikan peringatan hukum ini, maka Klien kami melalui Kuasa Hukum Advokat akan mengambil tindakan hukum tegas sesuai peraturan perundang-undangan Republik Indonesia, termasuk pelaporan dugaan tindak pidana Penggelapan Objek Jaminan Fidusia (UU No. 42 Tahun 1999) serta Pendaftaran Gugatan Perdata di Pengadilan Negeri.
 
@@ -162,21 +213,21 @@ ${firm}
 
   const handleCreateNotice = (e: React.FormEvent) => {
     e.preventDefault();
-    const targetCase = store.cases.find((c) => c.id === selectedCaseId);
-    if (!targetCase) return;
+    if (!selectedCase) return;
 
-    const customer = store.customers.find((cu) => cu.id === targetCase.customerId);
+    const customer = store.customers.find((cu) => cu.id === selectedCase.customerId);
     const debtorAddr = customer?.addressCurrent || customer?.addressKtp || 'Alamat Sesuai Kontrak';
 
     const draftText = generateLetterDraft(
-      targetCase.debtorName,
+      selectedCase.debtorName,
       debtorAddr,
-      targetCase.clientName,
-      targetCase.multifinanceContractNo,
-      targetCase.principalDebtOS,
+      selectedCase.clientName,
+      selectedCase.multifinanceContractNo,
+      selectedCase.principalDebtOS,
       noticeType,
       lawyerFirmName,
-      lawyerName
+      lawyerName,
+      isPerorangan
     );
 
     let noticeTypeLabel = 'Somasi 1';
@@ -188,18 +239,18 @@ ${firm}
 
     const newNotice: LawyerNotice = {
       id: `LGL-${Date.now()}`,
-      noticeNo: `${noticeType}/MJI-LEGAL/${new Date().getFullYear()}/${Math.floor(100 + Math.random() * 900)}`,
-      caseId: targetCase.id,
-      caseNo: targetCase.caseNo,
-      debtorName: targetCase.debtorName,
+      noticeNo: `${noticeType}/${isPerorangan ? 'LEGAL-PER' : 'LEGAL-CORP'}/${new Date().getFullYear()}/${Math.floor(100 + Math.random() * 900)}`,
+      caseId: selectedCase.id,
+      caseNo: selectedCase.caseNo,
+      debtorName: selectedCase.debtorName,
       debtorAddress: debtorAddr,
-      clientName: targetCase.clientName,
-      multifinanceContractNo: targetCase.multifinanceContractNo,
+      clientName: selectedCase.clientName,
+      multifinanceContractNo: selectedCase.multifinanceContractNo,
       noticeType,
       requestedDate: new Date().toISOString().split('T')[0],
       lawyerFirmName,
       lawyerName,
-      principalDebtAmount: targetCase.principalDebtOS,
+      principalDebtAmount: selectedCase.principalDebtOS,
       status: 'SENT_TO_DEBTOR',
       letterContentDraft: draftText,
       notes,
@@ -209,7 +260,7 @@ ${firm}
 
     // Update target case with lawyer notice indicator
     const updatedCases = store.cases.map((c) => {
-      if (c.id === targetCase.id) {
+      if (c.id === selectedCase.id) {
         return {
           ...c,
           lawyerStatus: `Dikirim ${noticeTypeLabel} (Lawyer)`,
@@ -226,7 +277,7 @@ ${firm}
       'CREATE',
       'Lawyer_Notices',
       newNotice.id,
-      `Membuat Pengajuan Surat Legal (${noticeTypeLabel}) untuk Nasabah ${newNotice.debtorName} (${newNotice.caseNo})`
+      `Membuat Pengajuan Surat Legal (${noticeTypeLabel} - ${isPerorangan ? 'Perorangan' : 'Multifinance'}) untuk Nasabah ${newNotice.debtorName} (${newNotice.caseNo})`
     );
 
     onUpdateStore({
@@ -315,6 +366,21 @@ ${firm}
 
   const noticesList = store.lawyerNotices || [];
 
+  // Filter notices
+  const filteredNotices = noticesList.filter((n) => {
+    const parentCase = store.cases.find((c) => c.id === n.caseId || c.caseNo === n.caseNo);
+    const cType = parentCase?.clientType || 'MULTIFINANCE';
+
+    if (clientFilter === 'MULTIFINANCE' && cType !== 'MULTIFINANCE') return false;
+    if (clientFilter === 'PERORANGAN' && cType !== 'PERORANGAN') return false;
+
+    if (searchTerm) {
+      const match = `${n.noticeNo} ${n.caseNo} ${n.debtorName} ${n.clientName} ${n.lawyerFirmName} ${n.lawyerName}`.toLowerCase();
+      if (!match.includes(searchTerm.toLowerCase())) return false;
+    }
+    return true;
+  });
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -325,7 +391,7 @@ ${firm}
             <h2 className="text-xl font-bold text-white">Menu Lawyer & Tindakan Hukum (Legal Notice & Somasi)</h2>
           </div>
           <p className="text-xs text-slate-400">
-            Layanan Pengajuan Surat Klarifikasi, Somasi 1, 2, Somasi Terakhir, dan Undangan Mediasi Hukum Otomatis untuk Nasabah Belum Selesai
+            Layanan Pengajuan Surat Klarifikasi, Somasi 1, 2, Somasi Terakhir, dan Undangan Mediasi Hukum untuk Klien Multifinance & Klien Perorangan
           </p>
         </div>
 
@@ -389,6 +455,53 @@ ${firm}
         </div>
       </div>
 
+      {/* Filter & Search Bar */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
+          <button
+            onClick={() => setClientFilter('ALL')}
+            className={`px-3 py-1.5 rounded text-xs font-medium transition ${
+              clientFilter === 'ALL' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            Semua ({noticesList.length})
+          </button>
+          <button
+            onClick={() => setClientFilter('MULTIFINANCE')}
+            className={`px-3 py-1.5 rounded text-xs font-medium transition flex items-center gap-1.5 ${
+              clientFilter === 'MULTIFINANCE'
+                ? 'bg-indigo-900/80 text-indigo-200 border border-indigo-700'
+                : 'text-slate-400 hover:text-indigo-300'
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5" />
+            <span>Multifinance</span>
+          </button>
+          <button
+            onClick={() => setClientFilter('PERORANGAN')}
+            className={`px-3 py-1.5 rounded text-xs font-medium transition flex items-center gap-1.5 ${
+              clientFilter === 'PERORANGAN'
+                ? 'bg-amber-900/80 text-amber-200 border border-amber-700'
+                : 'text-slate-400 hover:text-amber-300'
+            }`}
+          >
+            <UserCheck className="w-3.5 h-3.5" />
+            <span>Klien Perorangan</span>
+          </button>
+        </div>
+
+        <div className="relative">
+          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Cari surat, nasabah, lawyer..."
+            className="bg-slate-950 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 w-full sm:w-64"
+          />
+        </div>
+      </div>
+
       {/* Main Table */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
         <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
@@ -397,7 +510,7 @@ ${firm}
             <span>Daftar Pengajuan & Surat Hukum Lawyer</span>
           </h3>
           <span className="text-xs text-slate-400">
-            Otomatis memberikan tanda keterangan Lawyer di seluruh Core Recovery
+            Format Somasi disesuaikan otomatis untuk Klien Multifinance & Perorangan
           </span>
         </div>
 
@@ -407,7 +520,7 @@ ${firm}
               <tr>
                 <th className="py-3 px-4">No. Surat Legal</th>
                 <th className="py-3 px-4">Kasus & Nasabah</th>
-                <th className="py-3 px-4">Klien Multifinance</th>
+                <th className="py-3 px-4">Kategori Klien</th>
                 <th className="py-3 px-4">Jenis Surat / Tindakan</th>
                 <th className="py-3 px-4">Kantor Hukum & Advokat</th>
                 <th className="py-3 px-4 text-right">Tunggakan Pokok</th>
@@ -416,46 +529,70 @@ ${firm}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {noticesList.length === 0 ? (
+              {filteredNotices.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-8 text-center text-slate-500 text-xs">
-                    Belum ada pengajuan surat legal lawyer. Klik tombol "Tambah Servis / Surat Legal Lawyer" untuk membuat draft somasi.
+                    Belum ada pengajuan surat legal lawyer yang sesuai filter.
                   </td>
                 </tr>
               ) : (
-                noticesList.map((n) => (
-                  <tr key={n.id} className="hover:bg-slate-800/40 transition">
-                    <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">{n.noticeNo}</td>
-                    <td className="py-3.5 px-4 space-y-0.5">
-                      <div className="font-bold text-white flex items-center gap-1.5">
-                        <span>{n.debtorName}</span>
-                        <span className="text-[10px] bg-purple-950 text-purple-300 px-1.5 py-0.2 rounded border border-purple-800">
-                          ⚖️ Lawyer
-                        </span>
-                      </div>
-                      <div className="text-[11px] text-slate-400">Ref: {n.caseNo}</div>
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-300 font-medium">{n.clientName}</td>
-                    <td className="py-3.5 px-4">{getNoticeBadge(n.noticeType)}</td>
-                    <td className="py-3.5 px-4 space-y-0.5">
-                      <div className="text-slate-200 font-medium">{n.lawyerFirmName}</div>
-                      <div className="text-[10px] text-slate-400">{n.lawyerName}</div>
-                    </td>
-                    <td className="py-3.5 px-4 text-right font-bold text-emerald-400">
-                      Rp {n.principalDebtAmount.toLocaleString('id-ID')}
-                    </td>
-                    <td className="py-3.5 px-4 text-center">{getStatusBadge(n.status)}</td>
-                    <td className="py-3.5 px-4 text-center">
-                      <button
-                        onClick={() => setViewNotice(n)}
-                        className="inline-flex items-center gap-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-800 px-2.5 py-1 rounded text-[11px] font-semibold transition"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>Lihat Draft</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                filteredNotices.map((n) => {
+                  const parentCase = store.cases.find((c) => c.id === n.caseId || c.caseNo === n.caseNo);
+                  const isPer = parentCase?.clientType === 'PERORANGAN';
+
+                  return (
+                    <tr key={n.id} className="hover:bg-slate-800/40 transition">
+                      <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">{n.noticeNo}</td>
+                      <td className="py-3.5 px-4 space-y-0.5">
+                        <div className="font-bold text-white flex items-center gap-1.5">
+                          <span>{n.debtorName}</span>
+                          <span className="text-[10px] bg-purple-950 text-purple-300 px-1.5 py-0.2 rounded border border-purple-800">
+                            ⚖️ Lawyer
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-slate-400">Ref: {n.caseNo}</div>
+                      </td>
+
+                      <td className="py-3.5 px-4">
+                        {isPer ? (
+                          <span className="inline-flex items-center gap-1 bg-amber-950/80 text-amber-300 text-[10px] px-2 py-0.5 rounded border border-amber-800/80 font-medium">
+                            <UserCheck className="w-3 h-3" /> Perorangan
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 bg-indigo-950/80 text-indigo-300 text-[10px] px-2 py-0.5 rounded border border-indigo-800/80 font-medium">
+                            <Building2 className="w-3 h-3" /> Multifinance
+                          </span>
+                        )}
+                        <div className="text-[10px] text-slate-400 mt-0.5 truncate max-w-[140px]" title={n.clientName}>
+                          {n.clientName}
+                        </div>
+                      </td>
+
+                      <td className="py-3.5 px-4">{getNoticeBadge(n.noticeType)}</td>
+
+                      <td className="py-3.5 px-4 space-y-0.5">
+                        <div className="text-slate-200 font-medium">{n.lawyerFirmName}</div>
+                        <div className="text-[10px] text-slate-400">{n.lawyerName}</div>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-right font-bold text-emerald-400">
+                        Rp {n.principalDebtAmount.toLocaleString('id-ID')}
+                      </td>
+
+                      <td className="py-3.5 px-4 text-center">{getStatusBadge(n.status)}</td>
+
+                      <td className="py-3.5 px-4 text-center">
+                        <button
+                          onClick={() => setViewNotice(n)}
+                          className="inline-flex items-center gap-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-800 px-2.5 py-1 rounded text-[11px] font-semibold transition"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Lihat Draft</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -495,13 +632,52 @@ ${firm}
                     onChange={(e) => setSelectedCaseId(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                   >
-                    {activeCases.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.caseNo} — {c.debtorName} ({c.clientName}) - Tunggakan: Rp {c.principalDebtOS.toLocaleString('id-ID')}
-                      </option>
-                    ))}
+                    <optgroup label="🏢 Kasus Multifinance / Lembaga Pembiayaan">
+                      {multifinanceCases.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          [MULTIFINANCE] {c.caseNo} — {c.debtorName} ({c.clientName}) - Tunggakan: Rp {c.principalDebtOS.toLocaleString('id-ID')}
+                        </option>
+                      ))}
+                    </optgroup>
+
+                    <optgroup label="👤 Kasus Klien Perorangan (Kreditur Individu)">
+                      {peroranganCases.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          [PERORANGAN] {c.caseNo} — {c.debtorName} (Kreditur: {c.clientName}) - Piutang: Rp {c.principalDebtOS.toLocaleString('id-ID')}
+                        </option>
+                      ))}
+                    </optgroup>
                   </select>
                 </div>
+
+                {/* Selected Case Info Banner */}
+                {selectedCase && (
+                  <div
+                    className={`p-3 rounded-lg border text-xs flex items-center justify-between ${
+                      isPerorangan
+                        ? 'bg-amber-950/20 border-amber-800/40 text-amber-200'
+                        : 'bg-indigo-950/20 border-indigo-800/40 text-indigo-200'
+                    }`}
+                  >
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">Kategori & Klien:</span>
+                      <span className="font-bold text-white">
+                        {isPerorangan ? '👤 Klien Perorangan: ' : '🏢 Multifinance: '}
+                        {selectedCase.clientName}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">Dasar Tagihan:</span>
+                      <span className="font-mono text-slate-300">{selectedCase.multifinanceContractNo}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">Pokok Tertunggak:</span>
+                      <span className="font-bold text-emerald-400">
+                        Rp {selectedCase.principalDebtOS.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
@@ -556,7 +732,11 @@ ${firm}
                     rows={3}
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Tuliskan latar belakang penunggakan atau instruksi khusus untuk tim lawyer..."
+                    placeholder={
+                      isPerorangan
+                        ? 'Catatan khusus penunggakan piutang perorangan, rincian pinjaman pribadi / komitmen cicilan...'
+                        : 'Catatan penunggakan multifinance, riwayat kunjungan lapangan, penolakan serah terima unit...'
+                    }
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                   />
                 </div>
@@ -567,7 +747,7 @@ ${firm}
                     <span>Otomatisasi Sistem Control Tower:</span>
                   </div>
                   <p className="text-slate-300">
-                    Sistem akan secara otomatis men-generate **Draft Surat Resmi Lawyer** dan menandai nasabah ini dengan status **"Dikirim Surat Lawyer"** di seluruh modul Core Recovery (Cases, Assignments, Collections, Asset Recovery, dll).
+                    Sistem akan otomatis menyesuaikan klausul hukum ({isPerorangan ? 'Hukum Perjanjian Perorangan Pasal 1365/1338 KUHPerdata & Pasal 378 KUHP' : 'UU Jaminan Fidusia No. 42 Tahun 1999'}) dan memberi label status **"Dikirim Surat Lawyer"** di seluruh modul Core Recovery.
                   </p>
                 </div>
 
@@ -604,7 +784,7 @@ ${firm}
                   <h3 className="font-bold text-white text-base">Surat Resmi Legal / Lawyer</h3>
                 </div>
                 <div className="text-xs text-slate-400">
-                  {viewNotice.noticeNo} • Ref Kasus: {viewNotice.caseNo}
+                  {viewNotice.noticeNo} • Ref Kasus: {viewNotice.caseNo} • {viewNotice.clientName}
                 </div>
               </div>
 
@@ -679,12 +859,12 @@ ${firm}
                 />
               </div>
             ) : (
-              /* Official F4 Preview Box (No Company Letterhead, Lawyer Partner Format) */
+              /* Official F4 Preview Box (Mitra Advokat Legal Letterhead) */
               <div className="max-h-[26rem] overflow-y-auto bg-slate-950/70 p-4 rounded-xl flex justify-center border border-slate-800">
                 <div
                   ref={printNoticeRef}
-                  className="f4-page-preview rounded-lg p-8 space-y-4 text-[12px] leading-relaxed"
-                  style={{ fontFamily: '"Times New Roman", Times, Georgia, serif' }}
+                  className="f4-page-preview rounded-lg p-8 space-y-4 text-[12px] leading-relaxed bg-white text-slate-900"
+                  style={{ fontFamily: '"Times New Roman", Times, Georgia, serif', width: '215mm' }}
                 >
                   {/* Mitra Advokat Document Header */}
                   <div className="border-b-2 border-slate-900 pb-3 mb-4 text-center keep-together">
