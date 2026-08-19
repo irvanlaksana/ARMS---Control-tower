@@ -339,6 +339,7 @@ export interface AssetRecovery {
   physicalCondition: 'EXCELLENT' | 'GOOD' | 'FAIR' | 'DAMAGED' | 'PARTS_MISSING';
   repossessionFee: number;
   status: 'PENDING_INSPECTION' | 'STORED' | 'READY_FOR_LIQUIDATION' | 'RELEASED_TO_CLIENT';
+  bastDriveUrl?: string;
   createdAt: string;
 }
 
@@ -444,6 +445,52 @@ export interface CashAccount {
   balance: number;
   type: 'OPERATIONAL' | 'TALANGAN_VAULT' | 'PETTY_CASH';
   lastUpdated: string;
+}
+
+export interface PettyCashTransaction {
+  id: string;
+  transactionNo: string;
+  type: 'CASH_IN' | 'CASH_OUT';
+  category: 
+    | 'TOP_UP_REPLENISHMENT'
+    | 'BBM_TOLL_PARKIR'
+    | 'KONSUMSI_MEETING'
+    | 'ATK_MATERAI_FOTOCOPY'
+    | 'BIAYA_LAPANGAN_TAKSELE'
+    | 'KURIR_PENGIRIMAN_SURAT'
+    | 'MAINTENANCE_KANTOR'
+    | 'LAINNYA';
+  amount: number;
+  transactionDate: string;
+  recipientOrSource: string;
+  personnelId?: string;
+  personnelName?: string;
+  caseId?: string;
+  caseNo?: string;
+  description: string;
+  proofReceiptUrl?: string;
+  status: 'APPROVED' | 'PENDING' | 'REJECTED';
+  approvedBy?: string;
+  approvedAt?: string;
+  createdByName: string;
+  createdAt: string;
+}
+
+export interface WorkingCapitalTransaction {
+  id: string;
+  transactionNo: string;
+  type: 'INJECTION' | 'ALLOCATION' | 'RETURN_CAPITAL' | 'WITHDRAWAL';
+  sourceOrFunder: string;
+  funderType: 'DIREKSI_PEMILIK' | 'INVESTOR_POOL' | 'BANK_LOAN' | 'INTERNAL_RESERVE';
+  targetAllocation: 'OPERATIONAL_POOL' | 'TALANGAN_VAULT' | 'PETTY_CASH' | 'TACTICAL_RESERVE' | 'RETURN_TO_INVESTOR';
+  amount: number;
+  transactionDate: string;
+  notes: string;
+  proofDocumentUrl?: string;
+  status: 'COMPLETED' | 'PENDING_APPROVAL' | 'CANCELLED';
+  approvedBy?: string;
+  createdByName: string;
+  createdAt: string;
 }
 
 export interface DocumentRecord {

@@ -196,43 +196,51 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {(store.danaTalangan || []).map((t) => (
-                <tr key={t.id} className="hover:bg-slate-800/40 transition">
-                  <td className="py-3.5 px-4 font-mono font-bold text-amber-300">{t.fundingNo}</td>
-                  <td className="py-3.5 px-4 space-y-0.5">
-                    <div className="font-bold text-white">{t.caseNo}</div>
-                    <div className="text-[11px] text-slate-400">{t.debtorName}</div>
+              {(store.danaTalangan || []).length === 0 ? (
+                <tr>
+                  <td colSpan={canEdit ? 9 : 8} className="py-10 text-center text-slate-500 text-xs">
+                    Belum ada permohonan dana talangan likuiditas. Klik tombol <strong>+ New Dana Talangan Request</strong> untuk mengajukan bridging dana eksekusi/tarik unit.
                   </td>
-                  <td className="py-3.5 px-4">
-                    <span className="bg-slate-800 text-slate-200 text-[10px] px-2 py-0.5 rounded border border-slate-700">
-                      {(t.purpose || '').replace(/_/g, ' ')}
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-4 text-right font-bold text-emerald-400">
-                    Rp {t.requestedAmount.toLocaleString('id-ID')}
-                  </td>
-                  <td className="py-3.5 px-4 font-medium text-slate-300">{t.funderSource}</td>
-                  <td className="py-3.5 px-4 font-mono text-amber-300">{t.feeOrInterestRatePercent}%</td>
-                  <td className="py-3.5 px-4 text-slate-400">{t.repayTargetDate || '-'}</td>
-                  <td className="py-3.5 px-4 text-center">
-                    <span className="bg-amber-950 text-amber-300 text-[10px] px-2.5 py-1 rounded-full border border-amber-800 font-semibold">
-                      {(t.status || '').replace(/_/g, ' ')}
-                    </span>
-                  </td>
-                  {canEdit && (
-                    <td className="py-3.5 px-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button onClick={() => handleEditClick(t)} className="text-slate-400 hover:text-white transition">
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => handleDeleteClick(t.id)} className="text-slate-400 hover:text-rose-400 transition">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  )}
                 </tr>
-              ))}
+              ) : (
+                (store.danaTalangan || []).map((t) => (
+                  <tr key={t.id} className="hover:bg-slate-800/40 transition">
+                    <td className="py-3.5 px-4 font-mono font-bold text-amber-300">{t.fundingNo}</td>
+                    <td className="py-3.5 px-4 space-y-0.5">
+                      <div className="font-bold text-white">{t.caseNo}</div>
+                      <div className="text-[11px] text-slate-400">{t.debtorName}</div>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <span className="bg-slate-800 text-slate-200 text-[10px] px-2 py-0.5 rounded border border-slate-700">
+                        {(t.purpose || '').replace(/_/g, ' ')}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 text-right font-bold text-emerald-400">
+                      Rp {t.requestedAmount.toLocaleString('id-ID')}
+                    </td>
+                    <td className="py-3.5 px-4 font-medium text-slate-300">{t.funderSource}</td>
+                    <td className="py-3.5 px-4 font-mono text-amber-300">{t.feeOrInterestRatePercent}%</td>
+                    <td className="py-3.5 px-4 text-slate-400">{t.repayTargetDate || '-'}</td>
+                    <td className="py-3.5 px-4 text-center">
+                      <span className="bg-amber-950 text-amber-300 text-[10px] px-2.5 py-1 rounded-full border border-amber-800 font-semibold">
+                        {(t.status || '').replace(/_/g, ' ')}
+                      </span>
+                    </td>
+                    {canEdit && (
+                      <td className="py-3.5 px-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button onClick={() => handleEditClick(t)} className="text-slate-400 hover:text-white transition">
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleDeleteClick(t.id)} className="text-slate-400 hover:text-rose-400 transition">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

@@ -10,6 +10,8 @@ import { DashboardModule } from './components/modules/DashboardModule';
 import { ApprovalCenterModule } from './components/modules/ApprovalCenterModule';
 import { CasesModule } from './components/modules/CasesModule';
 import { DanaTalanganModule } from './components/modules/DanaTalanganModule';
+import { PettyCashModule } from './components/modules/PettyCashModule';
+import { ModalKerjaModule } from './components/modules/ModalKerjaModule';
 import { FinancePnLModule } from './components/modules/FinancePnLModule';
 import { FeeConfigModule } from './components/modules/FeeConfigModule';
 import { CommLogModule } from './components/modules/CommLogModule';
@@ -83,8 +85,12 @@ export default function App() {
         return <ApprovalCenterModule store={store} currentUser={currentUser} onUpdateStore={handleUpdateStore} />;
       case 'CASES':
         return <CasesModule store={store} currentUser={currentUser} onUpdateStore={handleUpdateStore} />;
+      case 'MODAL_KERJA':
+        return <ModalKerjaModule store={store} currentUser={currentUser} onUpdateStore={handleUpdateStore} />;
       case 'TALANGAN':
         return <DanaTalanganModule store={store} currentUser={currentUser} onUpdateStore={handleUpdateStore} />;
+      case 'PETTY_CASH':
+        return <PettyCashModule store={store} currentUser={currentUser} onUpdateStore={handleUpdateStore} />;
       case 'FINANCE':
         return <FinancePnLModule store={store} currentUser={currentUser} onUpdateStore={handleUpdateStore} />;
       case 'FEE_CONFIG':

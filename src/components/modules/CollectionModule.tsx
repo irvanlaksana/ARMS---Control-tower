@@ -5,7 +5,7 @@ import {
   ShieldAlert, Plus, PhoneCall, MessageSquare, Image, Upload, X, Eye, 
   CheckCircle2, Paperclip, Building2, UserCheck, Calendar, DollarSign,
   Camera, FileText, ChevronRight, Filter, Search, Tag, ExternalLink, MapPin,
-  Car, AlertCircle, CheckSquare, Sparkles, Navigation
+  Car, AlertCircle, CheckSquare, Sparkles, Navigation, Trash2
 } from 'lucide-react';
 
 interface CollectionModuleProps {
@@ -58,6 +58,8 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
   // Modals
   const [showUnifiedModal, setShowUnifiedModal] = useState(false);
   const [selectedPhotoPreview, setSelectedPhotoPreview] = useState<{ photo: FieldPhoto; caseNo: string; debtorName: string; clientName: string } | null>(null);
+  const [collectionToDelete, setCollectionToDelete] = useState<Collection | null>(null);
+  const [commLogToDelete, setCommLogToDelete] = useState<CommunicationLog | null>(null);
 
   // Active cases
   const activeCases = store.cases.filter(
@@ -259,6 +261,48 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
     });
 
     setShowUnifiedModal(false);
+  };
+
+  const confirmDeleteCollection = () => {
+    if (!collectionToDelete) return;
+
+    const audit = createAuditEntry(
+      currentUser.username,
+      currentUser.role,
+      'DELETE',
+      'Collections',
+      collectionToDelete.id,
+      `Deleted Collection Record ${collectionToDelete.collectionNo} (${collectionToDelete.debtorName})`
+    );
+
+    onUpdateStore({
+      ...store,
+      collections: (store.collections || []).filter((c) => c.id !== collectionToDelete.id),
+      auditLogs: [audit, ...(store.auditLogs || [])],
+    });
+
+    setCollectionToDelete(null);
+  };
+
+  const confirmDeleteCommLog = () => {
+    if (!commLogToDelete) return;
+
+    const audit = createAuditEntry(
+      currentUser.username,
+      currentUser.role,
+      'DELETE',
+      'Comm_Logs',
+      commLogToDelete.id,
+      `Deleted Communication Log ${commLogToDelete.id} for ${commLogToDelete.caseNo}`
+    );
+
+    onUpdateStore({
+      ...store,
+      commLogs: (store.commLogs || []).filter((l) => l.id !== commLogToDelete.id),
+      auditLogs: [audit, ...(store.auditLogs || [])],
+    });
+
+    setCommLogToDelete(null);
   };
 
   // Filtered Collections
@@ -491,12 +535,13 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                   <th className="py-3 px-4 text-right">Titipan Dana (Rp)</th>
                   <th className="py-3 px-4 text-center">Foto Bukti</th>
                   <th className="py-3 px-4 text-center">Status</th>
+                  {canEdit && <th className="py-3 px-4 text-right">Actions</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
                 {filteredCollections.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-8 text-center text-slate-500 text-xs">
+                    <td colSpan={canEdit ? 9 : 8} className="py-8 text-center text-slate-500 text-xs">
                       Tidak ada data tindakan lapangan yang sesuai filter.
                     </td>
                   </tr>
@@ -593,6 +638,18 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                             {act.verificationStatus}
                           </span>
                         </td>
+
+                        {canEdit && (
+                          <td className="py-3.5 px-4 text-right">
+                            <button
+                              onClick={() => setCollectionToDelete(act)}
+                              className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition"
+                              title="Hapus Catatan Tindakan"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     );
                   })
@@ -618,12 +675,13 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                   <th className="py-3 px-4">Hasil / Status</th>
                   <th className="py-3 px-4">Tindak Lanjut</th>
                   <th className="py-3 px-4 text-center">Lampiran & Foto</th>
+                  {canEdit && <th className="py-3 px-4 text-right">Actions</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
                 {filteredCommLogs.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-8 text-center text-slate-500 text-xs">
+                    <td colSpan={canEdit ? 9 : 8} className="py-8 text-center text-slate-500 text-xs">
                       Tidak ada data log komunikasi yang sesuai filter.
                     </td>
                   </tr>
@@ -733,6 +791,18 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                             )}
                           </div>
                         </td>
+
+                        {canEdit && (
+                          <td className="py-3.5 px-4 text-right">
+                            <button
+                              onClick={() => setCommLogToDelete(log)}
+                              className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition"
+                              title="Hapus Log Komunikasi"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     );
                   })
@@ -1391,6 +1461,111 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                 <ExternalLink className="w-3.5 h-3.5" />
                 <span>Buka Ukuran Penuh</span>
               </a>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Delete Collection Confirmation Modal */}
+      {collectionToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-rose-800/60 rounded-xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-rose-400">
+              <div className="p-2.5 rounded-full bg-rose-950/80 border border-rose-800">
+                <AlertCircle className="w-6 h-6 text-rose-400" />
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-base">Hapus Catatan Tindakan</h3>
+                <p className="text-xs text-rose-300">Tindakan ini tidak dapat dibatalkan</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-1.5 text-xs text-slate-300">
+              <div className="flex justify-between">
+                <span className="text-slate-500">No Tindakan:</span>
+                <span className="font-mono font-bold text-white">{collectionToDelete.collectionNo}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Debitur:</span>
+                <span className="font-semibold text-white">{collectionToDelete.debtorName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Jenis:</span>
+                <span className="text-indigo-400">{collectionToDelete.actionType}</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-400">
+              Apakah Anda yakin ingin menghapus log tindakan penagihan ini? Penghapusan akan dicatat pada log audit sistem.
+            </p>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setCollectionToDelete(null)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteCollection}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg shadow"
+              >
+                Ya, Hapus Data
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Comm Log Confirmation Modal */}
+      {commLogToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-rose-800/60 rounded-xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-rose-400">
+              <div className="p-2.5 rounded-full bg-rose-950/80 border border-rose-800">
+                <AlertCircle className="w-6 h-6 text-rose-400" />
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-base">Hapus Log Komunikasi</h3>
+                <p className="text-xs text-rose-300">Tindakan ini tidak dapat dibatalkan</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-1.5 text-xs text-slate-300">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Kasus:</span>
+                <span className="font-mono font-bold text-white">{commLogToDelete.caseNo}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Kontak:</span>
+                <span className="font-semibold text-white">{commLogToDelete.contactPerson || '-'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Media:</span>
+                <span className="text-indigo-400">{commLogToDelete.channel}</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-400">
+              Apakah Anda yakin ingin menghapus log komunikasi ini? Penghapusan akan dicatat pada log audit sistem.
+            </p>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setCommLogToDelete(null)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteCommLog}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg shadow"
+              >
+                Ya, Hapus Data
+              </button>
             </div>
           </div>
         </div>

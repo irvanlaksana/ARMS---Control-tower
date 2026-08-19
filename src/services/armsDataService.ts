@@ -7,7 +7,7 @@
 import {
   User, Client, Personnel, Service, FeeConfig, Contract, Lead, Customer, Case,
   Assignment, SK, LawyerNotice, CommunicationLog, Asset, Collection, AssetRecovery, DanaTalangan,
-  Payment, Expense, Settlement, LedgerEntry, CashAccount, DocumentRecord,
+  Payment, Expense, Settlement, LedgerEntry, CashAccount, PettyCashTransaction, WorkingCapitalTransaction, DocumentRecord,
   ApprovalRequest, NotificationItem, AuditLogEntry, AppSettings, FeeType
 } from '../types/arms';
 
@@ -17,7 +17,7 @@ import {
   INITIAL_CASES, INITIAL_ASSIGNMENTS, INITIAL_SKS, INITIAL_LAWYER_NOTICES, INITIAL_COMM_LOGS,
   INITIAL_ASSETS, INITIAL_COLLECTIONS, INITIAL_ASSET_RECOVERIES,
   INITIAL_DANA_TALANGAN, INITIAL_PAYMENTS, INITIAL_EXPENSES, INITIAL_SETTLEMENTS,
-  INITIAL_LEDGER, INITIAL_CASH_ACCOUNTS, INITIAL_DOCUMENTS, INITIAL_APPROVALS,
+  INITIAL_LEDGER, INITIAL_CASH_ACCOUNTS, INITIAL_PETTY_CASH, INITIAL_WORKING_CAPITAL, INITIAL_DOCUMENTS, INITIAL_APPROVALS,
   INITIAL_NOTIFICATIONS, INITIAL_AUDIT_LOGS, INITIAL_SETTINGS
 } from '../data/initialData';
 
@@ -44,6 +44,8 @@ export interface ARMSStore {
   settlements: Settlement[];
   ledger: LedgerEntry[];
   cashAccounts: CashAccount[];
+  pettyCash: PettyCashTransaction[];
+  workingCapital: WorkingCapitalTransaction[];
   documents: DocumentRecord[];
   approvals: ApprovalRequest[];
   notifications: NotificationItem[];
@@ -51,7 +53,7 @@ export interface ARMSStore {
   settings: AppSettings;
 }
 
-const STORAGE_KEY = 'ARMS_SINGLE_SOURCE_DATA_V3';
+const STORAGE_KEY = 'ARMS_SINGLE_SOURCE_DATA_V8';
 
 export function resetStoreToInitial(): ARMSStore {
   localStorage.removeItem(STORAGE_KEY);
@@ -84,6 +86,8 @@ function normalizeStore(parsed: any): ARMSStore {
     settlements: INITIAL_SETTLEMENTS,
     ledger: INITIAL_LEDGER,
     cashAccounts: INITIAL_CASH_ACCOUNTS,
+    pettyCash: INITIAL_PETTY_CASH,
+    workingCapital: INITIAL_WORKING_CAPITAL,
     documents: INITIAL_DOCUMENTS,
     approvals: INITIAL_APPROVALS,
     notifications: INITIAL_NOTIFICATIONS,
@@ -121,6 +125,8 @@ function normalizeStore(parsed: any): ARMSStore {
     settlements: Array.isArray(parsed.settlements) ? parsed.settlements : initial.settlements,
     ledger: Array.isArray(parsed.ledger) ? parsed.ledger : initial.ledger,
     cashAccounts: Array.isArray(parsed.cashAccounts) ? parsed.cashAccounts : initial.cashAccounts,
+    pettyCash: Array.isArray(parsed.pettyCash) ? parsed.pettyCash : initial.pettyCash,
+    workingCapital: Array.isArray(parsed.workingCapital) ? parsed.workingCapital : initial.workingCapital,
     documents: Array.isArray(parsed.documents) ? parsed.documents : initial.documents,
     approvals: Array.isArray(parsed.approvals) ? parsed.approvals : initial.approvals,
     notifications: Array.isArray(parsed.notifications) ? parsed.notifications : initial.notifications,

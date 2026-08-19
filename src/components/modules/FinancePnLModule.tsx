@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, LedgerEntry } from '../../types/arms';
-import { PieChart, Plus, RefreshCw, DollarSign, Wallet, ShieldCheck, FileSpreadsheet } from 'lucide-react';
+import { PieChart, Plus, RefreshCw, DollarSign, Wallet, ShieldCheck, FileSpreadsheet, Trash2, Edit2, X } from 'lucide-react';
 
 interface FinancePnLModuleProps {
   store: ARMSStore;
@@ -18,7 +18,141 @@ export const FinancePnLModule: React.FC<FinancePnLModuleProps> = ({
   const [showReversalModal, setShowReversalModal] = useState<LedgerEntry | null>(null);
   const [reversalReason, setReversalReason] = useState('');
 
+  // Manual Journal Entry Modal
+  const [showEntryModal, setShowEntryModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+
+  // Form State
+  const [account, setAccount] = useState<LedgerEntry['account']>('EXPENSE_OPS');
+  const [entryType, setEntryType] = useState<'DEBIT' | 'CREDIT'>('DEBIT');
+  const [amount, setAmount] = useState<number>(1000000);
+  const [description, setDescription] = useState('');
+  const [referenceModule, setReferenceModule] = useState<LedgerEntry['referenceModule']>('ADJUSTMENT');
+  const [referenceId, setReferenceId] = useState('');
+
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS' || currentUser.role === 'APPROVER_EXECUTIVE';
+  const isSuperAdmin = currentUser.role === 'SUPER_ADMIN_OPS';
+
+  const handleOpenEntryModal = (item?: LedgerEntry) => {
+    if (item) {
+      setIsEditing(true);
+      setEditId(item.id);
+      setAccount(item.account);
+      setEntryType(item.type);
+      setAmount(item.amount);
+      setDescription(item.description);
+      setReferenceModule(item.referenceModule);
+      setReferenceId(item.referenceId || '');
+    } else {
+      setIsEditing(false);
+      setEditId(null);
+      setAccount('EXPENSE_OPS');
+      setEntryType('DEBIT');
+      setAmount(1000000);
+      setDescription('');
+      setReferenceModule('ADJUSTMENT');
+      setReferenceId('');
+    }
+    setShowEntryModal(true);
+  };
+
+  const handleSaveEntry = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (amount <= 0) {
+      alert('Nominal harus lebih besar dari 0.');
+      return;
+    }
+
+    if (!description.trim()) {
+      alert('Keterangan jurnal wajib diisi.');
+      return;
+    }
+
+    if (isEditing && editId) {
+      const existing = store.ledger.find((l) => l.id === editId);
+      if (!existing) return;
+
+      const updated: LedgerEntry = {
+        ...existing,
+        account,
+        type: entryType,
+        amount,
+        description,
+        referenceModule,
+        referenceId: referenceId || existing.referenceId,
+      };
+
+      const audit = createAuditEntry(
+        currentUser.username,
+        currentUser.role,
+        'UPDATE',
+        'Finance_Ledger',
+        editId,
+        `Updated Ledger Entry ${existing.entryNo} (${account} Rp ${amount.toLocaleString('id-ID')})`
+      );
+
+      onUpdateStore({
+        ...store,
+        ledger: store.ledger.map((l) => (l.id === editId ? updated : l)),
+        auditLogs: [audit, ...store.auditLogs],
+      });
+    } else {
+      const entryNo = `LDG-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const newEntry: LedgerEntry = {
+        id: `LDG-${Date.now()}`,
+        entryNo,
+        date: new Date().toISOString().split('T')[0],
+        account,
+        type: entryType,
+        amount,
+        referenceModule,
+        referenceId: referenceId || entryNo,
+        description,
+        isReversed: false,
+        createdAt: new Date().toISOString(),
+      };
+
+      const audit = createAuditEntry(
+        currentUser.username,
+        currentUser.role,
+        'CREATE',
+        'Finance_Ledger',
+        newEntry.id,
+        `Posted Manual Journal Entry ${entryNo} (${account} ${entryType} Rp ${amount.toLocaleString('id-ID')})`
+      );
+
+      onUpdateStore({
+        ...store,
+        ledger: [newEntry, ...store.ledger],
+        auditLogs: [audit, ...store.auditLogs],
+      });
+    }
+
+    setShowEntryModal(false);
+  };
+
+  const handleDeleteEntry = (entry: LedgerEntry) => {
+    if (!window.confirm(`Hapus entri jurnal ${entry.entryNo} (Rp ${entry.amount.toLocaleString('id-ID')})? Tindakan ini akan tercatat dalam Audit Log.`)) {
+      return;
+    }
+
+    const audit = createAuditEntry(
+      currentUser.username,
+      currentUser.role,
+      'DELETE',
+      'Finance_Ledger',
+      entry.id,
+      `Hard deleted Ledger Entry ${entry.entryNo} (${entry.account} Rp ${entry.amount.toLocaleString('id-ID')})`
+    );
+
+    onUpdateStore({
+      ...store,
+      ledger: store.ledger.filter((l) => l.id !== entry.id),
+      auditLogs: [audit, ...store.auditLogs],
+    });
+  };
 
   const handleReversal = (entry: LedgerEntry) => {
     if (!reversalReason.trim()) return;
@@ -26,7 +160,7 @@ export const FinancePnLModule: React.FC<FinancePnLModuleProps> = ({
     // Create opposite reversal entry
     const reversalEntry: LedgerEntry = {
       id: `LDG-REV-${Date.now()}`,
-      entryNo: `LDG-2026-REV-${Math.floor(100 + Math.random() * 900)}`,
+      entryNo: `LDG-${new Date().getFullYear()}-REV-${Math.floor(100 + Math.random() * 900)}`,
       date: new Date().toISOString().split('T')[0],
       account: entry.account,
       type: entry.type === 'DEBIT' ? 'CREDIT' : 'DEBIT',
@@ -53,7 +187,7 @@ export const FinancePnLModule: React.FC<FinancePnLModuleProps> = ({
       'FINANCIAL_REVERSAL',
       'Finance_Ledger',
       entry.id,
-      `Reversed financial transaction ${entry.entryNo} (Amount: ${entry.amount}). Reason: ${reversalReason}`
+      `Reversed financial transaction ${entry.entryNo} (Amount: Rp ${entry.amount.toLocaleString('id-ID')}). Reason: ${reversalReason}`
     );
 
     onUpdateStore({
@@ -84,7 +218,7 @@ export const FinancePnLModule: React.FC<FinancePnLModuleProps> = ({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <PieChart className="w-5 h-5 text-indigo-400" />
@@ -95,7 +229,17 @@ export const FinancePnLModule: React.FC<FinancePnLModuleProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {canEdit && (
+            <button
+              onClick={() => handleOpenEntryModal()}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 shadow transition"
+            >
+              <Plus className="w-4 h-4" />
+              <span>+ Post Manual Journal Entry</span>
+            </button>
+          )}
+
           <select
             value={filterAccount}
             onChange={(e) => setFilterAccount(e.target.value)}
@@ -113,21 +257,21 @@ export const FinancePnLModule: React.FC<FinancePnLModuleProps> = ({
 
       {/* Financial Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-1">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-1 shadow">
           <div className="text-xs text-slate-400 font-medium">Total Recognized Revenue Fees</div>
           <div className="text-2xl font-bold text-emerald-400">
             Rp {totalRevenue.toLocaleString('id-ID')}
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-1">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-1 shadow">
           <div className="text-xs text-slate-400 font-medium">Total Operating Expenses</div>
           <div className="text-2xl font-bold text-rose-400">
             Rp {totalExpenses.toLocaleString('id-ID')}
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-1">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-1 shadow">
           <div className="text-xs text-slate-400 font-medium">Net Operating Profit / Loss</div>
           <div className="text-2xl font-bold text-indigo-400">
             Rp {netProfit.toLocaleString('id-ID')}
@@ -142,7 +286,7 @@ export const FinancePnLModule: React.FC<FinancePnLModuleProps> = ({
             General Ledger Entries ({filteredLedger.length})
           </h3>
           <span className="text-[11px] text-slate-500">
-            Rule: Financial records are non-deletable. Reversals log to Audit Trail.
+            Rule: Financial records are non-deletable for standard operations. Reversals log to Audit Trail.
           </span>
         </div>
 
@@ -161,56 +305,204 @@ export const FinancePnLModule: React.FC<FinancePnLModuleProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {filteredLedger.map((l) => (
-                <tr key={l.id} className={`hover:bg-slate-800/40 transition ${l.isReversed ? 'opacity-60 bg-slate-950/30' : ''}`}>
-                  <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">{l.entryNo}</td>
-                  <td className="py-3.5 px-4 text-slate-400">{l.date}</td>
-                  <td className="py-3.5 px-4">
-                    <span className="bg-slate-800 text-slate-200 text-[10px] px-2 py-0.5 rounded border border-slate-700">
-                      {l.account}
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${l.type === 'DEBIT' ? 'bg-emerald-950 text-emerald-300' : 'bg-blue-950 text-blue-300'}`}>
-                      {l.type}
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-4 text-right font-bold text-white">
-                    Rp {l.amount.toLocaleString('id-ID')}
-                  </td>
-                  <td className="py-3.5 px-4 space-y-0.5 max-w-[260px]">
-                    <div className="font-semibold text-slate-200">{l.description}</div>
-                    <div className="text-[10px] text-slate-500 font-mono">Ref: {l.referenceModule} ({l.referenceId})</div>
-                  </td>
-                  <td className="py-3.5 px-4 text-center">
-                    {l.isReversed ? (
-                      <span className="bg-rose-950 text-rose-300 text-[10px] px-2 py-0.5 rounded border border-rose-800 font-semibold">
-                        REVERSED
-                      </span>
-                    ) : (
-                      <span className="bg-emerald-950 text-emerald-300 text-[10px] px-2 py-0.5 rounded border border-emerald-800 font-semibold">
-                        POSTED
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-3.5 px-4 text-right">
-                    {!l.isReversed && canEdit ? (
-                      <button
-                        onClick={() => setShowReversalModal(l)}
-                        className="text-rose-400 hover:text-rose-300 text-[11px] font-semibold border border-rose-900 bg-rose-950/60 px-2 py-1 rounded transition"
-                      >
-                        Reverse Entry
-                      </button>
-                    ) : (
-                      <span className="text-slate-600">-</span>
-                    )}
+              {filteredLedger.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-10 text-center text-slate-500 text-xs">
+                    Belum ada data transaksi buku besar (General Ledger). Transaksi dari modul Pembayaran, Biaya, dan Jurnal Manual akan otomatis muncul di sini.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredLedger.map((l) => (
+                  <tr key={l.id} className={`hover:bg-slate-800/40 transition ${l.isReversed ? 'opacity-60 bg-slate-950/30' : ''}`}>
+                    <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">{l.entryNo}</td>
+                    <td className="py-3.5 px-4 text-slate-400">{l.date}</td>
+                    <td className="py-3.5 px-4">
+                      <span className="bg-slate-800 text-slate-200 text-[10px] px-2 py-0.5 rounded border border-slate-700">
+                        {l.account}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${l.type === 'DEBIT' ? 'bg-emerald-950 text-emerald-300' : 'bg-blue-950 text-blue-300'}`}>
+                        {l.type}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 text-right font-bold text-white font-mono">
+                      Rp {l.amount.toLocaleString('id-ID')}
+                    </td>
+                    <td className="py-3.5 px-4 space-y-0.5 max-w-[260px]">
+                      <div className="font-semibold text-slate-200">{l.description}</div>
+                      <div className="text-[10px] text-slate-500 font-mono">Ref: {l.referenceModule} ({l.referenceId})</div>
+                    </td>
+                    <td className="py-3.5 px-4 text-center">
+                      {l.isReversed ? (
+                        <span className="bg-rose-950 text-rose-300 text-[10px] px-2 py-0.5 rounded border border-rose-800 font-semibold">
+                          REVERSED
+                        </span>
+                      ) : (
+                        <span className="bg-emerald-950 text-emerald-300 text-[10px] px-2 py-0.5 rounded border border-emerald-800 font-semibold">
+                          POSTED
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3.5 px-4 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {!l.isReversed && canEdit && (
+                          <button
+                            onClick={() => setShowReversalModal(l)}
+                            className="text-rose-400 hover:text-rose-300 text-[11px] font-semibold border border-rose-900 bg-rose-950/60 px-2 py-1 rounded transition"
+                            title="Reverse Jurnal"
+                          >
+                            Reverse
+                          </button>
+                        )}
+                        {isSuperAdmin && (
+                          <>
+                            <button
+                              onClick={() => handleOpenEntryModal(l)}
+                              className="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition"
+                              title="Edit Entry"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteEntry(l)}
+                              className="p-1 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition"
+                              title="Delete Entry"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Manual Journal Entry Modal */}
+      {showEntryModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <form
+            onSubmit={handleSaveEntry}
+            className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-6 space-y-4 shadow-2xl"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <h3 className="font-bold text-white text-base">
+                {isEditing ? 'Edit Entri Jurnal' : 'Post Manual Journal Entry'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowEntryModal(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Account</label>
+                <select
+                  value={account}
+                  onChange={(e) => setAccount(e.target.value as any)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                >
+                  <option value="CASH">CASH Account</option>
+                  <option value="RECEIVABLE">RECEIVABLE</option>
+                  <option value="TALANGAN_RECEIVABLE">TALANGAN RECEIVABLE</option>
+                  <option value="REVENUE_FEE">REVENUE FEE</option>
+                  <option value="EXPENSE_OPS">EXPENSE OPS</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Entry Type</label>
+                <select
+                  value={entryType}
+                  onChange={(e) => setEntryType(e.target.value as any)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-bold"
+                >
+                  <option value="DEBIT">DEBIT</option>
+                  <option value="CREDIT">CREDIT</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Nominal (Rp)</label>
+              <input
+                type="number"
+                min="1000"
+                step="1000"
+                value={amount}
+                onChange={(e) => setAmount(Number(e.target.value))}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono font-bold"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Reference Module</label>
+                <select
+                  value={referenceModule}
+                  onChange={(e) => setReferenceModule(e.target.value as any)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                >
+                  <option value="ADJUSTMENT">ADJUSTMENT</option>
+                  <option value="PAYMENT">PAYMENT</option>
+                  <option value="EXPENSE">EXPENSE</option>
+                  <option value="TALANGAN">TALANGAN</option>
+                  <option value="SETTLEMENT">SETTLEMENT</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Reference ID / No</label>
+                <input
+                  type="text"
+                  value={referenceId}
+                  onChange={(e) => setReferenceId(e.target.value)}
+                  placeholder="e.g. ADJ-001"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Keterangan Jurnal</label>
+              <textarea
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="e.g. Setoran modal awal / Penyesuaian biaya operasional..."
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                required
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowEntryModal(false)}
+                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg"
+              >
+                {isEditing ? 'Simpan Perubahan' : 'Post Entry'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Reversal Modal */}
       {showReversalModal && (

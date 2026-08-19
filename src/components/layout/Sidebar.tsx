@@ -3,7 +3,7 @@ import { UserRole } from '../../types/arms';
 import { 
   LayoutDashboard, CheckSquare, Briefcase, Users, PhoneCall, Receipt, ShieldAlert,
   Car, FileText, UserPlus, Building2, DollarSign, Wallet, FileSpreadsheet,
-  Settings, FolderGit2, ShieldCheck, Scale, PieChart, Coins, Lock, Eye, AlertCircle
+  Settings, FolderGit2, ShieldCheck, Scale, PieChart, Coins, Lock, Eye, AlertCircle, Banknote, Landmark
 } from 'lucide-react';
 
 export type ModuleTab = 
@@ -39,13 +39,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (role === 'APPROVER_EXECUTIVE') {
       return [
         'DASHBOARD', 'APPROVALS', 'CASES', 'CONTRACTS', 'SK', 'LAWYER', 'COLLECTION', 'TALANGAN',
-        'EXPENSES', 'SETTLEMENT', 'FINANCE', 'REPORTS', 'DOCUMENTS', 'AUDIT', 'CLIENTS'
+        'PETTY_CASH', 'EXPENSES', 'PAYMENTS', 'SETTLEMENT', 'FINANCE', 'REPORTS', 'DOCUMENTS', 'AUDIT', 'CLIENTS'
       ].includes(tab);
     }
 
     if (role === 'VIEWER_COMMISSIONER') {
       return [
-        'DASHBOARD', 'CASES', 'LAWYER', 'COLLECTION', 'FINANCE', 'TALANGAN', 'REPORTS', 'DOCUMENTS', 'AUDIT'
+        'DASHBOARD', 'CASES', 'LAWYER', 'COLLECTION', 'FINANCE', 'PETTY_CASH', 'TALANGAN', 'REPORTS', 'DOCUMENTS', 'AUDIT'
       ].includes(tab);
     }
 
@@ -92,7 +92,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       title: 'FINANCE & LIQUIDITY',
       items: [
+        { id: 'MODAL_KERJA', label: 'Modal Kerja (Working Capital)', icon: Landmark },
         { id: 'TALANGAN', label: 'Dana Talangan', icon: Coins },
+        { id: 'PETTY_CASH', label: 'Petty Cash (Kas Kecil)', icon: Banknote },
         { id: 'EXPENSES', label: 'Expenses', icon: Wallet },
         { id: 'PAYMENTS', label: 'Payments', icon: DollarSign },
         { id: 'SETTLEMENT', label: 'Settlement Remittance', icon: Scale },

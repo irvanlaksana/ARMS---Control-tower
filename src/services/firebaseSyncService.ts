@@ -31,7 +31,9 @@ export async function fetchStoreFromFirebase(currentStore: ARMSStore): Promise<A
         }
       } else {
         const snap = await getDocs(collection(db, String(key)));
-        newStore[key] = snap.docs.map(d => d.data()) as any;
+        if (!snap.empty) {
+          newStore[key] = snap.docs.map(d => d.data()) as any;
+        }
       }
     } catch (e) {
       console.warn(`Failed to fetch ${key} from Firebase`, e);

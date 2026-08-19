@@ -161,39 +161,47 @@ export const SettlementModule: React.FC<SettlementModuleProps> = ({ store, curre
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {store.settlements.map((s) => (
-                <tr key={s.id} className="hover:bg-slate-800/40 transition">
-                  <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">{s.settlementNo}</td>
-                  <td className="py-3.5 px-4 font-bold text-white">{s.clientName}</td>
-                  <td className="py-3.5 px-4 text-right font-semibold text-slate-200">
-                    Rp {s.totalCollected.toLocaleString('id-ID')}
+              {store.settlements.length === 0 ? (
+                <tr>
+                  <td colSpan={canEdit ? 8 : 7} className="py-10 text-center text-slate-500 text-xs">
+                    Belum ada data penyelesaian settlement remittance. Klik tombol <strong>+ Generate Remittance Settlement</strong> untuk membuat settlement.
                   </td>
-                  <td className="py-3.5 px-4 text-right font-semibold text-rose-400">
-                    - Rp {s.agencyFeeAmount.toLocaleString('id-ID')}
-                  </td>
-                  <td className="py-3.5 px-4 text-right font-bold text-emerald-400">
-                    Rp {s.netRemittedToClient.toLocaleString('id-ID')}
-                  </td>
-                  <td className="py-3.5 px-4 text-slate-400">{s.settlementDate}</td>
-                  <td className="py-3.5 px-4 text-center">
-                    <span className="bg-indigo-950 text-indigo-300 text-[10px] px-2.5 py-1 rounded-full border border-indigo-800 font-semibold">
-                      {(s.status || '').replace(/_/g, ' ')}
-                    </span>
-                  </td>
-                  {canEdit && (
-                    <td className="py-3.5 px-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button onClick={() => handleEditClick(s)} className="text-slate-400 hover:text-white transition">
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => handleDeleteClick(s.id)} className="text-slate-400 hover:text-rose-400 transition">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  )}
                 </tr>
-              ))}
+              ) : (
+                store.settlements.map((s) => (
+                  <tr key={s.id} className="hover:bg-slate-800/40 transition">
+                    <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">{s.settlementNo}</td>
+                    <td className="py-3.5 px-4 font-bold text-white">{s.clientName}</td>
+                    <td className="py-3.5 px-4 text-right font-semibold text-slate-200">
+                      Rp {s.totalCollected.toLocaleString('id-ID')}
+                    </td>
+                    <td className="py-3.5 px-4 text-right font-semibold text-rose-400">
+                      - Rp {s.agencyFeeAmount.toLocaleString('id-ID')}
+                    </td>
+                    <td className="py-3.5 px-4 text-right font-bold text-emerald-400">
+                      Rp {s.netRemittedToClient.toLocaleString('id-ID')}
+                    </td>
+                    <td className="py-3.5 px-4 text-slate-400">{s.settlementDate}</td>
+                    <td className="py-3.5 px-4 text-center">
+                      <span className="bg-indigo-950 text-indigo-300 text-[10px] px-2.5 py-1 rounded-full border border-indigo-800 font-semibold">
+                        {(s.status || '').replace(/_/g, ' ')}
+                      </span>
+                    </td>
+                    {canEdit && (
+                      <td className="py-3.5 px-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button onClick={() => handleEditClick(s)} className="text-slate-400 hover:text-white transition">
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleDeleteClick(s.id)} className="text-slate-400 hover:text-rose-400 transition">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

@@ -1,12 +1,13 @@
 /**
- * ARMS Seed Data - Comprehensive Operational Template
- * Contains initial seed records for all 27 sheets/collections in ARMS Control Tower.
+ * ARMS Seed Data - Clean Operational Base
+ * Retains only Client data, Karyawan/Personnel data, and Super Admin user.
+ * All transactional, case, financial, and operational records are reset.
  */
 
 import {
   User, Client, Personnel, Service, FeeConfig, Contract, Lead, Customer, Case,
   Assignment, SK, LawyerNotice, CommunicationLog, Asset, Collection, AssetRecovery, DanaTalangan,
-  Payment, Expense, Settlement, LedgerEntry, CashAccount, DocumentRecord,
+  Payment, Expense, Settlement, LedgerEntry, CashAccount, PettyCashTransaction, WorkingCapitalTransaction, DocumentRecord,
   ApprovalRequest, NotificationItem, AuditLogEntry, AppSettings
 } from '../types/arms';
 import { DEFAULT_MJ_LOGO } from '../assets/mjLogo';
@@ -20,40 +21,40 @@ export const INITIAL_USERS: User[] = [
     role: 'SUPER_ADMIN_OPS',
     department: 'Control Tower Operations',
     status: 'ACTIVE',
-    lastLogin: '2026-08-12T10:00:00Z',
+    lastLogin: '2026-08-18T10:00:00Z',
     createdAt: '2026-01-01T08:00:00Z',
   },
   {
     id: 'USR-002',
     username: 'direktur',
-    name: 'Bapak Ir. Hendra Kurniawan',
+    name: 'Direktur Utama (Executive Approver)',
     email: 'direktur@arms-controltower.co.id',
     role: 'APPROVER_EXECUTIVE',
-    department: 'Executive Board',
+    department: 'Direksi & Executive Board',
     status: 'ACTIVE',
-    lastLogin: '2026-08-12T09:30:00Z',
+    lastLogin: '2026-08-18T10:00:00Z',
     createdAt: '2026-01-01T08:00:00Z',
   },
   {
     id: 'USR-003',
     username: 'komisaris',
-    name: 'Bapak Dr. Bambang Soeprapto',
+    name: 'Dewan Komisaris',
     email: 'komisaris@arms-controltower.co.id',
     role: 'VIEWER_COMMISSIONER',
-    department: 'Board of Commissioners',
+    department: 'Dewan Pengawas & Komisaris',
     status: 'ACTIVE',
-    lastLogin: '2026-08-11T16:00:00Z',
+    lastLogin: '2026-08-18T10:00:00Z',
     createdAt: '2026-01-01T08:00:00Z',
   },
   {
     id: 'USR-004',
     username: 'investor',
-    name: 'PT Capital Nusantara Group',
-    email: 'investor@capital-nusantara.com',
+    name: 'Investor & Funder Partner',
+    email: 'investor@funderpool.co.id',
     role: 'VIEWER_INVESTOR',
-    department: 'Liquidity Vault Partners',
+    department: 'Strategic Liquidity & Investor',
     status: 'ACTIVE',
-    lastLogin: '2026-08-10T14:20:00Z',
+    lastLogin: '2026-08-18T10:00:00Z',
     createdAt: '2026-01-01T08:00:00Z',
   },
 ];
@@ -70,7 +71,7 @@ export const INITIAL_CLIENTS: Client[] = [
     email: 'remedial.head@adira.co.id',
     address: 'Adira Tower, Jl. M.T. Haryono Tbk No. 42, Jakarta Selatan',
     tier: 'TIER_1',
-    activeCasesCount: 15,
+    activeCasesCount: 0,
     status: 'ACTIVE',
     createdAt: '2026-01-15T08:00:00Z',
   },
@@ -85,7 +86,7 @@ export const INITIAL_CLIENTS: Client[] = [
     email: 'npl_consumer@bri.co.id',
     address: 'Gedung BRI 1, Jl. Jend. Sudirman Kav. 44-46, Jakarta Pusat',
     tier: 'TIER_1',
-    activeCasesCount: 8,
+    activeCasesCount: 0,
     status: 'ACTIVE',
     createdAt: '2026-02-01T08:00:00Z',
   },
@@ -100,7 +101,7 @@ export const INITIAL_CLIENTS: Client[] = [
     email: 'collection@akulaku.com',
     address: 'Sahid Sudirman Center Lt. 18, Jl. Jend. Sudirman, Jakarta Pusat',
     tier: 'TIER_2',
-    activeCasesCount: 22,
+    activeCasesCount: 0,
     status: 'ACTIVE',
     createdAt: '2026-02-20T08:00:00Z',
   },
@@ -116,7 +117,7 @@ export const INITIAL_CLIENTS: Client[] = [
     email: 'rahmat.hidayat@gmail.com',
     address: 'Jl. Overste Isdiman No. 88, Purwokerto Lor, Banyumas',
     tier: 'TIER_1',
-    activeCasesCount: 2,
+    activeCasesCount: 0,
     status: 'ACTIVE',
     createdAt: '2026-03-01T08:00:00Z',
   },
@@ -198,510 +199,25 @@ export const INITIAL_SERVICES: Service[] = [
   },
 ];
 
-export const INITIAL_FEES: FeeConfig[] = [
-  {
-    id: 'FEE-001',
-    clientId: 'CLI-001',
-    clientName: 'PT Adira Dinamika Multi Finance Tbk',
-    serviceId: 'SRV-001',
-    serviceName: 'Penagihan & Recovery Unit Kendaraan',
-    feeType: 'SUCCESS_FEE',
-    percentageValue: 15,
-    fixedAmount: 1000000,
-    successFeePercent: 20,
-    effectiveDate: '2026-01-01',
-    status: 'ACTIVE',
-  },
-  {
-    id: 'FEE-002',
-    clientId: 'CLI-002',
-    clientName: 'PT Bank Rakyat Indonesia (Persero) Tbk',
-    serviceId: 'SRV-003',
-    serviceName: 'Somasi Hukum & Mediasi Penagihan Korporat',
-    feeType: 'FIXED',
-    fixedAmount: 5000000,
-    effectiveDate: '2026-02-01',
-    status: 'ACTIVE',
-  },
-  {
-    id: 'FEE-003',
-    clientId: 'CLI-003',
-    clientName: 'H. Rahmat Hidayat, S.E. (Kreditur Perorangan)',
-    serviceId: 'SRV-004',
-    serviceName: 'Penagihan & Mediasi Piutang Perorangan',
-    feeType: 'SUCCESS_FEE',
-    percentageValue: 20,
-    fixedAmount: 500000,
-    successFeePercent: 25,
-    effectiveDate: '2026-03-01',
-    status: 'ACTIVE',
-  },
-];
-
-export const INITIAL_CONTRACTS: Contract[] = [
-  {
-    id: 'CTR-001',
-    contractNo: 'CTR/MJ-ADIRA/2026/001',
-    clientId: 'CLI-001',
-    clientName: 'PT Adira Dinamika Multi Finance Tbk',
-    title: 'Perjanjian Kerjasama Penanganan & Recovery Unit Motor & Mobil NPL 2026',
-    startDate: '2026-01-01',
-    endDate: '2026-12-31',
-    feeStructureSummary: 'Success Fee 20% dari Pokok OS + Base Fee Rp 1.000.000/Unit',
-    status: 'ACTIVE',
-    approvedBy: 'Bapak Ir. Hendra Kurniawan',
-    approvedAt: '2026-01-02T10:00:00Z',
-    createdAt: '2026-01-01T09:00:00Z',
-  },
-];
-
-export const INITIAL_LEADS: Lead[] = [
-  {
-    id: 'LED-001',
-    leadCode: 'LED-BAF-2026',
-    companyName: 'PT Bussan Auto Finance (BAF)',
-    contactPerson: 'Bapak Dodi Supriyadi',
-    phone: '021-78890011',
-    email: 'dodi.s@baf.co.id',
-    estimatedVolume: 500000000,
-    serviceRequested: 'Penagihan & Recovery Unit Kendaraan R2',
-    stage: 'IN_NEGOTIATION',
-    notes: 'Penawaran success fee 18% sedang ditinjau direksi BAF.',
-    assignedTo: 'Super Admin Control Tower',
-    createdAt: '2026-08-01T10:00:00Z',
-  },
-];
-
-export const INITIAL_CUSTOMERS: Customer[] = [
-  {
-    id: 'CUST-001',
-    customerCode: 'CUST-0001',
-    nikKtp: '3175081203850005',
-    fullName: 'Hendra Wijaya',
-    phone: '0813-1122-3344',
-    addressCurrent: 'Jl. Mangga Besar VI No. 8, Jakarta Barat',
-    addressKtp: 'Jl. Mangga Besar VI No. 8, Jakarta Barat',
-    workplace: 'Toko Elektronik Sinar Jaya',
-    emergencyContactName: 'Sari (Istri)',
-    emergencyContactPhone: '0813-9988-7766',
-    riskNotes: 'Unit NMAX sering dibawa berpindah ke daerah Karawang.',
-    createdAt: '2026-02-10T10:00:00Z',
-  },
-  {
-    id: 'CUST-002',
-    customerCode: 'CUST-0002',
-    nikKtp: '3302151908840003',
-    fullName: 'Riko Tampubolon',
-    phone: '0812-3456-7890',
-    addressCurrent: 'Jl. Overste Isdiman No. 42, Purwokerto Lor, Banyumas',
-    addressKtp: 'Jl. Overste Isdiman No. 42, Purwokerto Lor, Banyumas',
-    workplace: 'CV Makmur Sejahtera (Kontraktor)',
-    emergencyContactName: 'Dewi (Istri)',
-    emergencyContactPhone: '0812-7788-9900',
-    riskNotes: 'Piutang pribadi berdasarkan Surat Pengakuan Hutang (SPH).',
-    createdAt: '2026-02-15T10:00:00Z',
-  },
-];
-
-export const INITIAL_CASES: Case[] = [
-  {
-    id: 'CAS-001',
-    caseNo: 'CAS-2026-0001',
-    clientId: 'CLI-001',
-    clientName: 'PT Adira Dinamika Multi Finance Tbk',
-    clientType: 'MULTIFINANCE',
-    contractId: 'CTR-001',
-    customerId: 'CUST-001',
-    debtorName: 'Hendra Wijaya',
-    debtorNik: '3175081203850005',
-    multifinanceContractNo: 'ADR-90123847',
-    serviceId: 'SRV-001',
-    serviceName: 'Penagihan & Recovery Unit Kendaraan',
-    principalDebtOS: 28500000,
-    overdueDays: 120,
-    dpdBucket: '180+',
-    assetSummary: 'Honda NMAX 155 ABS Tahun 2023 - Plat B 1234 CD',
-    feeTypeSnapshot: 'SUCCESS_FEE',
-    feePercentSnapshot: 20,
-    feeFixedSnapshot: 1000000,
-    status: 'FIELD_ACTION',
-    lawyerStatus: 'SOMASI_1_TERKIRIM',
-    lawyerNoticeCount: 1,
-    lastLawyerNoticeType: 'SOMASI_1',
-    currentPersonnelId: 'PER-002',
-    currentPersonnelName: 'Ahmad Hidayat',
-    createdAt: '2026-02-12T08:00:00Z',
-  },
-  {
-    id: 'CAS-003',
-    caseNo: 'CAS-2026-0003',
-    clientId: 'CLI-004',
-    clientName: 'H. Rahmat Hidayat, S.E. (Kreditur Perorangan)',
-    clientType: 'PERORANGAN',
-    contractId: 'SPH-2026/001',
-    customerId: 'CUST-002',
-    debtorName: 'Riko Tampubolon',
-    debtorNik: '3302151908840003',
-    multifinanceContractNo: 'SPH-001/RH/2025',
-    serviceId: 'SRV-004',
-    serviceName: 'Penagihan & Mediasi Piutang Perorangan',
-    principalDebtOS: 45000000,
-    overdueDays: 95,
-    dpdBucket: '90-180',
-    assetSummary: 'Jaminan Sertifikat Tanah Hak Milik (SHM) No. 412/Banyumas',
-    feeTypeSnapshot: 'SUCCESS_FEE',
-    feePercentSnapshot: 25,
-    feeFixedSnapshot: 500000,
-    status: 'FIELD_ACTION',
-    lawyerStatus: 'NONE',
-    lawyerNoticeCount: 0,
-    currentPersonnelId: 'PER-002',
-    currentPersonnelName: 'Ahmad Hidayat',
-    createdAt: '2026-02-18T08:00:00Z',
-  },
-];
-
-export const INITIAL_ASSIGNMENTS: Assignment[] = [
-  {
-    id: 'ASN-001',
-    assignmentNo: 'ASN-2026-001',
-    caseId: 'CAS-001',
-    caseNo: 'CAS-2026-0001',
-    debtorName: 'Hendra Wijaya',
-    personnelId: 'PER-002',
-    personnelName: 'Ahmad Hidayat',
-    assignedDate: '2026-02-15',
-    targetDate: '2026-02-28',
-    slaDays: 14,
-    instructions: 'Lakukan pemantauan unit di lokasi Karawang dan lakukan mediasi penyerahan unit.',
-    status: 'IN_PROGRESS',
-    fieldReportSummary: 'Debitur kooperatif dan bersedia mediasi.',
-    createdAt: '2026-02-15T09:00:00Z',
-  },
-];
-
-export const INITIAL_SKS: SK[] = [
-  {
-    id: 'SK-001',
-    skNumber: 'SK/MJ-ADR/2026/0088',
-    caseId: 'CAS-001',
-    caseNo: 'CAS-2026-0001',
-    debtorName: 'Hendra Wijaya',
-    clientType: 'MULTIFINANCE',
-    clientName: 'PT Adira Dinamika Multi Finance Tbk',
-    pemberiKuasaType: 'PERUSAHAAN',
-    personnelId: 'PER-002',
-    personnelName: 'Ahmad Hidayat',
-    issuedDate: '2026-02-15',
-    expiryDate: '2026-05-15',
-    status: 'ACTIVE',
-    approvedBy: 'Bapak Ir. Hendra Kurniawan',
-    approvedAt: '2026-02-15T11:00:00Z',
-    createdAt: '2026-02-15T10:00:00Z',
-  },
-  {
-    id: 'SK-002',
-    skNumber: 'SK/MSI-IND/2026/0012',
-    caseId: 'CAS-003',
-    caseNo: 'CAS-2026-0003',
-    debtorName: 'Riko Tampubolon',
-    clientType: 'PERORANGAN',
-    clientName: 'H. Rahmat Hidayat, S.E. (Kreditur Perorangan)',
-    pemberiKuasaType: 'KREDITUR_PERORANGAN',
-    krediturName: 'H. Rahmat Hidayat, S.E.',
-    krediturNik: '3302101506780002',
-    krediturAddress: 'Jl. Overste Isdiman No. 88, Purwokerto Lor, Banyumas',
-    personnelId: 'PER-002',
-    personnelName: 'Ahmad Hidayat',
-    issuedDate: '2026-02-20',
-    expiryDate: '2026-05-20',
-    status: 'ACTIVE',
-    approvedBy: 'Bapak Ir. Hendra Kurniawan',
-    approvedAt: '2026-02-20T14:00:00Z',
-    createdAt: '2026-02-20T13:00:00Z',
-  },
-];
-
-export const INITIAL_LAWYER_NOTICES: LawyerNotice[] = [
-  {
-    id: 'NOT-001',
-    noticeNo: 'SOM/MJ-LAW/2026/001',
-    caseId: 'CAS-001',
-    caseNo: 'CAS-2026-0001',
-    debtorName: 'Hendra Wijaya',
-    debtorAddress: 'Jl. Mangga Besar VI No. 8, Jakarta Barat',
-    clientName: 'PT Adira Dinamika Multi Finance Tbk',
-    multifinanceContractNo: 'ADR-90123847',
-    noticeType: 'SOMASI_1',
-    requestedDate: '2026-02-18',
-    lawyerFirmName: 'Kantor Hukum & Advokat MJ Associates',
-    lawyerName: 'Rian Firmansyah, S.H.',
-    principalDebtAmount: 28500000,
-    status: 'SENT_TO_DEBTOR',
-    letterContentDraft: 'Peringatan Hukum (Somasi 1) atas kewajiban angsuran pokok dan denda.',
-    createdBy: 'superadmin',
-    createdAt: '2026-02-18T10:00:00Z',
-  },
-];
-
-export const INITIAL_COMM_LOGS: CommunicationLog[] = [
-  {
-    id: 'LOG-001',
-    caseId: 'CAS-001',
-    caseNo: 'CAS-2026-0001',
-    personnelId: 'PER-002',
-    personnelName: 'Ahmad Hidayat',
-    logDate: '2026-02-20T14:00:00Z',
-    channel: 'IN_PERSON',
-    contactPerson: 'Hendra Wijaya (Debitur)',
-    summary: 'Kunjungan lapangan dan mediasi di rumah debitur.',
-    outcome: 'MEDIATION_AGREED',
-    followUpAction: 'Penandatanganan kesepakatan titipan dana mediasi.',
-    nextFollowUpDate: '2026-02-25',
-    photos: [
-      {
-        id: 'PHT-001',
-        url: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&auto=format&fit=crop&q=80',
-        caption: 'Foto Tampak Depan Rumah Debitur & Titik Kunjungan',
-        category: 'RUMAH_DEBITUR',
-        timestamp: '2026-02-20 14:15',
-      },
-      {
-        id: 'PHT-002',
-        url: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?w=600&auto=format&fit=crop&q=80',
-        caption: 'Pertemuan & Mediasi dengan Debitur',
-        category: 'TEMU_DEBITUR',
-        timestamp: '2026-02-20 14:35',
-      },
-    ],
-    recordedBy: 'superadmin',
-    createdAt: '2026-02-20T14:30:00Z',
-  },
-  {
-    id: 'LOG-002',
-    caseId: 'CAS-003',
-    caseNo: 'CAS-2026-0003',
-    personnelId: 'PER-002',
-    personnelName: 'Ahmad Hidayat',
-    logDate: '2026-02-21T10:30:00Z',
-    channel: 'WHATSAPP',
-    contactPerson: 'Riko Tampubolon (Debitur Perorangan)',
-    summary: 'Komunikasi penagihan via WhatsApp terkait Surat Pengakuan Hutang (SPH) dari Bpk. H. Rahmat Hidayat. Debitur berjanji mencicil termin pertama.',
-    outcome: 'PROMISE_TO_PAY',
-    followUpAction: 'Konfirmasi bukti transfer termin 1 pada tanggal 28 Februari.',
-    nextFollowUpDate: '2026-02-28',
-    recordedBy: 'superadmin',
-    createdAt: '2026-02-21T11:00:00Z',
-  },
-];
-
-export const INITIAL_ASSETS: Asset[] = [
-  {
-    id: 'AST-001',
-    assetCode: 'AST-NMAX-001',
-    caseId: 'CAS-001',
-    caseNo: 'CAS-2026-0001',
-    debtorName: 'Hendra Wijaya',
-    category: 'MOTORCYCLE',
-    brandModel: 'Yamaha NMAX 155 ABS 2023',
-    policeNoVIN: 'B 1234 CD / MH3SG5670NJ12345',
-    estimatedMarketValue: 26000000,
-    physicalStatus: 'RECOVERED_WAREHOUSE',
-    warehouseLocation: 'Gudang ARMS Center Karawang',
-    storageFeePerDay: 25000,
-    recoveredDate: '2026-02-22',
-    createdAt: '2026-02-22T10:00:00Z',
-  },
-];
-
-export const INITIAL_COLLECTIONS: Collection[] = [
-  {
-    id: 'COL-001',
-    collectionNo: 'COL-2026-0001',
-    caseId: 'CAS-001',
-    caseNo: 'CAS-2026-0001',
-    debtorName: 'Hendra Wijaya',
-    clientType: 'MULTIFINANCE',
-    clientName: 'PT Adira Dinamika Multi Finance Tbk',
-    actionType: 'FIELD_VISIT',
-    personnelId: 'PER-002',
-    personnelName: 'Ahmad Hidayat',
-    amountCollected: 5000000,
-    collectionDate: '2026-02-22',
-    paymentMethod: 'TRANSFER',
-    receiptNo: 'KW-ARMS-90123',
-    verificationStatus: 'VERIFIED',
-    notes: 'Titipan angsuran penyehatan rekening debitur Adira Finance.',
-    photos: [
-      {
-        id: 'PHT-COL-001',
-        url: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80',
-        caption: 'Kwitansi & Bukti Tanda Terima Pembayaran Lapangan',
-        category: 'KWITANSI_BAYAR',
-        timestamp: '2026-02-22 10:45',
-      },
-      {
-        id: 'PHT-COL-002',
-        url: 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=600&auto=format&fit=crop&q=80',
-        caption: 'Cek Kondisi Fisik Kendaraan Yamaha NMAX di Lokasi',
-        category: 'UNIT_KENDARAAN',
-        timestamp: '2026-02-22 10:50',
-      },
-    ],
-    createdAt: '2026-02-22T11:00:00Z',
-  },
-  {
-    id: 'COL-002',
-    collectionNo: 'COL-2026-0002',
-    caseId: 'CAS-003',
-    caseNo: 'CAS-2026-0003',
-    debtorName: 'Riko Tampubolon',
-    clientType: 'PERORANGAN',
-    clientName: 'H. Rahmat Hidayat, S.E. (Kreditur Perorangan)',
-    actionType: 'PENAGIHAN_PERORANGAN',
-    personnelId: 'PER-002',
-    personnelName: 'Ahmad Hidayat',
-    amountCollected: 10000000,
-    collectionDate: '2026-02-23',
-    paymentMethod: 'CASH_RECEIPT',
-    receiptNo: 'KW-PER-10022',
-    verificationStatus: 'VERIFIED',
-    notes: 'Pembayaran termin 1 piutang perorangan atas Surat Pengakuan Hutang (SPH).',
-    photos: [
-      {
-        id: 'PHT-COL-003',
-        url: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?w=600&auto=format&fit=crop&q=80',
-        caption: 'Serah Terima Kwitansi Pelunasan Sebagian dengan Debitur',
-        category: 'KWITANSI_BAYAR',
-        timestamp: '2026-02-23 15:20',
-      },
-    ],
-    createdAt: '2026-02-23T15:30:00Z',
-  },
-];
-
-export const INITIAL_ASSET_RECOVERIES: AssetRecovery[] = [
-  {
-    id: 'REC-001',
-    recoveryNo: 'REC-2026-0001',
-    caseId: 'CAS-001',
-    caseNo: 'CAS-2026-0001',
-    assetId: 'AST-001',
-    assetDescription: 'Yamaha NMAX 155 ABS Hitam Plat B 1234 CD',
-    personnelId: 'PER-002',
-    personnelName: 'Ahmad Hidayat',
-    recoveryDate: '2026-02-22',
-    warehouseLocation: 'Gudang ARMS Center Karawang',
-    physicalCondition: 'GOOD',
-    repossessionFee: 1500000,
-    status: 'STORED',
-    createdAt: '2026-02-22T12:00:00Z',
-  },
-];
-
-export const INITIAL_DANA_TALANGAN: DanaTalangan[] = [
-  {
-    id: 'TAL-001',
-    fundingNo: 'TAL-2026-0001',
-    caseId: 'CAS-001',
-    caseNo: 'CAS-2026-0001',
-    debtorName: 'Hendra Wijaya',
-    purpose: 'TOWING_LOGISTICS',
-    requestedAmount: 1500000,
-    funderSource: 'TALANGAN_VAULT',
-    feeOrInterestRatePercent: 5,
-    disbursedDate: '2026-02-21',
-    status: 'DISBURSED',
-    approvedBy: 'Bapak Ir. Hendra Kurniawan',
-    approvedAt: '2026-02-21T09:00:00Z',
-    repayTargetDate: '2026-03-01',
-    createdAt: '2026-02-21T08:00:00Z',
-  },
-];
-
-export const INITIAL_PAYMENTS: Payment[] = [
-  {
-    id: 'PAY-001',
-    paymentNo: 'PAY-2026-0001',
-    caseId: 'CAS-001',
-    caseNo: 'CAS-2026-0001',
-    debtorName: 'Hendra Wijaya',
-    amount: 5000000,
-    paymentDate: '2026-02-22',
-    paymentType: 'DEBTOR_REPAYMENT',
-    allocationSummary: 'Pokok: Rp 4.000.000, Agency Success Fee: Rp 1.000.000',
-    verificationStatus: 'VERIFIED',
-    verifiedBy: 'superadmin',
-    createdAt: '2026-02-22T11:30:00Z',
-  },
-];
-
-export const INITIAL_EXPENSES: Expense[] = [
-  {
-    id: 'EXP-001',
-    expenseNo: 'EXP-2026-0001',
-    caseId: 'CAS-001',
-    caseNo: 'CAS-2026-0001',
-    category: 'TOWING',
-    amount: 1500000,
-    requestedBy: 'Ahmad Hidayat',
-    expenseDate: '2026-02-21',
-    description: 'Biaya Mobil Towing Pengangkutan NMAX dari Karawang ke Gudang',
-    status: 'APPROVED',
-    approvedBy: 'Bapak Ir. Hendra Kurniawan',
-    approvedAt: '2026-02-21T09:00:00Z',
-    createdAt: '2026-02-21T08:30:00Z',
-  },
-];
-
-export const INITIAL_SETTLEMENTS: Settlement[] = [
-  {
-    id: 'SET-001',
-    settlementNo: 'SET-2026-0001',
-    caseId: 'CAS-001',
-    caseNo: 'CAS-2026-0001',
-    clientId: 'CLI-001',
-    clientName: 'PT Adira Dinamika Multi Finance Tbk',
-    totalCollected: 5000000,
-    agencyFeePercent: 20,
-    agencyFeeAmount: 1000000,
-    talanganDeducted: 1500000,
-    directExpensesDeducted: 0,
-    netRemittedToClient: 2500000,
-    settlementDate: '2026-02-25',
-    status: 'APPROVED',
-    approvedBy: 'Bapak Ir. Hendra Kurniawan',
-    approvedAt: '2026-02-25T14:00:00Z',
-    createdAt: '2026-02-25T10:00:00Z',
-  },
-];
-
-export const INITIAL_LEDGER: LedgerEntry[] = [
-  {
-    id: 'LED-2026-0001',
-    entryNo: 'JRN-2026-001',
-    date: '2026-02-22',
-    account: 'CASH',
-    type: 'DEBIT',
-    amount: 5000000,
-    referenceModule: 'PAYMENT',
-    referenceId: 'PAY-001',
-    description: 'Penerimaan Kas Pelunasan Titipan Angsuran Debitur Hendra Wijaya',
-    createdAt: '2026-02-22T11:30:00Z',
-  },
-  {
-    id: 'LED-2026-0002',
-    entryNo: 'JRN-2026-002',
-    date: '2026-02-22',
-    account: 'REVENUE_FEE',
-    type: 'CREDIT',
-    amount: 1000000,
-    referenceModule: 'PAYMENT',
-    referenceId: 'PAY-001',
-    description: 'Pengakuan Pendapatan Success Fee Agency Recovery Adira',
-    createdAt: '2026-02-22T11:30:00Z',
-  },
-];
+export const INITIAL_FEES: FeeConfig[] = [];
+export const INITIAL_CONTRACTS: Contract[] = [];
+export const INITIAL_LEADS: Lead[] = [];
+export const INITIAL_CUSTOMERS: Customer[] = [];
+export const INITIAL_CASES: Case[] = [];
+export const INITIAL_ASSIGNMENTS: Assignment[] = [];
+export const INITIAL_SKS: SK[] = [];
+export const INITIAL_LAWYER_NOTICES: LawyerNotice[] = [];
+export const INITIAL_COMM_LOGS: CommunicationLog[] = [];
+export const INITIAL_ASSETS: Asset[] = [];
+export const INITIAL_COLLECTIONS: Collection[] = [];
+export const INITIAL_ASSET_RECOVERIES: AssetRecovery[] = [];
+export const INITIAL_DANA_TALANGAN: DanaTalangan[] = [];
+export const INITIAL_PAYMENTS: Payment[] = [];
+export const INITIAL_EXPENSES: Expense[] = [];
+export const INITIAL_SETTLEMENTS: Settlement[] = [];
+export const INITIAL_LEDGER: LedgerEntry[] = [];
+export const INITIAL_PETTY_CASH: PettyCashTransaction[] = [];
+export const INITIAL_WORKING_CAPITAL: WorkingCapitalTransaction[] = [];
 
 export const INITIAL_CASH_ACCOUNTS: CashAccount[] = [
   {
@@ -709,73 +225,55 @@ export const INITIAL_CASH_ACCOUNTS: CashAccount[] = [
     accountName: 'Bank Mandiri Utama Operations',
     bankName: 'Bank Mandiri',
     accountNo: '123-00-998877-1',
-    balance: 185000000,
+    balance: 0,
     type: 'OPERATIONAL',
-    lastUpdated: '2026-08-12T12:00:00Z',
+    lastUpdated: '2026-08-18T12:00:00Z',
   },
   {
     id: 'ACC-002',
     accountName: 'Vault Liquidity & Dana Talangan Pool',
     bankName: 'BCA',
     accountNo: '883-00-112233-5',
-    balance: 500000000,
+    balance: 0,
     type: 'TALANGAN_VAULT',
-    lastUpdated: '2026-08-12T12:00:00Z',
+    lastUpdated: '2026-08-18T12:00:00Z',
+  },
+  {
+    id: 'ACC-003',
+    accountName: 'Kas Kecil Operasional (Petty Cash)',
+    bankName: 'Cash on Hand (Brankas)',
+    accountNo: 'PETTY-CASH-OPS',
+    balance: 0,
+    type: 'PETTY_CASH',
+    lastUpdated: '2026-08-18T12:00:00Z',
   },
 ];
 
-export const INITIAL_DOCUMENTS: DocumentRecord[] = [
-  {
-    id: 'DOC-001',
-    docNo: 'DOC-2026-0001',
-    title: 'Perjanjian Kerjasama Adira Finance 2026 Signed',
-    category: 'CONTRACT',
-    driveViewUrl: 'https://drive.google.com/file/d/11OxYLvKiH8P4AIP_NM08KuYu0plAq16_/view',
-    uploadedBy: 'superadmin',
-    uploadedAt: '2026-01-02T10:00:00Z',
-  },
-];
-
-export const INITIAL_APPROVALS: ApprovalRequest[] = [
-  {
-    id: 'APP-001',
-    requestNo: 'APP-2026-001',
-    module: 'DANA_TALANGAN',
-    targetId: 'TAL-001',
-    targetReference: 'TAL-2026-0001',
-    title: 'Pengajuan Dana Talangan Towing NMAX Rp 1.500.000',
-    requestedBy: 'Ahmad Hidayat',
-    amountOrValue: 1500000,
-    description: 'Persetujuan pencairan dana talangan towing dari Vault.',
-    status: 'APPROVED',
-    reviewedBy: 'Bapak Ir. Hendra Kurniawan',
-    reviewedAt: '2026-02-21T09:00:00Z',
-    createdAt: '2026-02-21T08:00:00Z',
-  },
-];
+export const INITIAL_DOCUMENTS: DocumentRecord[] = [];
+export const INITIAL_APPROVALS: ApprovalRequest[] = [];
 
 export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
   {
     id: 'NTF-001',
-    title: 'Sistem Terhubung ke Firebase Firestore',
-    message: 'Semua 27 koleksi tabel data telah siap di-push dan disinkronkan ke cloud database.',
+    title: 'Database Bersih',
+    message: 'Data operasional telah dibersihkan. Hanya tersisa data Klien, Karyawan/Mitra, dan Admin Super User.',
     type: 'SYSTEM',
     forRole: 'SUPER_ADMIN_OPS',
     isRead: false,
-    createdAt: '2026-08-12T12:00:00Z',
+    createdAt: '2026-08-18T12:00:00Z',
   },
 ];
 
 export const INITIAL_AUDIT_LOGS: AuditLogEntry[] = [
   {
     id: 'AUD-001',
-    timestamp: '2026-08-12T12:00:00Z',
+    timestamp: '2026-08-18T12:00:00Z',
     username: 'superadmin',
     userRole: 'SUPER_ADMIN_OPS',
-    action: 'CREATE',
-    moduleName: 'SYSTEM_INIT',
-    targetId: 'SYSTEM',
-    details: 'Inisialisasi sistem Control Tower dan pembentukan 27 struktur tabel data.',
+    action: 'DELETE',
+    moduleName: 'SYSTEM_CLEANUP',
+    targetId: 'ALL_OPERATIONAL_DATA',
+    details: 'Pembersihan seluruh data operasional, menyisakan data Klien, Karyawan, dan Super Admin.',
     ipAddress: '127.0.0.1',
   },
 ];

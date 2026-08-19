@@ -198,49 +198,57 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {store.fees.map((f) => (
-                <tr key={f.id} className="hover:bg-slate-800/40 transition">
-                  <td className="py-3.5 px-4 font-bold text-white">{f.clientName}</td>
-                  <td className="py-3.5 px-4 text-slate-300">{f.serviceName}</td>
-                  <td className="py-3.5 px-4">
-                    <span className="bg-indigo-950 text-indigo-300 text-[10px] px-2 py-0.5 rounded border border-indigo-800 font-bold">
-                      {f.feeType}
-                    </span>
+              {store.fees.length === 0 ? (
+                <tr>
+                  <td colSpan={canEdit ? 8 : 7} className="py-10 text-center text-slate-500 text-xs">
+                    Belum ada konfigurasi fee engine. Klik tombol <strong>+ Configure Dynamic Fee Rule</strong> untuk membuat skema pembagian fee.
                   </td>
-                  <td className="py-3.5 px-4 font-mono font-semibold text-emerald-400">
-                    {f.percentageValue ? `${f.percentageValue}%` : '-'}
-                  </td>
-                  <td className="py-3.5 px-4 font-mono text-emerald-400">
-                    {f.fixedAmount ? `Rp ${f.fixedAmount.toLocaleString('id-ID')}` : '-'}
-                  </td>
-                  <td className="py-3.5 px-4 text-slate-400">{f.effectiveDate}</td>
-                  <td className="py-3.5 px-4 text-center">
-                    <span className="bg-emerald-950 text-emerald-300 text-[10px] px-2.5 py-1 rounded-full border border-emerald-800 font-semibold">
-                      {f.status}
-                    </span>
-                  </td>
-                  {canEdit && (
-                    <td className="py-3.5 px-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => handleOpenModal(f)}
-                          className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-indigo-400 transition"
-                          title="Edit Fee Config"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteFee(f.id, f.clientName, f.serviceName)}
-                          className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-red-400 transition"
-                          title="Delete Fee Config"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  )}
                 </tr>
-              ))}
+              ) : (
+                store.fees.map((f) => (
+                  <tr key={f.id} className="hover:bg-slate-800/40 transition">
+                    <td className="py-3.5 px-4 font-bold text-white">{f.clientName}</td>
+                    <td className="py-3.5 px-4 text-slate-300">{f.serviceName}</td>
+                    <td className="py-3.5 px-4">
+                      <span className="bg-indigo-950 text-indigo-300 text-[10px] px-2 py-0.5 rounded border border-indigo-800 font-bold">
+                        {f.feeType}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 font-mono font-semibold text-emerald-400">
+                      {f.percentageValue ? `${f.percentageValue}%` : '-'}
+                    </td>
+                    <td className="py-3.5 px-4 font-mono text-emerald-400">
+                      {f.fixedAmount ? `Rp ${f.fixedAmount.toLocaleString('id-ID')}` : '-'}
+                    </td>
+                    <td className="py-3.5 px-4 text-slate-400">{f.effectiveDate}</td>
+                    <td className="py-3.5 px-4 text-center">
+                      <span className="bg-emerald-950 text-emerald-300 text-[10px] px-2.5 py-1 rounded-full border border-emerald-800 font-semibold">
+                        {f.status}
+                      </span>
+                    </td>
+                    {canEdit && (
+                      <td className="py-3.5 px-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => handleOpenModal(f)}
+                            className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-indigo-400 transition"
+                            title="Edit Fee Config"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteFee(f.id, f.clientName, f.serviceName)}
+                            className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-red-400 transition"
+                            title="Delete Fee Config"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

@@ -46,12 +46,12 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
   // Monthly Collection Performance Data Calculation
   const monthlyData = useMemo(() => {
     const monthsMap: Record<string, { month: string; target: number; collected: number; revenue: number }> = {
-      'Jan': { month: 'Jan', target: 500000000, collected: 0, revenue: 0 },
-      'Feb': { month: 'Feb', target: 600000000, collected: 0, revenue: 0 },
-      'Mar': { month: 'Mar', target: 650000000, collected: 0, revenue: 0 },
-      'Apr': { month: 'Apr', target: 700000000, collected: 0, revenue: 0 },
-      'Mei': { month: 'Mei', target: 750000000, collected: 0, revenue: 0 },
-      'Jun': { month: 'Jun', target: 800000000, collected: 0, revenue: 0 },
+      'Jan': { month: 'Jan', target: 0, collected: 0, revenue: 0 },
+      'Feb': { month: 'Feb', target: 0, collected: 0, revenue: 0 },
+      'Mar': { month: 'Mar', target: 0, collected: 0, revenue: 0 },
+      'Apr': { month: 'Apr', target: 0, collected: 0, revenue: 0 },
+      'Mei': { month: 'Mei', target: 0, collected: 0, revenue: 0 },
+      'Jun': { month: 'Jun', target: 0, collected: 0, revenue: 0 },
     };
 
     (store.collections || []).forEach((c) => {
@@ -66,18 +66,6 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
     });
 
     const result = Object.values(monthsMap);
-    const hasData = result.some((m) => m.collected > 0);
-
-    if (!hasData) {
-      return [
-        { month: 'Jan', target: 450, collected: 420, revenue: 63 },
-        { month: 'Feb', target: 500, collected: 510, revenue: 76.5 },
-        { month: 'Mar', target: 550, collected: 580, revenue: 87 },
-        { month: 'Apr', target: 600, collected: 640, revenue: 96 },
-        { month: 'Mei', target: 650, collected: 620, revenue: 93 },
-        { month: 'Jun', target: 700, collected: 735, revenue: 110.25 },
-      ];
-    }
 
     return result.map((m) => ({
       ...m,
@@ -92,7 +80,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
   const settledOrRecoveredCases = (store.cases || []).filter(
     (c) => c.status === 'SETTLED' || c.status === 'ASSET_RECOVERED' || c.status === 'CLOSED'
   ).length;
-  const recoverySuccessRate = totalCases > 0 ? Math.round((settledOrRecoveredCases / totalCases) * 100) : 78;
+  const recoverySuccessRate = totalCases > 0 ? Math.round((settledOrRecoveredCases / totalCases) * 100) : 0;
 
   const caseDistributionData = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -113,10 +101,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
     const keys = Object.keys(counts);
     if (keys.length === 0) {
       return [
-        { name: 'Settled / Lunas', value: 12, color: '#10b981' },
-        { name: 'Asset Recovered', value: 8, color: '#3b82f6' },
-        { name: 'Field Visit', value: 10, color: '#f59e0b' },
-        { name: 'SK Issued', value: 6, color: '#6366f1' },
+        { name: 'Belum Ada Kasus', value: 0, color: '#334155' },
       ];
     }
 
@@ -357,7 +342,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
               <span>Active Recovery Portfolio</span>
             </h3>
             <button
-              onClick={() => onNavigateTab('cases')}
+              onClick={() => onNavigateTab('CASES')}
               className="text-xs text-indigo-400 hover:text-indigo-300"
             >
               View All
@@ -390,7 +375,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
               <span>Executive Approval Queue</span>
             </h3>
             <button
-              onClick={() => onNavigateTab('approvals')}
+              onClick={() => onNavigateTab('APPROVALS')}
               className="text-xs text-amber-400 hover:text-amber-300"
             >
               Go to Approval Center ({pendingApprovals.length})
@@ -446,7 +431,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
             <span>Multifinance Clients Portfolio Overview</span>
           </h3>
           <button
-            onClick={() => onNavigateTab('clients')}
+            onClick={() => onNavigateTab('CLIENTS')}
             className="text-xs text-blue-400 hover:text-blue-300"
           >
             Manage Clients

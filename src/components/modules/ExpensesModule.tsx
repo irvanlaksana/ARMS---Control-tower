@@ -149,38 +149,46 @@ export const ExpensesModule: React.FC<ExpensesModuleProps> = ({ store, currentUs
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {store.expenses.map((e) => (
-                <tr key={e.id} className="hover:bg-slate-800/40 transition">
-                  <td className="py-3.5 px-4 font-mono font-bold text-rose-300">{e.expenseNo}</td>
-                  <td className="py-3.5 px-4">
-                    <span className="bg-slate-800 text-slate-200 text-[10px] px-2 py-0.5 rounded border border-slate-700">
-                      {(e.category || '').replace(/_/g, ' ')}
-                    </span>
+              {store.expenses.length === 0 ? (
+                <tr>
+                  <td colSpan={canEdit ? 7 : 6} className="py-10 text-center text-slate-500 text-xs">
+                    Belum ada data pengeluaran operasional. Klik tombol <strong>+ Record Operational Expense</strong> untuk mencatat pengeluaran.
                   </td>
-                  <td className="py-3.5 px-4 text-right font-bold text-rose-400">
-                    Rp {e.amount.toLocaleString('id-ID')}
-                  </td>
-                  <td className="py-3.5 px-4 text-slate-200">{e.description}</td>
-                  <td className="py-3.5 px-4 text-slate-400">{e.requestedBy}</td>
-                  <td className="py-3.5 px-4 text-center">
-                    <span className="bg-emerald-950 text-emerald-300 text-[10px] px-2.5 py-1 rounded-full border border-emerald-800 font-semibold">
-                      {e.status}
-                    </span>
-                  </td>
-                  {canEdit && (
-                    <td className="py-3.5 px-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button onClick={() => handleEditClick(e)} className="text-slate-400 hover:text-white transition">
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => handleDeleteClick(e.id)} className="text-slate-400 hover:text-rose-400 transition">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  )}
                 </tr>
-              ))}
+              ) : (
+                store.expenses.map((e) => (
+                  <tr key={e.id} className="hover:bg-slate-800/40 transition">
+                    <td className="py-3.5 px-4 font-mono font-bold text-rose-300">{e.expenseNo}</td>
+                    <td className="py-3.5 px-4">
+                      <span className="bg-slate-800 text-slate-200 text-[10px] px-2 py-0.5 rounded border border-slate-700">
+                        {(e.category || '').replace(/_/g, ' ')}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 text-right font-bold text-rose-400">
+                      Rp {e.amount.toLocaleString('id-ID')}
+                    </td>
+                    <td className="py-3.5 px-4 text-slate-200">{e.description}</td>
+                    <td className="py-3.5 px-4 text-slate-400">{e.requestedBy}</td>
+                    <td className="py-3.5 px-4 text-center">
+                      <span className="bg-emerald-950 text-emerald-300 text-[10px] px-2.5 py-1 rounded-full border border-emerald-800 font-semibold">
+                        {e.status}
+                      </span>
+                    </td>
+                    {canEdit && (
+                      <td className="py-3.5 px-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button onClick={() => handleEditClick(e)} className="text-slate-400 hover:text-white transition">
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleDeleteClick(e.id)} className="text-slate-400 hover:text-rose-400 transition">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

@@ -232,46 +232,54 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {store.payments.map((p) => (
-                <tr key={p.id} className="hover:bg-slate-800/40 transition">
-                  <td className="py-3.5 px-4 font-mono font-bold text-emerald-400">{p.paymentNo}</td>
-                  <td className="py-3.5 px-4 space-y-0.5">
-                    <div className="font-bold text-white">{p.caseNo}</div>
-                    <div className="text-[11px] text-slate-400">{p.debtorName}</div>
-                  </td>
-                  <td className="py-3.5 px-4 font-medium text-slate-200">{p.paymentType}</td>
-                  <td className="py-3.5 px-4 text-right font-bold text-emerald-400">
-                    Rp {p.amount.toLocaleString('id-ID')}
-                  </td>
-                  <td className="py-3.5 px-4 text-slate-300 max-w-[200px]">{p.allocationSummary}</td>
-                  <td className="py-3.5 px-4 text-center">
-                    <span className="bg-emerald-950 text-emerald-300 text-[10px] px-2.5 py-1 rounded-full border border-emerald-800 font-semibold">
-                      {p.verificationStatus}
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-4 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <button
-                        onClick={() => setSelectedPaymentForReceipt(p)}
-                        className="text-slate-400 hover:text-emerald-400 transition"
-                        title="Cetak Kuitansi"
-                      >
-                        <FileText className="w-4 h-4" />
-                      </button>
-                      {canEdit && (
-                        <>
-                          <button onClick={() => handleEditClick(p)} className="text-slate-400 hover:text-white transition">
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => handleDeleteClick(p.id)} className="text-slate-400 hover:text-rose-400 transition">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </>
-                      )}
-                    </div>
+              {store.payments.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-10 text-center text-slate-500 text-xs">
+                    Belum ada data pembayaran debitur. Klik tombol <strong>+ Record Debtor Payment</strong> untuk mencatat penerimaan angsuran / pelunasan.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                store.payments.map((p) => (
+                  <tr key={p.id} className="hover:bg-slate-800/40 transition">
+                    <td className="py-3.5 px-4 font-mono font-bold text-emerald-400">{p.paymentNo}</td>
+                    <td className="py-3.5 px-4 space-y-0.5">
+                      <div className="font-bold text-white">{p.caseNo}</div>
+                      <div className="text-[11px] text-slate-400">{p.debtorName}</div>
+                    </td>
+                    <td className="py-3.5 px-4 font-medium text-slate-200">{p.paymentType}</td>
+                    <td className="py-3.5 px-4 text-right font-bold text-emerald-400">
+                      Rp {p.amount.toLocaleString('id-ID')}
+                    </td>
+                    <td className="py-3.5 px-4 text-slate-300 max-w-[200px]">{p.allocationSummary}</td>
+                    <td className="py-3.5 px-4 text-center">
+                      <span className="bg-emerald-950 text-emerald-300 text-[10px] px-2.5 py-1 rounded-full border border-emerald-800 font-semibold">
+                        {p.verificationStatus}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => setSelectedPaymentForReceipt(p)}
+                          className="text-slate-400 hover:text-emerald-400 transition"
+                          title="Cetak Kuitansi"
+                        >
+                          <FileText className="w-4 h-4" />
+                        </button>
+                        {canEdit && (
+                          <>
+                            <button onClick={() => handleEditClick(p)} className="text-slate-400 hover:text-white transition">
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => handleDeleteClick(p.id)} className="text-slate-400 hover:text-rose-400 transition">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
