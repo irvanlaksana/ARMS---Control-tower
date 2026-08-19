@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Settlement, ApprovalRequest } from '../../types/arms';
-import { ShieldCheck, Plus, CheckCircle, ExternalLink } from 'lucide-react';
+import { ShieldCheck, Plus, CheckCircle, ExternalLink, Edit2, Trash2 } from 'lucide-react';
 
 interface SettlementModuleProps {
   store: ARMSStore;
@@ -11,6 +11,9 @@ interface SettlementModuleProps {
 
 export const SettlementModule: React.FC<SettlementModuleProps> = ({ store, currentUser, onUpdateStore }) => {
   const [showModal, setShowModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+
   const [clientId, setClientId] = useState(store.clients[0]?.id || '');
   const [totalDebtorCollectedAmount, setTotalDebtorCollectedAmount] = useState(100000000);
   const [agencyFeeDeduction, setAgencyFeeDeduction] = useState(15000000);
@@ -21,49 +24,103 @@ export const SettlementModule: React.FC<SettlementModuleProps> = ({ store, curre
     e.preventDefault();
     const client = store.clients.find((c) => c.id === clientId);
     const netRemittedToClient = totalDebtorCollectedAmount - agencyFeeDeduction;
-    const settlementNo = `SET-2026-${Math.floor(100 + Math.random() * 900)}`;
 
-    const newSettlement: Settlement = {
-      id: `SET-${Date.now()}`,
-      settlementNo,
-      clientId,
-      clientName: client?.companyName || 'Client',
-      caseId: store.cases[0]?.id || 'CAS-001',
-      caseNo: store.cases[0]?.caseNo || 'CAS-001',
-      totalCollected: totalDebtorCollectedAmount,
-      agencyFeePercent: 15,
-      agencyFeeAmount: agencyFeeDeduction,
-      talanganDeducted: 0,
-      directExpensesDeducted: 0,
-      netRemittedToClient,
-      settlementDate: new Date().toISOString().split('T')[0],
-      status: 'PENDING_APPROVAL',
-      createdAt: new Date().toISOString(),
-    };
+    if (isEditing && editId) {
+      const existingSettlement = store.settlements.find(s => s.id === editId);
+      if (!existingSettlement) return;
 
-    const approvalReq: ApprovalRequest = {
-      id: `APP-SET-${Date.now()}`,
-      requestNo: `REQ-SET-${Math.floor(100 + Math.random() * 900)}`,
-      module: 'SETTLEMENT',
-      targetId: newSettlement.id,
-      targetReference: settlementNo,
-      title: `Remittance Settlement ${client?.companyName} Rp ${netRemittedToClient.toLocaleString('id-ID')}`,
-      requestedBy: currentUser.name,
-      amountOrValue: netRemittedToClient,
-      description: `Settlement hasil penagihan debtor. Client Net Remittance: Rp ${netRemittedToClient.toLocaleString('id-ID')}. Agency Fee Cut: Rp ${agencyFeeDeduction.toLocaleString('id-ID')}`,
-      status: 'PENDING',
-      createdAt: new Date().toISOString(),
-    };
+      const updatedSettlement = {
+        ...existingSettlement,
+        clientId,
+        clientName: client?.companyName || existingSettlement.clientName,
+        totalCollected: totalDebtorCollectedAmount,
+        agencyFeeAmount: agencyFeeDeduction,
+        netRemittedToClient,
+      };
 
-    const audit = createAuditEntry(currentUser.username, currentUser.role, 'CREATE', 'Settlements', newSettlement.id, `Created Settlement ${settlementNo} (Pending Executive Approval)`);
+      const audit = createAuditEntry(currentUser.username, currentUser.role, 'UPDATE', 'Settlements', editId, `Updated Settlement ${existingSettlement.settlementNo}`);
 
-    onUpdateStore({
-      ...store,
-      settlements: [newSettlement, ...store.settlements],
-      approvals: [approvalReq, ...store.approvals],
-      auditLogs: [audit, ...store.auditLogs],
-    });
+      onUpdateStore({
+        ...store,
+        settlements: store.settlements.map(s => s.id === editId ? updatedSettlement : s),
+        auditLogs: [audit, ...store.auditLogs],
+      });
+    } else {
+      const settlementNo = `SET-2026-${Math.floor(100 + Math.random() * 900)}`;
+
+      const newSettlement: Settlement = {
+        id: `SET-${Date.now()}`,
+        settlementNo,
+        clientId,
+        clientName: client?.companyName || 'Client',
+        caseId: store.cases[0]?.id || 'CAS-001',
+        caseNo: store.cases[0]?.caseNo || 'CAS-001',
+        totalCollected: totalDebtorCollectedAmount,
+        agencyFeePercent: 15,
+        agencyFeeAmount: agencyFeeDeduction,
+        talanganDeducted: 0,
+        directExpensesDeducted: 0,
+        netRemittedToClient,
+        settlementDate: new Date().toISOString().split('T')[0],
+        status: 'PENDING_APPROVAL',
+        createdAt: new Date().toISOString(),
+      };
+
+      const approvalReq: ApprovalRequest = {
+        id: `APP-SET-${Date.now()}`,
+        requestNo: `REQ-SET-${Math.floor(100 + Math.random() * 900)}`,
+        module: 'SETTLEMENT',
+        targetId: newSettlement.id,
+        targetReference: settlementNo,
+        title: `Remittance Settlement ${client?.companyName} Rp ${netRemittedToClient.toLocaleString('id-ID')}`,
+        requestedBy: currentUser.name,
+        amountOrValue: netRemittedToClient,
+        description: `Settlement hasil penagihan debtor. Client Net Remittance: Rp ${netRemittedToClient.toLocaleString('id-ID')}. Agency Fee Cut: Rp ${agencyFeeDeduction.toLocaleString('id-ID')}`,
+        status: 'PENDING',
+        createdAt: new Date().toISOString(),
+      };
+
+      const audit = createAuditEntry(currentUser.username, currentUser.role, 'CREATE', 'Settlements', newSettlement.id, `Created Settlement ${settlementNo} (Pending Executive Approval)`);
+
+      onUpdateStore({
+        ...store,
+        settlements: [newSettlement, ...store.settlements],
+        approvals: [approvalReq, ...store.approvals],
+        auditLogs: [audit, ...store.auditLogs],
+      });
+    }
+
     setShowModal(false);
+    resetForm();
+  };
+
+  const handleEditClick = (s: Settlement) => {
+    setClientId(s.clientId || store.clients[0]?.id || '');
+    setTotalDebtorCollectedAmount(s.totalCollected);
+    setAgencyFeeDeduction(s.agencyFeeAmount);
+    setEditId(s.id);
+    setIsEditing(true);
+    setShowModal(true);
+  };
+
+  const handleDeleteClick = (id: string) => {
+    if (confirm('Are you sure you want to delete this settlement record?')) {
+      const existingSettlement = store.settlements.find(s => s.id === id);
+      const audit = createAuditEntry(currentUser.username, currentUser.role, 'DELETE', 'Settlements', id, `Deleted Settlement ${existingSettlement?.settlementNo}`);
+      onUpdateStore({
+        ...store,
+        settlements: store.settlements.filter(s => s.id !== id),
+        auditLogs: [audit, ...store.auditLogs]
+      });
+    }
+  };
+
+  const resetForm = () => {
+    setClientId(store.clients[0]?.id || '');
+    setTotalDebtorCollectedAmount(100000000);
+    setAgencyFeeDeduction(15000000);
+    setEditId(null);
+    setIsEditing(false);
   };
 
   return (
@@ -79,7 +136,7 @@ export const SettlementModule: React.FC<SettlementModuleProps> = ({ store, curre
 
         {canEdit && (
           <button
-            onClick={() => setShowModal(true)}
+            onClick={() => { resetForm(); setShowModal(true); }}
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-md transition"
           >
             <Plus className="w-4 h-4" />
@@ -100,6 +157,7 @@ export const SettlementModule: React.FC<SettlementModuleProps> = ({ store, curre
                 <th className="py-3 px-4 text-right font-bold text-emerald-400">Net Client Remittance</th>
                 <th className="py-3 px-4">Settlement Date</th>
                 <th className="py-3 px-4 text-center">Status</th>
+                {canEdit && <th className="py-3 px-4 text-center">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
@@ -122,6 +180,18 @@ export const SettlementModule: React.FC<SettlementModuleProps> = ({ store, curre
                       {(s.status || '').replace(/_/g, ' ')}
                     </span>
                   </td>
+                  {canEdit && (
+                    <td className="py-3.5 px-4 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button onClick={() => handleEditClick(s)} className="text-slate-400 hover:text-white transition">
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDeleteClick(s.id)} className="text-slate-400 hover:text-rose-400 transition">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -132,7 +202,7 @@ export const SettlementModule: React.FC<SettlementModuleProps> = ({ store, curre
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
           <form onSubmit={handleCreateSettlement} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <h3 className="font-bold text-white text-base">Generate Remittance Settlement</h3>
+            <h3 className="font-bold text-white text-base">{isEditing ? 'Edit Remittance Settlement' : 'Generate Remittance Settlement'}</h3>
 
             <div>
               <label className="block text-xs text-slate-400 mb-1">Select Multifinance Client</label>
@@ -181,7 +251,7 @@ export const SettlementModule: React.FC<SettlementModuleProps> = ({ store, curre
             <div className="flex justify-end gap-2 pt-2">
               <button
                 type="button"
-                onClick={() => setShowModal(false)}
+                onClick={() => { setShowModal(false); resetForm(); }}
                 className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
               >
                 Cancel
@@ -190,7 +260,7 @@ export const SettlementModule: React.FC<SettlementModuleProps> = ({ store, curre
                 type="submit"
                 className="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500"
               >
-                Submit for Executive Approval
+                {isEditing ? 'Save Changes' : 'Submit for Executive Approval'}
               </button>
             </div>
           </form>

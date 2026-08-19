@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Payment, LedgerEntry } from '../../types/arms';
-import { DollarSign, Plus, CheckCircle, FileText, X } from 'lucide-react';
+import { DollarSign, Plus, CheckCircle, FileText, X, Edit2, Trash2 } from 'lucide-react';
 import { PaymentReceipt } from './PaymentReceipt';
 
 interface PaymentsModuleProps {
@@ -12,6 +12,9 @@ interface PaymentsModuleProps {
 
 export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUser, onUpdateStore }) => {
   const [showModal, setShowModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+
   const [caseId, setCaseId] = useState(store.cases[0]?.id || '');
   const [paymentAmount, setPaymentAmount] = useState(25000000);
   const [paymentType, setPaymentType] = useState<'FULL_PAYMENT' | 'PARTIAL_PAYMENT' | 'SETTLEMENT_NEGOTIATED'>('PARTIAL_PAYMENT');
@@ -30,40 +33,20 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
     e.preventDefault();
     const c = store.cases.find((cs) => cs.id === caseId);
 
-    const receiptNo = `PAY-2026-${Math.floor(100 + Math.random() * 900)}`;
+    const receiptNo = isEditing && editId ? (store.payments.find(p => p.id === editId)?.paymentNo || `PAY-2026-${Math.floor(100 + Math.random() * 900)}`) : `PAY-2026-${Math.floor(100 + Math.random() * 900)}`;
     const totalCompanyRevenue = successFeeAmount + executionFeeAmount;
 
     const customSplitsStr = manualSplits.length > 0 
       ? ', ' + manualSplits.map(s => `${s.name}: Rp ${s.amount.toLocaleString('id-ID')}`).join(', ') 
       : '';
 
-    const newPayment: Payment = {
-      id: `PAY-${Date.now()}`,
-      paymentNo: receiptNo,
-      caseId,
-      caseNo: c?.caseNo || 'CAS-001',
-      debtorName: c?.debtorName || 'Debtor',
-      paymentDate: new Date().toISOString().split('T')[0],
-      amount: totalPaidByDebitur,
-      paymentType: 'DEBTOR_REPAYMENT',
-      paymentMethod,
-      totalPaidByDebitur,
-      successFeeAmount,
-      executionFeeAmount,
-      passThroughFee,
-      proofUrl: proofDriveUrl,
-      manualSplits,
-      allocationSummary: `Success Fee: Rp ${successFeeAmount.toLocaleString('id-ID')}, Execution Fee: Rp ${executionFeeAmount.toLocaleString('id-ID')}, Pass-Through: Rp ${passThroughFee.toLocaleString('id-ID')}${customSplitsStr}`,
-      verificationStatus: 'VERIFIED',
-      verifiedBy: currentUser.name,
-      createdAt: new Date().toISOString(),
-    };
-
-    // Update Case & Assignment status to CLOSED if full payment or settlement
-    const shouldClose = paymentType === 'FULL_PAYMENT' || paymentType === 'SETTLEMENT_NEGOTIATED';
-    
+    let updatedPayments = store.payments;
+    let auditLogMessage = '';
     let updatedCases = store.cases;
     let updatedAssignments = store.assignments;
+    let newLedgerEntries = [];
+
+    const shouldClose = paymentType === 'FULL_PAYMENT' || paymentType === 'SETTLEMENT_NEGOTIATED';
 
     if (shouldClose) {
       updatedCases = store.cases.map(caseItem => 
@@ -74,52 +57,141 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
       );
     }
 
-    // Post Double-Entry Ledger
-    const ledgerEntry1: LedgerEntry = {
-      id: `LDG-PAY1-${Date.now()}`,
-      entryNo: `LDG-2026-PAY-${Math.floor(100 + Math.random() * 900)}`,
-      date: new Date().toISOString().split('T')[0],
-      account: 'CASH',
-      type: 'DEBIT',
-      amount: totalPaidByDebitur,
-      referenceModule: 'PAYMENT',
-      referenceId: newPayment.id,
-      description: `Debtor Payment Receipt ${receiptNo} for ${c?.caseNo}`,
-      createdAt: new Date().toISOString(),
-    };
+    if (isEditing && editId) {
+      updatedPayments = store.payments.map(p => p.id === editId ? {
+        ...p,
+        caseId,
+        caseNo: c?.caseNo || 'CAS-001',
+        debtorName: c?.debtorName || 'Debtor',
+        paymentType,
+        paymentMethod,
+        totalPaidByDebitur,
+        successFeeAmount,
+        executionFeeAmount,
+        passThroughFee,
+        proofUrl: proofDriveUrl,
+        manualSplits,
+        allocationSummary: `Success Fee: Rp ${successFeeAmount.toLocaleString('id-ID')}, Execution Fee: Rp ${executionFeeAmount.toLocaleString('id-ID')}, Pass-Through: Rp ${passThroughFee.toLocaleString('id-ID')}${customSplitsStr}`,
+      } : p);
+      auditLogMessage = `Updated Debtor Payment ${receiptNo}`;
+    } else {
+      const newPayment: Payment = {
+        id: `PAY-${Date.now()}`,
+        paymentNo: receiptNo,
+        caseId,
+        caseNo: c?.caseNo || 'CAS-001',
+        debtorName: c?.debtorName || 'Debtor',
+        paymentDate: new Date().toISOString().split('T')[0],
+        amount: totalPaidByDebitur,
+        paymentType: 'DEBTOR_REPAYMENT',
+        paymentMethod,
+        totalPaidByDebitur,
+        successFeeAmount,
+        executionFeeAmount,
+        passThroughFee,
+        proofUrl: proofDriveUrl,
+        manualSplits,
+        allocationSummary: `Success Fee: Rp ${successFeeAmount.toLocaleString('id-ID')}, Execution Fee: Rp ${executionFeeAmount.toLocaleString('id-ID')}, Pass-Through: Rp ${passThroughFee.toLocaleString('id-ID')}${customSplitsStr}`,
+        verificationStatus: 'VERIFIED',
+        verifiedBy: currentUser.name,
+        createdAt: new Date().toISOString(),
+      };
 
-    const ledgerEntry2: LedgerEntry = {
-      id: `LDG-PAY2-${Date.now()}`,
-      entryNo: `LDG-2026-REV-${Math.floor(100 + Math.random() * 900)}`,
-      date: new Date().toISOString().split('T')[0],
-      account: 'REVENUE_FEE',
-      type: 'CREDIT',
-      amount: totalCompanyRevenue,
-      referenceModule: 'PAYMENT',
-      referenceId: newPayment.id,
-      description: `Revenue recognized (Success+Execution Fee) on Receipt ${receiptNo}`,
-      createdAt: new Date().toISOString(),
-    };
+      updatedPayments = [newPayment, ...store.payments];
+      
+      const ledgerEntry1: LedgerEntry = {
+        id: `LDG-PAY1-${Date.now()}`,
+        entryNo: `LDG-2026-PAY-${Math.floor(100 + Math.random() * 900)}`,
+        date: new Date().toISOString().split('T')[0],
+        account: 'CASH',
+        type: 'DEBIT',
+        amount: totalPaidByDebitur,
+        referenceModule: 'PAYMENT',
+        referenceId: newPayment.id,
+        description: `Debtor Payment Receipt ${receiptNo} for ${c?.caseNo}`,
+        createdAt: new Date().toISOString(),
+      };
+
+      const ledgerEntry2: LedgerEntry = {
+        id: `LDG-PAY2-${Date.now()}`,
+        entryNo: `LDG-2026-REV-${Math.floor(100 + Math.random() * 900)}`,
+        date: new Date().toISOString().split('T')[0],
+        account: 'REVENUE_FEE',
+        type: 'CREDIT',
+        amount: totalCompanyRevenue,
+        referenceModule: 'PAYMENT',
+        referenceId: newPayment.id,
+        description: `Revenue recognized (Success+Execution Fee) on Receipt ${receiptNo}`,
+        createdAt: new Date().toISOString(),
+      };
+
+      newLedgerEntries = [ledgerEntry1, ledgerEntry2];
+      auditLogMessage = `Recorded Debtor Payment ${receiptNo} Rp ${totalPaidByDebitur.toLocaleString('id-ID')} with Revenue Rp ${totalCompanyRevenue.toLocaleString('id-ID')}`;
+    }
 
     const audit = createAuditEntry(
       currentUser.username,
       currentUser.role,
-      'PAYMENT',
+      isEditing ? 'UPDATE' : 'PAYMENT',
       'Payments',
-      newPayment.id,
-      `Recorded Debtor Payment ${receiptNo} Rp ${totalPaidByDebitur.toLocaleString('id-ID')} with Revenue Rp ${totalCompanyRevenue.toLocaleString('id-ID')}`
+      editId || `PAY-${Date.now()}`,
+      auditLogMessage
     );
 
     onUpdateStore({
       ...store,
       cases: updatedCases,
       assignments: updatedAssignments,
-      payments: [newPayment, ...store.payments],
-      ledger: [ledgerEntry1, ledgerEntry2, ...store.ledger],
+      payments: updatedPayments,
+      ledger: [...newLedgerEntries, ...store.ledger],
       auditLogs: [audit, ...store.auditLogs],
     });
 
     setShowModal(false);
+    resetForm();
+  };
+
+  const handleEditClick = (p: Payment) => {
+    setCaseId(p.caseId);
+    setPaymentAmount(p.amount);
+    setPaymentType(p.paymentType as any || 'PARTIAL_PAYMENT');
+    setPaymentMethod(p.paymentMethod || 'TRANSFER');
+    setTotalPaidByDebitur(p.totalPaidByDebitur || p.amount);
+    setSuccessFeeAmount(p.successFeeAmount || 0);
+    setExecutionFeeAmount(p.executionFeeAmount || 0);
+    setPassThroughFee(p.passThroughFee || 0);
+    setManualSplits(p.manualSplits || []);
+    setProofDriveUrl(p.proofUrl || '');
+    setEditId(p.id);
+    setIsEditing(true);
+    setShowModal(true);
+  };
+
+  const handleDeleteClick = (id: string) => {
+    if (confirm('Are you sure you want to delete this payment? Note: Ledger entries are not automatically deleted.')) {
+      const existingPayment = store.payments.find(p => p.id === id);
+      const audit = createAuditEntry(currentUser.username, currentUser.role, 'DELETE', 'Payments', id, `Deleted Payment ${existingPayment?.paymentNo}`);
+      onUpdateStore({
+        ...store,
+        payments: store.payments.filter(p => p.id !== id),
+        auditLogs: [audit, ...store.auditLogs]
+      });
+    }
+  };
+
+  const resetForm = () => {
+    setCaseId(store.cases[0]?.id || '');
+    setPaymentAmount(25000000);
+    setPaymentType('PARTIAL_PAYMENT');
+    setPaymentMethod('TRANSFER');
+    setTotalPaidByDebitur(25000000);
+    setSuccessFeeAmount(0);
+    setExecutionFeeAmount(0);
+    setPassThroughFee(0);
+    setManualSplits([]);
+    setProofDriveUrl('');
+    setEditId(null);
+    setIsEditing(false);
   };
 
   return (
@@ -135,7 +207,7 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
 
         {canEdit && (
           <button
-            onClick={() => setShowModal(true)}
+            onClick={() => { resetForm(); setShowModal(true); }}
             className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-md transition"
           >
             <Plus className="w-4 h-4" />
@@ -178,13 +250,25 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
                     </span>
                   </td>
                   <td className="py-3.5 px-4 text-center">
-                    <button
-                      onClick={() => setSelectedPaymentForReceipt(p)}
-                      className="text-slate-400 hover:text-emerald-400 transition"
-                      title="Cetak Kuitansi"
-                    >
-                      <FileText className="w-4 h-4 mx-auto" />
-                    </button>
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => setSelectedPaymentForReceipt(p)}
+                        className="text-slate-400 hover:text-emerald-400 transition"
+                        title="Cetak Kuitansi"
+                      >
+                        <FileText className="w-4 h-4" />
+                      </button>
+                      {canEdit && (
+                        <>
+                          <button onClick={() => handleEditClick(p)} className="text-slate-400 hover:text-white transition">
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleDeleteClick(p.id)} className="text-slate-400 hover:text-rose-400 transition">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -202,8 +286,8 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
 
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <form onSubmit={handleRecordPayment} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <h3 className="font-bold text-white text-base">Record Debtor Payment</h3>
+          <form onSubmit={handleRecordPayment} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h3 className="font-bold text-white text-base">{isEditing ? 'Edit Debtor Payment' : 'Record Debtor Payment'}</h3>
 
             <div>
               <label className="block text-xs text-slate-400 mb-1">Select Case</label>
@@ -359,7 +443,7 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
             <div className="flex justify-end gap-2 pt-2">
               <button
                 type="button"
-                onClick={() => setShowModal(false)}
+                onClick={() => { setShowModal(false); resetForm(); }}
                 className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
               >
                 Cancel
@@ -368,7 +452,7 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
                 type="submit"
                 className="px-4 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-500"
               >
-                Post Payment & Ledger Entry
+                {isEditing ? 'Save Changes' : 'Confirm Payment & Post Ledger'}
               </button>
             </div>
           </form>

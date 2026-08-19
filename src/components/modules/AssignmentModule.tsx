@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Assignment } from '../../types/arms';
-import { Users, Plus, CheckCircle, Clock, AlertCircle, Building2, UserCheck, ExternalLink, Filter, Search, Scale } from 'lucide-react';
+import { Users, Plus, CheckCircle, Clock, AlertCircle, Building2, UserCheck, ExternalLink, Filter, Search, Scale, Edit2, Trash2 } from 'lucide-react';
 
 interface AssignmentModuleProps {
   store: ARMSStore;
@@ -19,13 +19,13 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
 
   // Active unfinished cases for new assignments
-  const activeCases = store.cases.filter(
+  const activeCases = (store.cases || []).filter(
     (c) => !['CLOSED', 'SETTLED', 'FULL_PAID', 'CANCELLED'].includes(c.status)
   );
   const multifinanceCases = activeCases.filter((c) => c.clientType === 'MULTIFINANCE' || !c.clientType);
   const peroranganCases = activeCases.filter((c) => c.clientType === 'PERORANGAN');
 
-  const [caseId, setCaseId] = useState(activeCases[0]?.id || '');
+  const [caseId, setCaseId] = useState(activeCases[0]?.id || store.cases?.[0]?.id || '');
   const [personnelId, setPartnerId] = useState(store.personnel?.[0]?.id || '');
   const [slaDays, setSlaDays] = useState(14);
   const [instructions, setInstructions] = useState('');
@@ -34,7 +34,7 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
 
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS';
 
-  const selectedCase = store.cases.find((cs) => cs.id === caseId);
+  const selectedCase = (store.cases || []).find((cs) => cs.id === caseId);
   const isPerorangan = selectedCase?.clientType === 'PERORANGAN';
 
   const handleOpenModal = (assignment?: Assignment) => {
@@ -43,13 +43,18 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
       setEditId(assignment.id);
       setCaseId(assignment.caseId);
       setPartnerId(assignment.personnelId);
-      setSlaDays(assignment.slaDays);
-      setInstructions(assignment.instructions);
+      setSlaDays(assignment.slaDays || 14);
+      setInstructions(assignment.instructions || '');
     } else {
       setIsEditing(false);
       setEditId(null);
-      if (activeCases.length > 0) setCaseId(activeCases[0].id);
-      if (store.personnel && store.personnel.length > 0) setPartnerId(store.personnel[0].id);
+      const defaultCaseId = activeCases[0]?.id || store.cases?.[0]?.id || '';
+      setCaseId(defaultCaseId);
+      if (store.personnel && store.personnel.length > 0) {
+        setPartnerId(store.personnel[0].id);
+      } else {
+        setPartnerId('');
+      }
       setSlaDays(14);
       setInstructions('');
     }
@@ -57,7 +62,7 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
   };
 
   const handleDeleteAssignment = (id: string, assignmentNo: string) => {
-    if (!window.confirm(`Are you sure you want to delete Assignment "${assignmentNo}"?`)) return;
+    if (!window.confirm(`Apakah Anda yakin ingin menghapus penugasan "${assignmentNo}"?`)) return;
 
     const audit = createAuditEntry(
       currentUser.username,
@@ -70,30 +75,38 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
 
     onUpdateStore({
       ...store,
-      assignments: store.assignments.filter(a => a.id !== id),
+      assignments: (store.assignments || []).filter(a => a.id !== id),
       auditLogs: [audit, ...store.auditLogs],
     });
   };
 
   const handleCreateAssignment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCase) return;
+    if (!selectedCase) {
+      alert('Silakan pilih berkas perkara terlebih dahulu.');
+      return;
+    }
+
+    if (!personnelId && (!store.personnel || store.personnel.length === 0)) {
+      alert('Belum ada mitra lapangan/personil terdaftar. Silakan tambahkan mitra di menu Personnel terlebih dahulu.');
+      return;
+    }
 
     const p = (store.personnel || []).find((pr) => pr.id === personnelId);
 
     if (isEditing && editId) {
-      const updatedAssignments = store.assignments.map(a => {
+      const updatedAssignments = (store.assignments || []).map(a => {
         if (a.id === editId) {
           return {
             ...a,
             caseId: selectedCase.id,
             caseNo: selectedCase.caseNo,
             debtorName: selectedCase.debtorName,
-            personnelId,
-            personnelName: p?.fullName || 'Mitra Lapangan',
+            personnelId: personnelId || a.personnelId,
+            personnelName: p?.fullName || a.personnelName || 'Mitra Lapangan',
             slaDays,
             instructions: instructions || (isPerorangan ? 'Lakukan kunjungan lapangan, verifikasi domisili, dan mediasi penagihan piutang perorangan secara profesional.' : 'Lakukan penelusuran unit jaminan fidusia dan negosiasi penyerahan unit.'),
-            gDriveFolderUrl: selectedCase.gDriveFolderUrl,
+            gDriveFolderUrl: selectedCase.gDriveFolderUrl || a.gDriveFolderUrl,
           };
         }
         return a;
@@ -120,14 +133,14 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
         caseId: selectedCase.id,
         caseNo: selectedCase.caseNo,
         debtorName: selectedCase.debtorName,
-        personnelId,
-        personnelName: p?.fullName || 'Mitra Lapangan',
+        personnelId: personnelId || store.personnel?.[0]?.id || 'PER-001',
+        personnelName: p?.fullName || store.personnel?.[0]?.fullName || 'Mitra Lapangan',
         assignedDate: new Date().toISOString().split('T')[0],
         targetDate: new Date(Date.now() + slaDays * 86400000).toISOString().split('T')[0],
         slaDays,
         instructions: instructions || (isPerorangan ? 'Lakukan kunjungan lapangan, verifikasi domisili, dan mediasi penagihan piutang perorangan secara profesional.' : 'Lakukan penelusuran unit jaminan fidusia dan negosiasi penyerahan unit.'),
         status: 'IN_PROGRESS',
-        gDriveFolderUrl: selectedCase.gDriveFolderUrl,
+        gDriveFolderUrl: selectedCase.gDriveFolderUrl || '',
         createdAt: new Date().toISOString(),
       };
 
@@ -142,7 +155,7 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
 
       onUpdateStore({
         ...store,
-        assignments: [newAssignment, ...store.assignments],
+        assignments: [newAssignment, ...(store.assignments || [])],
         auditLogs: [audit, ...store.auditLogs],
       });
     }
@@ -152,8 +165,8 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
   };
 
   // Filtered assignments
-  const filteredAssignments = store.assignments.filter((a) => {
-    const parentCase = store.cases.find((c) => c.id === a.caseId || c.caseNo === a.caseNo);
+  const filteredAssignments = (store.assignments || []).filter((a) => {
+    const parentCase = (store.cases || []).find((c) => c.id === a.caseId || c.caseNo === a.caseNo);
     const cType = parentCase?.clientType || 'MULTIFINANCE';
 
     if (clientFilter === 'MULTIFINANCE' && cType !== 'MULTIFINANCE') return false;
@@ -399,11 +412,11 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Pilih Berkas Kasus Aktif <span className="text-red-400">*</span>
+                Pilih Berkas Kasus <span className="text-red-400">*</span>
               </label>
-              {activeCases.length === 0 ? (
+              {activeCases.length === 0 && !isEditing ? (
                 <div className="p-3 bg-amber-950/60 border border-amber-800 rounded-lg text-xs text-amber-300">
-                  ⚠️ Semua kasus telah selesai/lunas. Tidak ada pekerjaan kasus aktif untuk penugasan baru.
+                  ⚠️ Semua kasus telah selesai/lunas. Tidak ada berkas kasus aktif baru untuk ditugaskan.
                 </div>
               ) : (
                 <select
@@ -411,21 +424,33 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
                   onChange={(e) => setCaseId(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                 >
-                  <optgroup label="🏢 Kasus Multifinance / Perusahaan">
-                    {multifinanceCases.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        [MULTIFINANCE] {c.caseNo} — {c.debtorName} ({c.clientName})
+                  {isEditing && selectedCase && !activeCases.some(c => c.id === selectedCase.id) && (
+                    <optgroup label="📌 Kasus Terpilih (Saat Ini)">
+                      <option value={selectedCase.id}>
+                        [{selectedCase.clientType || 'KASUS'}] {selectedCase.caseNo} — {selectedCase.debtorName} ({selectedCase.clientName})
                       </option>
-                    ))}
-                  </optgroup>
+                    </optgroup>
+                  )}
 
-                  <optgroup label="👤 Kasus Klien Perorangan (Kreditur Individu)">
-                    {peroranganCases.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        [PERORANGAN] {c.caseNo} — {c.debtorName} (Kreditur: {c.clientName})
-                      </option>
-                    ))}
-                  </optgroup>
+                  {multifinanceCases.length > 0 && (
+                    <optgroup label="🏢 Kasus Multifinance / Perusahaan">
+                      {multifinanceCases.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          [MULTIFINANCE] {c.caseNo} — {c.debtorName} ({c.clientName})
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+
+                  {peroranganCases.length > 0 && (
+                    <optgroup label="👤 Kasus Klien Perorangan (Kreditur Individu)">
+                      {peroranganCases.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          [PERORANGAN] {c.caseNo} — {c.debtorName} (Kreditur: {c.clientName})
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
               )}
             </div>

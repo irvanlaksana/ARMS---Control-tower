@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, DanaTalangan, ApprovalRequest } from '../../types/arms';
-import { Coins, Plus, CheckCircle, Clock, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Coins, Plus, CheckCircle, Clock, AlertTriangle, ShieldCheck, Edit2, Trash2 } from 'lucide-react';
 
 interface DanaTalanganModuleProps {
   store: ARMSStore;
@@ -15,6 +15,9 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
   onUpdateStore,
 }) => {
   const [showModal, setShowModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+
   const [caseId, setCaseId] = useState(store.cases[0]?.id || '');
   const [purpose, setPurpose] = useState<'PENARIKAN_UNIT' | 'STORAGE_WAREHOUSE' | 'TOWING_LOGISTICS' | 'LEGAL_MEDIATION' | 'LIQUIDITY_BRIDGING'>('PENARIKAN_UNIT');
   const [requestedAmount, setRequestedAmount] = useState(10000000);
@@ -28,54 +31,128 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
     e.preventDefault();
     const c = store.cases.find((cs) => cs.id === caseId);
 
-    const fundingNo = `TAL-2026-${Math.floor(100 + Math.random() * 900)}`;
-    const newFunding: DanaTalangan = {
-      id: `TAL-${Date.now()}`,
-      fundingNo,
-      caseId,
-      caseNo: c?.caseNo || 'CAS-001',
-      debtorName: c?.debtorName || 'Debtor',
-      purpose,
-      requestedAmount,
-      funderSource,
-      feeOrInterestRatePercent: feeRate,
-      repayTargetDate,
-      status: 'PENDING_APPROVAL',
-      createdAt: new Date().toISOString(),
-    };
+    if (isEditing && editId) {
+      const existingTalangan = store.danaTalangan.find(t => t.id === editId);
+      if (!existingTalangan) return;
 
-    // Create approval request for Direktur Utama
-    const approvalReq: ApprovalRequest = {
-      id: `APP-TAL-${Date.now()}`,
-      requestNo: `REQ-TAL-${Math.floor(100 + Math.random() * 900)}`,
-      module: 'DANA_TALANGAN',
-      targetId: newFunding.id,
-      targetReference: `${fundingNo} (${c?.caseNo})`,
-      title: `Pencairan Dana Talangan ${(purpose || '').replace(/_/g, ' ')} Rp ${requestedAmount.toLocaleString('id-ID')}`,
-      requestedBy: currentUser.name,
-      amountOrValue: requestedAmount,
-      description: `Pengajuan dana talangan untuk penarikan/recovery aset unit kasus ${c?.caseNo}. Source: ${funderSource}.`,
-      status: 'PENDING',
-      createdAt: new Date().toISOString(),
-    };
+      const updatedTalangan = {
+        ...existingTalangan,
+        caseId,
+        caseNo: c?.caseNo || existingTalangan.caseNo,
+        debtorName: c?.debtorName || existingTalangan.debtorName,
+        purpose,
+        requestedAmount,
+        funderSource,
+        feeOrInterestRatePercent: feeRate,
+        repayTargetDate,
+      };
 
-    const audit = createAuditEntry(
-      currentUser.username,
-      currentUser.role,
-      'CREATE',
-      'Dana_Talangan',
-      newFunding.id,
-      `Requested Dana Talangan ${fundingNo} for ${requestedAmount} (Pending Executive Approval)`
-    );
+      const audit = createAuditEntry(
+        currentUser.username,
+        currentUser.role,
+        'UPDATE',
+        'Dana_Talangan',
+        editId,
+        `Updated Dana Talangan ${existingTalangan.fundingNo}`
+      );
 
-    onUpdateStore({
-      ...store,
-      danaTalangan: [newFunding, ...store.danaTalangan],
-      approvals: [approvalReq, ...store.approvals],
-      auditLogs: [audit, ...store.auditLogs],
-    });
+      onUpdateStore({
+        ...store,
+        danaTalangan: store.danaTalangan.map(t => t.id === editId ? updatedTalangan : t),
+        auditLogs: [audit, ...store.auditLogs],
+      });
+    } else {
+      const fundingNo = `TAL-2026-${Math.floor(100 + Math.random() * 900)}`;
+      const newFunding: DanaTalangan = {
+        id: `TAL-${Date.now()}`,
+        fundingNo,
+        caseId,
+        caseNo: c?.caseNo || 'CAS-001',
+        debtorName: c?.debtorName || 'Debtor',
+        purpose,
+        requestedAmount,
+        funderSource,
+        feeOrInterestRatePercent: feeRate,
+        repayTargetDate,
+        status: 'PENDING_APPROVAL',
+        createdAt: new Date().toISOString(),
+      };
+
+      const approvalReq: ApprovalRequest = {
+        id: `APP-TAL-${Date.now()}`,
+        requestNo: `REQ-TAL-${Math.floor(100 + Math.random() * 900)}`,
+        module: 'DANA_TALANGAN',
+        targetId: newFunding.id,
+        targetReference: `${fundingNo} (${c?.caseNo})`,
+        title: `Pencairan Dana Talangan ${(purpose || '').replace(/_/g, ' ')} Rp ${requestedAmount.toLocaleString('id-ID')}`,
+        requestedBy: currentUser.name,
+        amountOrValue: requestedAmount,
+        description: `Pengajuan dana talangan untuk penarikan/recovery aset unit kasus ${c?.caseNo}. Source: ${funderSource}.`,
+        status: 'PENDING',
+        createdAt: new Date().toISOString(),
+      };
+
+      const audit = createAuditEntry(
+        currentUser.username,
+        currentUser.role,
+        'CREATE',
+        'Dana_Talangan',
+        newFunding.id,
+        `Requested Dana Talangan ${fundingNo} for ${requestedAmount} (Pending Executive Approval)`
+      );
+
+      onUpdateStore({
+        ...store,
+        danaTalangan: [newFunding, ...store.danaTalangan],
+        approvals: [approvalReq, ...store.approvals],
+        auditLogs: [audit, ...store.auditLogs],
+      });
+    }
 
     setShowModal(false);
+    resetForm();
+  };
+
+  const handleEditClick = (t: DanaTalangan) => {
+    setCaseId(t.caseId || store.cases[0]?.id || '');
+    setPurpose(t.purpose as any);
+    setRequestedAmount(t.requestedAmount);
+    setFunderSource(t.funderSource as any);
+    setFeeRate(t.feeOrInterestRatePercent || 0);
+    setRepayTargetDate(t.repayTargetDate || '');
+    setEditId(t.id);
+    setIsEditing(true);
+    setShowModal(true);
+  };
+
+  const handleDeleteClick = (id: string) => {
+    if (confirm('Are you sure you want to delete this dana talangan request?')) {
+      const existingTalangan = store.danaTalangan.find(t => t.id === id);
+      const audit = createAuditEntry(
+        currentUser.username,
+        currentUser.role,
+        'DELETE',
+        'Dana_Talangan',
+        id,
+        `Deleted Dana Talangan ${existingTalangan?.fundingNo}`
+      );
+      onUpdateStore({
+        ...store,
+        danaTalangan: store.danaTalangan.filter(t => t.id !== id),
+        auditLogs: [audit, ...store.auditLogs]
+      });
+    }
+  };
+
+  const resetForm = () => {
+    setCaseId(store.cases[0]?.id || '');
+    setPurpose('PENARIKAN_UNIT');
+    setRequestedAmount(10000000);
+    setFunderSource('TALANGAN_VAULT');
+    setFeeRate(5);
+    setRepayTargetDate('2026-08-30');
+    setEditId(null);
+    setIsEditing(false);
   };
 
   return (
@@ -93,7 +170,7 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
 
         {canEdit && (
           <button
-            onClick={() => setShowModal(true)}
+            onClick={() => { resetForm(); setShowModal(true); }}
             className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-lg shadow-md transition"
           >
             <Plus className="w-4 h-4 text-slate-950" />
@@ -115,6 +192,7 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
                 <th className="py-3 px-4">Bridging Fee %</th>
                 <th className="py-3 px-4">Repay Target</th>
                 <th className="py-3 px-4 text-center">Status</th>
+                {canEdit && <th className="py-3 px-4 text-center">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
@@ -141,6 +219,18 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
                       {(t.status || '').replace(/_/g, ' ')}
                     </span>
                   </td>
+                  {canEdit && (
+                    <td className="py-3.5 px-4 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button onClick={() => handleEditClick(t)} className="text-slate-400 hover:text-white transition">
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDeleteClick(t.id)} className="text-slate-400 hover:text-rose-400 transition">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -151,7 +241,7 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
           <form onSubmit={handleCreateTalangan} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
-            <h3 className="font-bold text-white text-base">Request Dana Talangan Liquidity</h3>
+            <h3 className="font-bold text-white text-base">{isEditing ? 'Edit Dana Talangan' : 'Request Dana Talangan Liquidity'}</h3>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -235,7 +325,7 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
             <div className="flex justify-end gap-2 pt-2">
               <button
                 type="button"
-                onClick={() => setShowModal(false)}
+                onClick={() => { setShowModal(false); resetForm(); }}
                 className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
               >
                 Cancel
@@ -244,7 +334,7 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
                 type="submit"
                 className="px-4 py-2 bg-amber-600 text-slate-950 text-xs font-bold rounded-lg hover:bg-amber-500"
               >
-                Submit for Executive Approval
+                {isEditing ? 'Save Changes' : 'Submit for Executive Approval'}
               </button>
             </div>
           </form>

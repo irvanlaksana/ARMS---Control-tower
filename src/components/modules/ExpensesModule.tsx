@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Expense, LedgerEntry } from '../../types/arms';
-import { Wallet, Plus } from 'lucide-react';
+import { Wallet, Plus, Edit2, Trash2 } from 'lucide-react';
 
 interface ExpensesModuleProps {
   store: ARMSStore;
@@ -11,6 +11,9 @@ interface ExpensesModuleProps {
 
 export const ExpensesModule: React.FC<ExpensesModuleProps> = ({ store, currentUser, onUpdateStore }) => {
   const [showModal, setShowModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+
   const [category, setCategory] = useState<'FIELD_OPERATIONAL' | 'TOWING' | 'WAREHOUSE' | 'LEGAL_FEE' | 'ADMIN'>('FIELD_OPERATIONAL');
   const [amount, setAmount] = useState(3500000);
   const [description, setDescription] = useState('');
@@ -19,42 +22,94 @@ export const ExpensesModule: React.FC<ExpensesModuleProps> = ({ store, currentUs
 
   const handleAddExpense = (e: React.FormEvent) => {
     e.preventDefault();
-    const expenseNo = `EXP-2026-${Math.floor(100 + Math.random() * 900)}`;
 
-    const newExpense: Expense = {
-      id: `EXP-${Date.now()}`,
-      expenseNo,
-      category: 'OPERATIONAL',
-      amount,
-      description,
-      expenseDate: new Date().toISOString().split('T')[0],
-      requestedBy: currentUser.name,
-      status: 'APPROVED',
-      createdAt: new Date().toISOString(),
-    };
+    if (isEditing && editId) {
+      const existingExpense = store.expenses.find(exp => exp.id === editId);
+      if (!existingExpense) return;
 
-    const ledgerEntry: LedgerEntry = {
-      id: `LDG-EXP-${Date.now()}`,
-      entryNo: `LDG-2026-EXP-${Math.floor(100 + Math.random() * 900)}`,
-      date: new Date().toISOString().split('T')[0],
-      account: 'EXPENSE_OPS',
-      type: 'DEBIT',
-      amount,
-      referenceModule: 'EXPENSE',
-      referenceId: newExpense.id,
-      description: `Operational Expense ${expenseNo}: ${description}`,
-      createdAt: new Date().toISOString(),
-    };
+      const updatedExpense = {
+        ...existingExpense,
+        category,
+        amount,
+        description,
+      };
 
-    const audit = createAuditEntry(currentUser.username, currentUser.role, 'CREATE', 'Expenses', newExpense.id, `Recorded Expense ${expenseNo} Rp ${amount.toLocaleString('id-ID')}`);
+      const audit = createAuditEntry(currentUser.username, currentUser.role, 'UPDATE', 'Expenses', editId, `Updated Expense ${existingExpense.expenseNo}`);
 
-    onUpdateStore({
-      ...store,
-      expenses: [newExpense, ...store.expenses],
-      ledger: [ledgerEntry, ...store.ledger],
-      auditLogs: [audit, ...store.auditLogs],
-    });
+      onUpdateStore({
+        ...store,
+        expenses: store.expenses.map(exp => exp.id === editId ? updatedExpense : exp),
+        auditLogs: [audit, ...store.auditLogs],
+      });
+    } else {
+      const expenseNo = `EXP-2026-${Math.floor(100 + Math.random() * 900)}`;
+
+      const newExpense: Expense = {
+        id: `EXP-${Date.now()}`,
+        expenseNo,
+        category: 'OPERATIONAL', // We actually set a detailed category in the state
+        amount,
+        description,
+        expenseDate: new Date().toISOString().split('T')[0],
+        requestedBy: currentUser.name,
+        status: 'APPROVED',
+        createdAt: new Date().toISOString(),
+      };
+
+      const ledgerEntry: LedgerEntry = {
+        id: `LDG-EXP-${Date.now()}`,
+        entryNo: `LDG-2026-EXP-${Math.floor(100 + Math.random() * 900)}`,
+        date: new Date().toISOString().split('T')[0],
+        account: 'EXPENSE_OPS',
+        type: 'DEBIT',
+        amount,
+        referenceModule: 'EXPENSE',
+        referenceId: newExpense.id,
+        description: `Operational Expense ${expenseNo}: ${description}`,
+        createdAt: new Date().toISOString(),
+      };
+
+      const audit = createAuditEntry(currentUser.username, currentUser.role, 'CREATE', 'Expenses', newExpense.id, `Recorded Expense ${expenseNo} Rp ${amount.toLocaleString('id-ID')}`);
+
+      onUpdateStore({
+        ...store,
+        expenses: [newExpense, ...store.expenses],
+        ledger: [ledgerEntry, ...store.ledger],
+        auditLogs: [audit, ...store.auditLogs],
+      });
+    }
+
     setShowModal(false);
+    resetForm();
+  };
+
+  const handleEditClick = (exp: Expense) => {
+    setCategory(exp.category as any || 'FIELD_OPERATIONAL');
+    setAmount(exp.amount);
+    setDescription(exp.description || '');
+    setEditId(exp.id);
+    setIsEditing(true);
+    setShowModal(true);
+  };
+
+  const handleDeleteClick = (id: string) => {
+    if (confirm('Are you sure you want to delete this expense?')) {
+      const existingExpense = store.expenses.find(exp => exp.id === id);
+      const audit = createAuditEntry(currentUser.username, currentUser.role, 'DELETE', 'Expenses', id, `Deleted Expense ${existingExpense?.expenseNo}`);
+      onUpdateStore({
+        ...store,
+        expenses: store.expenses.filter(exp => exp.id !== id),
+        auditLogs: [audit, ...store.auditLogs]
+      });
+    }
+  };
+
+  const resetForm = () => {
+    setCategory('FIELD_OPERATIONAL');
+    setAmount(3500000);
+    setDescription('');
+    setEditId(null);
+    setIsEditing(false);
   };
 
   return (
@@ -70,7 +125,7 @@ export const ExpensesModule: React.FC<ExpensesModuleProps> = ({ store, currentUs
 
         {canEdit && (
           <button
-            onClick={() => setShowModal(true)}
+            onClick={() => { resetForm(); setShowModal(true); }}
             className="flex items-center gap-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-md transition"
           >
             <Plus className="w-4 h-4" />
@@ -90,6 +145,7 @@ export const ExpensesModule: React.FC<ExpensesModuleProps> = ({ store, currentUs
                 <th className="py-3 px-4">Description</th>
                 <th className="py-3 px-4">Paid By</th>
                 <th className="py-3 px-4 text-center">Status</th>
+                {canEdit && <th className="py-3 px-4 text-center">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
@@ -111,6 +167,18 @@ export const ExpensesModule: React.FC<ExpensesModuleProps> = ({ store, currentUs
                       {e.status}
                     </span>
                   </td>
+                  {canEdit && (
+                    <td className="py-3.5 px-4 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button onClick={() => handleEditClick(e)} className="text-slate-400 hover:text-white transition">
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDeleteClick(e.id)} className="text-slate-400 hover:text-rose-400 transition">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -121,7 +189,7 @@ export const ExpensesModule: React.FC<ExpensesModuleProps> = ({ store, currentUs
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
           <form onSubmit={handleAddExpense} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <h3 className="font-bold text-white text-base">Record Operational Expense</h3>
+            <h3 className="font-bold text-white text-base">{isEditing ? 'Edit Operational Expense' : 'Record Operational Expense'}</h3>
 
             <div>
               <label className="block text-xs text-slate-400 mb-1">Expense Category</label>
@@ -164,7 +232,7 @@ export const ExpensesModule: React.FC<ExpensesModuleProps> = ({ store, currentUs
             <div className="flex justify-end gap-2 pt-2">
               <button
                 type="button"
-                onClick={() => setShowModal(false)}
+                onClick={() => { setShowModal(false); resetForm(); }}
                 className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
               >
                 Cancel
@@ -173,7 +241,7 @@ export const ExpensesModule: React.FC<ExpensesModuleProps> = ({ store, currentUs
                 type="submit"
                 className="px-4 py-2 bg-rose-600 text-white text-xs font-semibold rounded-lg hover:bg-rose-500"
               >
-                Post Expense & Ledger Entry
+                {isEditing ? 'Save Changes' : 'Post Expense & Ledger Entry'}
               </button>
             </div>
           </form>
