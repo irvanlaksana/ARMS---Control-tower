@@ -86,7 +86,7 @@ export default function App() {
       case 'CASES':
         return <CasesModule store={store} currentUser={currentUser} onUpdateStore={handleUpdateStore} />;
       case 'MODAL_KERJA':
-        return <ModalKerjaModule store={store} currentUser={currentUser} onUpdateStore={handleUpdateStore} />;
+        return <ModalKerjaModule store={store} currentUser={currentUser} onUpdateStore={handleUpdateStore} onNavigateTab={setActiveTab} />;
       case 'TALANGAN':
         return <DanaTalanganModule store={store} currentUser={currentUser} onUpdateStore={handleUpdateStore} />;
       case 'PETTY_CASH':

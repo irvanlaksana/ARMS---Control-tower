@@ -442,8 +442,11 @@ export interface CashAccount {
   accountName: string; // Bank Mandiri Utama, Vault Liquidity, Cash On Hand
   bankName: string;
   accountNo: string;
+  accountHolder?: string;
+  branch?: string;
   balance: number;
-  type: 'OPERATIONAL' | 'TALANGAN_VAULT' | 'PETTY_CASH';
+  type: 'OPERATIONAL' | 'TALANGAN_VAULT' | 'PETTY_CASH' | 'MODAL_KERJA_POOL' | 'INVESTOR_ESCROW' | 'OTHER';
+  notes?: string;
   lastUpdated: string;
 }
 

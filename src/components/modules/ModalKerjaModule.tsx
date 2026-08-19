@@ -11,12 +11,14 @@ interface ModalKerjaModuleProps {
   store: ARMSStore;
   currentUser: User;
   onUpdateStore: (newStore: ARMSStore) => void;
+  onNavigateTab?: (tab: string) => void;
 }
 
 export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
   store,
   currentUser,
   onUpdateStore,
+  onNavigateTab,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
@@ -216,15 +218,28 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
           </p>
         </div>
 
-        {canEdit && (
-          <button
-            onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow-md transition"
-          >
-            <Plus className="w-4 h-4" />
-            <span>+ Catat Transaksi Modal Kerja</span>
-          </button>
-        )}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {onNavigateTab && (
+            <button
+              type="button"
+              onClick={() => onNavigateTab('SETTINGS')}
+              className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2.5 rounded-lg border border-slate-700 transition"
+            >
+              <Landmark className="w-4 h-4 text-emerald-400" />
+              <span>Kelola Saldo Bank (Setting)</span>
+            </button>
+          )}
+
+          {canEdit && (
+            <button
+              onClick={() => handleOpenModal()}
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow-md transition"
+            >
+              <Plus className="w-4 h-4" />
+              <span>+ Catat Transaksi Modal Kerja</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Financial Summary KPI Cards */}

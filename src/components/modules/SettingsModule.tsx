@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { DEFAULT_MJ_LOGO } from '../../assets/mjLogo';
 import { SettingsWorkflowTab } from './SettingsWorkflowTab';
+import { SettingsBankBalancesTab } from './SettingsBankBalancesTab';
+import { Landmark } from 'lucide-react';
 
 interface SettingsModuleProps {
   store: ARMSStore;
@@ -46,7 +48,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
   const [isPulling, setIsPulling] = useState(false);
   const [isPushing, setIsPushing] = useState(false);
   const [pushStatusMsg, setPushStatusMsg] = useState('');
-  const [activeTab, setActiveTab] = useState<'SYSTEM' | 'WORKFLOW'>('SYSTEM');
+  const [activeTab, setActiveTab] = useState<'SYSTEM' | 'BANK_BALANCES' | 'WORKFLOW'>('SYSTEM');
 
   const handlePushFullFirebase = async () => {
     if (!onPushFullFirebase) return;
@@ -151,10 +153,24 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
         </button>
         <button
           type="button"
+          onClick={() => setActiveTab('BANK_BALANCES')}
+          className={`px-4 py-2 text-sm font-bold border-b-2 transition ${
+            activeTab === 'BANK_BALANCES'
+              ? 'border-emerald-500 text-emerald-400'
+              : 'border-transparent text-slate-400 hover:text-slate-300'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Landmark className="w-4 h-4" />
+            <span>Saldo Bank & Modal Kerja</span>
+          </div>
+        </button>
+        <button
+          type="button"
           onClick={() => setActiveTab('WORKFLOW')}
           className={`px-4 py-2 text-sm font-bold border-b-2 transition ${
             activeTab === 'WORKFLOW'
-              ? 'border-emerald-500 text-emerald-400'
+              ? 'border-purple-500 text-purple-400'
               : 'border-transparent text-slate-400 hover:text-slate-300'
           }`}
         >
@@ -572,6 +588,14 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
       </form>
       </div>
       
+      {activeTab === 'BANK_BALANCES' && (
+        <SettingsBankBalancesTab
+          store={store}
+          currentUser={currentUser}
+          onUpdateStore={onUpdateStore}
+        />
+      )}
+
       {activeTab === 'WORKFLOW' && <SettingsWorkflowTab />}
     </div>
   );
