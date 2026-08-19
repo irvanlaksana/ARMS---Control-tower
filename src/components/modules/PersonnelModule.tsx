@@ -17,8 +17,11 @@ import {
   X,
   CloudUpload,
   CheckCircle2,
-  ShieldAlert
+  ShieldAlert,
+  CreditCard,
+  QrCode
 } from 'lucide-react';
+import { EmployeeIdCardModal } from './EmployeeIdCardModal';
 
 interface PersonnelModuleProps {
   store: ARMSStore;
@@ -32,6 +35,7 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
   const [showModal, setShowModal] = useState(false);
   const [editingPersonnel, setEditingPersonnel] = useState<Personnel | null>(null);
   const [previewKtpModal, setPreviewKtpModal] = useState<Personnel | null>(null);
+  const [selectedForIdCard, setSelectedForIdCard] = useState<Personnel | null>(null);
 
   // Form states
   const [type, setType] = useState<PersonnelType>('KARYAWAN');
@@ -57,6 +61,25 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
 
   const defaultDriveFolderId = store.settings?.googleDriveFolderId || '11OxYLvKiH8P4AIP_NM08KuYu0plAq16_';
   const defaultDriveFolderLink = store.settings?.googleDriveFolderUrl || `https://drive.google.com/drive/folders/11OxYLvKiH8P4AIP_NM08KuYu0plAq16_?usp=sharing`;
+
+  const handleUpdatePersonnelPhoto = (personnelId: string, newPhotoUrl: string) => {
+    const updatedPersonnel = (store.personnel || []).map((p) =>
+      p.id === personnelId ? { ...p, ktpPhotoUrl: newPhotoUrl } : p
+    );
+    const audit = createAuditEntry(
+      currentUser.username,
+      currentUser.role,
+      'UPDATE',
+      'Personnel',
+      personnelId,
+      `Memperbarui pas foto ID Card untuk personel ${personnelId}`
+    );
+    onUpdateStore({
+      ...store,
+      personnel: updatedPersonnel,
+      auditLogs: [audit, ...(store.auditLogs || [])],
+    });
+  };
 
   const resetForm = () => {
     setEditingPersonnel(null);
@@ -409,13 +432,14 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
                 <th className="py-3 px-4">Kontak</th>
                 <th className="py-3 px-4">Rekening Bank</th>
                 <th className="py-3 px-4 text-center">Status</th>
+                <th className="py-3 px-4 text-center">Official ID Card</th>
                 {canEdit && <th className="py-3 px-4 text-center">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
               {filteredPersonnel.length === 0 ? (
                 <tr>
-                  <td colSpan={canEdit ? 9 : 8} className="py-12 text-center text-slate-500 text-xs">
+                  <td colSpan={canEdit ? 10 : 9} className="py-12 text-center text-slate-500 text-xs">
                     <Folder className="w-8 h-8 text-slate-600 mx-auto mb-2 opacity-50" />
                     Belum ada data pada folder {activeFolder === 'ALL' ? 'Database' : activeFolder}. Klik "Tambah Karyawan / Mitra Baru" untuk memasukkan data.
                   </td>
@@ -522,6 +546,19 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
                       </span>
                     </td>
 
+                    {/* Official ID Card Button */}
+                    <td className="py-3.5 px-4 text-center">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedForIdCard(p)}
+                        className="inline-flex items-center gap-1.5 bg-gradient-to-r from-red-950 via-red-900 to-red-950 hover:from-red-900 hover:to-red-800 text-red-200 border border-red-700/80 px-3 py-1.5 rounded-lg text-[11px] font-bold shadow-md shadow-red-950/40 transition transform active:scale-95 cursor-pointer group"
+                        title="Generate & Cetak ID Card Karyawan"
+                      >
+                        <CreditCard className="w-3.5 h-3.5 text-red-400 group-hover:scale-110 transition" />
+                        <span>Cetak ID Card</span>
+                      </button>
+                    </td>
+
                     {canEdit && (
                       <td className="py-3.5 px-4 text-center">
                         <div className="flex items-center justify-center gap-1.5">
@@ -587,16 +624,29 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
               <div><span className="text-slate-500">Folder Path:</span> /ARMS_DRIVE/KTP_DATABASE/{previewKtpModal.type}/</div>
             </div>
 
-            <div className="flex justify-between items-center pt-2">
-              <a
-                href={previewKtpModal.ktpDriveFolderUrl || defaultDriveFolderLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition"
-              >
-                <ExternalLink className="w-4 h-4" />
-                <span>Buka di Google Drive</span>
-              </a>
+            <div className="flex flex-wrap justify-between items-center gap-2 pt-2">
+              <div className="flex items-center gap-2">
+                <a
+                  href={previewKtpModal.ktpDriveFolderUrl || defaultDriveFolderLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  <span>Buka di Google Drive</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedForIdCard(previewKtpModal);
+                    setPreviewKtpModal(null);
+                  }}
+                  className="flex items-center gap-1.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white text-xs font-bold px-3.5 py-2 rounded-lg shadow-md transition"
+                >
+                  <CreditCard className="w-4 h-4" />
+                  <span>Cetak ID Card</span>
+                </button>
+              </div>
 
               <button
                 onClick={() => setPreviewKtpModal(null)}
@@ -867,6 +917,16 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
             </div>
           </form>
         </div>
+      )}
+
+      {/* Official Employee ID Card Modal (Red & Black Edition) */}
+      {selectedForIdCard && (
+        <EmployeeIdCardModal
+          personnel={selectedForIdCard}
+          settings={store.settings}
+          onClose={() => setSelectedForIdCard(null)}
+          onUpdatePersonnelPhoto={handleUpdatePersonnelPhoto}
+        />
       )}
     </div>
   );
