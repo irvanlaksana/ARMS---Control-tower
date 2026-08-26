@@ -780,31 +780,31 @@ ${repTitle}                                           ${employeeJob.toUpperCase(
 
       {/* Generator & Preview Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-6xl overflow-hidden shadow-2xl my-8 flex flex-col md:flex-row max-h-[90vh]">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-2 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-7xl overflow-hidden shadow-2xl my-4 flex flex-col md:flex-row max-h-[95vh]">
             
             {/* Form Parameter Section */}
-            <div className="p-6 md:w-1/3 overflow-y-auto border-r border-slate-800 space-y-4">
-              <div className="border-b border-slate-800 pb-3">
+            <div className="p-4 md:w-1/3 overflow-y-auto border-r border-slate-800 space-y-3 custom-scrollbar">
+              <div className="border-b border-slate-800 pb-2">
                 <div className="flex items-center gap-2 mb-1">
                   <FileText className="w-4 h-4 text-indigo-400" />
-                  <h3 className="text-base font-bold text-white">
+                  <h3 className="text-sm font-bold text-white">
                     {isEditing ? 'Edit Surat Kuasa Khusus' : 'Generator Surat Kuasa Khusus'}
                   </h3>
                 </div>
-                <p className="text-xs text-slate-400">
+                <p className="text-[10px] text-slate-400">
                   Parameter kuasa khusus & preview format resmi F4 untuk Klien Multifinance & Perorangan
                 </p>
               </div>
               
-              <form onSubmit={handleCreateSK} className="space-y-3.5 text-xs">
+              <form onSubmit={handleCreateSK} className="space-y-2.5 text-xs">
                 {/* Case Selection with Grouped Options */}
                 <div>
-                  <label className="block text-slate-300 mb-1 font-semibold">Pilih Berkas Kasus & Debitur</label>
+                  <label className="block text-slate-400 mb-0.5 text-[10px] font-semibold">Pilih Berkas Kasus & Debitur</label>
                   <select
                     value={caseId}
                     onChange={(e) => setCaseId(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500 shadow-inner"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-md p-1.5 text-[11px] text-white focus:outline-none focus:border-indigo-500 shadow-inner"
                   >
                     {multifinanceCases.length > 0 && (
                       <optgroup label="🏢 Klien Multifinance / Lembaga Pembiayaan">
@@ -894,11 +894,11 @@ ${repTitle}                                           ${employeeJob.toUpperCase(
                 
                 {/* Penerima Kuasa (Karyawan / Petugas Lapangan) */}
                 <div>
-                  <label className="block text-slate-300 mb-1 font-semibold">Penerima Kuasa (Petugas Penagihan & Mediasi)</label>
+                  <label className="block text-slate-400 mb-0.5 text-[10px] font-semibold">Penerima Kuasa (Petugas Penagihan & Mediasi)</label>
                   <select
                     value={personnelId}
                     onChange={(e) => setPartnerId(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-md p-1.5 text-[11px] text-white focus:outline-none focus:border-indigo-500"
                   >
                     {(store.personnel || []).map((p) => {
                       const roleLabel = p.position || (p.type ? p.type.replace(/_/g, ' ') : 'Petugas Lapangan');
@@ -915,23 +915,23 @@ ${repTitle}                                           ${employeeJob.toUpperCase(
                 {!isPerorangan && (
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-slate-400 mb-1 font-medium">Diwakili Oleh (Direksi)</label>
+                      <label className="block text-slate-400 text-[10px] mb-0.5 font-medium">Diwakili Oleh (Direksi)</label>
                       <input
                         type="text"
                         value={repName}
                         onChange={(e) => setRepName(e.target.value)}
                         placeholder="Nama Direktur"
-                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white"
+                        className="w-full bg-slate-950 border border-slate-700 rounded-md p-1.5 text-white text-[11px]"
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-400 mb-1 font-medium">Jabatan Pejabat</label>
+                      <label className="block text-slate-400 text-[10px] mb-0.5 font-medium">Jabatan Pejabat</label>
                       <input
                         type="text"
                         value={repTitle}
                         onChange={(e) => setRepTitle(e.target.value)}
                         placeholder="Direktur Utama"
-                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white"
+                        className="w-full bg-slate-950 border border-slate-700 rounded-md p-1.5 text-white text-[11px]"
                       />
                     </div>
                   </div>
@@ -1008,36 +1008,36 @@ ${repTitle}                                           ${employeeJob.toUpperCase(
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 mt-4">
+                <div className="grid grid-cols-2 gap-2 mt-2">
                   <div>
-                    <label className="block text-slate-300 mb-1 font-semibold">Nominal Piutang Pokok (Rp)</label>
+                    <label className="block text-slate-400 text-[10px] mb-0.5 font-semibold">Nominal Piutang (Rp)</label>
                     <input
                       type="number"
                       value={currentNominal}
                       onChange={(e) => setCustomNominal(Number(e.target.value))}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white font-mono text-emerald-400"
+                      className="w-full bg-slate-950 border border-slate-700 rounded-md p-1.5 text-white font-mono text-emerald-400 text-[11px]"
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-300 mb-1 font-semibold">Kota Penerbitan</label>
+                    <label className="block text-slate-400 text-[10px] mb-0.5 font-semibold">Kota Penerbitan</label>
                     <input
                       type="text"
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       placeholder="Banyumas"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white"
+                      className="w-full bg-slate-950 border border-slate-700 rounded-md p-1.5 text-white text-[11px]"
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-slate-400 mb-1 font-medium">Google Drive Document Link (Opsional)</label>
+                <div className="mt-2">
+                  <label className="block text-slate-400 text-[10px] mb-0.5 font-medium">Google Drive Document Link (Opsional)</label>
                   <input
                     type="text"
                     value={driveDocumentUrl}
                     onChange={(e) => setDriveDocumentUrl(e.target.value)}
                     placeholder="https://drive.google.com/file/d/..."
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-md p-1.5 text-white text-[11px]"
                   />
                 </div>
 
@@ -1060,7 +1060,7 @@ ${repTitle}                                           ${employeeJob.toUpperCase(
             </div>
 
             {/* Preview Section */}
-            <div className="p-6 md:w-2/3 bg-slate-800/30 flex flex-col overflow-hidden">
+            <div className="p-4 md:w-2/3 bg-slate-800/30 flex flex-col overflow-hidden">
               <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center gap-2">
                   <h4 className="text-sm font-bold text-white">Dokumen Surat Kuasa Khusus</h4>
