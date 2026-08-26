@@ -13,11 +13,19 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  
+  // Form fields
+  const [contractNo, setContractNo] = useState('');
   const [fullName, setFullName] = useState('');
-  const [nikKtp, setNikKtp] = useState('');
-  const [phone, setPhone] = useState('');
   const [addressCurrent, setAddressCurrent] = useState('');
-  const [workplace, setWorkplace] = useState('');
+  const [dueDate, setDueDate] = useState('');
+  const [installmentAmount, setInstallmentAmount] = useState('');
+  const [penaltyAmount, setPenaltyAmount] = useState('');
+  const [phone, setPhone] = useState('');
+  const [vehicleMerkType, setVehicleMerkType] = useState('');
+  const [vehiclePoliceNo, setVehiclePoliceNo] = useState('');
+  
+  const [nikKtp, setNikKtp] = useState(''); // Keep this for internal needs/backend if needed, or make optional
 
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS';
 
@@ -25,19 +33,29 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
     if (customer) {
       setIsEditing(true);
       setEditId(customer.id);
+      setContractNo(customer.contractNo || '');
       setFullName(customer.fullName);
-      setNikKtp(customer.nikKtp);
-      setPhone(customer.phone);
       setAddressCurrent(customer.addressCurrent);
-      setWorkplace(customer.workplace);
+      setDueDate(customer.dueDate || '');
+      setInstallmentAmount(customer.installmentAmount || '');
+      setPenaltyAmount(customer.penaltyAmount || '');
+      setPhone(customer.phone);
+      setVehicleMerkType(customer.vehicleMerkType || '');
+      setVehiclePoliceNo(customer.vehiclePoliceNo || '');
+      setNikKtp(customer.nikKtp || '');
     } else {
       setIsEditing(false);
       setEditId(null);
+      setContractNo('');
       setFullName('');
-      setNikKtp('');
-      setPhone('');
       setAddressCurrent('');
-      setWorkplace('');
+      setDueDate('');
+      setInstallmentAmount('');
+      setPenaltyAmount('');
+      setPhone('');
+      setVehicleMerkType('');
+      setVehiclePoliceNo('');
+      setNikKtp('');
     }
     setShowModal(true);
   };
@@ -69,12 +87,18 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
         if (c.id === editId) {
           return {
             ...c,
+            contractNo,
             fullName,
             nikKtp,
             phone,
             addressCurrent,
             addressKtp: addressCurrent,
-            workplace,
+            dueDate,
+            installmentAmount,
+            penaltyAmount,
+            vehicleMerkType,
+            vehiclePoliceNo,
+            workplace: c.workplace || '',
           };
         }
         return c;
@@ -97,13 +121,19 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
     } else {
       const newCustomer: Customer = {
         id: `CUST-${Date.now()}`,
-        customerCode: `DEB-${nikKtp || Date.now()}`,
+        customerCode: `DEB-${Date.now()}`,
+        contractNo,
         nikKtp,
         fullName,
         phone,
         addressCurrent,
         addressKtp: addressCurrent,
-        workplace,
+        dueDate,
+        installmentAmount,
+        penaltyAmount,
+        vehicleMerkType,
+        vehiclePoliceNo,
+        workplace: '',
         emergencyContactName: 'Family Contact',
         emergencyContactPhone: phone,
         riskNotes: 'Normal recovery case profile',
@@ -150,12 +180,12 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
             <thead className="bg-slate-950 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
               <tr>
                 <th className="py-3 px-4">Debtor Code</th>
+                <th className="py-3 px-4">No. Kontrak</th>
                 <th className="py-3 px-4">Full Name</th>
-                <th className="py-3 px-4">NIK (KTP)</th>
                 <th className="py-3 px-4">Phone</th>
-                <th className="py-3 px-4">Current Address</th>
-                <th className="py-3 px-4">Workplace</th>
-                <th className="py-3 px-4">Risk Notes</th>
+                <th className="py-3 px-4">Address</th>
+                <th className="py-3 px-4">Vehicle</th>
+                <th className="py-3 px-4">Outstanding</th>
                 {canEdit && <th className="py-3 px-4 text-center">Aksi</th>}
               </tr>
             </thead>
@@ -163,12 +193,23 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
               {store.customers.map((c) => (
                 <tr key={c.id} className="hover:bg-slate-800/40 transition">
                   <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">{c.customerCode}</td>
+                  <td className="py-3.5 px-4 font-mono text-slate-300">{c.contractNo || '-'}</td>
                   <td className="py-3.5 px-4 font-bold text-white">{c.fullName}</td>
-                  <td className="py-3.5 px-4 font-mono text-slate-300">{c.nikKtp}</td>
                   <td className="py-3.5 px-4 text-emerald-400 font-semibold">{c.phone}</td>
                   <td className="py-3.5 px-4 text-slate-300 max-w-[200px] truncate">{c.addressCurrent}</td>
-                  <td className="py-3.5 px-4 text-slate-400">{c.workplace}</td>
-                  <td className="py-3.5 px-4 text-amber-300 text-[11px]">{c.riskNotes}</td>
+                  <td className="py-3.5 px-4 text-slate-400">
+                    {c.vehicleMerkType ? (
+                      <span className="block text-xs">{c.vehicleMerkType} <br/> <span className="font-mono text-[10px] text-slate-500">{c.vehiclePoliceNo}</span></span>
+                    ) : '-'}
+                  </td>
+                  <td className="py-3.5 px-4 text-amber-300 text-[11px]">
+                    {c.installmentAmount || c.penaltyAmount ? (
+                      <>
+                        {c.installmentAmount && <span className="block">Angsuran: {c.installmentAmount}</span>}
+                        {c.penaltyAmount && <span className="block text-red-400">Denda: Rp {c.penaltyAmount}</span>}
+                      </>
+                    ) : '-'}
+                  </td>
                   {canEdit && (
                     <td className="py-3.5 px-4 text-center">
                       <div className="flex items-center justify-center gap-2">
@@ -198,69 +239,134 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
 
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <form onSubmit={handleSaveCustomer} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <h3 className="font-bold text-white text-base">
-              {isEditing ? 'Edit Debtor Profile' : 'Register Debtor Profile'}
+          <form onSubmit={handleSaveCustomer} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-2xl p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h3 className="font-bold text-white text-base border-b border-slate-800 pb-2">
+              {isEditing ? 'Edit Data Debitur' : 'Register Data Debitur'}
             </h3>
 
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">Full Name</label>
-              <input
-                type="text"
-                required
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="e.g. Supriadi Mangkuto"
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">No. Kontrak</label>
+                <input
+                  type="text"
+                  value={contractNo}
+                  onChange={(e) => setContractNo(e.target.value)}
+                  placeholder="00730191"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Nama</label>
+                <input
+                  type="text"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="KISNO ANGKAH TRI HIDAYAT"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-xs text-slate-400 mb-1">Alamat</label>
+                <input
+                  type="text"
+                  value={addressCurrent}
+                  onChange={(e) => setAddressCurrent(e.target.value)}
+                  placeholder="KALIKABONG RT 004 RW 002, KALIMANAH"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Tanggal Jatuh Tempo</label>
+                <input
+                  type="text"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  placeholder="2 FEBRUARI 2024"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Angsuran</label>
+                <input
+                  type="text"
+                  value={installmentAmount}
+                  onChange={(e) => setInstallmentAmount(e.target.value)}
+                  placeholder="Angsuran ke 8 s/d 18 : Rp. 385.000"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">DENDA</label>
+                <input
+                  type="text"
+                  value={penaltyAmount}
+                  onChange={(e) => setPenaltyAmount(e.target.value)}
+                  placeholder="Rp. 41.692.000"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Nomor Handphone</label>
+                <input
+                  type="text"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+62 812-xxxx-xxxx"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">NIK (KTP 16 digits)</label>
-              <input
-                type="text"
-                required
-                value={nikKtp}
-                onChange={(e) => setNikKtp(e.target.value)}
-                placeholder="3171012301900001"
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono"
-              />
+            <h4 className="font-semibold text-slate-300 text-sm border-b border-slate-800 pb-1 mt-4">Spesifikasi Kendaraan</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Merk/Type</label>
+                <input
+                  type="text"
+                  value={vehicleMerkType}
+                  onChange={(e) => setVehicleMerkType(e.target.value)}
+                  placeholder="YAMAHA / VIXION"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Nomor Polisi</label>
+                <input
+                  type="text"
+                  value={vehiclePoliceNo}
+                  onChange={(e) => setVehiclePoliceNo(e.target.value)}
+                  placeholder="R4088YV"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono"
+                />
+              </div>
+            </div>
+            
+            <div className="hidden">
+              {/* Hidden KTP for backend consistency if required */}
+              <input type="text" value={nikKtp} onChange={(e) => setNikKtp(e.target.value)} />
             </div>
 
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">Phone Number</label>
-              <input
-                type="text"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+62 812-xxxx-xxxx"
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">Current Address</label>
-              <input
-                type="text"
-                value={addressCurrent}
-                onChange={(e) => setAddressCurrent(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
-              />
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-2 pt-4 mt-4 border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
+                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700 font-semibold transition"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500"
+                className="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500 transition shadow-lg shadow-indigo-900/20"
               >
-                {isEditing ? 'Save Changes' : 'Save Debtor'}
+                {isEditing ? 'Simpan Perubahan' : 'Simpan Debitur'}
               </button>
             </div>
           </form>

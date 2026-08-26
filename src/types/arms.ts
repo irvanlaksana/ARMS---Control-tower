@@ -134,6 +134,7 @@ export interface Lead {
 export interface Customer {
   id: string;
   customerCode: string;
+  contractNo?: string;
   nikKtp: string;
   fullName: string;
   phone: string;
@@ -142,6 +143,11 @@ export interface Customer {
   workplace: string;
   emergencyContactName: string;
   emergencyContactPhone: string;
+  dueDate?: string;
+  installmentAmount?: string;
+  penaltyAmount?: string;
+  vehicleMerkType?: string;
+  vehiclePoliceNo?: string;
   riskNotes: string;
   gDriveFolderUrl?: string;
   createdAt: string;

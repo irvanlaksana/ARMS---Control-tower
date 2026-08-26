@@ -39,6 +39,18 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
 
   const [dasarPenagihan, setDasarPenagihan] = useState('');
   const [customNominal, setCustomNominal] = useState<number>(0);
+  
+  // Local states for Debtor & Vehicle details in the SK Form
+  const [skContractNo, setSkContractNo] = useState('');
+  const [skDebtorName, setSkDebtorName] = useState('');
+  const [skDebtorAddress, setSkDebtorAddress] = useState('');
+  const [skDueDate, setSkDueDate] = useState('');
+  const [skInstallment, setSkInstallment] = useState('');
+  const [skPenalty, setSkPenalty] = useState('');
+  const [skPhone, setSkPhone] = useState('');
+  const [skVehicleMerk, setSkVehicleMerk] = useState('');
+  const [skVehiclePoliceNo, setSkVehiclePoliceNo] = useState('');
+
   const [draftContent, setDraftContent] = useState('');
 
   const printRef = useRef<HTMLDivElement>(null);
@@ -71,8 +83,19 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
         setDasarPenagihan(`Perjanjian Pembiayaan Konsumen No. ${selectedCase.multifinanceContractNo || selectedCase.contractId || 'ADR-90123847'} / Sertifikat Jaminan Fidusia`);
       }
       setCustomNominal(selectedCase.principalDebtOS || 0);
+
+      const customer = (store.customers || []).find((c) => c.id === selectedCase.customerId);
+      setSkContractNo(customer?.contractNo || selectedCase.contractId || selectedCase.multifinanceContractNo || '');
+      setSkDebtorName(selectedCase.debtorName || '');
+      setSkDebtorAddress(customer?.addressCurrent || customer?.addressKtp || selectedCase.debtorAddress || '');
+      setSkDueDate(customer?.dueDate || '');
+      setSkInstallment(customer?.installmentAmount || '');
+      setSkPenalty(customer?.penaltyAmount || '');
+      setSkPhone(customer?.phone || selectedCase.debtorPhone || '');
+      setSkVehicleMerk(customer?.vehicleMerkType || '');
+      setSkVehiclePoliceNo(customer?.vehiclePoliceNo || '');
     }
-  }, [selectedCase, store.clients]);
+  }, [selectedCase, store.clients, store.customers]);
 
   const currentNominal = customNominal > 0 ? customNominal : (selectedCase?.principalDebtOS || 0);
   const skNumberDraft = selectedCase
@@ -81,6 +104,9 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
       : `SK/MSI-${selectedCase.caseNo}/2026`
     : `SK/MSI-OPS/2026/001`;
   const todayStr = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  const endDate = new Date();
+  endDate.setDate(endDate.getDate() + 10);
+  const endDateStr = endDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
   // Update text draft whenever parameters change
   useEffect(() => {
@@ -117,9 +143,9 @@ Yang selanjutnya disebut sebagai PENERIMA KUASA.
 
 KHUSUS
 Untuk dan atas nama Pemberi Kuasa, melakukan tindakan penagihan, mediasi, musyawarah kekeluargaan, penerimaan pembayaran/titipan, serta penyelesaian transaksi piutang perseorangan kepada:
-Nama Debitur      : ${selectedCase.debtorName}
+Nama Debitur      : ${skDebtorName || selectedCase.debtorName}
 NIK Debitur       : ${selectedCase.debtorNik || '-'}
-Alamat Debitur    : ${debtorAddr}
+Alamat Debitur    : ${skDebtorAddress || debtorAddr}
 Jumlah Piutang    : Rp${nominalVal.toLocaleString('id-ID')} (${terbilangStr})
 Dasar Penagihan   : ${dasarPenagihan}
 
@@ -151,61 +177,63 @@ ${employeeJob}`;
         setDraftContent(text);
       } else {
         // Corporate / Multifinance text template
-        const text = `SURAT KUASA KHUSUS
-No. Surat: ${skNumberDraft}
+        const text = `SURAT TUGAS 
+Nomor: ST-DC/MJI/2026/08/${skNumberDraft.split('/').pop() || '0483'}
 
-Yang bertanda tangan di bawah ini:
-Nama Perusahaan   : ${cName}
-Alamat Perusahaan : ${cAddr}
-Diwakili Oleh     : ${repName}
-Jabatan           : ${repTitle}
-Dalam hal ini bertindak untuk dan atas nama ${cName}, yang selanjutnya disebut sebagai PEMBERI KUASA.
+Yang bertanda tangan di bawah ini, mewakili Manajemen PT MITRA JASATRIA INDONESIA:
+Nama\t\t: ${repName.toUpperCase()}
+Jabatan\t\t: ${repTitle.toUpperCase()}
 
-Dengan ini memberikan kuasa penuh kepada karyawan perusahaan:
-Nama Karyawan     : ${selectedPersonnel.fullName}
-NIK / No. KTP     : ${employeeNik}
-NIK / ID Karyawan : ${employeeId}
-Jabatan           : ${employeeJob}
-Alamat            : ${selectedPersonnel.address || 'Alamat Domisili Karyawan'}
-Yang selanjutnya disebut sebagai PENERIMA KUASA.
+Dengan ini memberikan tugas penuh, wewenang, dan tanggung jawab penagihan di lapangan kepada : 
+Nama\t\t: ${selectedPersonnel.fullName.toUpperCase()}
+NIK\t\t\t: ${employeeNik}
+Jabatan\t\t: ${employeeJob}
 
-KHUSUS
-Untuk dan atas nama Pemberi Kuasa, melakukan tindakan penagihan, penerimaan pembayaran, serta penyelesaian transaksi piutang usaha perusahaan kepada:
-Nama Perusahaan/Debitur : ${selectedCase.debtorName}
-Alamat Debitur          : ${debtorAddr}
-Jumlah Piutang          : Rp${nominalVal.toLocaleString('id-ID')} (${terbilangStr})
-Dasar Penagihan         : ${dasarPenagihan}
+Dan rekan
+Untuk melakukan konfirmasi, penagihan, dan negosiasi penyelesaian kewajiban pembayaran atas nama Debitur/Nasabah dari ${selectedCase.clientName} yang penagihannya dikuasakan kepada PT Mitra Jasatria Indonesia.
+Berikut data nasabah : 
+No. Kontrak \t\t: ${skContractNo || customer?.contractNo || selectedCase.contractId || selectedCase.multifinanceContractNo || '-'}
+Nama\t\t\t: ${skDebtorName ? skDebtorName.toUpperCase() : selectedCase.debtorName.toUpperCase()}
+Alamat\t\t\t: ${skDebtorAddress || debtorAddr || '-'}
+Tanggal Jatuh Tempo\t: ${skDueDate || customer?.dueDate || '-'}
+Angsuran\t\t: ${skInstallment || customer?.installmentAmount || '-'}
+DENDA\t\t\t: Rp ${skPenalty || customer?.penaltyAmount || '-'}
+Nomor Handphone\t\t: ${skPhone || customer?.phone || '-'}
 
-HAK DAN WEWENANG PENERIMA KUASA
-Untuk melaksanakan maksud di atas, Penerima Kuasa diberikan wewenang untuk:
-1. Menghubungi, mendatangi, dan menyampaikan penagihan resmi (termasuk menyerahkan Invoice/Surat Tagihan/Somasi Internal) kepada pihak Debitur.
-2. Menerima pembayaran berupa cek, bilyet giro, atau bukti transfer dari Debitur yang ditujukan hanya ke rekening resmi Perusahaan.
-3. Memberikan kuitansi atau tanda terima pembayaran sementara yang sah atas nama perusahaan kepada Debitur.
-4. Melakukan negosiasi jadwal pembayaran (skema angsuran) berdasarkan batas wewenang yang telah disetujui sebelumnya oleh Manajemen Pemberi Kuasa.
+Adapun spesifikasi kendaraan sebagai berikut : 
+Merk/Type\t\t: ${skVehicleMerk || customer?.vehicleMerkType || '-'}
+Nomor Polisi\t\t: ${skVehiclePoliceNo || customer?.vehiclePoliceNo || '-'}
 
-KETENTUAN KHUSUS (INTERNAL PERUSAHAAN)
-1. Penerima Kuasa DILARANG KERAS menerima pembayaran piutang dalam bentuk uang tunai (cash) atau mengalihkan pembayaran ke rekening pribadi, kecuali mendapat persetujuan tertulis terpisah dari Direksi Pemberi Kuasa.
-2. Surat Kuasa ini berlaku sejak tanggal ditandatangani dan akan berakhir secara otomatis apabila:
-   - Seluruh piutang di atas telah dinyatakan lunas oleh Perusahaan.
-   - Surat Kuasa ini dicabut kembali secara tertulis oleh Pemberi Kuasa.
-   - Hubungan kerja antara Pemberi Kuasa dan Penerima Kuasa berakhir/putus.
+Pelaksanaan Surat Tugas ini wajib tunduk dan patuh pada ketentuan sebagai berikut:
+MASA BERLAKU SURAT TUGAS
+Surat Tugas ini berlaku efektif terhitung sejak tanggal ${todayStr} sampai dengan tanggal ${endDateStr}. Apabila masa berlaku telah berakhir, Surat Tugas ini dinyatakan tidak berlaku lagi dan wajib diperpanjang melalui persetujuan Manajemen PT Mitra Jasatria Indonesia.
 
-Demikian Surat Kuasa ini dibuat dengan sebenarnya dan untuk dipergunakan sebagaimana mestinya.
+WEWENANG DAN TANGGUNG JAWAB PETUGAS
+Dalam menjalankan tugas penagihan di lapangan, Tim Penagihan berwenang:
+1. Mendatangi alamat domisili, kantor, atau lokasi tempat usaha Debitur sesuai data resmi yang tercantum dalam lembar kerja penagihan.
+2. Melakukan konfirmasi, negosiasi, dan menyampaikan Surat Peringatan (SP) atau tagihan resmi yang diterbitkan oleh Perusahaan/Kreditur/Mitra Perusahaan.
+Untuk keperluan diatas, PENERIMA TUGAS berhak untuk menerima jaminan piutang/jaminan fidusia, menandatangani dokumen - dokumen, meminta tanda tangan, serta melakukan tindakan yang dianggap perlu dalam melaksanakan tugas tersebut/meminta bantuan pihak berwajib jika diperlukan. 
+
+LARANGAN DAN KEPATUHAN
+1. Dilarang menerima pembayaran tunai (cash) secara langsung dari Debitur dalam bentuk apa pun, kecuali menggunakan Virtual Account resmi atau tanda terima sah dari sistem perusahaan.
+2. Dilarang menggunakan ancaman, kekerasan fisik, intimidasi, penekanan secara psikologis, atau tindakan melawan hukum yang melanggar Kode Etik Penagihan Bank Indonesia (BI), Otoritas Jasa Keuangan (OJK), serta Peraturan Perundang-undangan Republik Indonesia.
+3. Petugas wajib bersikap sopan, profesional, mengenakan pakaian rapi dan sopan selama berada di lapangan.
+4. Petugas wajib melaporkan hasil penagihan (Field Report) secara real-time melalui sistem aplikasi penagihan resmi PT Mitra Jasatria Indonesia pada hari yang sama.
+
+SANKSI DAN TANGGUNG JAWAB HUKUM
+Setiap pelanggaran terhadap kode etik, penyalahgunaan wewenang, penggelapan dana penagihan, atau tindakan penyimpangan yang dilakukan oleh Petugas Penagihan akan dikenakan sanksi tegas berupa Pemutusan Hubungan Kerja (PHK) secara tidak hormat.
+Tindakan pelanggaran hukum yang dilakukan oleh Petugas di luar prosedur resmi Perusahaan menjadi tanggung jawab pribadi petugas bersangkutan secara pidana maupun perdata (PT Mitra Jasatria Indonesia membebaskan diri dari segala tuntutan hukum akibat penyimpangan oknum).
+
+Demikian Surat Tugas ini diterbitkan untuk dipergunakan sebagaimana mestinya dan dilaksanakan dengan penuh rasa tanggung jawab demi menjaga integritas, profesionalisme, dan nama baik PT Mitra Jasatria Indonesia serta Kreditur.
 
 ${city}, ${todayStr}
+Pemberi Tugas,                                        Penerima Tugas,
+PT MITRA JASATRIA INDONESIA                           PETUGAS PENAGIHAN
 
-Pemberi Kuasa,
-${cName}
 
-(Meterai Rp 10.000)
 
-${repName}
-${repTitle}
-
-Penerima Kuasa,
-
-${selectedPersonnel.fullName}
-${employeeJob}`;
+${repName}                                            ${selectedPersonnel.fullName.toUpperCase()}
+${repTitle}                                           ${employeeJob.toUpperCase()}`;
 
         setDraftContent(text);
       }
@@ -228,6 +256,15 @@ ${employeeJob}`;
     skNumberDraft,
     todayStr,
     store.customers,
+    skContractNo,
+    skDebtorName,
+    skDebtorAddress,
+    skDueDate,
+    skInstallment,
+    skPenalty,
+    skPhone,
+    skVehicleMerk,
+    skVehiclePoliceNo
   ]);
 
   const handlePrint = () => {
@@ -914,9 +951,66 @@ ${employeeJob}`;
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                {/* Detail Debitur & Kendaraan */}
+                <div className="bg-slate-950/50 border border-slate-800 rounded-xl p-3 space-y-3 mt-4">
+                  <h4 className="text-[11px] font-bold text-slate-300 flex items-center gap-2 border-b border-slate-800 pb-2">
+                    <UserIcon className="w-3.5 h-3.5 text-slate-400" />
+                    Detail Nasabah & Kendaraan (Otomatis dari Database / Bisa Diedit)
+                  </h4>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-slate-400 text-[10px] mb-0.5">No. Kontrak</label>
+                      <input type="text" value={skContractNo} onChange={(e) => setSkContractNo(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-md p-1.5 text-white font-mono" />
+                    </div>
+                    <div>
+                      <label className="block text-slate-400 text-[10px] mb-0.5">Nama Nasabah</label>
+                      <input type="text" value={skDebtorName} onChange={(e) => setSkDebtorName(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-md p-1.5 text-white" />
+                    </div>
+                  </div>
+
                   <div>
-                    <label className="block text-slate-300 mb-1 font-semibold">Nominal Piutang (Rp)</label>
+                    <label className="block text-slate-400 text-[10px] mb-0.5">Alamat Nasabah</label>
+                    <input type="text" value={skDebtorAddress} onChange={(e) => setSkDebtorAddress(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-md p-1.5 text-white" />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-slate-400 text-[10px] mb-0.5">Tanggal Jatuh Tempo</label>
+                      <input type="text" value={skDueDate} onChange={(e) => setSkDueDate(e.target.value)} placeholder="Tgl 15 setiap bulan" className="w-full bg-slate-950 border border-slate-700 rounded-md p-1.5 text-white" />
+                    </div>
+                    <div>
+                      <label className="block text-slate-400 text-[10px] mb-0.5">Nomor Handphone</label>
+                      <input type="text" value={skPhone} onChange={(e) => setSkPhone(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-md p-1.5 text-white" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-slate-400 text-[10px] mb-0.5">Angsuran</label>
+                      <input type="text" value={skInstallment} onChange={(e) => setSkInstallment(e.target.value)} placeholder="Angsuran ke 8 s/d 18 : Rp. 385.000" className="w-full bg-slate-950 border border-slate-700 rounded-md p-1.5 text-white text-[10px]" />
+                    </div>
+                    <div>
+                      <label className="block text-slate-400 text-[10px] mb-0.5">DENDA (Rp)</label>
+                      <input type="text" value={skPenalty} onChange={(e) => setSkPenalty(e.target.value)} placeholder="1.500.000" className="w-full bg-slate-950 border border-slate-700 rounded-md p-1.5 text-white" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-slate-400 text-[10px] mb-0.5">Merk / Type Kendaraan</label>
+                      <input type="text" value={skVehicleMerk} onChange={(e) => setSkVehicleMerk(e.target.value)} placeholder="HONDA BEAT SPORTY CBS" className="w-full bg-slate-950 border border-slate-700 rounded-md p-1.5 text-white" />
+                    </div>
+                    <div>
+                      <label className="block text-slate-400 text-[10px] mb-0.5">Nomor Polisi</label>
+                      <input type="text" value={skVehiclePoliceNo} onChange={(e) => setSkVehiclePoliceNo(e.target.value)} placeholder="R 1234 XY" className="w-full bg-slate-950 border border-slate-700 rounded-md p-1.5 text-white font-mono" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 mt-4">
+                  <div>
+                    <label className="block text-slate-300 mb-1 font-semibold">Nominal Piutang Pokok (Rp)</label>
                     <input
                       type="number"
                       value={currentNominal}
