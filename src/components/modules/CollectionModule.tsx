@@ -3,7 +3,7 @@ import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Collection, CommunicationLog, FieldPhoto, ClientType } from '../../types/arms';
 import { 
   ShieldAlert, Plus, PhoneCall, MessageSquare, Image, Upload, X, Eye, 
-  CheckCircle2, Paperclip, Building2, UserCheck, Calendar, DollarSign,
+  CheckCircle2, Check, X as XIcon, Paperclip, Building2, UserCheck, Calendar, DollarSign,
   Camera, FileText, ChevronRight, Filter, Search, Tag, ExternalLink, MapPin,
   Car, AlertCircle, CheckSquare, Sparkles, Navigation, Trash2
 } from 'lucide-react';
@@ -261,6 +261,54 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
     });
 
     setShowUnifiedModal(false);
+  };
+
+  const handleVerifyCollection = (colId: string) => {
+    const colToUpdate = store.collections.find((c) => c.id === colId);
+    if (!colToUpdate) return;
+
+    const audit = createAuditEntry(
+      currentUser.username,
+      currentUser.role,
+      'UPDATE',
+      'Collections',
+      colId,
+      `Verified Collection Record ${colToUpdate.collectionNo} (${colToUpdate.debtorName})`
+    );
+
+    const updatedCollections = store.collections.map((c) =>
+      c.id === colId ? { ...c, verificationStatus: 'VERIFIED' as const } : c
+    );
+
+    onUpdateStore({
+      ...store,
+      collections: updatedCollections,
+      auditLogs: [audit, ...(store.auditLogs || [])],
+    });
+  };
+
+  const handleRejectCollection = (colId: string) => {
+    const colToUpdate = store.collections.find((c) => c.id === colId);
+    if (!colToUpdate) return;
+
+    const audit = createAuditEntry(
+      currentUser.username,
+      currentUser.role,
+      'UPDATE',
+      'Collections',
+      colId,
+      `Rejected Collection Record ${colToUpdate.collectionNo} (${colToUpdate.debtorName})`
+    );
+
+    const updatedCollections = store.collections.map((c) =>
+      c.id === colId ? { ...c, verificationStatus: 'REJECTED' as const } : c
+    );
+
+    onUpdateStore({
+      ...store,
+      collections: updatedCollections,
+      auditLogs: [audit, ...(store.auditLogs || [])],
+    });
   };
 
   const confirmDeleteCollection = () => {
@@ -640,7 +688,25 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                         </td>
 
                         {canEdit && (
-                          <td className="py-3.5 px-4 text-right">
+                          <td className="py-3.5 px-4 text-right space-x-1">
+                            {act.verificationStatus === 'PENDING_VERIFICATION' && (
+                              <>
+                                <button
+                                  onClick={() => handleVerifyCollection(act.id)}
+                                  className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-emerald-950/50 rounded transition"
+                                  title="Verifikasi Pembayaran"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleRejectCollection(act.id)}
+                                  className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-950/50 rounded transition"
+                                  title="Tolak Verifikasi Pembayaran"
+                                >
+                                  <XIcon className="w-3.5 h-3.5" />
+                                </button>
+                              </>
+                            )}
                             <button
                               onClick={() => setCollectionToDelete(act)}
                               className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition"
