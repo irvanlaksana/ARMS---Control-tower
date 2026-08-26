@@ -4,6 +4,7 @@ import { useFirebaseStore } from './hooks/useFirebaseStore';
 import { User, UserRole } from './types/arms';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
+import { BottomNav } from './components/layout/BottomNav';
 
 // Modules
 import { DashboardModule } from './components/modules/DashboardModule';
@@ -60,7 +61,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('DASHBOARD');
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [showGASModal, setShowGASModal] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const handleRoleChange = (role: UserRole) => {
     const matchingUser = store.users.find((u) => u.role === role) || {
@@ -169,24 +170,40 @@ export default function App() {
       />
 
       {/* Main Layout Body */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Navigation Sidebar */}
-        {isSidebarOpen && (
-          <Sidebar
-            activeTab={activeTab}
-            onSelectTab={setActiveTab}
-            currentUserRole={currentUser.role}
-            companyLogo={store.settings?.companyLogo}
-            companyName={store.settings?.companyName}
-          />
-        )}
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Navigation Sidebar (Desktop Static + Mobile Drawer with Auto-Hide) */}
+        <Sidebar
+          activeTab={activeTab}
+          onSelectTab={(tab) => {
+            setActiveTab(tab);
+            // Auto-hide drawer on mobile upon selection
+            setIsSidebarOpen(false);
+          }}
+          currentUserRole={currentUser.role}
+          companyLogo={store.settings?.companyLogo}
+          companyName={store.settings?.companyName}
+          isMobileOpen={isSidebarOpen}
+          onCloseMobile={() => setIsSidebarOpen(false)}
+        />
 
         {/* Dynamic Content Panel */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-slate-950">
-          <div className="max-w-7xl mx-auto space-y-6">{renderModule()}</div>
+        <main className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8 pb-24 lg:pb-8 bg-slate-950">
+          <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">{renderModule()}</div>
         </main>
       </div>
 
+      {/* Mobile Bottom Navigation Bar (Auto-Hide / Simplified Menus) */}
+      <BottomNav
+        activeTab={activeTab}
+        onSelectTab={(tab) => {
+          setActiveTab(tab);
+          setIsSidebarOpen(false);
+        }}
+        onToggleMoreMenu={() => setIsSidebarOpen(!isSidebarOpen)}
+        isMoreMenuOpen={isSidebarOpen}
+        pendingApprovalsCount={(store.approvals || []).filter((a) => a.status === 'PENDING').length}
+        userRole={currentUser.role}
+      />
     </div>
   );
 }
