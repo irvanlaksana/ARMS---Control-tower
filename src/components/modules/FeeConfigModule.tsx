@@ -269,7 +269,8 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
       </div>
 
       <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden lg:block overflow-x-auto">
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-950 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
               <tr>
@@ -341,6 +342,72 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="lg:hidden p-4 space-y-4">
+          {store.fees.length === 0 ? (
+            <div className="py-8 text-center text-slate-500 text-xs bg-slate-900/50 rounded-lg border border-slate-800">
+              Belum ada konfigurasi fee engine.
+            </div>
+          ) : (
+            store.fees.map((f) => (
+              <div key={f.id} className="bg-slate-950 border border-slate-800 rounded-lg p-4 space-y-3 shadow-sm">
+                <div className="flex justify-between items-start gap-2">
+                  <div>
+                    <h4 className="font-bold text-white text-sm">{f.clientName}</h4>
+                    <p className="text-xs text-slate-400">{f.serviceName}</p>
+                  </div>
+                  <span className="bg-emerald-950 text-emerald-300 text-[9px] px-2 py-0.5 rounded-full border border-emerald-800 font-semibold shrink-0">
+                    {f.status}
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="space-y-1">
+                    <span className="block text-[10px] text-slate-500 uppercase tracking-wider">Tipe Fee</span>
+                    <span className="inline-block bg-indigo-950 text-indigo-300 text-[10px] px-2 py-0.5 rounded border border-indigo-800 font-bold">
+                      {f.feeType}
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="block text-[10px] text-slate-500 uppercase tracking-wider">Efektif</span>
+                    <span className="text-slate-300">{f.effectiveDate}</span>
+                  </div>
+                </div>
+
+                <div className="bg-slate-900 p-2.5 rounded-md border border-slate-800">
+                  <span className="block text-[10px] text-slate-500 uppercase tracking-wider mb-1">Detail (Persen/Fixed/Tiered)</span>
+                  {f.feeType === 'TIERED' ? (
+                    renderTieredSummary(f)
+                  ) : (
+                    <div className="flex flex-col gap-0.5 text-xs font-mono">
+                      {f.percentageValue ? <span className="text-emerald-400">{f.percentageValue}%</span> : null}
+                      {f.fixedAmount ? <span className="text-emerald-400">Rp {f.fixedAmount.toLocaleString('id-ID')}</span> : null}
+                      {!f.percentageValue && !f.fixedAmount && <span className="text-slate-500">-</span>}
+                    </div>
+                  )}
+                </div>
+
+                {canEdit && (
+                  <div className="flex justify-end gap-2 pt-2 border-t border-slate-800/60 mt-2">
+                    <button
+                      onClick={() => handleOpenModal(f)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-indigo-400 rounded-md transition text-[11px] font-semibold"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" /> Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteFee(f.id, f.clientName, f.serviceName)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-red-400 rounded-md transition text-[11px] font-semibold"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Hapus
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
         </div>
       </div>
 

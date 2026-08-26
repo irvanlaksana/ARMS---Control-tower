@@ -420,7 +420,8 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
 
       {/* Main Database Table */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden lg:block overflow-x-auto">
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-950 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
               <tr>
@@ -585,6 +586,94 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="lg:hidden p-4 space-y-4">
+          {filteredPersonnel.length === 0 ? (
+            <div className="py-8 text-center text-slate-500 text-xs bg-slate-900/50 rounded-lg border border-slate-800">
+              <Folder className="w-8 h-8 text-slate-600 mx-auto mb-2 opacity-50" />
+              Belum ada data pada folder {activeFolder === 'ALL' ? 'Database' : activeFolder}. Klik "Tambah Karyawan / Mitra Baru" untuk memasukkan data.
+            </div>
+          ) : (
+            filteredPersonnel.map((p) => (
+              <div key={p.id} className="bg-slate-950 border border-slate-800 rounded-lg p-4 space-y-3 shadow-sm">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="flex items-center gap-3">
+                    {/* Foto Mobile */}
+                    {p.ktpPhotoUrl ? (
+                      <div
+                        onClick={() => setPreviewKtpModal(p)}
+                        className="relative group cursor-pointer w-12 h-12 rounded-full border border-slate-700 overflow-hidden bg-slate-900 shrink-0"
+                      >
+                        <img src={p.ktpPhotoUrl} alt={`KTP`} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 rounded-full border border-dashed border-slate-700 bg-slate-900 flex items-center justify-center text-slate-600 shrink-0">
+                        <Users className="w-5 h-5" />
+                      </div>
+                    )}
+                    
+                    <div>
+                      <h4 className="font-bold text-white text-sm">{p.fullName}</h4>
+                      <p className="text-[10px] text-indigo-300 font-medium">{p.position || 'Staf Lapangan'}</p>
+                      <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">{p.nikKtp}</span>
+                    </div>
+                  </div>
+                  
+                  <span
+                    className={`text-[9px] px-2 py-0.5 rounded-full border font-semibold shrink-0 ${
+                      p.status === 'ACTIVE'
+                        ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
+                        : 'bg-slate-800 text-slate-400 border-slate-700'
+                    }`}
+                  >
+                    {p.status || 'ACTIVE'}
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3 text-xs bg-slate-900/50 p-2.5 rounded border border-slate-800">
+                  <div className="space-y-1">
+                    <span className="block text-[10px] text-slate-500 uppercase tracking-wider">Kontak</span>
+                    <span className="text-emerald-400 font-medium block">{p.phoneNumber}</span>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="block text-[10px] text-slate-500 uppercase tracking-wider">Bank</span>
+                    <span className="text-slate-300 block">{p.bankName}</span>
+                    <span className="text-slate-400 text-[10px] block font-mono">{p.accountNumber}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-2 border-t border-slate-800/60 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedForIdCard(p)}
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-gradient-to-r from-red-950 via-red-900 to-red-950 hover:from-red-900 hover:to-red-800 text-red-200 border border-red-700/80 px-3 py-2 rounded-lg text-[11px] font-bold transition transform active:scale-95 cursor-pointer"
+                  >
+                    <CreditCard className="w-3.5 h-3.5 text-red-400" />
+                    <span>ID Card</span>
+                  </button>
+
+                  {canEdit && (
+                    <>
+                      <button
+                        onClick={() => handleOpenEdit(p)}
+                        className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-indigo-400 rounded-lg transition"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeletePersonnel(p)}
+                        className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-red-400 rounded-lg transition"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

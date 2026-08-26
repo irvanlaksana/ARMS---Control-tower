@@ -20,25 +20,38 @@ export function useFirebaseStore() {
   // Initial Fetch from Firebase
   useEffect(() => {
     let mounted = true;
-    fetchStoreFromFirebase(store)
-      .then((updatedStore) => {
+    let intervalId: NodeJS.Timeout;
+
+    const performSync = async () => {
+      try {
+        const updatedStore = await fetchStoreFromFirebase(store);
         if (mounted) {
           setStore(updatedStore);
           saveStore(updatedStore);
           lastSyncedStoreRef.current = updatedStore;
           setIsInitializing(false);
         }
-      })
-      .catch((err) => {
-        console.warn('Initial Firebase pull failed:', err);
+      } catch (err) {
+        console.warn('Firebase sync failed:', err);
         if (mounted) {
-          setError(err);
+          setError(err as Error);
           setIsInitializing(false);
         }
-      });
+      }
+    };
+
+    performSync();
+
+    // Auto-sync every 30 seconds
+    intervalId = setInterval(() => {
+      if (mounted && !isSyncing) {
+        performSync();
+      }
+    }, 30000);
       
     return () => {
       mounted = false;
+      clearInterval(intervalId);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

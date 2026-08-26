@@ -104,18 +104,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           )}
 
           <div className={`p-1 rounded-lg transition relative ${isMoreMenuOpen ? 'bg-red-950/80 text-red-300' : ''}`}>
-            {pendingApprovalsCount > 0 ? (
-              <CheckSquare className="w-5 h-5" />
-            ) : (
-              <Menu className="w-5 h-5" />
-            )}
-
-            {/* Notification badge */}
-            {pendingApprovalsCount > 0 && (
-              <span className="absolute -top-1 -right-1.5 w-4 h-4 bg-amber-500 text-slate-950 text-[9px] font-black rounded-full flex items-center justify-center shadow-md animate-pulse">
-                {pendingApprovalsCount}
-              </span>
-            )}
+            <Menu className="w-5 h-5" />
           </div>
 
           <span className={`text-[10px] tracking-tight mt-0.5 leading-none ${isMoreMenuOpen ? 'text-red-300 font-bold' : 'text-slate-400 font-medium'}`}>

@@ -61,10 +61,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   // Simplified and intuitive menu labels
   const navGroups = [
     {
-      title: 'UTAMA & PERSETUJUAN',
+      title: 'UTAMA',
       items: [
         { id: 'DASHBOARD', label: 'Dashboard', shortLabel: 'Home', icon: LayoutDashboard },
-        { id: 'APPROVALS', label: 'Persetujuan (Approvals)', shortLabel: 'Persetujuan', icon: CheckSquare, badge: pendingApprovalsCount },
       ],
     },
     {
@@ -239,11 +238,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
-                      {item.badge && item.badge > 0 ? (
-                        <span className="bg-amber-500 text-slate-950 font-black text-[10px] px-1.5 py-0.5 rounded-full shadow animate-pulse">
-                          {item.badge}
-                        </span>
-                      ) : null}
                       {isActive && <ChevronRight className="w-3.5 h-3.5 text-white/80" />}
                     </div>
                   </button>
