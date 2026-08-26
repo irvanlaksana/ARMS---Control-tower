@@ -5,15 +5,31 @@ interface OfficialLetterheadProps {
   className?: string;
 }
 
-export const OfficialLetterhead: React.FC<OfficialLetterheadProps> = ({ customLogo, className = '' }) => {
+export const OfficialLetterhead: React.FC<OfficialLetterheadProps> = ({ className = '' }) => {
   return (
     <div className={`w-full select-none ${className}`}>
-      <div className="flex items-center gap-5 sm:gap-6 pb-2">
-        {/* Official Shield Logo */}
-        <div className="shrink-0 flex items-center justify-center">
-          {customLogo ? (
-            <img src={customLogo} alt="Logo" className="w-24 h-24 object-contain" />
-          ) : (
+      {/* 
+        We use the uploaded image as the letterhead. 
+        The user should upload 'kop-surat.jpg' to the 'public' directory. 
+      */}
+      <img 
+        src="/kop-surat.jpg" 
+        alt="Kop Surat PT Mitra Jasatria Indonesia" 
+        className="w-full h-auto object-contain"
+        onError={(e) => {
+          // Fallback if the image is not yet uploaded to the public folder
+          e.currentTarget.style.display = 'none';
+          if (e.currentTarget.nextElementSibling) {
+            (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'block';
+          }
+        }}
+      />
+      
+      {/* Fallback layout just in case the image is not found */}
+      <div className="hidden">
+        <div className="flex items-center gap-5 sm:gap-6 pb-2">
+          {/* Official Shield Logo */}
+          <div className="shrink-0 flex items-center justify-center">
             <svg
               viewBox="0 0 160 180"
               className="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-sm"
@@ -85,38 +101,37 @@ export const OfficialLetterhead: React.FC<OfficialLetterheadProps> = ({ customLo
                 />
               </g>
             </svg>
-          )}
-        </div>
-
-        {/* Company Header Typography */}
-        <div className="flex-1 text-left">
-          <h1
-            className="text-lg sm:text-2xl font-black uppercase tracking-wider text-slate-950 leading-tight"
-            style={{ fontFamily: '"Times New Roman", Times, Georgia, serif' }}
-          >
-            PT. MITRAJASA SATRIA INDONESIA
-          </h1>
-          <p
-            className="text-xs sm:text-sm font-bold text-red-700 mt-1 leading-tight tracking-wide"
-            style={{ fontFamily: '"Times New Roman", Times, Georgia, serif' }}
-          >
-            Nomor AHU-.056731.AH.01.01.
-          </p>
-          <div
-            className="text-xs sm:text-sm font-bold text-slate-900 mt-1 space-y-0.5 leading-snug"
-            style={{ fontFamily: '"Times New Roman", Times, Georgia, serif' }}
-          >
-            <p>JL. Menteri Supeno No. 07, Sokaraja Tengah,</p>
-            <p>Banyumas, Jawa Tengah, 53181</p>
+          </div>
+          {/* Company Header Typography */}
+          <div className="flex-1 text-left">
+            <h1
+              className="text-lg sm:text-2xl font-black uppercase tracking-wider text-slate-950 leading-tight"
+              style={{ fontFamily: '"Times New Roman", Times, Georgia, serif' }}
+            >
+              PT. MITRA JASATRIA INDONESIA
+            </h1>
+            <p
+              className="text-xs sm:text-sm font-bold text-red-700 mt-1 leading-tight tracking-wide"
+              style={{ fontFamily: '"Times New Roman", Times, Georgia, serif' }}
+            >
+              Nomor AHU-056731.AH.01.01
+            </p>
+            <div
+              className="text-xs sm:text-sm font-bold text-slate-900 mt-1 space-y-0.5 leading-snug"
+              style={{ fontFamily: '"Times New Roman", Times, Georgia, serif' }}
+            >
+              <p>JL. Menteri Supeno No. 07, Sokaraja Tengah,</p>
+              <p>Banyumas, Jawa Tengah, 53181</p>
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* Double Horizontal Separator Rule (Thick top, thin bottom) */}
-      <div className="w-full pt-1 pb-1">
-        <div className="border-b-[3px] border-black w-full" />
-        <div className="border-b-[1px] border-black w-full mt-[2px]" />
+        {/* Double Horizontal Separator Rule (Thick top, thin bottom) */}
+        <div className="w-full pt-1 pb-1">
+          <div className="border-b-[3px] border-black w-full" />
+          <div className="border-b-[1px] border-black w-full mt-[2px]" />
+        </div>
       </div>
     </div>
   );
 };
+
