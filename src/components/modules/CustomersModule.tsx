@@ -251,7 +251,6 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                   type="text"
                   value={contractNo}
                   onChange={(e) => setContractNo(e.target.value)}
-                  placeholder="00730191"
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
                 />
               </div>
@@ -263,7 +262,6 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                   required
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="KISNO ANGKAH TRI HIDAYAT"
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
                 />
               </div>
@@ -274,7 +272,6 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                   type="text"
                   value={addressCurrent}
                   onChange={(e) => setAddressCurrent(e.target.value)}
-                  placeholder="KALIKABONG RT 004 RW 002, KALIMANAH"
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
                 />
               </div>
@@ -285,7 +282,6 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                   type="text"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  placeholder="2 FEBRUARI 2024"
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
                 />
               </div>
@@ -296,7 +292,6 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                   type="text"
                   value={installmentAmount}
                   onChange={(e) => setInstallmentAmount(e.target.value)}
-                  placeholder="Angsuran ke 8 s/d 18 : Rp. 385.000"
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
                 />
               </div>
@@ -307,7 +302,6 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                   type="text"
                   value={penaltyAmount}
                   onChange={(e) => setPenaltyAmount(e.target.value)}
-                  placeholder="Rp. 41.692.000"
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
                 />
               </div>
@@ -318,7 +312,6 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                   type="text"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+62 812-xxxx-xxxx"
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
                 />
               </div>
@@ -332,7 +325,6 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                   type="text"
                   value={vehicleMerkType}
                   onChange={(e) => setVehicleMerkType(e.target.value)}
-                  placeholder="YAMAHA / VIXION"
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
                 />
               </div>
@@ -343,7 +335,6 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                   type="text"
                   value={vehiclePoliceNo}
                   onChange={(e) => setVehiclePoliceNo(e.target.value)}
-                  placeholder="R4088YV"
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono"
                 />
               </div>
