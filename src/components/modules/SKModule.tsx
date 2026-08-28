@@ -52,6 +52,18 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
   const [skVehiclePoliceNo, setSkVehiclePoliceNo] = useState('');
 
   const [draftContent, setDraftContent] = useState('');
+  const [attachments, setAttachments] = useState<string[]>([]);
+
+  const handleAddAttachment = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAttachments(prev => [...prev, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const printRef = useRef<HTMLDivElement>(null);
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS';
@@ -1041,6 +1053,28 @@ ${repTitle}                                           ${employeeJob.toUpperCase(
                   />
                 </div>
 
+                <div className="mt-2 border border-slate-700 rounded-md p-2 bg-slate-900">
+                  <label className="block text-slate-400 text-[10px] mb-1 font-semibold">Lampiran (KTP, STNK, dll)</label>
+                  <div className="flex flex-wrap gap-2">
+                    {attachments.map((src, i) => (
+                      <div key={i} className="relative w-12 h-12 rounded border border-slate-700 overflow-hidden group">
+                        <img src={src} alt="Lampiran" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setAttachments(attachments.filter((_, index) => index !== i))}
+                          className="absolute inset-0 bg-black/50 text-white flex justify-center items-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                    <label className="w-12 h-12 rounded border border-dashed border-slate-600 flex items-center justify-center text-slate-500 hover:text-white hover:border-slate-400 cursor-pointer transition">
+                      <Plus className="w-5 h-5" />
+                      <input type="file" multiple accept="image/*" className="hidden" onChange={handleAddAttachment} />
+                    </label>
+                  </div>
+                </div>
+
                 <div className="pt-2 space-y-2">
                   <button
                     type="submit"
@@ -1247,33 +1281,41 @@ ${repTitle}                                           ${employeeJob.toUpperCase(
                       <table className="w-full mb-3 ml-3">
                         <tbody>
                           <tr>
-                            <td className="w-48 py-0.5 align-top font-medium">Nama Debitur / Peminjam</td>
+                            <td className="w-48 py-0.5 align-top font-medium">No. Kontrak</td>
                             <td className="w-4 py-0.5 align-top">:</td>
-                            <td className="py-0.5 font-bold text-slate-950">{selectedCase?.debtorName || 'Nama Debitur'}</td>
-                          </tr>
-                          {selectedCase?.debtorNik && (
-                            <tr>
-                              <td className="w-48 py-0.5 align-top font-medium">NIK Debitur</td>
-                              <td className="w-4 py-0.5 align-top">:</td>
-                              <td className="py-0.5 font-mono">{selectedCase.debtorNik}</td>
-                            </tr>
-                          )}
-                          <tr>
-                            <td className="w-48 py-0.5 align-top font-medium">Alamat Debitur</td>
-                            <td className="w-4 py-0.5 align-top">:</td>
-                            <td className="py-0.5">{debtorAddress}</td>
+                            <td className="py-0.5 font-mono">{skContractNo}</td>
                           </tr>
                           <tr>
-                            <td className="w-48 py-0.5 align-top font-medium">Jumlah Piutang</td>
+                            <td className="w-48 py-0.5 align-top font-medium">Nama</td>
+                            <td className="w-4 py-0.5 align-top">:</td>
+                            <td className="py-0.5 font-bold text-slate-950">{skDebtorName}</td>
+                          </tr>
+                          <tr>
+                            <td className="w-48 py-0.5 align-top font-medium">Alamat</td>
+                            <td className="w-4 py-0.5 align-top">:</td>
+                            <td className="py-0.5">{skDebtorAddress}</td>
+                          </tr>
+                          <tr>
+                            <td className="w-48 py-0.5 align-top font-medium">Tanggal Jatuh Tempo</td>
+                            <td className="w-4 py-0.5 align-top">:</td>
+                            <td className="py-0.5 font-medium">{skDueDate}</td>
+                          </tr>
+                          <tr>
+                            <td className="w-48 py-0.5 align-top font-medium">Informasi Angsuran</td>
+                            <td className="w-4 py-0.5 align-top">:</td>
+                            <td className="py-0.5">{skInstallment}</td>
+                          </tr>
+                          <tr>
+                            <td className="w-48 py-0.5 align-top font-medium">Jumlah Angsuran belum bayar</td>
                             <td className="w-4 py-0.5 align-top">:</td>
                             <td className="py-0.5 font-bold text-slate-950">
-                              Rp {currentNominal.toLocaleString('id-ID')} ({angkaKeTerbilang(currentNominal)})
+                              Rp {currentNominal.toLocaleString('id-ID')}
                             </td>
                           </tr>
                           <tr>
-                            <td className="w-48 py-0.5 align-top font-medium">Dasar Penagihan</td>
+                            <td className="w-48 py-0.5 align-top font-medium">DENDA</td>
                             <td className="w-4 py-0.5 align-top">:</td>
-                            <td className="py-0.5 font-medium">{dasarPenagihan}</td>
+                            <td className="py-0.5 font-bold text-red-700">{skPenalty}</td>
                           </tr>
                         </tbody>
                       </table>
@@ -1366,6 +1408,28 @@ ${repTitle}                                           ${employeeJob.toUpperCase(
                       PT. MITRAJASA SATRIA INDONESIA • Surat Kuasa Khusus Penagihan Piutang ({isPerorangan ? 'Klien Perorangan' : 'Multifinance'}) • Format Resmi F4
                     </div>
                   </div>
+
+                  {/* Halaman Lampiran */}
+                  {attachments.length > 0 && (
+                    <div
+                      className="f4-page-preview rounded-lg p-8 sm:p-10 text-[12px] mt-4 shadow-xl"
+                      style={{ pageBreakBefore: 'always', breakBefore: 'page' }}
+                    >
+                      <h3 className="font-bold text-center underline uppercase tracking-wide mb-8 text-slate-950">
+                        LAMPIRAN DOKUMEN
+                      </h3>
+                      <div className="grid grid-cols-2 gap-6">
+                        {attachments.map((src, i) => (
+                          <div key={i} className="flex flex-col items-center gap-2">
+                            <div className="border-2 border-slate-300 p-2 rounded-lg bg-slate-50 w-full aspect-[4/3] flex items-center justify-center overflow-hidden">
+                              <img src={src} alt={`Lampiran ${i + 1}`} className="max-w-full max-h-full object-contain" />
+                            </div>
+                            <span className="text-[10px] font-mono text-slate-500">Lampiran {i + 1}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
