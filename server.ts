@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { google } from "googleapis";
+import { Readable } from 'stream';
 
 async function startServer() {
   const app = express();
@@ -245,6 +246,52 @@ async function startServer() {
         success: false,
         error: err?.message || "Gagal berkomunikasi dengan Web App Google Apps Script.",
       });
+    }
+  });
+
+  // API Route: Upload file to Google Drive (Service Account)
+  // Expects JSON body: { fileName, mimeType, base64, folderId (optional) }
+  app.post('/api/drive/upload', async (req, res) => {
+    try {
+      const { fileName, mimeType, base64, folderId } = req.body || {};
+      if (!fileName || !base64) {
+        return res.status(400).json({ success: false, error: 'Missing fileName or base64 payload' });
+      }
+
+      // Prepare auth using Application Default Credentials / Service Account
+      // Ensure GOOGLE_APPLICATION_CREDENTIALS is set on the host to point to the service account JSON key
+      const auth = new google.auth.GoogleAuth({
+        scopes: ['https://www.googleapis.com/auth/drive.file'],
+      });
+
+      const drive = google.drive({ version: 'v3', auth });
+
+      // Strip data URL prefix if present
+      const dataUrlMatch = String(base64).match(/^data:(.+);base64,(.*)$/);
+      const rawBase64 = dataUrlMatch ? dataUrlMatch[2] : base64;
+      const buffer = Buffer.from(rawBase64, 'base64');
+
+      const media = {
+        mimeType: mimeType || 'application/octet-stream',
+        body: Readable.from(buffer),
+      } as any;
+
+      const fileMetadata: any = { name: fileName };
+      if (folderId) fileMetadata.parents = [folderId];
+
+      const created = await drive.files.create({
+        requestBody: fileMetadata,
+        media,
+        fields: 'id, webViewLink, webContentLink',
+      });
+
+      const fileId = created.data.id;
+      const webViewLink = created.data.webViewLink || `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
+
+      res.json({ success: true, fileId, webViewLink });
+    } catch (err: any) {
+      console.error('Drive Upload Error:', err?.message || err);
+      res.status(500).json({ success: false, error: err?.message || 'Failed uploading to Google Drive' });
     }
   });
 

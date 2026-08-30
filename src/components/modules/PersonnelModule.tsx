@@ -22,6 +22,7 @@ import {
   QrCode
 } from 'lucide-react';
 import { EmployeeIdCardModal } from './EmployeeIdCardModal';
+import DriveFilePreview from '../common/DriveFilePreview';
 
 interface PersonnelModuleProps {
   store: ARMSStore;
@@ -56,13 +57,81 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
   const [ktpPhotoUrl, setKtpPhotoUrl] = useState<string>('');
   const [ktpDriveFileId, setKtpDriveFileId] = useState<string>('');
   const [ktpDriveFolderUrl, setKtpDriveFolderUrl] = useState<string>('');
+  const [uploadedBase64, setUploadedBase64] = useState<string>('');
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState<boolean>(false);
+
+  // helper: upload base64 to server Drive endpoint
+  const extractFolderIdFromUrl = (u?: string) => {
+    if (!u) return undefined;
+    const m = u.match(/drive\.google\.com\/drive\/folders\/([a-zA-Z0-9_-]+)/);
+    if (m) return m[1];
+    const m2 = u.match(/folders\/([a-zA-Z0-9_-]+)/);
+    if (m2) return m2[1];
+    return undefined;
+  };
+
+  const uploadBase64ToDrive = async (base64: string, targetName?: string, folderId?: string) => {
+    try {
+      const match = base64.match(/^data:(.+);base64,(.*)$/);
+      const mime = match ? match[1] : 'image/jpeg';
+      const ext = mime.split('/')?.[1] || 'jpg';
+      const fileName = `${(targetName || fullName || 'ktp').replace(/[^a-z0-9\-]/gi, '_')}-${Date.now().toString().slice(-6)}.${ext}`;
+      const resp = await fetch('/api/drive/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName, mimeType: mime, base64, folderId }),
+      });
+      const json = await resp.json();
+      if (json && json.success) return json;
+      console.error('Drive upload failed', json);
+      return null;
+    } catch (err) {
+      console.error('Drive upload error', err);
+      return null;
+    }
+  };
 
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS' || currentUser.role === 'APPROVER_EXECUTIVE';
 
   const defaultDriveFolderId = store.settings?.googleDriveFolderId || '11OxYLvKiH8P4AIP_NM08KuYu0plAq16_';
   const defaultDriveFolderLink = store.settings?.googleDriveFolderUrl || `https://drive.google.com/drive/folders/11OxYLvKiH8P4AIP_NM08KuYu0plAq16_?usp=sharing`;
 
-  const handleUpdatePersonnelPhoto = (personnelId: string, newPhotoUrl: string) => {
+  const handleUpdatePersonnelPhoto = async (personnelId: string, newPhotoUrl: string) => {
+    // If passed a data URL, upload immediately to server Drive endpoint
+    if (typeof newPhotoUrl === 'string' && newPhotoUrl.startsWith('data:')) {
+      setIsUploadingPhoto(true);
+      // determine folderId from personnel record or fallback to store settings
+      const person = (store.personnel || []).find((x) => x.id === personnelId);
+      const folderId = person?.gDriveFolderId || extractFolderIdFromUrl(person?.gDriveFolderUrl) || store.settings?.googleDriveFolderId;
+      const json = await uploadBase64ToDrive(newPhotoUrl, person?.fullName || fullName || 'ktp', folderId);
+      setIsUploadingPhoto(false);
+      if (json && json.success) {
+        const updatedPersonnel = (store.personnel || []).map((p) =>
+          p.id === personnelId
+            ? { ...p, ktpPhotoUrl: json.webViewLink || `https://drive.google.com/file/d/${json.fileId}/view?usp=sharing`, ktpDriveFileId: json.fileId }
+            : p
+        );
+        const audit = createAuditEntry(
+          currentUser.username,
+          currentUser.role,
+          'UPDATE',
+          'Personnel',
+          personnelId,
+          `Memperbarui pas foto ID Card dan upload ke GDrive: ${personnelId}`
+        );
+        onUpdateStore({
+          ...store,
+          personnel: updatedPersonnel,
+          auditLogs: [audit, ...(store.auditLogs || [])],
+        });
+        // clear staged base64
+        setUploadedBase64('');
+        return;
+      }
+      // fallback: store data URL as-is
+    }
+
+    // Non-base64 or upload failed: just set url
     const updatedPersonnel = (store.personnel || []).map((p) =>
       p.id === personnelId ? { ...p, ktpPhotoUrl: newPhotoUrl } : p
     );
@@ -134,12 +203,8 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result as string;
-      const simulatedDriveId = `GDRIVE-KTP-${Date.now()}`;
-      const simulatedDriveUrl = `https://drive.google.com/file/d/${simulatedDriveId}/view?usp=sharing`;
-
-      setKtpPhotoUrl(result);
-      setKtpDriveFileId(simulatedDriveId);
-      setKtpDriveFolderUrl(simulatedDriveUrl);
+      setKtpPhotoUrl(result); // preview
+      setUploadedBase64(result);
     };
     reader.readAsDataURL(file);
   };
@@ -164,11 +229,33 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
     });
   };
 
-  const handleSavePersonnel = (e: React.FormEvent) => {
+  const handleSavePersonnel = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const finalDriveFileId = ktpPhotoUrl && !ktpDriveFileId ? `GDRIVE-KTP-${Date.now()}` : ktpDriveFileId;
-    const finalDriveUrl = ktpPhotoUrl && !ktpDriveFolderUrl ? `https://drive.google.com/file/d/${finalDriveFileId}/view?usp=sharing` : ktpDriveFolderUrl;
+    // If there's a staged base64 image or ktpPhotoUrl is still a data URL, upload it first
+    try {
+      if (uploadedBase64 || (ktpPhotoUrl && ktpPhotoUrl.startsWith('data:'))) {
+        setIsUploadingPhoto(true);
+        const base64ToUpload = uploadedBase64 || ktpPhotoUrl;
+        // determine folder for this personnel
+        const folderId = editingPersonnel?.gDriveFolderId || extractFolderIdFromUrl(editingPersonnel?.gDriveFolderUrl) || store.settings?.googleDriveFolderId;
+        const json = await uploadBase64ToDrive(base64ToUpload, fullName || 'ktp', folderId);
+        setIsUploadingPhoto(false);
+        if (json && json.success) {
+          setKtpDriveFileId(json.fileId);
+          setKtpDriveFolderUrl(json.webViewLink || `https://drive.google.com/file/d/${json.fileId}/view?usp=sharing`);
+          setKtpPhotoUrl(json.webViewLink || `https://drive.google.com/file/d/${json.fileId}/view?usp=sharing`);
+          // clear staged base64
+          setUploadedBase64('');
+        }
+      }
+    } catch (err) {
+      console.error('Failed uploading KTP before save', err);
+      setIsUploadingPhoto(false);
+    }
+
+    const finalDriveFileId = ktpDriveFileId || (ktpPhotoUrl && ktpPhotoUrl.includes('/d/') ? ktpPhotoUrl.split('/d/')[1].split('/')[0] : ktpDriveFileId);
+    const finalDriveUrl = ktpDriveFolderUrl || ktpPhotoUrl;
 
     if (editingPersonnel) {
       const updatedPersonnel: Personnel = {
@@ -186,7 +273,7 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
         emergencyContact,
         position,
         status,
-        ktpPhotoUrl,
+        ktpPhotoUrl: finalDriveUrl,
         ktpDriveFileId: finalDriveFileId,
         ktpDriveFolderUrl: finalDriveUrl,
       };
@@ -225,7 +312,7 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
         emergencyContact,
         position,
         status,
-        ktpPhotoUrl,
+        ktpPhotoUrl: finalDriveUrl,
         ktpDriveFileId: finalDriveFileId,
         ktpDriveFolderUrl: finalDriveUrl,
         createdAt: new Date().toISOString(),
@@ -677,76 +764,37 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
         </div>
       </div>
 
-      {/* Lightbox KTP Modal */}
-      {previewKtpModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-lg p-5 sm:p-6 space-y-4 shadow-2xl relative max-h-[85vh] overflow-y-auto my-auto">
-            <button
-              onClick={() => setPreviewKtpModal(null)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg bg-slate-800"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
-              <ImageIcon className="w-5 h-5 text-indigo-400" />
-              <div>
-                <h3 className="font-bold text-white text-base">Dokumen KTP Google Drive</h3>
-                <p className="text-xs text-slate-400">{previewKtpModal.fullName} ({previewKtpModal.nikKtp})</p>
-              </div>
-            </div>
-
-            <div className="bg-slate-950 p-2 border border-slate-800 rounded-lg flex items-center justify-center min-h-[220px]">
-              {previewKtpModal.ktpPhotoUrl ? (
-                <img
-                  src={previewKtpModal.ktpPhotoUrl}
-                  alt={`KTP ${previewKtpModal.fullName}`}
-                  className="max-h-[300px] w-auto object-contain rounded border border-slate-800"
-                />
-              ) : (
-                <div className="text-slate-500 text-xs">Foto KTP belum diunggah</div>
-              )}
-            </div>
-
-            <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs space-y-1 font-mono text-slate-300">
-              <div><span className="text-slate-500">Google Drive ID:</span> {previewKtpModal.ktpDriveFileId || defaultDriveFolderId}</div>
-              <div><span className="text-slate-500">Folder Path:</span> /PT_MJ_INDONESIA/DATABASE_KARYAWAN/{previewKtpModal.fullName.toUpperCase().replace(/\s+/g, '_')}/</div>
-            </div>
-
-            <div className="flex flex-wrap justify-between items-center gap-2 pt-2">
-              <div className="flex items-center gap-2">
-                <a
-                  href={previewKtpModal.ktpDriveFolderUrl || previewKtpModal.gDriveFolderUrl || defaultDriveFolderLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  <span>Buka di Google Drive</span>
-                </a>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedForIdCard(previewKtpModal);
-                    setPreviewKtpModal(null);
-                  }}
-                  className="flex items-center gap-1.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white text-xs font-bold px-3.5 py-2 rounded-lg shadow-md transition"
-                >
-                  <CreditCard className="w-4 h-4" />
-                  <span>Cetak ID Card</span>
-                </button>
-              </div>
-
-              <button
-                onClick={() => setPreviewKtpModal(null)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs font-semibold rounded-lg hover:bg-slate-700 transition"
-              >
-                Tutup
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Lightbox KTP Modal (replaced by DriveFilePreview) */}
+      <DriveFilePreview
+        open={!!previewKtpModal}
+        onClose={() => setPreviewKtpModal(null)}
+        fileUrl={previewKtpModal?.ktpPhotoUrl}
+        fileName={previewKtpModal?.fullName}
+        isUploading={isUploadingPhoto}
+        driveFileId={previewKtpModal?.ktpDriveFileId}
+        webViewLink={previewKtpModal?.ktpPhotoUrl}
+        onUpload={async () => {
+          // allow immediate upload from preview if the image is a data URL
+          if (!previewKtpModal) return;
+          const p = previewKtpModal;
+          if (p.ktpPhotoUrl && p.ktpPhotoUrl.startsWith('data:')) {
+            setIsUploadingPhoto(true);
+            const folderId = p.gDriveFolderId || extractFolderIdFromUrl(p.gDriveFolderUrl) || store.settings?.googleDriveFolderId;
+            const json = await uploadBase64ToDrive(p.ktpPhotoUrl, p.fullName, folderId);
+            setIsUploadingPhoto(false);
+            if (json && json.success) {
+              const updatedPersonnel = (store.personnel || []).map((pp) =>
+                pp.id === p.id
+                  ? { ...pp, ktpPhotoUrl: json.webViewLink || `https://drive.google.com/file/d/${json.fileId}/view?usp=sharing`, ktpDriveFileId: json.fileId }
+                  : pp
+              );
+              const audit = createAuditEntry(currentUser.username, currentUser.role, 'UPDATE', 'Personnel', p.id, `Upload KTP via preview: ${p.id}`);
+              onUpdateStore({ ...store, personnel: updatedPersonnel, auditLogs: [audit, ...(store.auditLogs || [])] });
+              setPreviewKtpModal(null);
+            }
+          }
+        }}
+      />
 
       {/* Add / Edit Personnel Modal */}
       {showModal && (

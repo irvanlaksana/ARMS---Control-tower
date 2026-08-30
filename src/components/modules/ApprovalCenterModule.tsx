@@ -223,6 +223,28 @@ export const ApprovalCenterModule: React.FC<ApprovalCenterModuleProps> = ({
     });
   };
 
+  // Prepare WhatsApp template message and open WhatsApp Web with prefilled text
+  const openWhatsAppTemplate = (request: ApprovalRequest) => {
+    const lines = [] as string[];
+    lines.push(`Permohonan Approval: ${request.requestNo}`);
+    lines.push(`Judul: ${request.title}`);
+    if (request.amountOrValue) lines.push(`Nominal: Rp ${Number(request.amountOrValue).toLocaleString('id-ID')}`);
+    if (request.description) lines.push(`Detail: ${request.description}`);
+    if (request.targetReference) lines.push(`Referensi: ${request.targetReference}`);
+    lines.push('Mohon persetujuan. Terima kasih.');
+
+    const text = lines.join('\n');
+    const webUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    const mobileUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+
+    // Prefer opening web WhatsApp for desktop; fallback to mobile URL
+    try {
+      window.open(webUrl, '_blank');
+    } catch (err) {
+      window.open(mobileUrl, '_blank');
+    }
+  };
+
   const filteredApprovals = store.approvals.filter((app) => {
     if (filterModule !== 'ALL' && app.module !== filterModule) return false;
     if (filterStatus !== 'ALL' && app.status !== filterStatus) return false;
@@ -366,6 +388,15 @@ export const ApprovalCenterModule: React.FC<ApprovalCenterModuleProps> = ({
                             </button>
                           </>
                         )}
+
+                        {/* WhatsApp template quick action */}
+                        <button
+                          onClick={() => openWhatsAppTemplate(app)}
+                          title="Kirim Template WhatsApp"
+                          className="bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-semibold px-2.5 py-1 rounded-md transition shadow"
+                        >
+                          WA
+                        </button>
                         {canDelete && (
                           <>
                             <button

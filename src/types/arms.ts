@@ -291,10 +291,11 @@ export interface LawyerNotice {
 
 export interface FieldPhoto {
   id: string;
-  url: string;
+  url: string; // data URL or Drive webViewLink
   caption: string;
   category: 'RUMAH_DEBITUR' | 'TEMU_DEBITUR' | 'UNIT_KENDARAAN' | 'SURAT_BERITA_ACARA' | 'KWITANSI_BAYAR' | 'LOKASI_KANTOR' | 'LAINNYA';
   timestamp: string;
+  driveFileId?: string; // optional Google Drive file ID when uploaded
 }
 
 export interface CommunicationLog {

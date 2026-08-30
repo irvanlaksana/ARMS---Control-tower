@@ -7,6 +7,7 @@ import {
   Link2, Check, Copy, Calendar, DollarSign, 
   Car, ShieldCheck, CheckCircle2, X, AlertCircle, FolderOpen, Eye
 } from 'lucide-react';
+import DriveFilePreview from '../common/DriveFilePreview';
 import { angkaKeTerbilang } from '../../utils/terbilang';
 import { GoogleDriveFolderPicker } from '../common/GoogleDriveFolderPicker';
 import { QuickGDriveModal } from '../common/QuickGDriveModal';
@@ -88,6 +89,10 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
   const [attachments, setAttachments] = useState<string[]>([]);
   const [showClauseDetails, setShowClauseDetails] = useState(false);
 
+  // Attachment preview/upload states
+  const [selectedAttachmentPreview, setSelectedAttachmentPreview] = useState<{ src: string; index: number } | null>(null);
+  const [isUploadingAttachmentPreview, setIsUploadingAttachmentPreview] = useState(false);
+
   const handleAddAttachment = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -97,6 +102,40 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  // helper to upload first attachment if it is a data URL and return webViewLink
+  const uploadFirstAttachmentIfNeeded = async () => {
+    if (!attachments || attachments.length === 0) return null;
+    const first = attachments[0];
+    if (typeof first === 'string' && first.startsWith('data:')) {
+      try {
+        const match = first.match(/^data:(.+);base64,(.*)$/);
+        const mime = match ? match[1] : 'application/pdf';
+        const ext = mime.split('/')?.[1] || 'pdf';
+        const fileName = `SK_${skNumberDraft || 'doc'}_${Date.now().toString().slice(-6)}.${ext}`;
+        const extractFolderIdFromUrl = (u?: string) => {
+          if (!u) return undefined;
+          const m = u.match(/drive\.google\.com\/drive\/folders\/([a-zA-Z0-9_-]+)/);
+          if (m) return m[1];
+          const m2 = u.match(/folders\/([a-zA-Z0-9_-]+)/);
+          if (m2) return m2[1];
+          return undefined;
+        };
+        const folderIdToUse = selectedCase?.gDriveFolderId || extractFolderIdFromUrl(selectedCase?.gDriveFolderUrl) || store.settings?.googleDriveFolderId;
+
+        const resp = await fetch('/api/drive/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileName, mimeType: mime, base64: first, folderId: folderIdToUse }),
+        });
+        const j = await resp.json();
+        if (j && j.success) return j;
+      } catch (err) {
+        console.error('Attachment upload failed', err);
+      }
+    }
+    return null;
   };
 
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS';
@@ -254,7 +293,7 @@ MASA BERLAKU: ${todayStr} s/d ${endDateStr}`;
     skVehiclePoliceNo
   ]);
 
-  const handleCreateSK = (e: React.FormEvent) => {
+  const handleCreateSK = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCase || !selectedPersonnel) return;
 
@@ -299,6 +338,19 @@ MASA BERLAKU: ${todayStr} s/d ${endDateStr}`;
         auditLogs: [audit, ...(store.auditLogs || [])],
       });
     } else {
+      // If attachments include a data URL, upload first attachment and use as driveDocumentUrl
+      try {
+        const uploaded = await uploadFirstAttachmentIfNeeded();
+        if (uploaded && uploaded.success) {
+          const newDocUrl = uploaded.webViewLink || `https://drive.google.com/file/d/${uploaded.fileId}/view?usp=sharing`;
+          setDriveDocumentUrl(newDocUrl);
+          if (!driveFolderId) setDriveFolderId(store.settings?.googleDriveFolderId || '');
+          if (!driveFolderUrl) setDriveFolderUrl(store.settings?.googleDriveFolderUrl || '');
+        }
+      } catch (err) {
+        console.error('Attachment upload step failed', err);
+      }
+
       const newSK: SK = {
         id: `SK-${Date.now()}`,
         skNumber,
@@ -1170,7 +1222,12 @@ MASA BERLAKU: ${todayStr} s/d ${endDateStr}`;
                 <div className="flex flex-wrap gap-2 pt-1">
                   {attachments.map((src, i) => (
                     <div key={i} className="relative w-16 h-16 rounded-lg border border-slate-700 overflow-hidden group">
-                      <img src={src} alt="Lampiran" className="w-full h-full object-cover" />
+                      <img
+                        src={src}
+                        alt="Lampiran"
+                        onClick={() => setSelectedAttachmentPreview({ src, index: i })}
+                        className="w-full h-full object-cover cursor-pointer"
+                      />
                       <button
                         type="button"
                         onClick={() => setAttachments(attachments.filter((_, index) => index !== i))}
@@ -1187,6 +1244,56 @@ MASA BERLAKU: ${todayStr} s/d ${endDateStr}`;
                     <input type="file" multiple accept="image/*" className="hidden" onChange={handleAddAttachment} />
                   </label>
                 </div>
+
+                {/* Attachment Preview Modal (DriveFilePreview) */}
+                <DriveFilePreview
+                  open={!!selectedAttachmentPreview}
+                  onClose={() => setSelectedAttachmentPreview(null)}
+                  fileUrl={selectedAttachmentPreview?.src}
+                  fileName={selectedAttachmentPreview ? `attachment-${selectedAttachmentPreview.index}` : undefined}
+                  isUploading={isUploadingAttachmentPreview}
+                  webViewLink={selectedAttachmentPreview?.src}
+                  onUpload={async () => {
+                    if (!selectedAttachmentPreview) return;
+                    const { src, index } = selectedAttachmentPreview;
+                    if (typeof src === 'string' && src.startsWith('data:')) {
+                      setIsUploadingAttachmentPreview(true);
+                      try {
+                        const match = src.match(/^data:(.+);base64,(.*)$/);
+                        const mime = match ? match[1] : 'application/pdf';
+                        const ext = mime.split('/')?.[1] || 'jpg';
+                        const fileName = `SK_ATTACHMENT_${Date.now().toString().slice(-6)}.${ext}`;
+                        const extractFolderIdFromUrl = (u?: string) => {
+                          if (!u) return undefined;
+                          const m = u.match(/drive\.google\.com\/drive\/folders\/([a-zA-Z0-9_-]+)/);
+                          if (m) return m[1];
+                          const m2 = u.match(/folders\/([a-zA-Z0-9_-]+)/);
+                          if (m2) return m2[1];
+                          return undefined;
+                        };
+                        const folderIdToUse = selectedCase?.gDriveFolderId || extractFolderIdFromUrl(selectedCase?.gDriveFolderUrl) || store.settings?.googleDriveFolderId;
+
+                        const resp = await fetch('/api/drive/upload', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ fileName, mimeType: mime, base64: src, folderId: folderIdToUse }),
+                        });
+                        const j = await resp.json();
+                        if (j && j.success) {
+                          const newUrl = j.webViewLink || `https://drive.google.com/file/d/${j.fileId}/view?usp=sharing`;
+                          setAttachments(prev => prev.map((it, idx) => idx === index ? newUrl : it));
+                          const audit = createAuditEntry(currentUser.username, currentUser.role, 'UPDATE', 'SK_Attachment', `ATT-${Date.now()}`, `Uploaded SK attachment via preview for case ${selectedCase?.caseNo}`);
+                          onUpdateStore({ ...store, auditLogs: [audit, ...(store.auditLogs || [])] });
+                          setSelectedAttachmentPreview(null);
+                        }
+                      } catch (err) {
+                        console.error('Attachment upload failed', err);
+                      } finally {
+                        setIsUploadingAttachmentPreview(false);
+                      }
+                    }
+                  }}
+                />
               </div>
 
               {/* 7. KLAUSUL & DRAFT TEKS LENGKAP (COLLAPSIBLE) */}

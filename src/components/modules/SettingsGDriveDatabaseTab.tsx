@@ -278,18 +278,81 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
     const reader = new FileReader();
     reader.onload = () => {
       const res = reader.result as string;
+      // Keep full data URL (data:<mime>;base64,xxxx) so server can detect mimeType
       setUploadedBase64(res);
-      const simulatedDriveUrl = `https://drive.google.com/file/d/GDRIVE-${Date.now().toString().slice(-6)}/view?usp=sharing`;
-      setUploadedUrl(simulatedDriveUrl);
+      // show a temporary uploading placeholder while actual upload happens on save
+      setUploadedUrl('Uploading...');
     };
     reader.readAsDataURL(file);
   };
 
-  const handleSaveUpload = (e: React.FormEvent) => {
+  const handleSaveUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!uploadTarget) return;
 
-    const finalUrl = uploadedUrl.trim();
+    let finalUrl = uploadedUrl.trim();
+    let finalFileId: string | undefined;
+
+    // If there's a base64 payload, upload to server Drive endpoint (service account)
+    if (uploadedBase64) {
+      try {
+        // extract mime and base64
+        const match = uploadedBase64.match(/^data:(.+);base64,(.*)$/);
+        const mime = match ? match[1] : 'image/jpeg';
+        const rawBase64 = match ? match[2] : uploadedBase64;
+        const ext = mime.split('/')?.[1] || 'jpg';
+        const fileName = `${uploadTarget.targetName || 'file'}-${Date.now().toString().slice(-6)}.${ext}`;
+
+        // determine folderId from upload target context (use linked folder if available)
+        const determineFolderId = () => {
+          const extractFolderId = (u?: string) => {
+            if (!u) return undefined;
+            const m = u.match(/drive\.google\.com\/drive\/folders\/([a-zA-Z0-9_-]+)/);
+            if (m) return m[1];
+            const m2 = u.match(/folders\/([a-zA-Z0-9_-]+)/);
+            if (m2) return m2[1];
+            return undefined;
+          };
+
+          if (uploadTarget.type === 'PERSONNEL_KTP') {
+            const p = (store.personnel || []).find((x) => x.id === uploadTarget.id);
+            return p?.gDriveFolderId || extractFolderId(p?.gDriveFolderUrl) || store.settings?.googleDriveFolderId;
+          }
+
+          if (uploadTarget.type === 'DEBTOR_SKP' || uploadTarget.type === 'DEBTOR_SPH') {
+            const cs = (store.cases || []).find((c) => c.id === uploadTarget.id);
+            return cs?.gDriveFolderId || extractFolderId(cs?.gDriveFolderUrl) || store.settings?.googleDriveFolderId;
+          }
+
+          if (uploadTarget.type === 'CLIENT_PROPOSAL' || uploadTarget.type === 'CLIENT_MOU') {
+            const cl = (store.clients || []).find((c) => c.id === uploadTarget.id);
+            return cl?.gDriveFolderId || extractFolderId(cl?.gDriveFolderUrl) || store.settings?.googleDriveFolderId;
+          }
+
+          return store.settings?.googleDriveFolderId;
+        };
+
+        const folderIdToUse = determineFolderId();
+
+        const resp = await fetch('/api/drive/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileName, mimeType: mime, base64: uploadedBase64, folderId: folderIdToUse }),
+        });
+
+        const json = await resp.json();
+        if (!json || !json.success) {
+          console.error('Drive upload failed', json);
+          alert('Gagal mengunggah ke Google Drive: ' + (json?.error || 'Unknown'));
+        } else {
+          finalUrl = json.webViewLink || `https://drive.google.com/file/d/${json.fileId}/view?usp=sharing`;
+          finalFileId = json.fileId;
+        }
+      } catch (err) {
+        console.error('Upload error', err);
+        alert('Gagal mengunggah berkas ke server. Periksa koneksi atau konfigurasi server.');
+      }
+    }
 
     if (uploadTarget.type === 'PERSONNEL_KTP') {
       const updatedPersonnel = (store.personnel || []).map((p) => {
@@ -297,7 +360,8 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
           return {
             ...p,
             ktpDriveFolderUrl: finalUrl || p.ktpDriveFolderUrl,
-            ktpPhotoUrl: uploadedBase64 || p.ktpPhotoUrl,
+            ktpPhotoUrl: finalUrl || p.ktpPhotoUrl,
+            ktpDriveFileId: finalFileId || p.ktpDriveFileId,
           };
         }
         return p;
@@ -337,6 +401,9 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
       onUpdateStore({ ...store, cases: updatedCases });
     }
 
+    // reset modal
+    setUploadedBase64('');
+    setUploadedUrl('');
     setUploadTarget(null);
   };
 

@@ -7,6 +7,7 @@ import {
   Camera, FileText, ChevronRight, Filter, Search, Tag, ExternalLink, MapPin,
   Car, AlertCircle, CheckSquare, Sparkles, Navigation, Trash2
 } from 'lucide-react';
+import DriveFilePreview from '../common/DriveFilePreview';
 
 interface CollectionModuleProps {
   store: ARMSStore;
@@ -60,6 +61,8 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
   const [selectedPhotoPreview, setSelectedPhotoPreview] = useState<{ photo: FieldPhoto; caseNo: string; debtorName: string; clientName: string } | null>(null);
   const [collectionToDelete, setCollectionToDelete] = useState<Collection | null>(null);
   const [commLogToDelete, setCommLogToDelete] = useState<CommunicationLog | null>(null);
+  // Preview upload indicator for DriveFilePreview
+  const [isUploadingPreview, setIsUploadingPreview] = useState(false);
 
   // Active cases
   const activeCases = store.cases.filter(
@@ -159,7 +162,7 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
   };
 
   // Save Unified Record
-  const handleSaveUnifiedRecord = (e: React.FormEvent) => {
+  const handleSaveUnifiedRecord = async (e: React.FormEvent) => {
     e.preventDefault();
     const targetCase = selectedCase || (store.cases || []).find((c) => c.id === selectedCaseId) || store.cases?.[0];
     if (!targetCase) return;
@@ -168,6 +171,45 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
     const personnelName = personnel?.fullName || personnel?.name || currentUser.name || 'Petugas Control Tower';
     const nowIso = new Date().toISOString();
     const todayDate = nowIso.split('T')[0];
+
+    // If uploadedPhotos contain data URLs, upload them to Drive first
+    const uploadedPhotosResolved: typeof uploadedPhotos = [];
+
+    const extractFolderIdFromUrl = (u?: string) => {
+      if (!u) return undefined;
+      const m = u.match(/drive\.google\.com\/drive\/folders\/([a-zA-Z0-9_-]+)/);
+      if (m) return m[1];
+      const m2 = u.match(/folders\/([a-zA-Z0-9_-]+)/);
+      if (m2) return m2[1];
+      return undefined;
+    };
+
+    const folderIdToUse = targetCase?.gDriveFolderId || extractFolderIdFromUrl(targetCase?.gDriveFolderUrl) || store.settings?.googleDriveFolderId;
+
+    for (const p of uploadedPhotos) {
+      if (p.url && typeof p.url === 'string' && p.url.startsWith('data:')) {
+        try {
+          const match = p.url.match(/^data:(.+);base64,(.*)$/);
+          const mime = match ? match[1] : 'image/jpeg';
+          const ext = mime.split('/')?.[1] || 'jpg';
+          const fileName = `${(p.caption || 'photo').replace(/[^a-z0-9\-]/gi, '_')}-${Date.now().toString().slice(-6)}.${ext}`;
+          const resp = await fetch('/api/drive/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fileName, mimeType: mime, base64: p.url, folderId: folderIdToUse }),
+          });
+          const j = await resp.json();
+          if (j && j.success) {
+            uploadedPhotosResolved.push({ ...p, url: j.webViewLink || `https://drive.google.com/file/d/${j.fileId}/view?usp=sharing`, driveFileId: j.fileId });
+            continue;
+          }
+        } catch (err) {
+          console.error('Photo upload failed', err);
+        }
+      }
+      // non-data urls or upload failed
+      uploadedPhotosResolved.push(p);
+    }
 
     let newCollections = [...(store.collections || [])];
     let newCommLogs = [...(store.commLogs || [])];
@@ -200,7 +242,7 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
         receiptNo: hasPayment && paymentAmount > 0 ? receiptNo : '-',
         verificationStatus: hasPayment && paymentAmount > 0 ? 'PENDING_VERIFICATION' : 'VERIFIED',
         notes: `[${interactionType}] Pihak: ${contactPerson || 'Debitur'}. ${reportSummary}`,
-        photos: uploadedPhotos,
+        photos: uploadedPhotosResolved.length > 0 ? uploadedPhotosResolved : uploadedPhotos,
         driveFolderUrl: driveFolderUrl || targetCase.gDriveFolderUrl,
         createdAt: nowIso,
       };
@@ -236,7 +278,7 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
         personnelId: personnelId || 'PER-OPS',
         personnelName,
         attachmentDriveUrl: driveFolderUrl || targetCase.gDriveFolderUrl,
-        photos: uploadedPhotos,
+        photos: uploadedPhotosResolved.length > 0 ? uploadedPhotosResolved : uploadedPhotos,
         recordedBy: currentUser.name || currentUser.username || 'Control Tower User',
         createdAt: nowIso,
       };
@@ -1468,69 +1510,77 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
         </div>
       )}
 
-      {/* FULL PHOTO PREVIEW MODAL */}
-      {selectedPhotoPreview && (
-        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-3xl w-full overflow-hidden shadow-2xl flex flex-col">
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-bold text-indigo-300">
-                    {selectedPhotoPreview.caseNo}
-                  </span>
-                  <span className="text-xs text-slate-400">•</span>
-                  <span className="text-xs font-bold text-white">
-                    {selectedPhotoPreview.debtorName}
-                  </span>
-                </div>
-                <div className="text-[11px] text-slate-400 mt-0.5">
-                  Klien: {selectedPhotoPreview.clientName}
-                </div>
-              </div>
+      {/* FULL PHOTO PREVIEW MODAL (replaced by DriveFilePreview) */}
+      <DriveFilePreview
+        open={!!selectedPhotoPreview}
+        onClose={() => setSelectedPhotoPreview(null)}
+        fileUrl={selectedPhotoPreview?.photo.url}
+        fileName={selectedPhotoPreview?.photo.caption}
+        isUploading={isUploadingPreview}
+        driveFileId={selectedPhotoPreview?.photo.driveFileId}
+        webViewLink={selectedPhotoPreview?.photo.url}
+        onUpload={async () => {
+          if (!selectedPhotoPreview) return;
+          const sp = selectedPhotoPreview;
+          const p = sp.photo;
+          if (typeof p.url === 'string' && p.url.startsWith('data:')) {
+            setIsUploadingPreview(true);
+            try {
+              const match = p.url.match(/^data:(.+);base64,(.*)$/);
+              const mime = match ? match[1] : 'image/jpeg';
+              const ext = mime.split('/')?.[1] || 'jpg';
+              const fileName = `${(p.caption || 'photo').replace(/[^a-z0-9\-]/gi, '_')}-${Date.now().toString().slice(-6)}.${ext}`;
 
-              <button
-                onClick={() => setSelectedPhotoPreview(null)}
-                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+              const extractFolderIdFromUrl = (u?: string) => {
+                if (!u) return undefined;
+                const m = u.match(/drive\.google\.com\/drive\/folders\/([a-zA-Z0-9_-]+)/);
+                if (m) return m[1];
+                const m2 = u.match(/folders\/([a-zA-Z0-9_-]+)/);
+                if (m2) return m2[1];
+                return undefined;
+              };
 
-            <div className="bg-slate-950 flex items-center justify-center p-4 max-h-[60vh] overflow-hidden">
-              <img
-                src={selectedPhotoPreview.photo.url}
-                alt={selectedPhotoPreview.photo.caption}
-                className="max-h-[55vh] w-auto max-w-full object-contain rounded-lg shadow-lg border border-slate-800"
-              />
-            </div>
+              const targetCase = (store.cases || []).find(c => c.caseNo === sp.caseNo) || (store.cases || [])[0];
+              const folderIdToUse = targetCase?.gDriveFolderId || extractFolderIdFromUrl(targetCase?.gDriveFolderUrl) || store.settings?.googleDriveFolderId;
 
-            <div className="p-4 bg-slate-900 border-t border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="bg-amber-950 text-amber-300 text-[10px] px-2 py-0.5 rounded border border-amber-800 font-bold uppercase">
-                    {(selectedPhotoPreview.photo?.category || 'DOKUMENTASI').replace(/_/g, ' ')}
-                  </span>
-                  <span className="text-slate-400 text-[11px]">
-                    Waktu: {selectedPhotoPreview.photo?.timestamp || '-'}
-                  </span>
-                </div>
-                <p className="text-slate-200 mt-1 font-medium">{selectedPhotoPreview.photo.caption}</p>
-              </div>
+              const resp = await fetch('/api/drive/upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fileName, mimeType: mime, base64: p.url, folderId: folderIdToUse }),
+              });
 
-              <a
-                href={selectedPhotoPreview.photo.url}
-                download={`Bukti-Foto-${selectedPhotoPreview.caseNo}.jpg`}
-                target="_blank"
-                rel="noreferrer"
-                className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition self-end sm:self-auto shrink-0"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                <span>Buka Ukuran Penuh</span>
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
+              const j = await resp.json();
+              if (j && j.success) {
+                const newUrl = j.webViewLink || `https://drive.google.com/file/d/${j.fileId}/view?usp=sharing`;
+
+                // Update local uploadedPhotos if present
+                setUploadedPhotos(prev => prev.map(ph => ph.id === p.id ? { ...ph, url: newUrl, driveFileId: j.fileId } : ph));
+
+                // Update store: collections
+                const updatedCollections = (store.collections || []).map(col => ({
+                  ...col,
+                  photos: (col.photos || []).map(ph => ph.id === p.id ? { ...ph, url: newUrl, driveFileId: j.fileId } : ph)
+                }));
+                // Update store: commLogs
+                const updatedCommLogs = (store.commLogs || []).map(log => ({
+                  ...log,
+                  photos: (log.photos || []).map(ph => ph.id === p.id ? { ...ph, url: newUrl, driveFileId: j.fileId } : ph)
+                }));
+
+                const audit = createAuditEntry(currentUser.username, currentUser.role, 'UPDATE', 'Collections_Photos', p.id, `Upload photo via preview for case ${sp.caseNo}`);
+
+                onUpdateStore({ ...store, collections: updatedCollections, commLogs: updatedCommLogs, auditLogs: [audit, ...(store.auditLogs || [])] });
+
+                setSelectedPhotoPreview(null);
+              }
+            } catch (err) {
+              console.error('Preview upload failed', err);
+            } finally {
+              setIsUploadingPreview(false);
+            }
+          }
+        }}
+      />
       {/* Delete Collection Confirmation Modal */}
       {collectionToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
