@@ -345,6 +345,26 @@ ${JSON.stringify(personnel, null, 2)}
     }
   });
 
+  // API Route: Open generator-surat-three with encoded payload (debtor + personnel)
+  app.post('/api/surat/open-generator', async (req, res) => {
+    try {
+      const { skNumber, skId, debtor, personnel, driveDocumentUrl } = req.body || {};
+      if (!debtor || !personnel) {
+        return res.status(400).json({ success: false, error: 'Missing debtor or personnel data in request body' });
+      }
+
+      const generatorBase = 'https://generator-surat-three.vercel.app';
+      const payload = { skNumber, skId, debtor, personnel, driveDocumentUrl };
+      const encoded = Buffer.from(JSON.stringify(payload)).toString('base64');
+      const generatorUrl = `${generatorBase}/?payload=${encodeURIComponent(encoded)}`;
+
+      return res.json({ success: true, url: generatorUrl });
+    } catch (err: any) {
+      console.error('Open generator Error:', err?.message || err);
+      res.status(500).json({ success: false, error: err?.message || 'Failed creating generator link' });
+    }
+  });
+
   // Serve Vite in development / production static build
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

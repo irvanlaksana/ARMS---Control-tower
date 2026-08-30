@@ -159,7 +159,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
         driveDocumentUrl: driveDocumentUrl || null,
       };
 
-      const resp = await fetch('/api/surat/create-issue', {
+      const resp = await fetch('/api/surat/open-generator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -167,9 +167,15 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
 
       const j = await resp.json();
       if (!resp.ok) {
-        setGeneratorError(j?.error || 'Failed creating issue on generator repo');
+        setGeneratorError(j?.error || 'Failed creating generator link');
       } else {
-        setGeneratorIssueUrl(j.issueUrl || null);
+        // j.url contains the generator app link with encoded payload
+        setGeneratorIssueUrl(j.url || null);
+        try {
+          if (j.url) window.open(j.url, '_blank');
+        } catch (err) {
+          // ignore popup blocker
+        }
       }
     } catch (err: any) {
       console.error('Sync to generator repo failed', err);
@@ -901,11 +907,11 @@ MASA BERLAKU: ${todayStr} s/d ${endDateStr}`;
 
               <div className="flex items-center gap-2">
                 <a
-                  href="https://github.com/irvanlaksana/generator-surat-"
+                  href="https://generator-surat-three.vercel.app"
                   target="_blank"
                   rel="noreferrer"
                   className="p-1.5 text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition flex items-center gap-2"
-                  title="Open generator-surat- repository"
+                  title="Open Generator Surat (generator-surat-three.vercel.app)"
                 >
                   <ExternalLink className="w-4 h-4" />
                   <span className="text-xs hidden sm:inline">Generator</span>
@@ -915,7 +921,7 @@ MASA BERLAKU: ${todayStr} s/d ${endDateStr}`;
                   type="button"
                   onClick={() => { setShowGeneratorPopup(true); setGeneratorIssueUrl(null); setGeneratorError(null); }}
                   className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white flex items-center gap-2"
-                  title="Buat surat di generator-surat- (sync debtor & personnel)"
+                  title="Buat surat di Generator (sinkron data debitur & penerima tugas)"
                 >
                   <FileText className="w-4 h-4" />
                   Buat Surat
@@ -1446,7 +1452,7 @@ MASA BERLAKU: ${todayStr} s/d ${endDateStr}`;
                     type="button"
                     onClick={() => { setShowGeneratorPopup(true); setGeneratorIssueUrl(null); setGeneratorError(null); }}
                     className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition flex items-center gap-2"
-                    title="Syncronize to generator-surat- repo"
+                    title="Buat di Generator (sinkron data debitur & penerima tugas)"
                   >
                     <ExternalLink className="w-4 h-4" />
                     Buat di Generator
@@ -1497,7 +1503,7 @@ MASA BERLAKU: ${todayStr} s/d ${endDateStr}`;
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-white font-bold text-sm">Buat Surat di Generator</h3>
-                <p className="text-xs text-slate-400">Sinkronisasi data debitur dan petugas ke <a href="https://github.com/irvanlaksana/generator-surat-" target="_blank" rel="noreferrer" className="text-indigo-400 underline">generator-surat-</a></p>
+                <p className="text-xs text-slate-400">Sinkronisasi data debitur dan penerima tugas ke <a href="https://generator-surat-three.vercel.app" target="_blank" rel="noreferrer" className="text-indigo-400 underline">generator-surat-three.vercel.app</a></p>
               </div>
               <button onClick={() => setShowGeneratorPopup(false)} className="text-slate-400 hover:text-white"><X className="w-4 h-4" /></button>
             </div>
@@ -1516,7 +1522,7 @@ MASA BERLAKU: ${todayStr} s/d ${endDateStr}`;
             <div className="mt-4 flex items-center justify-between">
               <div className="text-xs text-slate-400">
                 {generatorError && <div className="text-rose-400">{generatorError}</div>}
-                {generatorIssueUrl && <a href={generatorIssueUrl} target="_blank" rel="noreferrer" className="text-indigo-300 underline">Lihat issue di GitHub</a>}
+                {generatorIssueUrl && <a href={generatorIssueUrl} target="_blank" rel="noreferrer" className="text-indigo-300 underline">Buka Generator Surat</a>}
               </div>
               <div className="flex items-center gap-2">
                 <button onClick={() => setShowGeneratorPopup(false)} className="px-3 py-1.5 bg-slate-800 text-slate-300 rounded">Tutup</button>
