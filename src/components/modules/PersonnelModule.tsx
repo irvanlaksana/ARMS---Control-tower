@@ -679,8 +679,8 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
 
       {/* Lightbox KTP Modal */}
       {previewKtpModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-lg p-6 space-y-4 shadow-2xl relative">
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-lg p-5 sm:p-6 space-y-4 shadow-2xl relative max-h-[85vh] overflow-y-auto my-auto">
             <button
               onClick={() => setPreviewKtpModal(null)}
               className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg bg-slate-800"
@@ -710,13 +710,13 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
 
             <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs space-y-1 font-mono text-slate-300">
               <div><span className="text-slate-500">Google Drive ID:</span> {previewKtpModal.ktpDriveFileId || defaultDriveFolderId}</div>
-              <div><span className="text-slate-500">Folder Path:</span> /ARMS_DRIVE/KTP_DATABASE/{previewKtpModal.type}/</div>
+              <div><span className="text-slate-500">Folder Path:</span> /PT_MJ_INDONESIA/DATABASE_KARYAWAN/{previewKtpModal.fullName.toUpperCase().replace(/\s+/g, '_')}/</div>
             </div>
 
             <div className="flex flex-wrap justify-between items-center gap-2 pt-2">
               <div className="flex items-center gap-2">
                 <a
-                  href={previewKtpModal.ktpDriveFolderUrl || defaultDriveFolderLink}
+                  href={previewKtpModal.ktpDriveFolderUrl || previewKtpModal.gDriveFolderUrl || defaultDriveFolderLink}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition"
@@ -750,10 +750,10 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
 
       {/* Add / Edit Personnel Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
           <form
             onSubmit={handleSavePersonnel}
-            className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-2xl p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto"
+            className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-2xl p-5 sm:p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto my-auto"
           >
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">

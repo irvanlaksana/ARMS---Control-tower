@@ -235,8 +235,8 @@ export const ContractsModule: React.FC<ContractsModuleProps> = ({ store, current
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <form onSubmit={handleSaveContract} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <form onSubmit={handleSaveContract} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-lg p-5 sm:p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto my-auto">
             <h3 className="font-bold text-white text-base">
               {isEditing ? 'Edit MoU Master Contract' : 'Draft MoU Master Contract'}
             </h3>

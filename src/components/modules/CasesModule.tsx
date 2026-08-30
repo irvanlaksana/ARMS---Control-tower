@@ -572,8 +572,8 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
 
       {/* Add Recovery Case Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <form onSubmit={handleCreateCase} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-2xl p-6 space-y-4 shadow-2xl my-8">
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <form onSubmit={handleCreateCase} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-2xl p-5 sm:p-6 space-y-4 shadow-2xl my-auto max-h-[85vh] overflow-y-auto">
             <div className="border-b border-slate-800 pb-3">
               <h3 className="font-bold text-white text-base">
                 {isEditing ? 'Edit Recovery Case' : 'Register New Recovery Case'}

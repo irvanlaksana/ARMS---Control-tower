@@ -1,10 +1,15 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
-import { User, LawyerNotice, ClientType } from '../../types/arms';
+import { User, LawyerNotice } from '../../types/arms';
 import { 
-  Scale, Plus, FileText, CheckCircle2, Clock, Send, ShieldAlert, Eye, 
-  Copy, Check, Printer, Edit3, Building2, UserCheck, Search, Filter, Edit2, Trash2 
+  Scale, Plus, FileText, CheckCircle2, Send, ShieldAlert, 
+  Copy, Check, Building2, UserCheck, Search, Edit2, Trash2, 
+  HardDrive, ExternalLink, Link2, X, AlertCircle, FolderOpen, Eye
 } from 'lucide-react';
+import { GoogleDriveFolderPicker } from '../common/GoogleDriveFolderPicker';
+import { QuickGDriveModal } from '../common/QuickGDriveModal';
+import { LetterPreviewModal, LetterPreviewData } from '../common/LetterPreviewModal';
+import { ROOT_GDRIVE_URL } from '../../data/initialData';
 
 interface LawyerModuleProps {
   store: ARMSStore;
@@ -20,82 +25,30 @@ export const LawyerModule: React.FC<LawyerModuleProps> = ({
   const [showAddModal, setShowAddModal] = useState(false);
   const [viewNotice, setViewNotice] = useState<LawyerNotice | null>(null);
   const [copied, setCopied] = useState(false);
-  const [noticeViewMode, setNoticeViewMode] = useState<'edit' | 'f4_preview'>('edit');
+  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   const [clientFilter, setClientFilter] = useState<'ALL' | 'MULTIFINANCE' | 'PERORANGAN'>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
-  const printNoticeRef = useRef<HTMLDivElement>(null);
 
-  const handlePrintNotice = () => {
-    if (printNoticeRef.current) {
-      const printContent = printNoticeRef.current.innerHTML;
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'fixed';
-      iframe.style.right = '0';
-      iframe.style.bottom = '0';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = '0';
-      document.body.appendChild(iframe);
+  // Preview modal state
+  const [previewData, setPreviewData] = useState<LetterPreviewData | null>(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
-      const doc = iframe.contentWindow?.document;
-      if (doc) {
-        doc.open();
-        doc.write(`
-          <html>
-            <head>
-              <title>Surat Somasi & Dokumen Hukum - Kantor Advokat</title>
-              <style>
-                @page {
-                  size: 215mm 330mm;
-                  margin: 12mm 15mm 15mm 15mm;
-                }
-                body {
-                  font-family: "Times New Roman", Times, Georgia, serif;
-                  font-size: 11pt;
-                  line-height: 1.45;
-                  color: black;
-                  background: white;
-                  margin: 0;
-                  padding: 8mm 12mm;
-                  width: 215mm;
-                  box-sizing: border-box;
-                }
-                h1, h2, h3, h4, p { margin: 0; padding: 0; }
-                .text-center { text-align: center; }
-                .text-justify { text-align: justify; }
-                .font-bold { font-weight: bold; }
-                .underline { text-decoration: underline; }
-                .uppercase { text-transform: uppercase; }
-                .flex { display: flex; }
-                .items-center { align-items: center; }
-                .justify-between { justify-content: space-between; }
-                .gap-5 { gap: 1.25rem; }
-                .w-full { width: 100%; }
-                .whitespace-pre-wrap { white-space: pre-wrap; }
-                .text-slate-950 { color: #020617; }
-                .text-slate-900 { color: #0f172a; }
-                .text-sm { font-size: 0.875rem; }
-                .text-xs { font-size: 0.75rem; }
-                .text-xl { font-size: 1.25rem; }
-                .font-black { font-weight: 900; }
-                .keep-together { page-break-inside: avoid; break-inside: avoid; }
-              </style>
-            </head>
-            <body>
-              ${printContent}
-            </body>
-          </html>
-        `);
-        doc.close();
-
-        iframe.contentWindow?.focus();
-        setTimeout(() => {
-          iframe.contentWindow?.print();
-          document.body.removeChild(iframe);
-        }, 500);
-      }
-    }
-  };
+  // Quick GDrive Modal for Somasi
+  const [quickDriveModal, setQuickDriveModal] = useState<{
+    isOpen: boolean;
+    noticeId: string;
+    noticeNo: string;
+    debtorName: string;
+    url: string;
+    folderId?: string;
+  }>({
+    isOpen: false,
+    noticeId: '',
+    noticeNo: '',
+    debtorName: '',
+    url: '',
+    folderId: '',
+  });
 
   // Active cases
   const activeCases = store.cases.filter(
@@ -109,6 +62,9 @@ export const LawyerModule: React.FC<LawyerModuleProps> = ({
   const [noticeType, setNoticeType] = useState<LawyerNotice['noticeType']>('SOMASI_1');
   const [lawyerFirmName, setLawyerFirmName] = useState('KANTOR ADVOKAT & KONSULTAN HUKUM WIJAYA & REKAN (Mitra Hukum)');
   const [lawyerName, setLawyerName] = useState('Dr. Hendra Wijaya, S.H., M.H. & Tim Advokat');
+  const [driveDocumentUrl, setDriveDocumentUrl] = useState('');
+  const [driveFolderId, setDriveFolderId] = useState('');
+  const [driveFolderUrl, setDriveFolderUrl] = useState('');
   const [notes, setNotes] = useState('Debitur menunggak pembayaran dan belum memberikan respon kooperatif.');
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -126,6 +82,9 @@ export const LawyerModule: React.FC<LawyerModuleProps> = ({
       setNoticeType(notice.noticeType);
       setLawyerFirmName(notice.lawyerFirmName || 'KANTOR ADVOKAT & KONSULTAN HUKUM WIJAYA & REKAN (Mitra Hukum)');
       setLawyerName(notice.lawyerName || 'Dr. Hendra Wijaya, S.H., M.H. & Tim Advokat');
+      setDriveDocumentUrl(notice.driveDocumentUrl || '');
+      setDriveFolderId(notice.driveFolderId || '');
+      setDriveFolderUrl(notice.driveFolderUrl || '');
       setNotes(notice.notes || '');
     } else {
       setIsEditing(false);
@@ -134,13 +93,16 @@ export const LawyerModule: React.FC<LawyerModuleProps> = ({
       setNoticeType('SOMASI_1');
       setLawyerFirmName('KANTOR ADVOKAT & KONSULTAN HUKUM WIJAYA & REKAN (Mitra Hukum)');
       setLawyerName('Dr. Hendra Wijaya, S.H., M.H. & Tim Advokat');
+      setDriveDocumentUrl('');
+      setDriveFolderId('');
+      setDriveFolderUrl('');
       setNotes('Debitur menunggak pembayaran dan belum memberikan respon kooperatif.');
     }
     setShowAddModal(true);
   };
 
   const handleDeleteNotice = (id: string, noticeNo: string) => {
-    if (!window.confirm(`Are you sure you want to delete Notice "${noticeNo}"?`)) return;
+    if (!window.confirm(`Yakin ingin menghapus dokumen somasi "${noticeNo}"?`)) return;
 
     const audit = createAuditEntry(
       currentUser.username,
@@ -198,73 +160,78 @@ Alamat: ${debtorAddr || 'Alamat Domisili Sesuai Dokumen Kesepakatan'}
 Perihal: ${typeTitle} — Atas Surat Pengakuan Hutang (SPH) / Dokumen Perjanjian No. ${contractNo}
 
 Dengan hormat,
-Kami yang bertanda tangan di bawah ini, ${lawyer || 'Kuasa Hukum & Tim Advokat'}, dari ${firm} selaku Advokat & Konsultan Hukum bertindak untuk dan atas nama serta mewakili kepentingan hukum Klien kami:
 
-Nama Kreditur : ${clientName} (Pemberi Kuasa / Pemilik Sah Hak Tagih)
+Kami yang bertanda tangan di bawah ini, para Advokat dan Konsultan Hukum pada ${firm || 'KANTOR ADVOKAT & KONSULTAN HUKUM MITRA'}, bertindak untuk dan atas nama Klien kami:
+Bpk/Ibu ${clientName} (selaku Kreditur / Pemilik Piutang Sah).
 
-Berdasarkan Surat Kuasa Khusus serta dokumen bukti transaksi dan Surat Pengakuan Hutang (SPH) No. ${contractNo}, dengan ini kami sampaikan bahwa Saudara terdaftar memiliki kewajiban pinjaman/piutang yang telah jatuh tempo dengan sisa pokok tertunggak sebesar ${formattedAmount}.
+Berdasarkan data dan dokumen yang kami terima, Saudara/i memiliki kewajiban pembayaran yang telah jatuh tempo dengan rincian:
+1. Dasar Kesepakatan : Surat Pengakuan Hutang (SPH) / Perjanjian No. ${contractNo}
+2. Pokok Piutang Tertunggak : ${formattedAmount}
+3. Status : Wanprestasi / Cidera Janji atas batas waktu pembayaran yang telah disepakati bersama.
 
-Sehubungan dengan kewajiban tersebut yang hingga saat ini belum diselesaikan dengan baik, melalui Surat Somasi/Peringatan Hukum Resmi ini kami menegaskan hal-hal sebagai berikut:
+Melalui Surat ini, kami memberikan PERINGATAN HUKUM (SOMASI) agar Saudara/i segera menyelesaikan kewajiban tersebut dalam waktu selambat-lambatnya 3 (tiga) hari kerja sejak surat ini diterima.
 
-1. Saudara telah lalai dan cidera janji (wanprestasi) sebagaimana diatur dalam Pasal 1243 dan Pasal 1338 KUHPerdata atas kesepakatan pengembalian pinjaman yang telah jatuh tempo.
-2. Kami memberikan kesempatan terakhir bagi Saudara untuk segera melunasi kewajiban tersebut atau hadir bermusyawarah menyelesaikan komitmen pembayaran dalam waktu paling lambat 3 (tiga) hari kerja sejak surat ini diterima.
-3. Apabila dalam batas waktu yang ditentukan Saudara tetap tidak beritikad baik atau mengabaikan peringatan ini, maka Klien kami melalui Kuasa Hukum akan segera mengambil tindakan hukum formal:
-   a. Mengajukan Gugatan Sederhana (Small Claim Court) / Gugatan Perdata Wanprestasi di Pengadilan Negeri; serta
-   b. Melakukan proses pelaporan hukum atas dugaan tindak pidana Penipuan dan/atau Penggelapan sesuai Pasal 378 dan Pasal 372 Kitab Undang-Undang Hukum Pidana (KUHP) ke Kepolisian Negara Republik Indonesia.
+Apabila Saudara/i tetap tidak mengindahkan somasi ini, kami akan mengambil langkah hukum yang tegas, baik melalui:
+1. Gugatan Perdata Wanprestasi / Gugatan Sederhana ke Pengadilan Negeri setempat;
+2. Pelaporan Pidana atas dugaan Tindak Pidana Penipuan dan/atau Penggelapan (Pasal 378 / 372 KUHP) apabila ditemukan itikad buruk;
+3. Permohonan Sita Jaminan (Conservatoir Beslag) atas aset harta kekayaan Saudara/i.
 
-Demikian Surat Somasi Hukum ini kami sampaikan agar menjadi perhatian serius dan segera ditindaklanjuti dengan itikad baik demi menghindari proses hukum perdata maupun pidana lebih lanjut.
+Demikian somasi ini kami sampaikan agar menjadi perhatian serius dan diselesaikan dengan itikad baik.
 
-Hormat Kami,
-Kuasa Hukum Klien Perorangan
-${firm}
+Hormat kami,
+Kuasa Hukum / Tim Advokat
 
-
-(${lawyer || 'Tim Advokat & Legal Counsel'})`;
+${lawyer || 'Dr. Hendra Wijaya, S.H., M.H.'}
+Advokat & Konsultan Hukum`;
     }
 
     // MULTIFINANCE LEGAL LETTER
     return `${typeTitle}
-Nomor: ${type}/LEGAL-ADV/${new Date().getFullYear()}/${(store.lawyerNotices?.length || 0) + 1}
+Nomor: ${type}/LEGAL-MJI/${new Date().getFullYear()}/${(store.lawyerNotices?.length || 0) + 1}
 Tanggal: ${todayStr}
 
 Kepada Yth.
-Bpk/Ibu ${debtorName}
-Alamat: ${debtorAddr || 'Alamat Sesuai Kontrak Perjanjian'}
+Debitur / Konsumen: ${debtorName}
+Alamat: ${debtorAddr || 'Sesuai Kontrak Pembiayaan'}
 
-Perihal: ${typeTitle} — Atas Perjanjian Pembiayaan Konsumen No. ${contractNo}
+Perihal: ${typeTitle} — Perjanjian Pembiayaan No. Kontrak: ${contractNo}
 
 Dengan hormat,
-Kami yang bertanda tangan di bawah ini, ${lawyer || 'Kuasa Hukum'}, dari ${firm} selaku Advokat & Konsultan Hukum (Kuasa Hukum Mitra) bertindak untuk dan atas nama Klien kami, ${clientName}.
 
-Berdasarkan dokumen operasional dan catatan keuangan Klien kami, Saudara terdaftar masih memiliki sisa kewajiban penunggakan fasilitas pembiayaan/piutang dengan jumlah tunggakan pokok sebesar ${formattedAmount}.
+Kami yang bertanda tangan di bawah ini, Tim Advokat & Kuasa Hukum mewakili PT MITRAJASA SATRIA INDONESIA yang bertindak berdasarkan Surat Kuasa Khusus dari Kreditur (${clientName}):
 
-Sehubungan dengan hal tersebut di atas, melalui Surat Peringatan Hukum ini kami menyampaikan hal-hal sebagai berikut:
-1. Saudara telah cidera janji (wanprestasi) atas kewajiban pembayaran yang telah disepakati dalam Kontrak Perjanjian Pembiayaan No. ${contractNo}.
-2. Kami memperingatkan dan meminta Saudara untuk segera melakukan pelunasan atau hadir beritikad baik menyelesaikan kewajiban dalam waktu paling lambat 3 (tiga) hari kerja sejak surat ini diterima.
-3. Apabila Saudara mengabaikan peringatan hukum ini, maka Klien kami melalui Kuasa Hukum Advokat akan mengambil tindakan hukum tegas sesuai peraturan perundang-undangan Republik Indonesia, termasuk pelaporan dugaan tindak pidana Penggelapan Objek Jaminan Fidusia (UU No. 42 Tahun 1999) serta Pendaftaran Gugatan Perdata di Pengadilan Negeri.
+Bahwa Saudara/i tercatat memiliki fasilitas pembiayaan konsumen pada ${clientName} dengan No. Kontrak ${contractNo}, dan saat ini telah menunggak kewajiban pembayaran pokok sebesar ${formattedAmount}.
 
-Demikian Surat ini disampaikan untuk menjadi perhatian serius dan dilaksanakan sebagaimana mestinya.
+Berdasarkan Undang-Undang No. 42 Tahun 1999 tentang Jaminan Fidusia dan klausul Perjanjian Pembiayaan:
+1. Objek jaminan fidusia telah dibebani hak jaminan kebendaan;
+2. Setiap pengalihan, penggadaian, atau penyembunyian unit kendaraan tanpa persetujuan tertulis merupakan tindak pidana berdasarkan Pasal 36 UU Jaminan Fidusia No. 42/1999 dengan ancaman pidana penjara paling lama 2 (dua) tahun;
+3. Tindakan Saudara/i yang tidak melakukan pembayaran merupakan bentuk Wanprestasi murni.
 
-Hormat Kami,
-Kuasa Hukum & Advokat Mitra
-${firm}
+Melalui Surat ini, kami memberikan PERINGATAN HUKUM KERAS agar Saudara/i dalam waktu 3x24 Jam segera:
+- Melunasi seluruh total tunggakan kewajiban; ATAU
+- Menyerahkan secara sukarela unit jaminan fidusia kepada Tim Eksekusi PT Mitrajasa Satria Indonesia untuk dilakukan pengamanan.
 
+Apabila peringatan ini diabaikan, kami akan segera memproses laporan pidana dan/atau eksekusi paksa jaminan fidusia sesuai hukum yang berlaku.
 
-(${lawyer || 'Tim Advokat & Legal Counsel'})`;
+Hormat kami,
+Kuasa Hukum Eksekusi & Advokat
+
+${lawyer || 'Dr. Hendra Wijaya, S.H., M.H.'}
+${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
   };
 
   const handleCreateNotice = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCase) return;
 
-    const customer = store.customers.find((cu) => cu.id === selectedCase.customerId);
-    const debtorAddr = customer?.addressCurrent || customer?.addressKtp || 'Alamat Sesuai Kontrak';
+    const customer = (store.customers || []).find((c) => c.id === selectedCase.customerId);
+    const debtorAddr = customer?.addressCurrent || customer?.addressKtp || selectedCase.debtorAddress || '';
 
     const draftText = generateLetterDraft(
       selectedCase.debtorName,
       debtorAddr,
       selectedCase.clientName,
-      selectedCase.multifinanceContractNo,
+      selectedCase.multifinanceContractNo || selectedCase.contractId || '-',
       selectedCase.principalDebtOS,
       noticeType,
       lawyerFirmName,
@@ -272,15 +239,15 @@ ${firm}
       isPerorangan
     );
 
-    let noticeTypeLabel = 'Somasi 1';
+    let noticeTypeLabel = 'Somasi I';
     if (noticeType === 'SURAT_KLARIFIKASI') noticeTypeLabel = 'Surat Klarifikasi';
-    if (noticeType === 'SOMASI_2') noticeTypeLabel = 'Somasi 2';
+    if (noticeType === 'SOMASI_2') noticeTypeLabel = 'Somasi II';
     if (noticeType === 'SOMASI_TERAKHIR') noticeTypeLabel = 'Somasi Terakhir';
     if (noticeType === 'UNDANGAN_MEDIASI_HUKUM') noticeTypeLabel = 'Undangan Mediasi';
     if (noticeType === 'GUGATAN_SEDERHANA') noticeTypeLabel = 'Gugatan Sederhana';
 
     if (isEditing && editId) {
-      const updatedNotices = (store.lawyerNotices || []).map(n => {
+      const updatedNotices = (store.lawyerNotices || []).map((n) => {
         if (n.id === editId) {
           return {
             ...n,
@@ -293,15 +260,14 @@ ${firm}
             noticeType,
             lawyerFirmName,
             lawyerName,
+            driveDocumentUrl: driveDocumentUrl.trim() || undefined,
             principalDebtAmount: selectedCase.principalDebtOS,
-            letterContentDraft: draftText,
             notes,
           };
         }
         return n;
       });
 
-      // Update target case with lawyer notice indicator
       const updatedCases = store.cases.map((c) => {
         if (c.id === selectedCase.id) {
           return {
@@ -342,6 +308,9 @@ ${firm}
         requestedDate: new Date().toISOString().split('T')[0],
         lawyerFirmName,
         lawyerName,
+        driveDocumentUrl: driveDocumentUrl.trim() || undefined,
+        driveFolderId: driveFolderId || undefined,
+        driveFolderUrl: driveFolderUrl || undefined,
         principalDebtAmount: selectedCase.principalDebtOS,
         status: 'SENT_TO_DEBTOR',
         letterContentDraft: draftText,
@@ -350,7 +319,6 @@ ${firm}
         createdAt: new Date().toISOString(),
       };
 
-      // Update target case with lawyer notice indicator
       const updatedCases = store.cases.map((c) => {
         if (c.id === selectedCase.id) {
           return {
@@ -383,119 +351,183 @@ ${firm}
     setShowAddModal(false);
   };
 
-  const handleUpdateNoticeStatus = (noticeId: string, newStatus: LawyerNotice['status']) => {
-    const updatedNotices = (store.lawyerNotices || []).map((n) => {
-      if (n.id === noticeId) {
-        return { ...n, status: newStatus };
-      }
-      return n;
-    });
+  const handleUpdateNoticeContent = (id: string, newContent: string) => {
+    const updated = (store.lawyerNotices || []).map((n) =>
+      n.id === id ? { ...n, letterContentDraft: newContent } : n
+    );
+    onUpdateStore({ ...store, lawyerNotices: updated });
+    if (viewNotice && viewNotice.id === id) {
+      setViewNotice({ ...viewNotice, letterContentDraft: newContent });
+    }
+  };
 
-    onUpdateStore({
-      ...store,
-      lawyerNotices: updatedNotices,
-    });
-
-    if (viewNotice && viewNotice.id === noticeId) {
+  const handleUpdateNoticeStatus = (id: string, newStatus: LawyerNotice['status']) => {
+    const updated = (store.lawyerNotices || []).map((n) =>
+      n.id === id ? { ...n, status: newStatus } : n
+    );
+    onUpdateStore({ ...store, lawyerNotices: updated });
+    if (viewNotice && viewNotice.id === id) {
       setViewNotice({ ...viewNotice, status: newStatus });
     }
   };
 
-  const handleUpdateNoticeContent = (noticeId: string, newContent: string) => {
-    const updatedNotices = (store.lawyerNotices || []).map((n) => {
-      if (n.id === noticeId) {
-        return { ...n, letterContentDraft: newContent };
-      }
-      return n;
-    });
+  const handleUpdateNoticeDriveUrl = (id: string, url: string, folderId?: string, folderUrl?: string) => {
+    const updated = (store.lawyerNotices || []).map((n) =>
+      n.id === id ? {
+        ...n,
+        driveDocumentUrl: url.trim() || undefined,
+        driveFolderId: folderId || n.driveFolderId,
+        driveFolderUrl: folderUrl || n.driveFolderUrl,
+      } : n
+    );
+    onUpdateStore({ ...store, lawyerNotices: updated });
+    if (viewNotice && viewNotice.id === id) {
+      setViewNotice({
+        ...viewNotice,
+        driveDocumentUrl: url.trim() || undefined,
+        driveFolderId: folderId || viewNotice.driveFolderId,
+        driveFolderUrl: folderUrl || viewNotice.driveFolderUrl,
+      });
+    }
+  };
+
+  const handleSaveQuickDriveUrl = (savedUrl: string, savedFolderId?: string, savedFolderUrl?: string) => {
+    if (!quickDriveModal.noticeId) return;
+
+    const updated = (store.lawyerNotices || []).map((n) =>
+      n.id === quickDriveModal.noticeId ? {
+        ...n,
+        driveDocumentUrl: savedUrl.trim() || undefined,
+        driveFolderId: savedFolderId || n.driveFolderId,
+        driveFolderUrl: savedFolderUrl || n.driveFolderUrl,
+      } : n
+    );
+
+    const audit = createAuditEntry(
+      currentUser.username,
+      currentUser.role,
+      'UPDATE',
+      'Lawyer_Notices',
+      quickDriveModal.noticeId,
+      `Updated Link Google Drive for Lawyer Notice ${quickDriveModal.noticeNo}`
+    );
 
     onUpdateStore({
       ...store,
-      lawyerNotices: updatedNotices,
+      lawyerNotices: updated,
+      auditLogs: [audit, ...(store.auditLogs || [])],
     });
 
-    if (viewNotice && viewNotice.id === noticeId) {
-      setViewNotice({ ...viewNotice, letterContentDraft: newContent });
-    }
+    setQuickDriveModal({
+      isOpen: false,
+      noticeId: '',
+      noticeNo: '',
+      debtorName: '',
+      url: '',
+      folderId: '',
+    });
   };
 
   const handleCopyText = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), 2500);
   };
+
+  const noticesList = store.lawyerNotices || [];
+
+  const filteredNotices = noticesList.filter((n) => {
+    const parentCase = store.cases.find((c) => c.id === n.caseId || c.caseNo === n.caseNo);
+    const isPer = parentCase?.clientType === 'PERORANGAN';
+
+    if (clientFilter === 'MULTIFINANCE' && isPer) return false;
+    if (clientFilter === 'PERORANGAN' && !isPer) return false;
+
+    if (searchTerm) {
+      const q = searchTerm.toLowerCase();
+      const match = `${n.noticeNo} ${n.debtorName} ${n.caseNo} ${n.clientName} ${n.lawyerFirmName} ${n.lawyerName || ''} ${n.driveDocumentUrl || ''}`.toLowerCase();
+      if (!match.includes(q)) return false;
+    }
+    return true;
+  });
 
   const getNoticeBadge = (type: LawyerNotice['noticeType']) => {
     switch (type) {
       case 'SURAT_KLARIFIKASI':
-        return <span className="bg-blue-950 text-blue-300 text-[10px] px-2 py-0.5 rounded border border-blue-800 font-semibold">Surat Klarifikasi</span>;
+        return <span className="bg-sky-950 text-sky-300 border border-sky-800 px-2 py-0.5 rounded text-[10px] font-bold">1. Klarifikasi</span>;
       case 'SOMASI_1':
-        return <span className="bg-amber-950 text-amber-300 text-[10px] px-2 py-0.5 rounded border border-amber-800 font-semibold">Somasi 1</span>;
+        return <span className="bg-amber-950 text-amber-300 border border-amber-800 px-2 py-0.5 rounded text-[10px] font-bold">2. Somasi I</span>;
       case 'SOMASI_2':
-        return <span className="bg-orange-950 text-orange-300 text-[10px] px-2 py-0.5 rounded border border-orange-800 font-semibold">Somasi 2</span>;
+        return <span className="bg-orange-950 text-orange-300 border border-orange-800 px-2 py-0.5 rounded text-[10px] font-bold">3. Somasi II</span>;
       case 'SOMASI_TERAKHIR':
-        return <span className="bg-red-950 text-red-300 text-[10px] px-2 py-0.5 rounded border border-red-800 font-semibold">Somasi Terakhir</span>;
+        return <span className="bg-red-950 text-red-300 border border-red-800 px-2 py-0.5 rounded text-[10px] font-bold">4. Somasi Terakhir</span>;
       case 'UNDANGAN_MEDIASI_HUKUM':
-        return <span className="bg-purple-950 text-purple-300 text-[10px] px-2 py-0.5 rounded border border-purple-800 font-semibold">Mediasi Hukum</span>;
+        return <span className="bg-indigo-950 text-indigo-300 border border-indigo-800 px-2 py-0.5 rounded text-[10px] font-bold">5. Mediasi Hukum</span>;
       case 'GUGATAN_SEDERHANA':
-        return <span className="bg-rose-950 text-rose-300 text-[10px] px-2 py-0.5 rounded border border-rose-800 font-semibold">Gugatan Sederhana</span>;
+        return <span className="bg-purple-950 text-purple-300 border border-purple-800 px-2 py-0.5 rounded text-[10px] font-bold">6. Gugatan Sederhana PN</span>;
+      default:
+        return <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded text-[10px]">{type}</span>;
     }
   };
 
   const getStatusBadge = (status: LawyerNotice['status']) => {
     switch (status) {
       case 'DRAFT_PROPOSED':
-        return <span className="bg-slate-800 text-slate-300 text-[10px] px-2 py-0.5 rounded border border-slate-700">Draft Pengajuan</span>;
+        return <span className="bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded text-[10px]">Draft Pengajuan</span>;
       case 'SUBMITTED_TO_LAWYER':
-        return <span className="bg-indigo-950 text-indigo-300 text-[10px] px-2 py-0.5 rounded border border-indigo-800">Proses Review Advokat</span>;
+        return <span className="bg-blue-950 text-blue-300 border border-blue-800 px-2 py-0.5 rounded text-[10px]">Review Advokat</span>;
       case 'APPROVED_BY_LAWYER':
-        return <span className="bg-emerald-950 text-emerald-300 text-[10px] px-2 py-0.5 rounded border border-emerald-800">Disetujui Lawyer</span>;
+        return <span className="bg-indigo-950 text-indigo-300 border border-indigo-800 px-2 py-0.5 rounded text-[10px]">Disetujui Lawyer</span>;
       case 'SENT_TO_DEBTOR':
-        return <span className="bg-purple-950 text-purple-300 text-[10px] px-2 py-0.5 rounded border border-purple-800 font-semibold">Terkirim ke Nasabah</span>;
+        return <span className="bg-amber-950 text-amber-300 border border-amber-800 px-2 py-0.5 rounded text-[10px]">Terkirim ke Nasabah</span>;
       case 'COMPLETED':
-        return <span className="bg-emerald-900 text-emerald-200 text-[10px] px-2 py-0.5 rounded border border-emerald-700 font-semibold">Selesai / Respons</span>;
+        return <span className="bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded text-[10px]">Selesai / Respons</span>;
+      default:
+        return <span className="bg-slate-800 text-slate-400 px-2 py-0.5 rounded text-[10px]">{status}</span>;
     }
   };
 
-  const noticesList = store.lawyerNotices || [];
-
-  // Filter notices
-  const filteredNotices = noticesList.filter((n) => {
-    const parentCase = store.cases.find((c) => c.id === n.caseId || c.caseNo === n.caseNo);
-    const cType = parentCase?.clientType || 'MULTIFINANCE';
-
-    if (clientFilter === 'MULTIFINANCE' && cType !== 'MULTIFINANCE') return false;
-    if (clientFilter === 'PERORANGAN' && cType !== 'PERORANGAN') return false;
-
-    if (searchTerm) {
-      const match = `${n.noticeNo} ${n.caseNo} ${n.debtorName} ${n.clientName} ${n.lawyerFirmName} ${n.lawyerName}`.toLowerCase();
-      if (!match.includes(searchTerm.toLowerCase())) return false;
-    }
-    return true;
-  });
-
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
+      {/* Header Banner */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Scale className="w-5 h-5 text-indigo-400" />
-            <h2 className="text-xl font-bold text-white">Menu Lawyer & Tindakan Hukum (Legal Notice & Somasi)</h2>
+            <h2 className="text-xl font-bold text-white">
+              Surat Somasi & Tindakan Hukum (Lawyer Notice)
+            </h2>
+            <span className="bg-purple-950 text-purple-300 text-[10px] px-2 py-0.5 rounded border border-purple-800 font-semibold">
+              Litigasi & Somasi Formal
+            </span>
           </div>
           <p className="text-xs text-slate-400">
-            Layanan Pengajuan Surat Klarifikasi, Somasi 1, 2, Somasi Terakhir, dan Undangan Mediasi Hukum untuk Klien Multifinance & Klien Perorangan
+            Penerbitan surat somasi, eskalasi hukum berjenjang, dan manajemen arsip digital berkas perkara hukum
           </p>
         </div>
 
         {canEdit && (
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-md transition"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Tambah Servis / Surat Legal Lawyer</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <a
+              href={store.settings?.googleDriveFolderUrl || ROOT_GDRIVE_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-700 hover:border-indigo-500 text-xs font-semibold rounded-xl transition"
+              title="Buka Folder Google Drive Master ARMS"
+            >
+              <FolderOpen className="w-4 h-4 text-blue-400" />
+              <span>Buka GDrive Master</span>
+              <ExternalLink className="w-3 h-3 text-slate-400" />
+            </a>
+
+            <button
+              onClick={() => handleOpenModal()}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-xs font-semibold rounded-xl transition shadow-lg shadow-indigo-600/20 active:scale-95"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Buat Surat Somasi Baru</span>
+            </button>
+          </div>
         )}
       </div>
 
@@ -600,7 +632,7 @@ ${firm}
         <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
           <h3 className="font-bold text-white text-sm flex items-center gap-2">
             <Scale className="w-4 h-4 text-indigo-400" />
-            <span>Daftar Pengajuan & Surat Hukum Lawyer</span>
+            <span>Daftar Pengajuan & Surat Somasi Lawyer</span>
           </h3>
           <span className="text-xs text-slate-400">
             Format Somasi disesuaikan otomatis untuk Klien Multifinance & Perorangan
@@ -616,6 +648,7 @@ ${firm}
                 <th className="py-3 px-4">Kategori Klien</th>
                 <th className="py-3 px-4">Jenis Surat / Tindakan</th>
                 <th className="py-3 px-4">Kantor Hukum & Advokat</th>
+                <th className="py-3 px-4">Link Google Drive</th>
                 <th className="py-3 px-4 text-right">Tunggakan Pokok</th>
                 <th className="py-3 px-4 text-center">Status</th>
                 <th className="py-3 px-4 text-center">Aksi</th>
@@ -624,7 +657,7 @@ ${firm}
             <tbody className="divide-y divide-slate-800">
               {filteredNotices.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-slate-500 text-xs">
+                  <td colSpan={9} className="py-8 text-center text-slate-500 text-xs">
                     Belum ada pengajuan surat legal lawyer yang sesuai filter.
                   </td>
                 </tr>
@@ -632,6 +665,7 @@ ${firm}
                 filteredNotices.map((n) => {
                   const parentCase = store.cases.find((c) => c.id === n.caseId || c.caseNo === n.caseNo);
                   const isPer = parentCase?.clientType === 'PERORANGAN';
+                  const hasDriveUrl = !!n.driveDocumentUrl && n.driveDocumentUrl.trim().length > 0;
 
                   return (
                     <tr key={n.id} className="hover:bg-slate-800/40 transition">
@@ -668,6 +702,54 @@ ${firm}
                         <div className="text-[10px] text-slate-400">{n.lawyerName}</div>
                       </td>
 
+                      {/* Google Drive Link */}
+                      <td className="py-3.5 px-4">
+                        {hasDriveUrl ? (
+                          <div className="flex items-center gap-1.5">
+                            <a
+                              href={n.driveDocumentUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-200 border border-indigo-700/80 rounded-lg text-[11px] font-semibold transition group shadow-sm"
+                              title="Buka Dokumen di Google Drive"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5 text-indigo-400 group-hover:scale-110 transition-transform" />
+                              <span>Buka GDrive</span>
+                            </a>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(n.driveDocumentUrl || '');
+                                setCopiedUrl(n.id);
+                                setTimeout(() => setCopiedUrl(null), 2000);
+                              }}
+                              className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition"
+                              title="Salin Link Google Drive"
+                            >
+                              {copiedUrl === n.id ? (
+                                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                              ) : (
+                                <Copy className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setQuickDriveModal({
+                              isOpen: true,
+                              noticeId: n.id,
+                              noticeNo: n.noticeNo,
+                              debtorName: n.debtorName,
+                              url: '',
+                            })}
+                            className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-indigo-300 py-1 px-2 border border-dashed border-slate-700 hover:border-indigo-500 rounded-lg transition"
+                            title="Tautkan link berkas Google Drive"
+                          >
+                            <Plus className="w-3 h-3 text-indigo-400" />
+                            <span>+ Link GDrive</span>
+                          </button>
+                        )}
+                      </td>
+
                       <td className="py-3.5 px-4 text-right font-bold text-emerald-400">
                         Rp {n.principalDebtAmount.toLocaleString('id-ID')}
                       </td>
@@ -675,13 +757,32 @@ ${firm}
                       <td className="py-3.5 px-4 text-center">{getStatusBadge(n.status)}</td>
 
                       <td className="py-3.5 px-4 text-center">
-                        <div className="flex items-center justify-center gap-2">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => {
+                              setPreviewData({
+                                type: 'LAWYER_SOMASI',
+                                lawyerNotice: n,
+                                title: `Surat Somasi Advokat - ${n.noticeNo}`,
+                                driveUrl: n.driveDocumentUrl,
+                                folderUrl: n.driveFolderUrl,
+                              });
+                              setShowPreviewModal(true);
+                            }}
+                            className="inline-flex items-center gap-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-200 border border-indigo-800 px-2.5 py-1 rounded text-[11px] font-semibold transition shadow-sm"
+                            title="Pratinjau Format Somasi Resmi / Cetak"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-indigo-400" />
+                            <span>Preview</span>
+                          </button>
+
                           <button
                             onClick={() => setViewNotice(n)}
-                            className="inline-flex items-center gap-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-800 px-2.5 py-1 rounded text-[11px] font-semibold transition"
+                            className="inline-flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2.5 py-1 rounded text-[11px] font-semibold transition"
+                            title="Buka Form & Edit Draft"
                           >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span>Lihat Draft</span>
+                            <FileText className="w-3.5 h-3.5 text-indigo-400" />
+                            <span>Form</span>
                           </button>
                           {canEdit && (
                             <>
@@ -695,7 +796,7 @@ ${firm}
                               <button
                                 onClick={() => handleDeleteNotice(n.id, n.noticeNo)}
                                 className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-red-400 transition"
-                                title="Delete Notice"
+                                title="Hapus Notice"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -712,15 +813,31 @@ ${firm}
         </div>
       </div>
 
-      {/* Modal Add Legal Service / Notice */}
+      {/* QUICK GDRIVE MODAL (SOMASI) */}
+      <QuickGDriveModal
+        isOpen={quickDriveModal.isOpen}
+        onClose={() => setQuickDriveModal({ isOpen: false, noticeId: '', noticeNo: '', debtorName: '', url: '', folderId: '' })}
+        title="Tautkan Berkas Google Drive Somasi / Tindakan Legal"
+        documentNo={quickDriveModal.noticeNo}
+        subjectName={quickDriveModal.debtorName}
+        initialUrl={quickDriveModal.url}
+        initialFolderId={quickDriveModal.folderId}
+        category="LAWYER_SOMASI"
+        store={store}
+        currentUser={currentUser}
+        onUpdateStore={onUpdateStore}
+        onSave={handleSaveQuickDriveUrl}
+      />
+
+      {/* Modal Add / Edit Legal Service / Notice */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <form onSubmit={handleCreateNotice} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-xl p-6 space-y-4 shadow-2xl my-8">
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <form onSubmit={handleCreateNotice} className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl p-5 sm:p-6 space-y-4 shadow-2xl my-auto max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <Scale className="w-5 h-5 text-indigo-400" />
                 <h3 className="font-bold text-white text-base">
-                  {isEditing ? 'Edit Pengajuan Surat Legal / Lawyer' : 'Buat Pengajuan Surat Legal / Lawyer'}
+                  {isEditing ? 'Edit Form Pengajuan Somasi / Surat Legal' : 'Form Buat Pengajuan Somasi / Surat Legal'}
                 </h3>
               </div>
               <button
@@ -839,34 +956,41 @@ ${firm}
                   />
                 </div>
 
+                {/* Google Drive Folder & Document Link Picker */}
+                <div className="bg-slate-950/70 p-4 rounded-xl border border-slate-800/80 space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-bold text-white border-b border-slate-800 pb-2">
+                    <HardDrive className="w-4 h-4 text-indigo-400" />
+                    <span>Google Drive Integrasi Berkas Somasi & Legal</span>
+                  </div>
+                  <GoogleDriveFolderPicker
+                    store={store}
+                    currentUser={currentUser}
+                    onUpdateStore={onUpdateStore}
+                    defaultCategory="LAWYER_SOMASI"
+                    selectedFolderId={driveFolderId}
+                    documentUrl={driveDocumentUrl}
+                    onSelectFolder={(folder) => {
+                      setDriveFolderId(folder.id);
+                      setDriveFolderUrl(folder.url);
+                    }}
+                    onUpdateDocumentUrl={(url) => setDriveDocumentUrl(url)}
+                  />
+                </div>
+
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">
                     Catatan Khusus & Latar Belakang Wanprestasi
                   </label>
                   <textarea
-                    rows={3}
+                    rows={2}
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder={
-                      isPerorangan
-                        ? 'Catatan khusus penunggakan piutang perorangan, rincian pinjaman pribadi / komitmen cicilan...'
-                        : 'Catatan penunggakan multifinance, riwayat kunjungan lapangan, penolakan serah terima unit...'
-                    }
+                    placeholder="Catatan khusus penunggakan piutang..."
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                   />
                 </div>
 
-                <div className="p-3 bg-indigo-950/40 border border-indigo-900/60 rounded-lg text-[11px] text-indigo-300 space-y-1">
-                  <div className="font-bold flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5" />
-                    <span>Otomatisasi Sistem Control Tower:</span>
-                  </div>
-                  <p className="text-slate-300">
-                    Sistem akan otomatis menyesuaikan klausul hukum ({isPerorangan ? 'Hukum Perjanjian Perorangan Pasal 1365/1338 KUHPerdata & Pasal 378 KUHP' : 'UU Jaminan Fidusia No. 42 Tahun 1999'}) dan memberi label status **"Dikirim Surat Lawyer"** di seluruh modul Core Recovery.
-                  </p>
-                </div>
-
-                <div className="pt-2 flex items-center justify-end gap-3">
+                <div className="pt-2 flex items-center justify-end gap-3 border-t border-slate-800">
                   <button
                     type="button"
                     onClick={() => setShowAddModal(false)}
@@ -879,7 +1003,7 @@ ${firm}
                     className="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-lg flex items-center gap-1.5"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    <span>{isEditing ? 'Simpan Perubahan' : 'Generate & Kirim Pengajuan'}</span>
+                    <span>{isEditing ? 'Simpan Perubahan' : 'Generate & Simpan Somasi'}</span>
                   </button>
                 </div>
               </>
@@ -888,154 +1012,169 @@ ${firm}
         </div>
       )}
 
-      {/* View & Edit Notice Modal */}
+      {/* View & Edit Notice Modal (Clean Form / Draft Editor) */}
       {viewNotice && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-4xl p-6 space-y-4 shadow-2xl my-8">
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-3xl p-5 sm:p-6 space-y-4 shadow-2xl my-auto max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
                   <Scale className="w-5 h-5 text-indigo-400" />
-                  <h3 className="font-bold text-white text-base">Surat Resmi Legal / Lawyer</h3>
+                  <h3 className="font-bold text-white text-base">Form & Draft Surat Somasi Legal</h3>
                 </div>
                 <div className="text-xs text-slate-400">
                   {viewNotice.noticeNo} • Ref Kasus: {viewNotice.caseNo} • {viewNotice.clientName}
                 </div>
               </div>
 
-              {/* Toggle Mode & Close */}
-              <div className="flex items-center gap-2">
-                <div className="flex bg-slate-950 p-0.5 rounded-lg border border-slate-800 text-xs">
-                  <button
-                    onClick={() => setNoticeViewMode('edit')}
-                    className={`px-3 py-1 rounded-md font-medium transition flex items-center gap-1.5 ${
-                      noticeViewMode === 'edit'
-                        ? 'bg-indigo-600 text-white'
-                        : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                    <span>Edit Draft</span>
-                  </button>
-                  <button
-                    onClick={() => setNoticeViewMode('f4_preview')}
-                    className={`px-3 py-1 rounded-md font-medium transition flex items-center gap-1.5 ${
-                      noticeViewMode === 'f4_preview'
-                        ? 'bg-indigo-600 text-white'
-                        : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    <FileText className="w-3.5 h-3.5" />
-                    <span>Preview F4</span>
-                  </button>
-                </div>
-
-                <button
-                  onClick={() => setViewNotice(null)}
-                  className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
-                >
-                  ✕
-                </button>
-              </div>
+              <button
+                onClick={() => setViewNotice(null)}
+                className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition"
+              >
+                ✕
+              </button>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-950 rounded-lg border border-slate-800">
+            {/* Quick Status and GDrive Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-950 rounded-xl border border-slate-800 text-xs">
               <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-400">Status Surat:</span>
+                <span className="text-slate-400">Status Saat Ini:</span>
                 {getStatusBadge(viewNotice.status)}
               </div>
 
-              {canEdit && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-400">Ubah Status:</span>
-                  <select
-                    value={viewNotice.status}
-                    onChange={(e) => handleUpdateNoticeStatus(viewNotice.id, e.target.value as LawyerNotice['status'])}
-                    className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white"
+              <div className="flex items-center gap-3">
+                {canEdit && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-400">Ubah Status:</span>
+                    <select
+                      value={viewNotice.status}
+                      onChange={(e) => handleUpdateNoticeStatus(viewNotice.id, e.target.value as LawyerNotice['status'])}
+                      className="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white"
+                    >
+                      <option value="DRAFT_PROPOSED">Draft Pengajuan</option>
+                      <option value="SUBMITTED_TO_LAWYER">Proses Review Advokat</option>
+                      <option value="APPROVED_BY_LAWYER">Disetujui Lawyer</option>
+                      <option value="SENT_TO_DEBTOR">Terkirim ke Nasabah</option>
+                      <option value="COMPLETED">Selesai / Respons Debitur</option>
+                    </select>
+                  </div>
+                )}
+
+                {viewNotice.driveDocumentUrl && (
+                  <a
+                    href={viewNotice.driveDocumentUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-700 rounded-lg text-xs font-semibold transition"
                   >
-                    <option value="DRAFT_PROPOSED">Draft Pengajuan</option>
-                    <option value="SUBMITTED_TO_LAWYER">Proses Review Advokat</option>
-                    <option value="APPROVED_BY_LAWYER">Disetujui Lawyer</option>
-                    <option value="SENT_TO_DEBTOR">Terkirim ke Nasabah</option>
-                    <option value="COMPLETED">Selesai / Respons Debitur</option>
-                  </select>
-                </div>
-              )}
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Buka Dokumen GDrive</span>
+                  </a>
+                )}
+              </div>
             </div>
 
-            {noticeViewMode === 'edit' ? (
-              /* Editable Textarea */
-              <div className="space-y-2">
-                <p className="text-[11px] text-slate-400">Teks draft surat dapat diedit langsung sesuai kebutuhan pengacara / kasus:</p>
-                <textarea
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-5 font-mono text-xs text-slate-200 whitespace-pre-wrap leading-relaxed min-h-[22rem] border-l-4 border-l-indigo-500 focus:outline-none focus:border-indigo-500"
-                  value={viewNotice.letterContentDraft}
-                  onChange={(e) => handleUpdateNoticeContent(viewNotice.id, e.target.value)}
-                />
+            {/* Google Drive Folder & Document Link Picker inside View Notice */}
+            <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800 space-y-2">
+              <GoogleDriveFolderPicker
+                store={store}
+                currentUser={currentUser}
+                onUpdateStore={onUpdateStore}
+                defaultCategory="LAWYER_SOMASI"
+                selectedFolderId={viewNotice.driveFolderId}
+                documentUrl={viewNotice.driveDocumentUrl || ''}
+                onSelectFolder={(folder) => {
+                  handleUpdateNoticeDriveUrl(viewNotice.id, viewNotice.driveDocumentUrl || '', folder.id, folder.url);
+                }}
+                onUpdateDocumentUrl={(url) => {
+                  handleUpdateNoticeDriveUrl(viewNotice.id, url, viewNotice.driveFolderId, viewNotice.driveFolderUrl);
+                }}
+              />
+            </div>
+
+            {/* Editable Draft Textarea Form */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-slate-300">
+                  Teks Lengkap Draft Somasi / Surat Legal:
+                </label>
+                <span className="text-[11px] text-slate-500">
+                  Dapat diedit langsung sesuai instruksi penasihat hukum
+                </span>
               </div>
-            ) : (
-              /* Official F4 Preview Box (Mitra Advokat Legal Letterhead) */
-              <div className="max-h-[26rem] overflow-y-auto bg-slate-950/70 p-4 rounded-xl flex justify-center border border-slate-800">
-                <div
-                  ref={printNoticeRef}
-                  className="f4-page-preview rounded-lg p-8 space-y-4 text-[12px] leading-relaxed bg-white text-slate-900"
-                  style={{ fontFamily: '"Times New Roman", Times, Georgia, serif', width: '215mm' }}
-                >
-                  {/* Mitra Advokat Document Header */}
-                  <div className="border-b-2 border-slate-900 pb-3 mb-4 text-center keep-together">
-                    <h3 className="font-bold text-base uppercase tracking-wider text-slate-950">
-                      KANTOR ADVOKAT & KONSULTAN HUKUM
-                    </h3>
-                    <p className="font-bold text-xs uppercase tracking-wide text-indigo-950">
-                      {viewNotice.lawyerFirmName || 'Mitra Advokat & Legal Counsel'}
-                    </p>
-                    <p className="text-[10px] text-slate-600 italic">
-                      Advocates, Legal Counsel & Dispute Resolution
-                    </p>
-                    <div className="h-0.5 bg-slate-900 mt-2"></div>
-                    <div className="h-px bg-slate-500 mt-0.5"></div>
-                  </div>
+              <textarea
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-xs text-slate-200 whitespace-pre-wrap leading-relaxed min-h-[20rem] focus:outline-none focus:border-indigo-500 shadow-inner"
+                value={viewNotice.letterContentDraft}
+                onChange={(e) => handleUpdateNoticeContent(viewNotice.id, e.target.value)}
+              />
+            </div>
 
-                  <div className="pt-2 whitespace-pre-wrap text-justify text-slate-900 leading-relaxed">
-                    {viewNotice.letterContentDraft}
-                  </div>
-
-                  <div className="pt-8 border-t border-slate-200 text-center text-[10px] text-slate-400 font-mono keep-together">
-                    DOKUMEN HUKUM RESMI MITRA ADVOKAT & LEGAL COUNSEL • Format F4 (215mm x 330mm)
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
               <div className="text-xs text-slate-400">
                 Pembuat: <span className="text-white font-medium">{viewNotice.createdBy}</span> • Tgl: {viewNotice.requestedDate}
               </div>
 
               <div className="flex items-center gap-2">
                 <button
+                  type="button"
+                  onClick={() => {
+                    setPreviewData({
+                      type: 'LAWYER_SOMASI',
+                      lawyerNotice: viewNotice,
+                      title: `Pratinjau Somasi - ${viewNotice.noticeNo}`,
+                      driveUrl: viewNotice.driveDocumentUrl,
+                      folderUrl: viewNotice.driveFolderUrl,
+                    });
+                    setShowPreviewModal(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-700/60 rounded-lg text-xs font-semibold transition"
+                >
+                  <Eye className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Pratinjau Format Cetak</span>
+                </button>
+
+                <button
                   onClick={() => handleCopyText(viewNotice.letterContentDraft)}
                   className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-lg border border-slate-700 transition"
                 >
                   {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copied ? 'Tersalin!' : 'Salin Teks Draft'}</span>
+                  <span>{copied ? 'Tersalin!' : 'Salin Teks'}</span>
                 </button>
 
                 <button
-                  onClick={noticeViewMode === 'f4_preview' ? handlePrintNotice : () => {
-                    setNoticeViewMode('f4_preview');
-                    setTimeout(() => handlePrintNotice(), 200);
-                  }}
-                  className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3.5 py-1.5 rounded-lg font-semibold transition shadow-md"
+                  onClick={() => setViewNotice(null)}
+                  className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition shadow"
                 >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span>Cetak Surat F4 (PDF)</span>
+                  Selesai / Tutup
                 </button>
               </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* LETTER PREVIEW MODAL */}
+      <LetterPreviewModal
+        isOpen={showPreviewModal}
+        onClose={() => {
+          setShowPreviewModal(false);
+          setPreviewData(null);
+        }}
+        data={previewData}
+        onOpenQuickDriveModal={(d) => {
+          setShowPreviewModal(false);
+          if (d.lawyerNotice) {
+            setQuickDriveModal({
+              isOpen: true,
+              noticeId: d.lawyerNotice.id,
+              noticeNo: d.lawyerNotice.noticeNo,
+              debtorName: d.lawyerNotice.debtorName,
+              url: d.lawyerNotice.driveDocumentUrl || '',
+              folderId: d.lawyerNotice.driveFolderId,
+            });
+          }
+        }}
+      />
 
     </div>
   );

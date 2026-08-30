@@ -37,6 +37,20 @@ export interface Client {
   tier: 'TIER_1' | 'TIER_2' | 'TIER_3';
   activeCasesCount: number;
   status: 'ACTIVE' | 'INACTIVE';
+  
+  // Google Drive Folder Structure Integration
+  gDriveFolderUrl?: string;
+  gDriveFolderId?: string;
+  proposalDriveUrl?: string;
+  proposalDriveFolderId?: string;
+  proposalStatus?: 'DRAFT' | 'SENT' | 'ACCEPTED' | 'REJECTED';
+  mouDriveUrl?: string;
+  mouDriveFolderId?: string;
+  mouContractNo?: string;
+  mouStatus?: 'DRAFT' | 'SIGNED' | 'ACTIVE' | 'EXPIRED';
+  skpDriveFolderUrl?: string;
+  skpDriveFolderId?: string;
+
   createdAt: string;
 }
 
@@ -59,6 +73,8 @@ export interface Personnel {
   ktpPhotoUrl?: string; // Base64 Data URL or direct link
   ktpDriveFileId?: string; // Google Drive file ID
   ktpDriveFolderUrl?: string; // Google Drive direct file/folder link
+  gDriveFolderUrl?: string; // Google Drive folder link for this employee
+  gDriveFolderId?: string;
   status: 'ACTIVE' | 'INACTIVE';
   createdAt: string;
 }
@@ -172,6 +188,9 @@ export interface Case {
   assetSummary: string;
   gDriveFolderName?: string;
   gDriveFolderUrl?: string;
+  gDriveFolderId?: string;
+  skpDriveDocumentUrl?: string; // Tautan Dokumen SKP (Surat Kuasa Penagihan)
+  sphDriveDocumentUrl?: string; // Tautan Dokumen SPH / KTP Debitur
   
   // Fee snapshot
   feeTypeSnapshot: FeeType;
@@ -234,6 +253,8 @@ export interface SK { // Surat Kuasa
   status: 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'ACTIVE' | 'EXPIRED' | 'REVOKED' | 'REJECTED';
   approvedBy?: string;
   approvedAt?: string;
+  driveFolderId?: string;
+  driveFolderUrl?: string;
   driveDocumentUrl?: string;
   createdAt: string;
 }
@@ -261,6 +282,9 @@ export interface LawyerNotice {
   status: 'DRAFT_PROPOSED' | 'SUBMITTED_TO_LAWYER' | 'APPROVED_BY_LAWYER' | 'SENT_TO_DEBTOR' | 'COMPLETED';
   letterContentDraft: string;
   notes?: string;
+  driveFolderId?: string;
+  driveFolderUrl?: string;
+  driveDocumentUrl?: string;
   createdBy: string;
   createdAt: string;
 }
@@ -502,6 +526,18 @@ export interface WorkingCapitalTransaction {
   createdAt: string;
 }
 
+export interface DriveFolder {
+  id: string;
+  name: string; // e.g. "01. Surat Tugas & Surat Kuasa (SK)"
+  category: 'SK' | 'LAWYER_SOMASI' | 'MOU_KONTRAK' | 'DEBTOR_CASES' | 'FIELD_OPS' | 'FINANCE_RECEIPTS' | 'SETTLEMENT' | 'GENERAL' | 'CUSTOM';
+  folderUrl: string;
+  description?: string;
+  caseId?: string;
+  caseNo?: string;
+  isSystemDefault?: boolean;
+  createdAt: string;
+}
+
 export interface DocumentRecord {
   id: string;
   docNo: string;
@@ -509,6 +545,8 @@ export interface DocumentRecord {
   category: 'CONTRACT' | 'SK_SURAT_KUASA' | 'KTP_DEBTOR' | 'BPKB' | 'KWITANSI' | 'BERITA_ACARA' | 'SETTLEMENT_REPORT' | 'OTHER';
   caseId?: string;
   caseNo?: string;
+  driveFolderId?: string;
+  driveFolderUrl?: string;
   driveFileId?: string;
   driveViewUrl: string;
   uploadedBy: string;

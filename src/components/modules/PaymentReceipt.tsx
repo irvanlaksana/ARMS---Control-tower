@@ -18,8 +18,8 @@ export const PaymentReceipt: React.FC<PaymentReceiptProps> = ({ payment, onClose
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white text-slate-900 rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl relative my-8 print:m-0 print:w-full print:max-w-none print:shadow-none">
+    <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+      <div className="bg-white text-slate-900 rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl relative my-auto max-h-[85vh] overflow-y-auto print:m-0 print:w-full print:max-w-none print:shadow-none print:max-h-none print:overflow-visible">
         {/* Actions header (Hidden during print) */}
         <div className="flex items-center justify-between px-6 py-4 bg-slate-100 border-b border-slate-200 print:hidden">
           <div className="flex items-center gap-2">

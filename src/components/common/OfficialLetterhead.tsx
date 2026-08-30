@@ -13,7 +13,7 @@ export const OfficialLetterhead: React.FC<OfficialLetterheadProps> = ({ classNam
         The user should upload 'kop-surat.jpg' to the 'public' directory. 
       */}
       <img 
-        src="/kop-surat.jpg" 
+        src="https://drive.google.com/uc?export=view&id=1JMkJadhNiyTHAtdb7r7P8ikiQDkDCdOw" 
         alt="Kop Surat PT Mitra Jasatria Indonesia" 
         className="w-full h-auto object-contain"
         onError={(e) => {

@@ -8,7 +8,7 @@ import {
   User, Client, Personnel, Service, FeeConfig, Contract, Lead, Customer, Case,
   Assignment, SK, LawyerNotice, CommunicationLog, Asset, Collection, AssetRecovery, DanaTalangan,
   Payment, Expense, Settlement, LedgerEntry, CashAccount, PettyCashTransaction, WorkingCapitalTransaction, DocumentRecord,
-  ApprovalRequest, NotificationItem, AuditLogEntry, AppSettings, FeeType
+  ApprovalRequest, NotificationItem, AuditLogEntry, AppSettings, FeeType, DriveFolder
 } from '../types/arms';
 
 import {
@@ -18,7 +18,7 @@ import {
   INITIAL_ASSETS, INITIAL_COLLECTIONS, INITIAL_ASSET_RECOVERIES,
   INITIAL_DANA_TALANGAN, INITIAL_PAYMENTS, INITIAL_EXPENSES, INITIAL_SETTLEMENTS,
   INITIAL_LEDGER, INITIAL_CASH_ACCOUNTS, INITIAL_PETTY_CASH, INITIAL_WORKING_CAPITAL, INITIAL_DOCUMENTS, INITIAL_APPROVALS,
-  INITIAL_NOTIFICATIONS, INITIAL_AUDIT_LOGS, INITIAL_SETTINGS
+  INITIAL_NOTIFICATIONS, INITIAL_AUDIT_LOGS, INITIAL_SETTINGS, INITIAL_DRIVE_FOLDERS, ROOT_GDRIVE_URL, ROOT_GDRIVE_ID
 } from '../data/initialData';
 
 export interface ARMSStore {
@@ -47,6 +47,7 @@ export interface ARMSStore {
   pettyCash: PettyCashTransaction[];
   workingCapital: WorkingCapitalTransaction[];
   documents: DocumentRecord[];
+  driveFolders: DriveFolder[];
   approvals: ApprovalRequest[];
   notifications: NotificationItem[];
   auditLogs: AuditLogEntry[];
@@ -89,6 +90,7 @@ function normalizeStore(parsed: any): ARMSStore {
     pettyCash: INITIAL_PETTY_CASH,
     workingCapital: INITIAL_WORKING_CAPITAL,
     documents: INITIAL_DOCUMENTS,
+    driveFolders: INITIAL_DRIVE_FOLDERS,
     approvals: INITIAL_APPROVALS,
     notifications: INITIAL_NOTIFICATIONS,
     auditLogs: INITIAL_AUDIT_LOGS,
@@ -96,6 +98,15 @@ function normalizeStore(parsed: any): ARMSStore {
   };
 
   if (!parsed || typeof parsed !== 'object') return initial;
+
+  const resolvedSettings = parsed.settings && typeof parsed.settings === 'object'
+    ? {
+        ...initial.settings,
+        ...parsed.settings,
+        googleDriveFolderUrl: parsed.settings.googleDriveFolderUrl || ROOT_GDRIVE_URL,
+        googleDriveFolderId: parsed.settings.googleDriveFolderId || ROOT_GDRIVE_ID,
+      }
+    : initial.settings;
 
   return {
     users: Array.isArray(parsed.users) ? parsed.users : initial.users,
@@ -128,10 +139,13 @@ function normalizeStore(parsed: any): ARMSStore {
     pettyCash: Array.isArray(parsed.pettyCash) ? parsed.pettyCash : initial.pettyCash,
     workingCapital: Array.isArray(parsed.workingCapital) ? parsed.workingCapital : initial.workingCapital,
     documents: Array.isArray(parsed.documents) ? parsed.documents : initial.documents,
+    driveFolders: Array.isArray(parsed.driveFolders) && parsed.driveFolders.length > 0
+      ? parsed.driveFolders
+      : initial.driveFolders,
     approvals: Array.isArray(parsed.approvals) ? parsed.approvals : initial.approvals,
     notifications: Array.isArray(parsed.notifications) ? parsed.notifications : initial.notifications,
     auditLogs: Array.isArray(parsed.auditLogs) ? parsed.auditLogs : initial.auditLogs,
-    settings: parsed.settings && typeof parsed.settings === 'object' ? { ...initial.settings, ...parsed.settings } : initial.settings,
+    settings: resolvedSettings,
   };
 }
 

@@ -1,310 +1,1043 @@
-import React, { useState } from 'react';
-import { ARMSStore } from '../../services/armsDataService';
-import { Contract, SK, Case } from '../../types/arms';
-import { Folder, ExternalLink, HardDrive, Eye, X, FileText, Printer } from 'lucide-react';
-import { OfficialLetterhead } from '../common/OfficialLetterhead';
-import { angkaKeTerbilang } from '../../utils/terbilang';
+import React, { useState, useMemo } from 'react';
+import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
+import { User, SK, LawyerNotice, Contract, DocumentRecord, DriveFolder } from '../../types/arms';
+import { 
+  Folder, ExternalLink, HardDrive, FileText, X, Check, Copy, 
+  UserCheck, Building2, Search, Plus, Eye, Scale, Filter, 
+  FolderOpen, ArrowUpRight, CheckCircle2, AlertCircle, RefreshCw,
+  Share2, ShieldCheck, Download, Tag, Calendar
+} from 'lucide-react';
+import { ROOT_GDRIVE_URL, ROOT_GDRIVE_ID, INITIAL_DRIVE_FOLDERS } from '../../data/initialData';
+import { GoogleDriveFolderPicker } from '../common/GoogleDriveFolderPicker';
+import { QuickGDriveModal } from '../common/QuickGDriveModal';
+import { LetterPreviewModal, LetterPreviewData } from '../common/LetterPreviewModal';
 
 interface DocumentsModuleProps {
   store: ARMSStore;
+  currentUser?: User;
+  onUpdateStore?: (newStore: ARMSStore) => void;
+  onNavigateTab?: (tab: string) => void;
 }
 
-type PreviewType = 'MOU' | 'SK' | null;
+export type DocCategoryFilter = 
+  | 'ALL' 
+  | 'SK' 
+  | 'LAWYER_SOMASI' 
+  | 'MOU_KONTRAK' 
+  | 'DEBTOR_CASES' 
+  | 'FIELD_OPS' 
+  | 'FINANCE_RECEIPTS' 
+  | 'SETTLEMENT';
 
-export const DocumentsModule: React.FC<DocumentsModuleProps> = ({ store }) => {
-  const [previewType, setPreviewType] = useState<PreviewType>(null);
-  const [previewData, setPreviewData] = useState<any>(null);
+interface UnifiedDocItem {
+  id: string;
+  sourceModule: 'SK' | 'LAWYER' | 'CONTRACT' | 'DOCUMENT' | 'PAYMENT' | 'EXPENSE' | 'SETTLEMENT';
+  docNo: string;
+  title: string;
+  category: 'SK' | 'LAWYER_SOMASI' | 'MOU_KONTRAK' | 'DEBTOR_CASES' | 'FIELD_OPS' | 'FINANCE_RECEIPTS' | 'SETTLEMENT';
+  categoryLabel: string;
+  subjectName: string; // Debitur / Klien / Personnel
+  issuedDate: string;
+  driveFolderId?: string;
+  driveFolderUrl?: string;
+  driveDocumentUrl?: string;
+  status?: string;
+  rawObj: any;
+}
 
-  const handlePreviewMOU = (contract: Contract) => {
-    setPreviewType('MOU');
-    setPreviewData(contract);
+export const DocumentsModule: React.FC<DocumentsModuleProps> = ({ 
+  store, 
+  currentUser = { id: 'USR-001', username: 'admin', name: 'Admin', role: 'SUPER_ADMIN_OPS' } as User,
+  onUpdateStore,
+  onNavigateTab
+}) => {
+  const [activeTab, setActiveTab] = useState<'ALL_DOCS' | 'FOLDERS'>('ALL_DOCS');
+  const [categoryFilter, setCategoryFilter] = useState<DocCategoryFilter>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [driveStatusFilter, setDriveStatusFilter] = useState<'ALL' | 'LINKED' | 'UNLINKED'>('ALL');
+  
+  // Modals
+  const [previewData, setPreviewData] = useState<LetterPreviewData | null>(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  
+  const [quickDriveModal, setQuickDriveModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    docNo: string;
+    subjectName: string;
+    url: string;
+    folderId?: string;
+    category: string;
+    onSave: (url: string, folderId?: string, folderUrl?: string) => void;
+  }>({
+    isOpen: false,
+    title: '',
+    docNo: '',
+    subjectName: '',
+    url: '',
+    folderId: '',
+    category: 'GENERAL',
+    onSave: () => {},
+  });
+
+  const [showAddDocModal, setShowAddDocModal] = useState(false);
+  const [newDocTitle, setNewDocTitle] = useState('');
+  const [newDocCategory, setNewDocCategory] = useState<'CONTRACT' | 'SK_SURAT_KUASA' | 'KTP_DEBTOR' | 'BPKB' | 'KWITANSI' | 'BERITA_ACARA' | 'SETTLEMENT_REPORT' | 'OTHER'>('SK_SURAT_KUASA');
+  const [newDocCaseNo, setNewDocCaseNo] = useState('');
+  const [newDocUrl, setNewDocUrl] = useState('');
+  const [newDocFolderId, setNewDocFolderId] = useState('');
+  const [newDocFolderUrl, setNewDocFolderUrl] = useState('');
+
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopy = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handlePreviewSK = (sk: SK) => {
-    setPreviewType('SK');
-    setPreviewData(sk);
+  // Compile all system documents into a unified list
+  const unifiedDocs: UnifiedDocItem[] = useMemo(() => {
+    const items: UnifiedDocItem[] = [];
+
+    // 1. Surat Tugas & Kuasa (SK)
+    (store.sks || []).forEach((sk) => {
+      items.push({
+        id: `sk-${sk.id}`,
+        sourceModule: 'SK',
+        docNo: sk.skNumber,
+        title: `Surat Kuasa & Tugas - ${sk.debtorName}`,
+        category: 'SK',
+        categoryLabel: 'Surat Tugas & Kuasa',
+        subjectName: `${sk.debtorName} (${sk.krediturName || sk.clientName || 'Klien'})`,
+        issuedDate: sk.issuedDate,
+        driveFolderId: sk.driveFolderId || 'FLD-01',
+        driveFolderUrl: sk.driveFolderUrl || ROOT_GDRIVE_URL,
+        driveDocumentUrl: sk.driveDocumentUrl,
+        status: sk.status,
+        rawObj: sk,
+      });
+    });
+
+    // 2. Surat Somasi & Legal Notices
+    (store.lawyerNotices || []).forEach((notice) => {
+      items.push({
+        id: `lawyer-${notice.id}`,
+        sourceModule: 'LAWYER',
+        docNo: notice.noticeNo,
+        title: `Somasi Advokat: ${notice.noticeType.replace('_', ' ')} - ${notice.debtorName}`,
+        category: 'LAWYER_SOMASI',
+        categoryLabel: 'Somasi & Tindakan Legal',
+        subjectName: `${notice.debtorName} (Kasus: ${notice.caseNo})`,
+        issuedDate: notice.issuedDate,
+        driveFolderId: notice.driveFolderId || 'FLD-02',
+        driveFolderUrl: notice.driveFolderUrl || ROOT_GDRIVE_URL,
+        driveDocumentUrl: notice.driveDocumentUrl,
+        status: notice.status,
+        rawObj: notice,
+      });
+    });
+
+    // 3. MoU & Kontrak Kerjasama
+    (store.contracts || []).forEach((contract) => {
+      items.push({
+        id: `contract-${contract.id}`,
+        sourceModule: 'CONTRACT',
+        docNo: contract.contractNo,
+        title: `MoU Kemitraan: ${contract.title}`,
+        category: 'MOU_KONTRAK',
+        categoryLabel: 'MoU & Kontrak',
+        subjectName: contract.clientName,
+        issuedDate: contract.startDate,
+        driveFolderId: 'FLD-03',
+        driveFolderUrl: ROOT_GDRIVE_URL,
+        driveDocumentUrl: contract.driveDocumentUrl,
+        status: contract.status,
+        rawObj: contract,
+      });
+    });
+
+    // 4. Custom Document Records
+    (store.documents || []).forEach((doc) => {
+      let mappedCategory: UnifiedDocItem['category'] = 'DEBTOR_CASES';
+      let label = 'Berkas Debitur';
+      if (doc.category === 'SK_SURAT_KUASA') {
+        mappedCategory = 'SK';
+        label = 'Surat Tugas & Kuasa';
+      } else if (doc.category === 'CONTRACT') {
+        mappedCategory = 'MOU_KONTRAK';
+        label = 'MoU Kontrak';
+      } else if (doc.category === 'BERITA_ACARA') {
+        mappedCategory = 'FIELD_OPS';
+        label = 'Berita Acara Lapangan';
+      } else if (doc.category === 'KWITANSI') {
+        mappedCategory = 'FINANCE_RECEIPTS';
+        label = 'Bukti Kwitansi';
+      } else if (doc.category === 'SETTLEMENT_REPORT') {
+        mappedCategory = 'SETTLEMENT';
+        label = 'Laporan Settlement';
+      }
+
+      items.push({
+        id: `doc-${doc.id}`,
+        sourceModule: 'DOCUMENT',
+        docNo: doc.docNo,
+        title: doc.title,
+        category: mappedCategory,
+        categoryLabel: label,
+        subjectName: doc.caseNo ? `Kasus ${doc.caseNo}` : doc.uploadedBy,
+        issuedDate: doc.uploadedAt?.slice(0, 10) || '2026-08-18',
+        driveFolderId: doc.driveFolderId,
+        driveFolderUrl: doc.driveFolderUrl,
+        driveDocumentUrl: doc.driveViewUrl,
+        status: 'ACTIVE',
+        rawObj: doc,
+      });
+    });
+
+    // 5. Bukti Pembayaran / Kwitansi
+    (store.payments || []).forEach((p) => {
+      if (p.proofUrl) {
+        items.push({
+          id: `pay-${p.id}`,
+          sourceModule: 'PAYMENT',
+          docNo: `KW-${p.caseNo || p.id}`,
+          title: `Kwitansi Pembayaran ${p.paymentType} - ${p.debtorName}`,
+          category: 'FINANCE_RECEIPTS',
+          categoryLabel: 'Kwitansi & Transfer',
+          subjectName: `${p.debtorName} (Rp ${p.amount.toLocaleString('id-ID')})`,
+          issuedDate: p.paymentDate,
+          driveFolderId: 'FLD-06',
+          driveFolderUrl: ROOT_GDRIVE_URL,
+          driveDocumentUrl: p.proofUrl,
+          status: p.verificationStatus,
+          rawObj: p,
+        });
+      }
+    });
+
+    // 6. Laporan Settlement
+    (store.settlements || []).forEach((st) => {
+      if (st.driveSettlementDocUrl) {
+        items.push({
+          id: `st-${st.id}`,
+          sourceModule: 'SETTLEMENT',
+          docNo: st.settlementNo,
+          title: `Laporan Settlement & Remit: ${st.clientName}`,
+          category: 'SETTLEMENT',
+          categoryLabel: 'Laporan Settlement',
+          subjectName: `${st.clientName} (Kasus: ${st.caseNo})`,
+          issuedDate: st.settlementDate,
+          driveFolderId: 'FLD-07',
+          driveFolderUrl: ROOT_GDRIVE_URL,
+          driveDocumentUrl: st.driveSettlementDocUrl,
+          status: st.status,
+          rawObj: st,
+        });
+      }
+    });
+
+    // 7. Berkas Debitur Multifinance (SKP & SPH)
+    (store.cases || []).forEach((cs) => {
+      if (cs.skpDriveDocumentUrl || cs.gDriveFolderUrl) {
+        items.push({
+          id: `deb-skp-${cs.id}`,
+          sourceModule: 'DOCUMENT',
+          docNo: `SKP-${cs.multifinanceContractNo || cs.caseNo}`,
+          title: `Berkas SKP Debitur: ${cs.debtorName}`,
+          category: 'DEBTOR_CASES',
+          categoryLabel: 'Berkas Debitur & SKP',
+          subjectName: `${cs.debtorName} (${cs.clientName})`,
+          issuedDate: cs.createdAt?.slice(0, 10) || '2026-03-01',
+          driveFolderId: cs.gDriveFolderId || 'FLD-04',
+          driveFolderUrl: cs.gDriveFolderUrl || ROOT_GDRIVE_URL,
+          driveDocumentUrl: cs.skpDriveDocumentUrl || cs.gDriveFolderUrl,
+          status: cs.status,
+          rawObj: cs,
+        });
+      }
+
+      if (cs.sphDriveDocumentUrl) {
+        items.push({
+          id: `deb-sph-${cs.id}`,
+          sourceModule: 'DOCUMENT',
+          docNo: `SPH-${cs.multifinanceContractNo || cs.caseNo}`,
+          title: `Berkas SPH & Identitas: ${cs.debtorName}`,
+          category: 'DEBTOR_CASES',
+          categoryLabel: 'Berkas Debitur & SPH',
+          subjectName: `${cs.debtorName} (${cs.clientName})`,
+          issuedDate: cs.createdAt?.slice(0, 10) || '2026-03-01',
+          driveFolderId: cs.gDriveFolderId || 'FLD-04',
+          driveFolderUrl: cs.gDriveFolderUrl || ROOT_GDRIVE_URL,
+          driveDocumentUrl: cs.sphDriveDocumentUrl,
+          status: cs.status,
+          rawObj: cs,
+        });
+      }
+    });
+
+    // 8. Berkas Database Karyawan & KYC
+    (store.personnel || []).forEach((p) => {
+      if (p.ktpDriveFolderUrl || p.gDriveFolderUrl) {
+        items.push({
+          id: `per-${p.id}`,
+          sourceModule: 'DOCUMENT',
+          docNo: `KTP-${p.nikKtp.slice(-6)}`,
+          title: `Berkas KTP & KYC: ${p.fullName}`,
+          category: 'FIELD_OPS',
+          categoryLabel: 'Database Karyawan',
+          subjectName: `${p.fullName} (${p.position || p.type})`,
+          issuedDate: p.createdAt?.slice(0, 10) || '2026-01-10',
+          driveFolderId: p.gDriveFolderId || 'FLD-05',
+          driveFolderUrl: p.gDriveFolderUrl || ROOT_GDRIVE_URL,
+          driveDocumentUrl: p.ktpDriveFolderUrl || p.gDriveFolderUrl,
+          status: p.status,
+          rawObj: p,
+        });
+      }
+    });
+
+    return items;
+  }, [store]);
+
+  // Filtered documents
+  const filteredDocs = useMemo(() => {
+    return unifiedDocs.filter((item) => {
+      // Category filter
+      if (categoryFilter !== 'ALL' && item.category !== categoryFilter) {
+        return false;
+      }
+
+      // Drive status filter
+      const hasDrive = !!item.driveDocumentUrl && item.driveDocumentUrl.trim().length > 0;
+      if (driveStatusFilter === 'LINKED' && !hasDrive) return false;
+      if (driveStatusFilter === 'UNLINKED' && hasDrive) return false;
+
+      // Search query
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchTitle = item.title.toLowerCase().includes(q);
+        const matchNo = item.docNo.toLowerCase().includes(q);
+        const matchSubject = item.subjectName.toLowerCase().includes(q);
+        const matchCategory = item.categoryLabel.toLowerCase().includes(q);
+        const matchDrive = (item.driveDocumentUrl || '').toLowerCase().includes(q);
+        return matchTitle || matchNo || matchSubject || matchCategory || matchDrive;
+      }
+
+      return true;
+    });
+  }, [unifiedDocs, categoryFilter, driveStatusFilter, searchQuery]);
+
+  // Counts for statistics
+  const totalDocs = unifiedDocs.length;
+  const linkedCount = unifiedDocs.filter(d => !!d.driveDocumentUrl).length;
+  const unlinkedCount = totalDocs - linkedCount;
+  const foldersCount = (store.driveFolders || INITIAL_DRIVE_FOLDERS).length;
+
+  // Open Preview Letter Handler
+  const handleOpenPreview = (item: UnifiedDocItem) => {
+    const folders = store.driveFolders || INITIAL_DRIVE_FOLDERS;
+    const folderObj = folders.find(f => f.id === item.driveFolderId || f.category === item.category);
+
+    if (item.sourceModule === 'SK') {
+      setPreviewData({
+        type: 'SK',
+        sk: item.rawObj as SK,
+        title: `Surat Tugas & Kuasa - ${item.docNo}`,
+        driveUrl: item.driveDocumentUrl,
+        folderUrl: folderObj?.folderUrl,
+        folderName: folderObj?.name,
+      });
+    } else if (item.sourceModule === 'LAWYER') {
+      setPreviewData({
+        type: 'LAWYER_SOMASI',
+        lawyerNotice: item.rawObj as LawyerNotice,
+        title: `Surat Somasi Advokat - ${item.docNo}`,
+        driveUrl: item.driveDocumentUrl,
+        folderUrl: folderObj?.folderUrl,
+        folderName: folderObj?.name,
+      });
+    } else if (item.sourceModule === 'CONTRACT') {
+      setPreviewData({
+        type: 'MOU_KONTRAK',
+        contract: item.rawObj as Contract,
+        title: `Memorandum of Understanding (MoU) - ${item.docNo}`,
+        driveUrl: item.driveDocumentUrl,
+        folderUrl: folderObj?.folderUrl,
+        folderName: folderObj?.name,
+      });
+    } else {
+      setPreviewData({
+        type: 'DOCUMENT',
+        document: item.rawObj as DocumentRecord,
+        title: item.title,
+        driveUrl: item.driveDocumentUrl,
+        folderUrl: folderObj?.folderUrl,
+        folderName: folderObj?.name,
+      });
+    }
+    setShowPreviewModal(true);
   };
 
-  const closePreview = () => {
-    setPreviewType(null);
-    setPreviewData(null);
+  // Quick edit Google Drive Link Handler
+  const handleOpenQuickDrive = (item: UnifiedDocItem) => {
+    setQuickDriveModal({
+      isOpen: true,
+      title: `Tautkan Link Google Drive: ${item.docNo}`,
+      docNo: item.docNo,
+      subjectName: item.subjectName,
+      url: item.driveDocumentUrl || '',
+      folderId: item.driveFolderId,
+      category: item.category,
+      onSave: (savedUrl, savedFolderId, savedFolderUrl) => {
+        if (!onUpdateStore) return;
+
+        if (item.sourceModule === 'SK') {
+          const updated = (store.sks || []).map(sk => 
+            sk.id === item.rawObj.id ? { 
+              ...sk, 
+              driveDocumentUrl: savedUrl.trim() || undefined,
+              driveFolderId: savedFolderId || sk.driveFolderId,
+              driveFolderUrl: savedFolderUrl || sk.driveFolderUrl
+            } : sk
+          );
+          onUpdateStore({ ...store, sks: updated });
+        } else if (item.sourceModule === 'LAWYER') {
+          const updated = (store.lawyerNotices || []).map(n => 
+            n.id === item.rawObj.id ? { 
+              ...n, 
+              driveDocumentUrl: savedUrl.trim() || undefined,
+              driveFolderId: savedFolderId || n.driveFolderId,
+              driveFolderUrl: savedFolderUrl || n.driveFolderUrl
+            } : n
+          );
+          onUpdateStore({ ...store, lawyerNotices: updated });
+        } else if (item.sourceModule === 'CONTRACT') {
+          const updated = (store.contracts || []).map(c => 
+            c.id === item.rawObj.id ? { ...c, driveDocumentUrl: savedUrl.trim() || undefined } : c
+          );
+          onUpdateStore({ ...store, contracts: updated });
+        } else if (item.sourceModule === 'DOCUMENT') {
+          const updated = (store.documents || []).map(d => 
+            d.id === item.rawObj.id ? { 
+              ...d, 
+              driveViewUrl: savedUrl.trim(),
+              driveFolderId: savedFolderId || d.driveFolderId,
+              driveFolderUrl: savedFolderUrl || d.driveFolderUrl
+            } : d
+          );
+          onUpdateStore({ ...store, documents: updated });
+        }
+
+        setQuickDriveModal(prev => ({ ...prev, isOpen: false }));
+      }
+    });
+  };
+
+  // Add custom new document
+  const handleSaveNewDoc = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDocTitle.trim() || !newDocUrl.trim() || !onUpdateStore) return;
+
+    const newDoc: DocumentRecord = {
+      id: `DOC-${Date.now()}`,
+      docNo: `DOC/ARMS/${Math.floor(1000 + Math.random() * 9000)}`,
+      title: newDocTitle.trim(),
+      category: newDocCategory,
+      caseNo: newDocCaseNo.trim() || undefined,
+      driveFolderId: newDocFolderId || undefined,
+      driveFolderUrl: newDocFolderUrl || undefined,
+      driveViewUrl: newDocUrl.trim(),
+      uploadedBy: currentUser.name || currentUser.username,
+      uploadedAt: new Date().toISOString().replace('T', ' ').slice(0, 19),
+    };
+
+    const audit = createAuditEntry(
+      currentUser.username,
+      currentUser.role,
+      'CREATE',
+      'Documents',
+      newDoc.id,
+      `Added digital document "${newDoc.title}" to Google Drive folder`
+    );
+
+    onUpdateStore({
+      ...store,
+      documents: [newDoc, ...(store.documents || [])],
+      auditLogs: [audit, ...(store.auditLogs || [])],
+    });
+
+    setShowAddDocModal(false);
+    setNewDocTitle('');
+    setNewDocCaseNo('');
+    setNewDocUrl('');
+    setNewDocFolderId('');
   };
 
   return (
     <div className="space-y-6">
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-        <div className="flex items-center gap-2 mb-1">
-          <Folder className="w-5 h-5 text-indigo-400" />
-          <h2 className="text-xl font-bold text-white">Document Center & Previews</h2>
+      {/* Header Banner */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-400">
+              <HardDrive className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                Pusat Berkas & Google Drive Cloud Hub
+              </h2>
+              <p className="text-xs text-slate-400">
+                Semua surat resmi, berkas perkara, dokumen somasi, dan MoU lengkap dengan tautan Google Drive & Pratinjau Cetak
+              </p>
+            </div>
+          </div>
         </div>
-        <p className="text-xs text-slate-400">
-          Generate previews of legal documents (SK, MOU) based on current assignment data.
-        </p>
+
+        <div className="flex items-center flex-wrap gap-2.5 self-stretch sm:self-auto">
+          <a
+            href={store.settings?.googleDriveFolderUrl || ROOT_GDRIVE_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl transition shadow-lg shadow-blue-600/20 active:scale-95 flex-1 sm:flex-initial"
+            title="Buka Folder Master Google Drive ARMS"
+          >
+            <FolderOpen className="w-4 h-4" />
+            <span>Buka GDrive Master</span>
+            <ExternalLink className="w-3 h-3 opacity-70" />
+          </a>
+
+          <button
+            onClick={() => setShowAddDocModal(true)}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-700/60 text-xs font-semibold rounded-xl transition active:scale-95 flex-1 sm:flex-initial"
+          >
+            <Plus className="w-4 h-4 text-indigo-400" />
+            <span>+ Tautkan Berkas Baru</span>
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Contracts List */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg flex flex-col h-[500px]">
-          <div className="p-4 border-b border-slate-800 bg-slate-950/50 font-bold text-white text-xs uppercase tracking-wider flex items-center gap-2">
-            <FileText className="w-4 h-4 text-emerald-400" />
-            MoU / Contracts
+      {/* Top Metrics Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-1">
+          <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Dokumen & Surat</div>
+          <div className="text-2xl font-black text-white font-mono">{totalDocs}</div>
+          <div className="text-[10px] text-slate-500">Tercatat di seluruh modul sistem</div>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-1">
+          <div className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>Terhubung GDrive</span>
           </div>
-          <div className="divide-y divide-slate-800 text-xs text-slate-300 overflow-y-auto flex-1 p-2">
-            {store.contracts.map(c => (
-              <div key={c.id} className="p-3 flex items-center justify-between hover:bg-slate-800/40 rounded transition mb-1">
-                <div className="flex-1 min-w-0 pr-4">
-                  <div className="font-bold text-white truncate">{c.title}</div>
-                  <div className="text-[10px] text-slate-400 font-mono truncate">{c.clientName} | ID: {c.contractNo}</div>
-                </div>
+          <div className="text-2xl font-black text-emerald-400 font-mono">
+            {linkedCount} <span className="text-xs text-slate-400 font-normal">({totalDocs > 0 ? Math.round((linkedCount / totalDocs) * 100) : 0}%)</span>
+          </div>
+          <div className="text-[10px] text-slate-500">Memiliki link file Google Drive aktif</div>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-1">
+          <div className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider flex items-center gap-1">
+            <AlertCircle className="w-3.5 h-3.5" />
+            <span>Perlu Tautan Link</span>
+          </div>
+          <div className="text-2xl font-black text-amber-400 font-mono">{unlinkedCount}</div>
+          <div className="text-[10px] text-slate-500">Belum disematkan link file Drive</div>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-1">
+          <div className="text-[11px] font-semibold text-blue-400 uppercase tracking-wider flex items-center gap-1">
+            <Folder className="w-3.5 h-3.5" />
+            <span>Kategori Folder GDrive</span>
+          </div>
+          <div className="text-2xl font-black text-blue-400 font-mono">{foldersCount}</div>
+          <div className="text-[10px] text-slate-500">Direktori struktur Google Drive terbit</div>
+        </div>
+      </div>
+
+      {/* Main Tabs Selection (Semua Berkas vs Direktori Folder) */}
+      <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setActiveTab('ALL_DOCS')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
+              activeTab === 'ALL_DOCS'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            <span>Semua Dokumen & Link GDrive ({totalDocs})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('FOLDERS')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
+              activeTab === 'FOLDERS'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+            }`}
+          >
+            <Folder className="w-4 h-4" />
+            <span>Direktori Folder Google Drive ({foldersCount})</span>
+          </button>
+        </div>
+      </div>
+
+      {/* =========================================================================
+          TAB 1: SEMUA DOKUMEN & LINK GOOGLE DRIVE
+      ========================================================================= */}
+      {activeTab === 'ALL_DOCS' && (
+        <div className="space-y-4">
+          {/* Filters and Search Bar */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+            {/* Category Chips Filter */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+              <span className="text-[11px] font-semibold text-slate-400 mr-1 flex items-center gap-1">
+                <Filter className="w-3 h-3" /> Kategori:
+              </span>
+
+              {[
+                { id: 'ALL', label: `Semua (${totalDocs})` },
+                { id: 'SK', label: `Surat Kuasa & SK (${(store.sks || []).length})` },
+                { id: 'LAWYER_SOMASI', label: `Somasi Advokat (${(store.lawyerNotices || []).length})` },
+                { id: 'MOU_KONTRAK', label: `MoU Kemitraan (${(store.contracts || []).length})` },
+                { id: 'DEBTOR_CASES', label: 'Berkas Debitur' },
+                { id: 'FINANCE_RECEIPTS', label: 'Kwitansi & Bukti' },
+                { id: 'FIELD_OPS', label: 'BAST & Lapangan' },
+                { id: 'SETTLEMENT', label: 'Settlement' },
+              ].map((c) => (
                 <button
-                  onClick={() => handlePreviewMOU(c)}
-                  className="shrink-0 bg-indigo-950/50 text-indigo-300 hover:bg-indigo-900/60 border border-indigo-800/50 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition"
+                  key={c.id}
+                  onClick={() => setCategoryFilter(c.id as DocCategoryFilter)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition ${
+                    categoryFilter === c.id
+                      ? 'bg-indigo-600 text-white shadow'
+                      : 'bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800'
+                  }`}
                 >
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>Preview</span>
+                  {c.label}
                 </button>
-              </div>
-            ))}
-            {store.contracts.length === 0 && (
-              <div className="p-4 text-center text-slate-500 italic">No Contracts found.</div>
-            )}
-          </div>
-        </div>
-
-        {/* SK List */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg flex flex-col h-[500px]">
-          <div className="p-4 border-b border-slate-800 bg-slate-950/50 font-bold text-white text-xs uppercase tracking-wider flex items-center gap-2">
-            <FileText className="w-4 h-4 text-amber-400" />
-            Surat Kuasa (SK)
-          </div>
-          <div className="divide-y divide-slate-800 text-xs text-slate-300 overflow-y-auto flex-1 p-2">
-            {store.sks.map(sk => {
-              const parentCase = store.cases.find(c => c.id === sk.caseId);
-              return (
-                <div key={sk.id} className="p-3 flex items-center justify-between hover:bg-slate-800/40 rounded transition mb-1">
-                  <div className="flex-1 min-w-0 pr-4">
-                    <div className="font-bold text-white truncate">SK: {sk.debtorName}</div>
-                    <div className="text-[10px] text-slate-400 font-mono truncate">By: {sk.personnelName} | ID: {sk.skNumber}</div>
-                  </div>
-                  <button
-                    onClick={() => handlePreviewSK(sk)}
-                    className="shrink-0 bg-indigo-950/50 text-indigo-300 hover:bg-indigo-900/60 border border-indigo-800/50 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>Preview</span>
-                  </button>
-                </div>
-              );
-            })}
-            {store.sks.length === 0 && (
-              <div className="p-4 text-center text-slate-500 italic">No Surat Kuasa found.</div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Document Preview Modal - F4 Paper Format */}
-      {previewType && previewData && (
-        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-sm flex justify-center py-6 px-4 overflow-y-auto">
-          <div className="f4-page-preview rounded-xl relative flex flex-col text-slate-900 my-auto">
-            {/* Modal Actions */}
-            <div className="absolute top-4 right-4 flex gap-2 print:hidden z-10">
-              <button 
-                onClick={() => window.print()} 
-                className="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-md flex items-center gap-1.5 transition"
-              >
-                <Printer className="w-3.5 h-3.5" />
-                <span>Cetak F4 (PDF)</span>
-              </button>
-              <button 
-                onClick={closePreview}
-                className="bg-slate-100 hover:bg-slate-200 text-slate-700 p-1.5 rounded-lg shadow-sm border border-slate-300 transition"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              ))}
             </div>
 
-            {/* F4 Document Content */}
-            <div className="p-8 sm:p-12 font-serif flex-1 flex flex-col justify-between" style={{ fontFamily: '"Times New Roman", Times, Georgia, serif' }}>
-              
-              <div>
-                {/* Official Letterhead */}
-                <OfficialLetterhead className="mb-6" />
-
-                {/* MOU Template */}
-                {previewType === 'MOU' && (
-                  <div className="space-y-5 text-[12px] leading-relaxed text-justify mt-4">
-                    <div className="text-center space-y-1 mb-6">
-                      <h2 className="font-bold text-base underline decoration-2 uppercase tracking-wide">
-                        MEMORANDUM OF UNDERSTANDING (MoU)
-                      </h2>
-                      <p className="font-mono text-xs">Nomor: {previewData.contractNo}</p>
-                    </div>
-
-                    <p>Pada hari ini, tanggal <strong>{new Date(previewData.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>, telah disepakati perjanjian kerjasama layanan penagihan dan pemulihan aset (Asset Recovery) antara:</p>
-                    
-                    <div className="pl-4 space-y-2">
-                      <p><strong>1. {previewData.clientName}</strong><br/><span className="text-slate-600">Sebagai Lembaga Pembiayaan / Multifinance Pemberi Kuasa, selanjutnya disebut sebagai <strong>KLIEN</strong>.</span></p>
-                      <p><strong>2. PT. MITRAJASA SATRIA INDONESIA</strong><br/><span className="text-slate-600">Badan Hukum Pengelola Jasa Penagihan & Recovery, Nomor AHU-.056731.AH.01.01., selanjutnya disebut sebagai <strong>PIHAK KEDUA</strong>.</span></p>
-                    </div>
-
-                    <p>Bahwa <strong>KLIEN</strong> menyerahkan penanganan portofolio piutang bermasalah (NPL) kepada <strong>PIHAK KEDUA</strong> dengan skema penugasan dan struktur imbal jasa (fee structure) sebagai berikut:</p>
-                    
-                    <div className="bg-slate-50 p-4 border border-slate-300 rounded font-mono text-[11px] text-slate-800">
-                      {previewData.feeStructureSummary || '[Struktur biaya belum diatur]'}
-                    </div>
-
-                    <p>Demikian Memorandum of Understanding (MoU) ini dibuat rangkap 2 (dua) dan ditandatangani oleh kedua belah pihak di atas meterai yang cukup untuk dilaksanakan dengan penuh itikad baik dan tanggung jawab.</p>
-
-                    <div className="mt-14 flex justify-between px-6">
-                      <div className="text-center">
-                        <p className="mb-14 font-bold">PIHAK PERTAMA (KLIEN)</p>
-                        <p className="font-bold underline">{previewData.clientName}</p>
-                        <p className="text-[11px] text-slate-600">Perwakilan Manajemen</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="mb-14 font-bold">PIHAK KEDUA</p>
-                        <p className="font-bold underline">PT. MITRAJASA SATRIA INDONESIA</p>
-                        <p className="text-[11px] text-slate-600">Direktur Utama</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* SK Template */}
-                {previewType === 'SK' && (() => {
-                  const targetCase = store.cases.find((cs: Case) => cs.id === previewData.caseId);
-                  const targetPersonnel = (store.personnel || []).find((pr) => pr.id === previewData.personnelId);
-                  const targetCustomer = store.customers.find((c) => c.id === targetCase?.customerId);
-                  const debtorAddr = targetCustomer?.addressCurrent || targetCustomer?.addressKtp || 'Alamat Debitur Sesuai Kontrak';
-                  const amount = targetCase?.principalDebtOS || 75000000;
-                  const compName = store.settings.companyName || 'PT. MITRAJASA SATRIA INDONESIA';
-                  const compAddr = store.settings.companyAddress || 'JL. Menteri Supeno No. 07, Sokaraja Tengah, Banyumas, Jawa Tengah 53181';
-
-                  return (
-                    <div className="space-y-4 text-[12px] leading-relaxed text-justify mt-2" style={{ fontFamily: '"Times New Roman", Times, Georgia, serif' }}>
-                      <div className="text-center space-y-1 mb-4">
-                        <h2 className="font-bold text-base underline decoration-2 uppercase tracking-wide text-slate-950">
-                          SURAT KUASA KHUSUS
-                        </h2>
-                        <p className="font-mono text-xs text-slate-700">No. Surat: {previewData.skNumber}</p>
-                      </div>
-
-                      <p className="font-semibold text-slate-900">Yang bertanda tangan di bawah ini:</p>
-                      
-                      <table className="w-full my-2 ml-3 text-slate-900">
-                        <tbody>
-                          <tr>
-                            <td className="w-44 py-0.5 align-top font-medium">Nama Perusahaan</td>
-                            <td className="w-4 py-0.5 align-top">:</td>
-                            <td className="py-0.5 font-bold">{compName}</td>
-                          </tr>
-                          <tr>
-                            <td className="w-44 py-0.5 align-top font-medium">Alamat Perusahaan</td>
-                            <td className="w-4 py-0.5 align-top">:</td>
-                            <td className="py-0.5">{compAddr}</td>
-                          </tr>
-                          <tr>
-                            <td className="w-44 py-0.5 align-top font-medium">Diwakili Oleh</td>
-                            <td className="w-4 py-0.5 align-top">:</td>
-                            <td className="py-0.5 font-bold">Irvan Indralaksana</td>
-                          </tr>
-                          <tr>
-                            <td className="w-44 py-0.5 align-top font-medium">Jabatan</td>
-                            <td className="w-4 py-0.5 align-top">:</td>
-                            <td className="py-0.5">Direktur Utama</td>
-                          </tr>
-                        </tbody>
-                      </table>
-
-                      <p>Dalam hal ini bertindak untuk dan atas nama <strong>{compName}</strong>, yang selanjutnya disebut sebagai <strong>PEMBERI KUASA</strong>.</p>
-                      <p className="font-semibold text-slate-900 mt-2">Dengan ini memberikan kuasa penuh kepada karyawan perusahaan:</p>
-
-                      <table className="w-full my-2 ml-3 text-slate-900">
-                        <tbody>
-                          <tr>
-                            <td className="w-44 py-0.5 align-top font-medium">Nama Karyawan</td>
-                            <td className="w-4 py-0.5 align-top">:</td>
-                            <td className="py-0.5 font-bold">{previewData.personnelName}</td>
-                          </tr>
-                          <tr>
-                            <td className="w-44 py-0.5 align-top font-medium">NIK / ID Karyawan</td>
-                            <td className="w-4 py-0.5 align-top">:</td>
-                            <td className="py-0.5 font-mono">{previewData.personnelId}</td>
-                          </tr>
-                          <tr>
-                            <td className="w-44 py-0.5 align-top font-medium">Jabatan</td>
-                            <td className="w-4 py-0.5 align-top">:</td>
-                            <td className="py-0.5">{targetPersonnel?.position || 'Finance & Collection Staff'}</td>
-                          </tr>
-                        </tbody>
-                      </table>
-
-                      <p>Yang selanjutnya disebut sebagai <strong>PENERIMA KUASA</strong>.</p>
-
-                      <div className="text-center font-bold my-2 tracking-widest text-xs underline">
-                        KHUSUS
-                      </div>
-
-                      <p>Untuk dan atas nama Pemberi Kuasa, melakukan tindakan penagihan, penerimaan pembayaran, serta penyelesaian transaksi piutang usaha perusahaan kepada:</p>
-
-                      <table className="w-full my-2 ml-3 bg-slate-50 p-2.5 border border-slate-300 rounded text-slate-900 text-[11px]">
-                        <tbody>
-                          <tr>
-                            <td className="w-44 py-0.5 align-top font-bold">Nama Debitur</td>
-                            <td className="w-4 py-0.5 align-top">:</td>
-                            <td className="py-0.5 font-bold">{previewData.debtorName}</td>
-                          </tr>
-                          <tr>
-                            <td className="w-44 py-0.5 align-top font-bold">Alamat Debitur</td>
-                            <td className="w-4 py-0.5 align-top">:</td>
-                            <td className="py-0.5">{debtorAddr}</td>
-                          </tr>
-                          <tr>
-                            <td className="w-44 py-0.5 align-top font-bold">Jumlah Piutang</td>
-                            <td className="w-4 py-0.5 align-top">:</td>
-                            <td className="py-0.5 font-bold">
-                              Rp {amount.toLocaleString('id-ID')} ({angkaKeTerbilang(amount)})
-                            </td>
-                          </tr>
-                          <tr>
-                            <td className="w-44 py-0.5 align-top font-bold">Dasar Penagihan</td>
-                            <td className="w-4 py-0.5 align-top">:</td>
-                            <td className="py-0.5">Perjanjian Kontrak No. {targetCase?.multifinanceContractNo || '-'} / Objek: {targetCase?.assetSummary || '-'}</td>
-                          </tr>
-                        </tbody>
-                      </table>
-
-                      <p className="text-justify">
-                        Demikian Surat Kuasa Khusus ini dibuat dengan sebenarnya dan untuk dipergunakan sebagaimana mestinya.
-                      </p>
-
-                      <div className="mt-10 flex justify-between px-4">
-                        <div className="text-center">
-                          <p className="mb-12 font-bold">PEMBERI KUASA</p>
-                          <p className="font-bold underline">{compName}</p>
-                          <p className="text-[11px] text-slate-600">Direktur Utama</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="mb-12 font-bold">PENERIMA KUASA</p>
-                          <p className="font-bold underline">{previewData.personnelName}</p>
-                          <p className="text-[11px] text-slate-600">{targetPersonnel?.position || 'Collection Staff'}</p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
+            {/* Search & Link Status Bar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1 border-t border-slate-800/80">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input
+                  type="text"
+                  placeholder="Cari nomor dokumen, nama debitur, klien, kategori, atau URL Google Drive..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                />
               </div>
 
-              {/* Watermark / Footer */}
-              <div className="pt-6 border-t border-slate-200 text-center text-[10px] text-slate-400 font-mono">
-                PT. MITRAJASA SATRIA INDONESIA • ARMS Control Tower • Dokumen Resmi F4 (215mm x 330mm)
+              <div className="flex items-center gap-2">
+                <select
+                  value={driveStatusFilter}
+                  onChange={(e) => setDriveStatusFilter(e.target.value as any)}
+                  className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="ALL">Status GDrive: Semua</option>
+                  <option value="LINKED">🟢 Hanya yang ada Link Drive</option>
+                  <option value="UNLINKED">⚪ Hanya yang Belum Ada Link</option>
+                </select>
               </div>
+            </div>
+          </div>
+
+          {/* Documents Table */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+            <div className="p-4 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-white text-sm">Daftar Dokumen & Link Google Drive</h3>
+                <span className="bg-slate-800 text-slate-300 text-[10px] px-2 py-0.5 rounded font-mono">
+                  Menampilkan {filteredDocs.length} dari {totalDocs} berkas
+                </span>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-slate-300">
+                <thead className="bg-slate-950 text-slate-400 font-semibold border-b border-slate-800">
+                  <tr>
+                    <th className="p-3.5">Dokumen & Nomor</th>
+                    <th className="p-3.5">Kategori</th>
+                    <th className="p-3.5">Subjek / Debitur / Klien</th>
+                    <th className="p-3.5">Folder Target GDrive</th>
+                    <th className="p-3.5">Link Google Drive</th>
+                    <th className="p-3.5 text-center">Pratinjau Surat</th>
+                    <th className="p-3.5 text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {filteredDocs.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="text-center py-12 text-slate-500 italic">
+                        Tidak ada dokumen yang sesuai kriteria pencarian / filter.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredDocs.map((doc) => {
+                      const hasDrive = !!doc.driveDocumentUrl && doc.driveDocumentUrl.trim().length > 0;
+                      const isCopied = copiedId === doc.id;
+
+                      const folders = store.driveFolders || INITIAL_DRIVE_FOLDERS;
+                      const currentFolder = folders.find(f => f.id === doc.driveFolderId || f.category === doc.category);
+
+                      return (
+                        <tr key={doc.id} className="hover:bg-slate-800/40 transition group">
+                          {/* Dokumen & Nomor */}
+                          <td className="p-3.5 font-medium text-white max-w-[240px]">
+                            <div className="font-bold text-indigo-300 truncate" title={doc.title}>
+                              {doc.title}
+                            </div>
+                            <div className="text-[11px] text-slate-400 font-mono flex items-center gap-1.5 mt-0.5">
+                              <span>No: {doc.docNo}</span>
+                            </div>
+                            <div className="text-[10px] text-slate-500 font-mono">
+                              Tgl: {doc.issuedDate}
+                            </div>
+                          </td>
+
+                          {/* Kategori */}
+                          <td className="p-3.5">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border ${
+                              doc.category === 'SK' 
+                                ? 'bg-indigo-950/80 text-indigo-300 border-indigo-800' :
+                              doc.category === 'LAWYER_SOMASI'
+                                ? 'bg-red-950/80 text-red-300 border-red-800' :
+                              doc.category === 'MOU_KONTRAK'
+                                ? 'bg-emerald-950/80 text-emerald-300 border-emerald-800' :
+                              doc.category === 'FINANCE_RECEIPTS'
+                                ? 'bg-amber-950/80 text-amber-300 border-amber-800' :
+                                'bg-slate-800 text-slate-300 border-slate-700'
+                            }`}>
+                              {doc.category === 'LAWYER_SOMASI' ? <Scale className="w-2.5 h-2.5 text-red-400" /> : <FileText className="w-2.5 h-2.5" />}
+                              <span>{doc.categoryLabel}</span>
+                            </span>
+                          </td>
+
+                          {/* Subjek / Debitur */}
+                          <td className="p-3.5 text-slate-200">
+                            <div className="font-semibold text-slate-100 max-w-[180px] truncate" title={doc.subjectName}>
+                              {doc.subjectName}
+                            </div>
+                          </td>
+
+                          {/* Folder Target Google Drive */}
+                          <td className="p-3.5">
+                            <div className="flex items-center gap-1 text-[11px] text-slate-400">
+                              <Folder className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                              <span className="truncate max-w-[140px]" title={currentFolder?.name || 'Folder GDrive Default'}>
+                                {currentFolder?.name || 'Folder ARMS Master'}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Link Google Drive */}
+                          <td className="p-3.5">
+                            {hasDrive ? (
+                              <div className="flex items-center gap-1.5">
+                                <a
+                                  href={doc.driveDocumentUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-950 hover:bg-blue-900 text-blue-200 border border-blue-700/80 rounded-lg text-[11px] font-semibold transition group shadow-sm"
+                                  title="Buka File di Google Drive (Tab Baru)"
+                                >
+                                  <HardDrive className="w-3.5 h-3.5 text-blue-400 group-hover:scale-110 transition-transform" />
+                                  <span>Buka GDrive</span>
+                                  <ExternalLink className="w-3 h-3 text-blue-400" />
+                                </a>
+
+                                <button
+                                  onClick={() => handleCopy(doc.driveDocumentUrl || '', doc.id)}
+                                  className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition"
+                                  title="Salin Link Google Drive"
+                                >
+                                  {isCopied ? (
+                                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                  ) : (
+                                    <Copy className="w-3.5 h-3.5" />
+                                  )}
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => handleOpenQuickDrive(doc)}
+                                className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-indigo-300 py-1 px-2.5 border border-dashed border-slate-700 hover:border-indigo-500 rounded-lg transition"
+                                title="Tautkan link berkas Google Drive"
+                              >
+                                <Plus className="w-3 h-3 text-indigo-400" />
+                                <span>+ Tautkan GDrive</span>
+                              </button>
+                            )}
+                          </td>
+
+                          {/* Tombol Preview Surat Resmi */}
+                          <td className="p-3.5 text-center">
+                            <button
+                              onClick={() => handleOpenPreview(doc)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-950 hover:bg-indigo-900 text-indigo-200 border border-indigo-800/80 rounded-lg text-[11px] font-semibold transition shadow-sm hover:scale-105 active:scale-95"
+                              title="Pratinjau Format Resmi Surat / Cetak Dokumen"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-indigo-400" />
+                              <span>Preview Surat</span>
+                            </button>
+                          </td>
+
+                          {/* Aksi Tambahan */}
+                          <td className="p-3.5 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => handleOpenQuickDrive(doc)}
+                                className="p-1.5 hover:bg-slate-800 rounded text-slate-400 hover:text-indigo-400 transition"
+                                title="Edit Tautan Google Drive & Folder"
+                              >
+                                <HardDrive className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
       )}
 
+      {/* =========================================================================
+          TAB 2: DIREKTORI FOLDER GOOGLE DRIVE
+      ========================================================================= */}
+      {activeTab === 'FOLDERS' && (
+        <div className="space-y-6">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+              <div>
+                <h3 className="font-bold text-white text-base flex items-center gap-2">
+                  <Folder className="w-5 h-5 text-blue-400" />
+                  <span>Struktur Direktori Folder Google Drive ARMS</span>
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Folder tersinkronisasi otomatis dengan Google Drive Master untuk pengelompokan berkas legal, operasional & keuangan.
+                </p>
+              </div>
+
+              <a
+                href={store.settings?.googleDriveFolderUrl || ROOT_GDRIVE_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition shadow-md"
+              >
+                <FolderOpen className="w-3.5 h-3.5" />
+                <span>Buka Master Root GDrive</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {(store.driveFolders || INITIAL_DRIVE_FOLDERS).map((folder) => {
+                const countInFolder = unifiedDocs.filter(
+                  d => d.driveFolderId === folder.id || d.category === folder.category
+                ).length;
+
+                return (
+                  <div
+                    key={folder.id}
+                    className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3 hover:border-slate-700 transition flex flex-col justify-between"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="p-2.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-400">
+                          <Folder className="w-5 h-5 text-blue-400" />
+                        </div>
+                        <span className="text-[10px] font-mono px-2 py-0.5 bg-slate-900 border border-slate-800 rounded text-slate-300">
+                          {countInFolder} Berkas
+                        </span>
+                      </div>
+
+                      <div>
+                        <h4 className="font-bold text-white text-sm">{folder.name}</h4>
+                        <p className="text-xs text-slate-400 mt-0.5 line-clamp-2">
+                          {folder.description || 'Folder pengarsipan dokumen'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                      <a
+                        href={folder.folderUrl || ROOT_GDRIVE_URL}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-950 hover:bg-indigo-900 text-indigo-200 border border-indigo-800 rounded-lg text-xs font-semibold transition"
+                      >
+                        <FolderOpen className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>Buka Folder</span>
+                        <ExternalLink className="w-3 h-3 text-indigo-400" />
+                      </a>
+
+                      <button
+                        onClick={() => {
+                          setCategoryFilter(folder.category as DocCategoryFilter);
+                          setActiveTab('ALL_DOCS');
+                        }}
+                        className="text-xs text-slate-400 hover:text-white px-2 py-1"
+                      >
+                        Lihat Berkas ({countInFolder}) &rarr;
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: PRATINJAU SURAT RESMI (LETTER PREVIEW)
+      ========================================================================= */}
+      <LetterPreviewModal
+        isOpen={showPreviewModal}
+        onClose={() => {
+          setShowPreviewModal(false);
+          setPreviewData(null);
+        }}
+        data={previewData}
+        onOpenQuickDriveModal={(d) => {
+          setShowPreviewModal(false);
+          const found = unifiedDocs.find(item => item.docNo === d.sk?.skNumber || item.docNo === d.lawyerNotice?.noticeNo || item.docNo === d.contract?.contractNo);
+          if (found) {
+            handleOpenQuickDrive(found);
+          }
+        }}
+      />
+
+      {/* =========================================================================
+          MODAL: EDIT CEPAT LINK GOOGLE DRIVE
+      ========================================================================= */}
+      <QuickGDriveModal
+        isOpen={quickDriveModal.isOpen}
+        onClose={() => setQuickDriveModal(prev => ({ ...prev, isOpen: false }))}
+        title={quickDriveModal.title}
+        documentNo={quickDriveModal.docNo}
+        subjectName={quickDriveModal.subjectName}
+        initialUrl={quickDriveModal.url}
+        initialFolderId={quickDriveModal.folderId}
+        category={quickDriveModal.category}
+        store={store}
+        currentUser={currentUser}
+        onUpdateStore={onUpdateStore}
+        onSave={quickDriveModal.onSave}
+      />
+
+      {/* =========================================================================
+          MODAL: TAMBAH / TAUTKAN DOKUMEN DIGITAL BARU
+      ========================================================================= */}
+      {showAddDocModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-5 sm:p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto my-auto">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <HardDrive className="w-5 h-5 text-indigo-400" />
+                <h3 className="font-bold text-white text-base">Tautkan Berkas Google Drive Baru</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddDocModal(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveNewDoc} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Judul / Nama Dokumen *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Scan KTP Debitur & SPH Asli - Budi Santoso"
+                  value={newDocTitle}
+                  onChange={(e) => setNewDocTitle(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Kategori Dokumen</label>
+                  <select
+                    value={newDocCategory}
+                    onChange={(e) => setNewDocCategory(e.target.value as any)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="SK_SURAT_KUASA">Surat Kuasa & Tugas</option>
+                    <option value="KTP_DEBTOR">KTP & Identitas Debitur</option>
+                    <option value="BPKB">BPKB & Berkas Fidusia</option>
+                    <option value="BERITA_ACARA">Berita Acara (BAST)</option>
+                    <option value="KWITANSI">Kwitansi & Pembayaran</option>
+                    <option value="CONTRACT">MoU / Kontrak</option>
+                    <option value="SETTLEMENT_REPORT">Laporan Settlement</option>
+                    <option value="OTHER">Dokumen Lainnya</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">No. Kasus Terkait (Opsional)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. CAS-2026-001"
+                    value={newDocCaseNo}
+                    onChange={(e) => setNewDocCaseNo(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
+              {/* Google Drive Folder Selector & Document URL */}
+              <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-3">
+                <GoogleDriveFolderPicker
+                  store={store}
+                  currentUser={currentUser}
+                  onUpdateStore={onUpdateStore}
+                  defaultCategory="DEBTOR_CASES"
+                  selectedFolderId={newDocFolderId}
+                  valueUrl={newDocUrl}
+                  onChangeUrl={(url) => setNewDocUrl(url)}
+                  onSelectFolder={(id, fUrl) => {
+                    setNewDocFolderId(id);
+                    setNewDocFolderUrl(fUrl);
+                  }}
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowAddDocModal(false)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition shadow-md flex items-center gap-1.5"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Simpan Dokumen</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

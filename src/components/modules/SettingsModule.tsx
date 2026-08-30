@@ -22,6 +22,7 @@ import {
 import { DEFAULT_MJ_LOGO } from '../../assets/mjLogo';
 import { SettingsWorkflowTab } from './SettingsWorkflowTab';
 import { SettingsBankBalancesTab } from './SettingsBankBalancesTab';
+import { SettingsGDriveDatabaseTab } from './SettingsGDriveDatabaseTab';
 import { Landmark } from 'lucide-react';
 
 interface SettingsModuleProps {
@@ -48,7 +49,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
   const [isPulling, setIsPulling] = useState(false);
   const [isPushing, setIsPushing] = useState(false);
   const [pushStatusMsg, setPushStatusMsg] = useState('');
-  const [activeTab, setActiveTab] = useState<'SYSTEM' | 'BANK_BALANCES' | 'WORKFLOW'>('SYSTEM');
+  const [activeTab, setActiveTab] = useState<'GDRIVE_DATABASE' | 'SYSTEM' | 'BANK_BALANCES' | 'WORKFLOW'>('GDRIVE_DATABASE');
 
   const handlePushFullFirebase = async () => {
     if (!onPushFullFirebase) return;
@@ -136,27 +137,41 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-px">
+      <div className="flex items-center gap-2 border-b border-slate-800 pb-px overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => setActiveTab('GDRIVE_DATABASE')}
+          className={`px-4 py-2.5 text-sm font-bold border-b-2 transition shrink-0 ${
+            activeTab === 'GDRIVE_DATABASE'
+              ? 'border-indigo-500 text-indigo-400 bg-indigo-950/20'
+              : 'border-transparent text-slate-400 hover:text-slate-300'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <HardDrive className="w-4 h-4 text-indigo-400" />
+            <span>📁 Direktori GDrive & Database Karyawan / Multifinance</span>
+          </div>
+        </button>
         <button
           type="button"
           onClick={() => setActiveTab('SYSTEM')}
-          className={`px-4 py-2 text-sm font-bold border-b-2 transition ${
+          className={`px-4 py-2.5 text-sm font-bold border-b-2 transition shrink-0 ${
             activeTab === 'SYSTEM'
-              ? 'border-indigo-500 text-indigo-400'
+              ? 'border-indigo-500 text-indigo-400 bg-indigo-950/20'
               : 'border-transparent text-slate-400 hover:text-slate-300'
           }`}
         >
           <div className="flex items-center gap-2">
             <SettingsIcon className="w-4 h-4" />
-            <span>Pengaturan Sistem</span>
+            <span>Pengaturan Sistem & Firebase</span>
           </div>
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('BANK_BALANCES')}
-          className={`px-4 py-2 text-sm font-bold border-b-2 transition ${
+          className={`px-4 py-2.5 text-sm font-bold border-b-2 transition shrink-0 ${
             activeTab === 'BANK_BALANCES'
-              ? 'border-emerald-500 text-emerald-400'
+              ? 'border-emerald-500 text-emerald-400 bg-emerald-950/20'
               : 'border-transparent text-slate-400 hover:text-slate-300'
           }`}
         >
@@ -168,9 +183,9 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('WORKFLOW')}
-          className={`px-4 py-2 text-sm font-bold border-b-2 transition ${
+          className={`px-4 py-2.5 text-sm font-bold border-b-2 transition shrink-0 ${
             activeTab === 'WORKFLOW'
-              ? 'border-purple-500 text-purple-400'
+              ? 'border-purple-500 text-purple-400 bg-purple-950/20'
               : 'border-transparent text-slate-400 hover:text-slate-300'
           }`}
         >
@@ -180,6 +195,14 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
           </div>
         </button>
       </div>
+
+      {activeTab === 'GDRIVE_DATABASE' && (
+        <SettingsGDriveDatabaseTab
+          store={store}
+          currentUser={currentUser}
+          onUpdateStore={onUpdateStore}
+        />
+      )}
 
       <div className={activeTab === 'SYSTEM' ? 'space-y-6' : 'hidden'}>
       {/* Firebase Database Push & Auto-Table Creation Banner */}
