@@ -93,6 +93,12 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
   const [selectedAttachmentPreview, setSelectedAttachmentPreview] = useState<{ src: string; index: number } | null>(null);
   const [isUploadingAttachmentPreview, setIsUploadingAttachmentPreview] = useState(false);
 
+  // Generator-surat integration popup/modal state
+  const [showGeneratorPopup, setShowGeneratorPopup] = useState(false);
+  const [isSyncingGenerator, setIsSyncingGenerator] = useState(false);
+  const [generatorIssueUrl, setGeneratorIssueUrl] = useState<string | null>(null);
+  const [generatorError, setGeneratorError] = useState<string | null>(null);
+
   const handleAddAttachment = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -136,6 +142,41 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
       }
     }
     return null;
+  };
+
+  // Sync selected SK / Debtor & Personnel to generator-surat- repository by creating a GitHub issue
+  const syncToGeneratorRepo = async (options?: { skNumber?: string; skId?: string }) => {
+    try {
+      setIsSyncingGenerator(true);
+      setGeneratorError(null);
+      setGeneratorIssueUrl(null);
+
+      const payload = {
+        skNumber: options?.skNumber || skNumberDraft,
+        skId: options?.skId || (isEditing ? editId : undefined),
+        debtor: selectedCase || null,
+        personnel: selectedPersonnel || null,
+        driveDocumentUrl: driveDocumentUrl || null,
+      };
+
+      const resp = await fetch('/api/surat/create-issue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const j = await resp.json();
+      if (!resp.ok) {
+        setGeneratorError(j?.error || 'Failed creating issue on generator repo');
+      } else {
+        setGeneratorIssueUrl(j.issueUrl || null);
+      }
+    } catch (err: any) {
+      console.error('Sync to generator repo failed', err);
+      setGeneratorError(err?.message || String(err));
+    } finally {
+      setIsSyncingGenerator(false);
+    }
   };
 
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS';
@@ -858,13 +899,36 @@ MASA BERLAKU: ${todayStr} s/d ${endDateStr}`;
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setShowModal(false)}
-                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <a
+                  href="https://github.com/irvanlaksana/generator-surat-"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-1.5 text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition flex items-center gap-2"
+                  title="Open generator-surat- repository"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  <span className="text-xs hidden sm:inline">Generator</span>
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => { setShowGeneratorPopup(true); setGeneratorIssueUrl(null); setGeneratorError(null); }}
+                  className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white flex items-center gap-2"
+                  title="Buat surat di generator-surat- (sync debtor & personnel)"
+                >
+                  <FileText className="w-4 h-4" />
+                  Buat Surat
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             {/* Form Body */}
@@ -1377,6 +1441,17 @@ MASA BERLAKU: ${todayStr} s/d ${endDateStr}`;
                   >
                     Batal / Tutup
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setShowGeneratorPopup(true); setGeneratorIssueUrl(null); setGeneratorError(null); }}
+                    className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition flex items-center gap-2"
+                    title="Syncronize to generator-surat- repo"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Buat di Generator
+                  </button>
+
                   <button
                     type="submit"
                     className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-indigo-600/20 active:scale-95 flex items-center gap-2"
@@ -1414,6 +1489,49 @@ MASA BERLAKU: ${todayStr} s/d ${endDateStr}`;
           }
         }}
       />
+
+      {/* Generator-surat Popup */}
+      {showGeneratorPopup && (
+        <div className="fixed inset-0 z-60 bg-black/60 flex items-center justify-center p-3">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-white font-bold text-sm">Buat Surat di Generator</h3>
+                <p className="text-xs text-slate-400">Sinkronisasi data debitur dan petugas ke <a href="https://github.com/irvanlaksana/generator-surat-" target="_blank" rel="noreferrer" className="text-indigo-400 underline">generator-surat-</a></p>
+              </div>
+              <button onClick={() => setShowGeneratorPopup(false)} className="text-slate-400 hover:text-white"><X className="w-4 h-4" /></button>
+            </div>
+
+            <div className="mt-3 text-xs text-slate-300 space-y-3">
+              <div>
+                <div className="text-slate-400 text-[11px]">Debitur yang akan disinkron:</div>
+                <pre className="bg-slate-800 p-2 rounded text-[11px] text-slate-200 overflow-auto max-h-28">{JSON.stringify(selectedCase || {}, null, 2)}</pre>
+              </div>
+              <div>
+                <div className="text-slate-400 text-[11px]">Petugas penerima tugas:</div>
+                <pre className="bg-slate-800 p-2 rounded text-[11px] text-slate-200 overflow-auto max-h-28">{JSON.stringify(selectedPersonnel || {}, null, 2)}</pre>
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-center justify-between">
+              <div className="text-xs text-slate-400">
+                {generatorError && <div className="text-rose-400">{generatorError}</div>}
+                {generatorIssueUrl && <a href={generatorIssueUrl} target="_blank" rel="noreferrer" className="text-indigo-300 underline">Lihat issue di GitHub</a>}
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setShowGeneratorPopup(false)} className="px-3 py-1.5 bg-slate-800 text-slate-300 rounded">Tutup</button>
+                <button
+                  onClick={() => syncToGeneratorRepo()}
+                  disabled={isSyncingGenerator}
+                  className="px-3 py-1.5 bg-indigo-600 text-white rounded flex items-center gap-2"
+                >
+                  {isSyncingGenerator ? 'Menyinkron...' : 'Buat Issue & Sinkron'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

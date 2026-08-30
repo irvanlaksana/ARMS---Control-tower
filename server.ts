@@ -295,6 +295,56 @@ async function startServer() {
     }
   });
 
+  // API Route: Create GitHub Issue in generator-surat- to sync SK / Debtor & Personnel data
+  app.post('/api/surat/create-issue', async (req, res) => {
+    try {
+      const githubToken = process.env.GITHUB_TOKEN;
+      if (!githubToken) {
+        return res.status(500).json({ success: false, error: 'Server misconfigured: GITHUB_TOKEN not set. Set the GITHUB_TOKEN environment variable.' });
+      }
+
+      const { skNumber, skId, debtor, personnel, driveDocumentUrl } = req.body || {};
+      if (!debtor || !personnel) {
+        return res.status(400).json({ success: false, error: 'Missing debtor or personnel data in request body' });
+      }
+
+      const repoOwner = 'irvanlaksana';
+      const repoName = 'generator-surat-';
+      const issueTitle = `SK: ${skNumber || skId || 'new'} - ${debtor.debtorName || debtor.name || 'Debtor'}`;
+
+      const issueBody = `Auto-synced from ARMS - Control Tower\n\n**SK ID / Number:** ${skId || skNumber || ''}\n\n**Debtor (case data):**\n\n\n\`
+${JSON.stringify(debtor, null, 2)}
+\`
+\n**Personnel (penerima tugas):**\n\n\n\
+${JSON.stringify(personnel, null, 2)}
+\n**Drive Document URL (if any):** ${driveDocumentUrl || ''}\n\n---\n*(This issue was created automatically by ARMS - Control Tower to seed generator-surat- with debtor & personnel data.)*`;
+
+      const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/issues`;
+
+      const resp = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `token ${githubToken}`,
+          'Accept': 'application/vnd.github+json',
+          'Content-Type': 'application/json',
+          'User-Agent': 'ARMS-Control-Tower'
+        },
+        body: JSON.stringify({ title: issueTitle, body: issueBody })
+      });
+
+      const json = await resp.json();
+      if (!resp.ok) {
+        console.error('GitHub API error:', json);
+        return res.status(resp.status).json({ success: false, error: json.message || 'GitHub API error', details: json });
+      }
+
+      return res.json({ success: true, issueUrl: json.html_url, issueNumber: json.number });
+    } catch (err: any) {
+      console.error('Create Issue Error:', err?.message || err);
+      res.status(500).json({ success: false, error: err?.message || 'Failed creating GitHub issue' });
+    }
+  });
+
   // Serve Vite in development / production static build
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
