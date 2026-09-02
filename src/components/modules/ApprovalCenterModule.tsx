@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AmountInput } from '../common/AmountInput';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, ApprovalRequest } from '../../types/arms';
 import { CheckSquare, CheckCircle, XCircle, Clock, Plus, Edit2, Trash2, X, Filter } from 'lucide-react';
@@ -475,11 +476,9 @@ export const ApprovalCenterModule: React.FC<ApprovalCenterModuleProps> = ({
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1">Nominal / Nilai (Rp)</label>
-              <input
-                type="number"
-                min="0"
+              <AmountInput
                 value={amountOrValue}
-                onChange={(e) => setAmountOrValue(Number(e.target.value))}
+                onChange={setAmountOrValue}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono"
               />
             </div>

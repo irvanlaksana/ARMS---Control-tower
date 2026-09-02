@@ -552,10 +552,11 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
                 <div>
                   <label className="block text-slate-400 mb-1 font-medium">Nominal Modal (Rp) *</label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     min="1"
                     value={amount}
-                    onChange={(e) => setAmount(Number(e.target.value))}
+                    onChange={(e) => setAmount(Number(e.target.value.replace(/\D/g, '')) || 0)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:border-indigo-500 font-mono font-bold"
                     required
                   />

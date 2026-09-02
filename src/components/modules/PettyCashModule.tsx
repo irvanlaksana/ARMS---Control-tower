@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AmountInput } from '../common/AmountInput';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, PettyCashTransaction } from '../../types/arms';
 import { 
@@ -613,12 +614,9 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
               {/* Nominal */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Nominal (Rp)</label>
-                <input
-                  type="number"
-                  min="1000"
-                  step="1000"
+                <AmountInput
                   value={amount}
-                  onChange={(e) => setAmount(Number(e.target.value))}
+                  onChange={setAmount}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono font-bold focus:outline-none focus:border-amber-500"
                   required
                 />

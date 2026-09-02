@@ -3,6 +3,7 @@ import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, DanaTalangan, ApprovalRequest } from '../../types/arms';
 import { Coins, Plus, CheckCircle, Clock, AlertTriangle, ShieldCheck, Edit2, Trash2, Lock } from 'lucide-react';
 import { SearchableSelect } from '../common/SearchableSelect';
+import { AmountInput } from '../common/AmountInput';
 
 interface DanaTalanganModuleProps {
   store: ARMSStore;
@@ -344,10 +345,9 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
 
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Requested Amount (Rp)</label>
-                <input
-                  type="number"
+                <AmountInput
                   value={requestedAmount}
-                  onChange={(e) => setRequestedAmount(Number(e.target.value))}
+                  onChange={setRequestedAmount}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono"
                 />
               </div>

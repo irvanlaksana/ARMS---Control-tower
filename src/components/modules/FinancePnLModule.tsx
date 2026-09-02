@@ -435,11 +435,12 @@ export const FinancePnLModule: React.FC<FinancePnLModuleProps> = ({
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1">Nominal (Rp)</label>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 min="1000"
                 step="1000"
                 value={amount}
-                onChange={(e) => setAmount(Number(e.target.value))}
+                onChange={(e) => setAmount(Number(e.target.value.replace(/\D/g, '')) || 0)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono font-bold"
                 required
               />

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AmountInput } from '../common/AmountInput';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Expense, LedgerEntry } from '../../types/arms';
 import { Wallet, Plus, Edit2, Trash2 } from 'lucide-react';
@@ -216,11 +217,10 @@ export const ExpensesModule: React.FC<ExpensesModuleProps> = ({ store, currentUs
 
             <div>
               <label className="block text-xs text-slate-400 mb-1">Amount (Rp)</label>
-              <input
-                type="number"
+              <AmountInput
                 required
                 value={amount}
-                onChange={(e) => setAmount(Number(e.target.value))}
+                onChange={setAmount}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono"
               />
             </div>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AmountInput } from '../common/AmountInput';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Asset } from '../../types/arms';
 import { Car, Plus, Edit2, Trash2, AlertCircle, Lock } from 'lucide-react';
@@ -350,11 +351,10 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ store, currentUser, 
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Estimasi Nilai Pasar (Rp)</label>
-                <input
-                  type="number"
+                <AmountInput
                   required
                   value={estimatedValue}
-                  onChange={(e) => setEstimatedValue(Number(e.target.value))}
+                  onChange={setEstimatedValue}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
                 />
               </div>

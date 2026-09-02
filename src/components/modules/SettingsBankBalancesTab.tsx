@@ -821,10 +821,11 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Saldo Rekening Saat Ini (IDR)</label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   min="0"
                   value={balance}
-                  onChange={(e) => setBalance(Number(e.target.value))}
+                  onChange={(e) => setBalance(Number(e.target.value.replace(/\D/g, '')) || 0)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono font-bold"
                 />
                 <span className="text-[10px] text-slate-400 mt-0.5 block">

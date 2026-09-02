@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { AmountInput } from '../common/AmountInput';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Payment, LedgerEntry } from '../../types/arms';
 import {
@@ -670,11 +671,10 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-2.5 text-xs text-slate-400 font-mono">Rp</span>
-                  <input
-                    type="number"
+                  <AmountInput
                     required
                     value={totalPaidByDebitur}
-                    onChange={(e) => setTotalPaidByDebitur(Number(e.target.value))}
+                    onChange={setTotalPaidByDebitur}
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-emerald-400 font-mono font-bold focus:border-emerald-500 focus:outline-none"
                   />
                 </div>
@@ -714,10 +714,9 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
                   </label>
                   <div className="relative">
                     <span className="absolute left-2.5 top-2 text-[11px] text-slate-400 font-mono">Rp</span>
-                    <input
-                      type="number"
+                    <AmountInput
                       value={customGrossFee ?? tierCalcResult.grossAgencyFee}
-                      onChange={(e) => setCustomGrossFee(Number(e.target.value))}
+                      onChange={setCustomGrossFee}
                       className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-8 pr-2 py-1.5 text-xs text-white font-mono font-bold focus:border-indigo-500 focus:outline-none"
                     />
                   </div>

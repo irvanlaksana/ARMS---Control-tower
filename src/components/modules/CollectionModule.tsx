@@ -8,6 +8,7 @@ import {
   Car, AlertCircle, CheckSquare, Sparkles, Navigation, Trash2, Send, Percent, ShieldCheck, Lock
 } from 'lucide-react';
 import { SearchableSelect } from "../common/SearchableSelect";
+import { AmountInput } from "../common/AmountInput";
 import { UnitExecutionModal } from './UnitExecutionModal';
 import { TransferPartnerCommissionModal } from './TransferPartnerCommissionModal';
 import { calculateRepossessionTierFee, executeUnitRepossessionAndCloseCase } from '../../utils/tierFeeCalculator';
@@ -1616,11 +1617,9 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                     <label className="block text-[11px] text-slate-400 mb-1">
                       Nominal Pembayaran (Rp) <span className="text-red-400">*</span>
                     </label>
-                    <input
-                      type="number"
-                      min={1}
+                    <AmountInput
                       value={paymentAmount}
-                      onChange={(e) => setPaymentAmount(Number(e.target.value))}
+                      onChange={setPaymentAmount}
                       placeholder="e.g. 5000000"
                       className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-emerald-300 font-bold font-mono"
                     />

@@ -4,6 +4,7 @@ import { User, Case, FeeType, Client, ClientType } from '../../types/arms';
 import { Briefcase, Plus, CheckCircle, Search, Building2, User as UserIcon, UserCheck, ShieldCheck, Edit2, Trash2, AlertTriangle, AlertCircle, Lock, X } from 'lucide-react';
 import { findDuplicateCaseForClient } from '../../utils/duplicateCheck';
 import { SearchableSelect } from '../common/SearchableSelect';
+import { AmountInput } from '../common/AmountInput';
 
 interface CasesModuleProps {
   store: ARMSStore;
@@ -508,11 +509,10 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
               </div>
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Principal Outstanding (Rp)</label>
-                <input
-                  type="number"
+                <AmountInput
                   required
                   value={principalDebtOS}
-                  onChange={(e) => setPrincipalDebtOS(Number(e.target.value))}
+                  onChange={setPrincipalDebtOS}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
                 />
               </div>

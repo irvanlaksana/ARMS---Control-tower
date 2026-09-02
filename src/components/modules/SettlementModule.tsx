@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AmountInput } from '../common/AmountInput';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Settlement, ApprovalRequest } from '../../types/arms';
 import { ShieldCheck, Plus, CheckCircle, ExternalLink, Edit2, Trash2 } from 'lucide-react';
@@ -229,22 +230,20 @@ export const SettlementModule: React.FC<SettlementModuleProps> = ({ store, curre
 
             <div>
               <label className="block text-xs text-slate-400 mb-1">Total Gross Debtor Collected (Rp)</label>
-              <input
-                type="number"
+              <AmountInput
                 required
                 value={totalDebtorCollectedAmount}
-                onChange={(e) => setTotalDebtorCollectedAmount(Number(e.target.value))}
+                onChange={setTotalDebtorCollectedAmount}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono"
               />
             </div>
 
             <div>
               <label className="block text-xs text-slate-400 mb-1">Agency Fee Deduction (Rp)</label>
-              <input
-                type="number"
+              <AmountInput
                 required
                 value={agencyFeeDeduction}
-                onChange={(e) => setAgencyFeeDeduction(Number(e.target.value))}
+                onChange={setAgencyFeeDeduction}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono"
               />
             </div>
