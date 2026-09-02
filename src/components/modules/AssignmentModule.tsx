@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Assignment } from '../../types/arms';
 import { Users, Plus, CheckCircle, Clock, AlertCircle, Building2, UserCheck, ExternalLink, Filter, Search, Scale, Edit2, Trash2 } from 'lucide-react';
+import { SearchableSelect } from '../common/SearchableSelect';
 
 interface AssignmentModuleProps {
   store: ARMSStore;
@@ -419,15 +420,32 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
                   ⚠️ Semua kasus telah selesai/lunas. Tidak ada berkas kasus aktif baru untuk ditugaskan.
                 </div>
               ) : (
-                <SearchableSelect 
-                  value={personnelId}
-                  onChange={setPartnerId}
-                  options={(store.personnel || []).map((pr) => ({
-                    value: pr.id,
-                    label: pr.fullName,
-                    subLabel: pr.type === 'MITRA_DC' ? 'Mitra DC' : 'Internal'
+                <SearchableSelect
+                  value={caseId}
+                  onChange={setCaseId}
+                  options={activeCases.map((cs) => ({
+                    value: cs.id,
+                    label: `${cs.caseNo} - ${cs.debtorName}`,
+                    subLabel: cs.clientName || 'Kasus recovery'
                   }))}
                 />
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                Pilih Mitra Lapangan / DC <span className="text-red-400">*</span>
+              </label>
+              <SearchableSelect
+                value={personnelId}
+                onChange={setPartnerId}
+                options={(store.personnel || []).map((pr) => ({
+                  value: pr.id,
+                  label: pr.fullName,
+                  subLabel: pr.type === 'MITRA_DC' ? 'Mitra DC' : 'Petugas Internal'
+                }))}
+                placeholder="Pilih mitra atau petugas..."
+              />
             </div>
 
             <div>

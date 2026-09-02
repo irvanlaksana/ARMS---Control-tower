@@ -26,9 +26,23 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
 
   // Financial Summary Calculations
   const totalCollected = (store.collections || []).reduce((sum, c) => sum + (c.amountCollected || 0), 0);
-  const totalRevenueFee = (store.ledger || [])
-    .filter((l) => l.account === 'REVENUE_FEE' && !l.isReversed)
-    .reduce((sum, l) => sum + (l.amount || 0), 0);
+  const revenueLedgerEntries = (store.ledger || []).filter(
+    (l) => l.account === 'REVENUE_FEE' && !l.isReversed
+  );
+  const totalRevenueFromLedger = revenueLedgerEntries.reduce((sum, l) => sum + (l.amount || 0), 0);
+  const paymentIdsWithLedgerRevenue = new Set(
+    revenueLedgerEntries.filter((l) => l.referenceModule === 'PAYMENT').map((l) => l.referenceId)
+  );
+  const getCompanyFee = (payment: (typeof store.payments)[number]) => {
+    if (payment.companyRevenueAmount != null) return payment.companyRevenueAmount;
+    const grossFee = payment.grossAgencyFee ?? payment.successFeeAmount ?? 0;
+    const companyPercent = payment.companyFeePercent ?? store.settings?.defaultCompanyCommissionSplitPercent ?? 20;
+    return Math.round(grossFee * companyPercent / 100);
+  };
+  const totalRevenueFromPayments = (store.payments || [])
+    .filter((p) => p.verificationStatus === 'VERIFIED' && !paymentIdsWithLedgerRevenue.has(p.id))
+    .reduce((sum, p) => sum + getCompanyFee(p), 0);
+  const totalRevenueFee = totalRevenueFromLedger + totalRevenueFromPayments;
   const totalExpenses = (store.expenses || [])
     .filter((e) => e.status === 'APPROVED')
     .reduce((sum, e) => sum + (e.amount || 0), 0);
@@ -60,9 +74,19 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
         const mName = date.toLocaleString('id-ID', { month: 'short' });
         if (monthsMap[mName]) {
           monthsMap[mName].collected += (c.amountCollected || 0);
-          monthsMap[mName].revenue += (c.amountCollected || 0) * (store.settings?.defaultFeePercent || 15) / 100;
         }
       }
+    });
+    (store.payments || [])
+      .filter((p) => p.verificationStatus === 'VERIFIED' && !paymentIdsWithLedgerRevenue.has(p.id))
+      .forEach((p) => {
+        if (!p.paymentDate) return;
+        const mName = new Date(p.paymentDate).toLocaleString('id-ID', { month: 'short' });
+        if (monthsMap[mName]) monthsMap[mName].revenue += getCompanyFee(p);
+      });
+    revenueLedgerEntries.forEach((entry) => {
+      const mName = new Date(entry.date).toLocaleString('id-ID', { month: 'short' });
+      if (monthsMap[mName]) monthsMap[mName].revenue += entry.amount || 0;
     });
 
     const result = Object.values(monthsMap);
@@ -73,7 +97,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
       collected: Math.round(m.collected / 1000000),
       revenue: Math.round(m.revenue / 1000000),
     }));
-  }, [store.collections, store.settings]);
+  }, [store.collections, store.settings, store.payments, revenueLedgerEntries, paymentIdsWithLedgerRevenue]);
 
   // Recovery Rate & Case Distribution Calculation
   const totalCases = (store.cases || []).length;
@@ -113,9 +137,9 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
   }, [store.cases]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Top Welcome Banner */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 relative overflow-hidden shadow-lg">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 relative overflow-hidden shadow-lg">
         <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-indigo-950/40 to-transparent pointer-events-none" />
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div className="flex items-center gap-4">
@@ -157,83 +181,83 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
       </div>
 
       {/* Financial Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-2">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
-            <span>Total Revenue (Agency Fee)</span>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-1.5">
+          <div className="flex items-center justify-between text-slate-400 text-[11px] font-medium">
+            <span>Total Fee Perusahaan</span>
             <div className="p-2 rounded-lg bg-emerald-950/80 text-emerald-400 border border-emerald-900/50">
               <DollarSign className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-white tracking-tight">
+          <div className="text-xl font-bold text-white tracking-tight">
             Rp {totalRevenueFee.toLocaleString('id-ID')}
           </div>
-          <div className="flex items-center gap-1 text-[11px] text-emerald-400">
+          <div className="flex items-center gap-1 text-[10px] text-emerald-400">
             <ArrowUpRight className="w-3.5 h-3.5" />
-            <span>Success & Service Fees Earned</span>
+            <span>Agency fee & success fee</span>
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-2">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-1.5">
+          <div className="flex items-center justify-between text-slate-400 text-[11px] font-medium">
             <span>Approved Expenses</span>
             <div className="p-2 rounded-lg bg-rose-950/80 text-rose-400 border border-rose-900/50">
               <Wallet className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-white tracking-tight">
+          <div className="text-xl font-bold text-white tracking-tight">
             Rp {totalExpenses.toLocaleString('id-ID')}
           </div>
-          <div className="flex items-center gap-1 text-[11px] text-slate-400">
+          <div className="flex items-center gap-1 text-[10px] text-slate-400">
             <ArrowDownRight className="w-3.5 h-3.5 text-rose-400" />
-            <span>Field Ops, Towing & Warehouse</span>
+            <span>Ops, towing & warehouse</span>
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-2">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-1.5">
+          <div className="flex items-center justify-between text-slate-400 text-[11px] font-medium">
             <span>Net Operating Profit</span>
             <div className="p-2 rounded-lg bg-indigo-950/80 text-indigo-400 border border-indigo-900/50">
               <Briefcase className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-white tracking-tight">
+          <div className="text-xl font-bold text-white tracking-tight">
             Rp {netProfit.toLocaleString('id-ID')}
           </div>
-          <div className="text-[11px] text-indigo-300 font-medium">
-            Revenue minus Approved Expenses
+          <div className="text-[10px] text-indigo-300 font-medium">
+            Revenue minus expenses
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-2">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-1.5">
+          <div className="flex items-center justify-between text-slate-400 text-[11px] font-medium">
             <span>Total Cash Liquidity</span>
             <div className="p-2 rounded-lg bg-amber-950/80 text-amber-400 border border-amber-900/50">
               <Coins className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-white tracking-tight">
+          <div className="text-xl font-bold text-white tracking-tight">
             Rp {totalCashBalance.toLocaleString('id-ID')}
           </div>
-          <div className="text-[11px] text-amber-400 font-medium">
-            Operational Bank + Talangan Vault
+          <div className="text-[10px] text-amber-400 font-medium">
+            Bank + talangan vault
           </div>
         </div>
       </div>
 
       {/* Visual Analytics with Recharts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Monthly Collection Performance Chart */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4 lg:col-span-2">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3 lg:col-span-2">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
             <div>
               <h3 className="font-bold text-white text-sm flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-emerald-400" />
-                <span>Monthly Collection Performance & Agency Revenue (in Juta Rp)</span>
+                <span>Collection & Agency Revenue</span>
               </h3>
-              <p className="text-[11px] text-slate-400">Pencapaian Target Penagihan vs Realisasi Collection & Success Fee</p>
+              <p className="text-[10px] text-slate-400">Target, realisasi, dan fee</p>
             </div>
-            <div className="flex items-center gap-2 text-xs">
+            <div className="flex items-center gap-2 text-[10px]">
               <span className="inline-flex items-center gap-1 text-slate-400">
                 <span className="w-2.5 h-2.5 rounded-full bg-slate-600 inline-block" />
                 Target
@@ -244,14 +268,14 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
               </span>
               <span className="inline-flex items-center gap-1 text-indigo-400">
                 <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block" />
-                Revenue
+                Fee
               </span>
             </div>
           </div>
 
-          <div className="h-64 w-full">
+          <div className="h-44 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <BarChart data={monthlyData} margin={{ top: 10, right: 10, left: -18, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} />
                 <XAxis dataKey="month" stroke="#94a3b8" fontSize={11} tickLine={false} />
                 <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
@@ -268,42 +292,42 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
         </div>
 
         {/* Recovery Success Rate & Case Breakdown */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
             <div>
               <h3 className="font-bold text-white text-sm flex items-center gap-2">
                 <PieChartIcon className="w-4 h-4 text-indigo-400" />
-                <span>Recovery Success Rate</span>
+                <span>Recovery Success</span>
               </h3>
-              <p className="text-[11px] text-slate-400">Persentase Penanganan Kasus & Distribusi Status</p>
+              <p className="text-[10px] text-slate-400">Status kasus</p>
             </div>
           </div>
 
-          <div className="flex items-center justify-between bg-slate-950/80 p-3.5 rounded-xl border border-slate-800">
+          <div className="flex items-center justify-between bg-slate-950/80 p-3 rounded-xl border border-slate-800">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-lg bg-emerald-950 text-emerald-400 border border-emerald-800">
-                <Target className="w-5 h-5" />
+              <div className="p-2 rounded-lg bg-emerald-950 text-emerald-400 border border-emerald-800">
+                <Target className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-[11px] text-slate-400 font-medium">Success Rate Overall</div>
+                <div className="text-[10px] text-slate-400 font-medium">Overall</div>
                 <div className="text-xl font-extrabold text-emerald-400 tracking-tight">{recoverySuccessRate}%</div>
               </div>
             </div>
-            <div className="text-right text-[11px] text-slate-400">
-              <div className="font-bold text-white">{settledOrRecoveredCases} of {totalCases} Cases</div>
-              <span>Settled / Recovered</span>
+            <div className="text-right text-[10px] text-slate-400">
+              <div className="font-bold text-white">{settledOrRecoveredCases}/{totalCases}</div>
+              <span>settled</span>
             </div>
           </div>
 
-          <div className="h-44 w-full flex items-center justify-center">
+          <div className="h-28 w-full flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={caseDistributionData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={35}
-                  outerRadius={65}
+                  innerRadius={28}
+                  outerRadius={52}
                   paddingAngle={4}
                   dataKey="value"
                 >
@@ -318,14 +342,14 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
             </ResponsiveContainer>
           </div>
 
-          <div className="space-y-1.5 border-t border-slate-800 pt-3">
+          <div className="space-y-1.5 border-t border-slate-800 pt-2">
             {caseDistributionData.slice(0, 4).map((item) => (
-              <div key={item.name} className="flex items-center justify-between text-xs">
+              <div key={item.name} className="flex items-center justify-between text-[10px]">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
                   <span className="text-slate-300 font-medium">{item.name}</span>
                 </div>
-                <span className="font-bold text-white font-mono">{item.value} Kasus</span>
+                <span className="font-bold text-white font-mono">{item.value}</span>
               </div>
             ))}
           </div>
@@ -333,9 +357,9 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
       </div>
 
       {/* Operational Highlights Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         {/* Active Cases & Recovery Status */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <h3 className="font-bold text-white text-sm flex items-center gap-2">
               <Briefcase className="w-4 h-4 text-indigo-400" />
@@ -368,7 +392,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
         </div>
 
         {/* Pending Approvals Summary */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4 lg:col-span-2">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3 lg:col-span-2">
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <h3 className="font-bold text-white text-sm flex items-center gap-2">
               <CheckSquare className="w-4 h-4 text-amber-400" />
@@ -424,7 +448,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
       </div>
 
       {/* Multifinance Client Summary Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <h3 className="font-bold text-white text-sm flex items-center gap-2">
             <Building2 className="w-4 h-4 text-blue-400" />
@@ -438,7 +462,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
           </button>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-64">
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-950 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
               <tr>

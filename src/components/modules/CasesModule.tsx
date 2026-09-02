@@ -3,6 +3,7 @@ import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Case, FeeType, Client, ClientType } from '../../types/arms';
 import { Briefcase, Plus, CheckCircle, Search, Building2, User as UserIcon, UserCheck, ShieldCheck, Edit2, Trash2, AlertTriangle, AlertCircle, Lock } from 'lucide-react';
 import { findDuplicateCaseForClient } from '../../utils/duplicateCheck';
+import { SearchableSelect } from '../common/SearchableSelect';
 
 interface CasesModuleProps {
   store: ARMSStore;
@@ -563,4 +564,3 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
     </div>
   );
 };
-

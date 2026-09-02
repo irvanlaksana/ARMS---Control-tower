@@ -1,6 +1,7 @@
 import React from 'react';
 import { User, UserRole, AppSettings } from '../../types/arms';
 import { Shield, Database, RefreshCw, Menu, Layers, CheckSquare } from 'lucide-react';
+import { SearchableSelect } from '../common/SearchableSelect';
 
 interface HeaderProps {
   currentUser: User;
@@ -107,21 +108,21 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="mt-0.5">{getRoleBadge(currentUser.role)}</div>
           </div>
 
-          <select
-            value={currentUser.id}
-            onChange={(e) => {
-              const selected = (usersList || []).find((u) => u.id === e.target.value);
-              if (selected && onSwitchUser) onSwitchUser(selected);
-            }}
-            className="bg-slate-800 hover:bg-slate-700 text-[11px] sm:text-xs text-slate-200 border border-slate-700 rounded-lg px-2 py-1.5 focus:outline-none focus:border-red-500 cursor-pointer font-medium max-w-[110px] sm:max-w-[180px] truncate"
-            title="Ganti Pengguna / Role"
-          >
-            {(usersList || []).map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.name}
-              </option>
-            ))}
-          </select>
+          <div className="w-[110px] sm:w-[180px]">
+            <SearchableSelect
+              value={currentUser.id}
+              onChange={(value) => {
+                const selected = (usersList || []).find((u) => u.id === value);
+                if (selected) onSwitchUser(selected);
+              }}
+              options={(usersList || []).map((u) => ({
+                value: u.id,
+                label: u.name,
+                subLabel: u.role.replace(/_/g, ' '),
+              }))}
+              placeholder="Pilih pengguna..."
+            />
+          </div>
         </div>
       </div>
     </header>
