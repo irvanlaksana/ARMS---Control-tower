@@ -1,3 +1,4 @@
+import { SearchableSelect } from "../common/SearchableSelect";
 import React, { useState, useEffect } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, AssetRecovery, Payment, Expense, LedgerEntry } from '../../types/arms';

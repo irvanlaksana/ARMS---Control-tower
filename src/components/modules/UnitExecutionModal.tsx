@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ARMSStore } from '../../services/armsDataService';
 import { User, Case, AssetRecovery } from '../../types/arms';
+import { SearchableSelect } from '../common/SearchableSelect';
 import {
   Car,
   CheckCircle,
@@ -210,26 +211,31 @@ export const UnitExecutionModal: React.FC<UnitExecutionModalProps> = ({
                 Tidak ada kasus aktif untuk eksekusi unit.
               </div>
             ) : (
-              <select
-                value={selectedCaseId}
-                onChange={(e) => {
-                  setSelectedCaseId(e.target.value);
-                  const found = store.cases.find((c) => c.id === e.target.value);
-                  if (found?.currentPersonnelId) {
-                    setSelectedPersonnelId(found.currentPersonnelId);
-                  }
-                  if (found?.gDriveFolderUrl) {
-                    setBastDriveUrl(found.gDriveFolderUrl);
-                  }
-                }}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:border-rose-500 focus:outline-none font-medium"
-              >
-                {availableCases.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.caseNo} - {c.status === 'CLOSED' ? '[Kasus Ditutup]' : c.debtorName} ({c.clientName}) - OS: Rp {c.principalDebtOS.toLocaleString('id-ID')} - Status: {c.status}
-                  </option>
-                ))}
-              </select>
+              <div className="relative z-[60]">
+                <SearchableSelect
+                  value={selectedCaseId}
+                  onChange={(val) => {
+                    setSelectedCaseId(val);
+                    const found = store.cases.find((c) => c.id === val);
+                    if (found?.currentPersonnelId) {
+                      setSelectedPersonnelId(found.currentPersonnelId);
+                    }
+                    if (found?.gDriveFolderUrl) {
+                      setBastDriveUrl(found.gDriveFolderUrl);
+                    }
+                  }}
+                  options={availableCases.map((c) => {
+                    const isClosed = c.status === 'CLOSED';
+                    const debtor = isClosed ? '[Kasus Ditutup]' : c.debtorName;
+                    const cat = c.clientType === 'PERORANGAN' ? 'PERORANGAN' : 'MULTIFINANCE';
+                    return {
+                      value: c.id,
+                      label: `[${cat}] ${c.caseNo} — ${debtor}`,
+                      subLabel: `Klien: ${c.clientName} | OS: Rp ${c.principalDebtOS.toLocaleString('id-ID')} | Status: ${c.status}`
+                    };
+                  })}
+                />
+              </div>
             )}
 
             {targetCase && (
@@ -367,17 +373,15 @@ export const UnitExecutionModal: React.FC<UnitExecutionModalProps> = ({
                 <label className="block text-[11px] text-slate-400 mb-1">
                   Pilih Petugas / Mitra DC Eksekutor:
                 </label>
-                <select
+                <SearchableSelect 
                   value={selectedPersonnelId}
-                  onChange={(e) => setSelectedPersonnelId(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none font-medium"
-                >
-                  {store.personnel.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.fullName} ({p.type === 'MITRA_DC' ? '⚡ Mitra DC Freelance' : '🏢 Karyawan Internal'}) - {p.position || p.type}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setSelectedPersonnelId}
+                  options={store.personnel.map(p => ({
+                    value: p.id,
+                    label: p.fullName,
+                    subLabel: `${p.type === 'MITRA_DC' ? '⚡ Mitra DC Freelance' : '🏢 Karyawan Internal'} - ${p.position || p.type}`
+                  }))}
+                />
               </div>
 
               <div className="p-3 bg-slate-900 border border-slate-800 rounded-lg flex items-center justify-between">

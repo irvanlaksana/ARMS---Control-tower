@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Asset } from '../../types/arms';
 import { Car, Plus, Edit2, Trash2, AlertCircle, Lock } from 'lucide-react';
+import { SearchableSelect } from '../common/SearchableSelect';
 
 interface AssetsModuleProps {
   store: ARMSStore;
@@ -15,6 +16,8 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ store, currentUser, 
   const [editId, setEditId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Asset | null>(null);
 
+  const [clientFilter, setClientFilter] = useState<'ALL' | 'MULTIFINANCE' | 'PERORANGAN'>('ALL');
+
   const [caseId, setCaseId] = useState(store.cases?.[0]?.id || '');
   const [brandModel, setBrandModel] = useState('');
   const [policeNoVIN, setPoliceNoVIN] = useState('');
@@ -24,6 +27,7 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ store, currentUser, 
   const [storageFeePerDay, setStorageFeePerDay] = useState(75000);
 
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS' || currentUser.role === 'APPROVER_EXECUTIVE';
+
 
   const handleOpenModal = (asset?: Asset) => {
     if (asset) {
@@ -143,8 +147,49 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ store, currentUser, 
     setDeleteTarget(null);
   };
 
+  const filteredAssets = (store.assets || []).filter((a) => {
+    if (clientFilter === 'ALL') return true;
+    const parentCase = store.cases.find((c) => c.id === a.caseId || c.caseNo === a.caseNo);
+    const cType = parentCase?.clientType || 'MULTIFINANCE';
+    return cType === clientFilter;
+  });
+
   return (
     <div className="space-y-6">
+      {/* Tabs */}
+      <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 p-1 rounded-lg w-max mb-6">
+        <button
+          onClick={() => setClientFilter('ALL')}
+          className={`px-4 py-2 text-xs font-bold rounded-md transition ${
+            clientFilter === 'ALL'
+              ? 'bg-slate-800 text-white shadow'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          Semua Aset
+        </button>
+        <button
+          onClick={() => setClientFilter('MULTIFINANCE')}
+          className={`px-4 py-2 text-xs font-bold rounded-md transition ${
+            clientFilter === 'MULTIFINANCE'
+              ? 'bg-slate-800 text-white shadow'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          Klien Multifinance
+        </button>
+        <button
+          onClick={() => setClientFilter('PERORANGAN')}
+          className={`px-4 py-2 text-xs font-bold rounded-md transition ${
+            clientFilter === 'PERORANGAN'
+              ? 'bg-slate-800 text-white shadow'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          Klien Perorangan
+        </button>
+      </div>
+
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -181,14 +226,14 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ store, currentUser, 
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {(store.assets || []).length === 0 ? (
+              {filteredAssets.length === 0 ? (
                 <tr>
                   <td colSpan={canEdit ? 8 : 7} className="py-12 text-center text-slate-500 text-xs">
-                    Belum ada data agunan / aset tersimpan di gudang inventory.
+                    Belum ada data agunan / aset tersimpan di gudang inventory untuk filter ini.
                   </td>
                 </tr>
               ) : (
-                (store.assets || []).map((a) => {
+                filteredAssets.map((a) => {
                   const parentCase = store.cases.find((c) => c.id === a.caseId || c.caseNo === a.caseNo);
                   const isClosed = parentCase?.status === 'CLOSED';
 
@@ -254,24 +299,27 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ store, currentUser, 
               {isEditing ? 'Edit Agunan & Inventory Aset' : 'Register Recovered Asset'}
             </h3>
 
-            <div>
+            <div className="relative z-[60]">
               <label className="block text-xs text-slate-400 mb-1">Pilih Berkas Kasus</label>
               {(store.cases || []).length === 0 ? (
                 <div className="p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-400">
                   (Belum ada data kasus perkara terdaftar)
                 </div>
               ) : (
-                <select
+                <SearchableSelect
                   value={caseId}
-                  onChange={(e) => setCaseId(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
-                >
-                  {(store.cases || []).filter(c => isEditing && c.id === caseId ? true : c.status !== 'CLOSED').map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.caseNo} - {c.status === 'CLOSED' ? '[Kasus Ditutup]' : c.debtorName} ({c.clientName})
-                    </option>
-                  ))}
-                </select>
+                  onChange={setCaseId}
+                  options={(store.cases || []).filter(c => isEditing && c.id === caseId ? true : c.status !== 'CLOSED').map((c) => {
+                    const isClosed = c.status === 'CLOSED';
+                    const debtor = isClosed ? '[Kasus Ditutup]' : c.debtorName;
+                    const cat = c.clientType === 'PERORANGAN' ? 'PERORANGAN' : 'MULTIFINANCE';
+                    return {
+                      value: c.id,
+                      label: `[${cat}] ${c.caseNo} — ${debtor}`,
+                      subLabel: `Klien: ${c.clientName}`
+                    };
+                  })}
+                />
               )}
             </div>
 

@@ -106,9 +106,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
   const rootDriveUrl = store.settings?.googleDriveFolderUrl || ROOT_GDRIVE_URL;
 
   const personnelList = store.personnel || [];
-  const clientsList = (store.clients || []).filter(
-    (c) => c.clientType === 'MULTIFINANCE' || c.industry !== 'PERORANGAN'
-  );
+  const clientsList = store.clients || [];
   const casesList = store.cases || [];
 
   const toggleClientExpand = (clientId: string) => {
@@ -617,7 +615,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
 
             <div className="p-2.5 bg-slate-900 rounded-lg border border-slate-800 flex items-start gap-2">
               <span className="px-2 py-0.5 bg-emerald-950 text-emerald-300 rounded font-mono font-bold text-[10px] shrink-0">
-                2. MULTIFINANCE
+                2. KLIEN &amp; DEBITUR
               </span>
               <span className="text-slate-300 font-mono text-[11px] break-all">
                 📁 PT MJ INDONESIA &gt; 📁 MULTIFINANCE &gt; 📁 [MULTIFINANCE] &gt; 📁 PROPOSAL / 📁 SKP &gt; 📁 [NAMA DEBITUR]
@@ -665,7 +663,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
               }`}
             >
               <Building2 className="w-3.5 h-3.5" />
-              <span>2. Database Multifinance &amp; Debitur ({clientsList.length})</span>
+              <span>2. Database Klien &amp; Debitur ({clientsList.length})</span>
             </button>
           </div>
 
@@ -897,7 +895,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
         </div>
       )}
 
-      {/* SECTION 2: DATABASE DEBITUR MULTIFINANCE PT MJ INDONESIA */}
+      {/* SECTION 2: DATABASE KLIEN &amp; DEBITUR PT MJ INDONESIA */}
       {(activeSection === 'ALL' || activeSection === 'MULTIFINANCE') && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
@@ -1692,7 +1690,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
         </div>
       )}
 
-      {/* MODAL 3: TAMBAH DEBITUR BARU DI BAWAH MULTIFINANCE (Compact, Viewport-Constrained) */}
+      {/* MODAL 3: TAMBAH DEBITUR BARU (Compact, Viewport-Constrained) */}
       {addDebtorClientId && (
         <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
           <form

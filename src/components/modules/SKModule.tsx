@@ -10,6 +10,7 @@ import {
 import DriveFilePreview from '../common/DriveFilePreview';
 import { angkaKeTerbilang } from '../../utils/terbilang';
 import { GoogleDriveFolderPicker } from '../common/GoogleDriveFolderPicker';
+import { SearchableSelect } from "../common/SearchableSelect";
 import { QuickGDriveModal } from '../common/QuickGDriveModal';
 import { LetterPreviewModal, LetterPreviewData } from '../common/LetterPreviewModal';
 import { ROOT_GDRIVE_URL } from '../../data/initialData';
@@ -961,35 +962,24 @@ MASA BERLAKU: ${todayStr} s/d ${endDateStr}`;
                   </h4>
                 </div>
 
-                <div>
+                <div className="relative z-[60]">
                   <label className="block text-slate-300 mb-1 text-xs font-semibold">
                     Pilih Berkas Kasus Aktif <span className="text-red-400">*</span>
                   </label>
-                  <select
+                  <SearchableSelect
                     value={caseId}
-                    onChange={(e) => setCaseId(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 shadow-inner"
-                  >
-                    {multifinanceCases.length > 0 && (
-                      <optgroup label="🏢 Klien Multifinance / Lembaga Pembiayaan">
-                        {multifinanceCases.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            [MULTIFINANCE] {c.caseNo} — {c.status === 'CLOSED' ? '[Kasus Ditutup]' : c.debtorName} ({c.clientName})
-                          </option>
-                        ))}
-                      </optgroup>
-                    )}
-
-                    {peroranganCases.length > 0 && (
-                      <optgroup label="👤 Klien Perorangan / Kreditur Individu">
-                        {peroranganCases.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            [PERORANGAN] {c.caseNo} — {c.status === 'CLOSED' ? '[Kasus Ditutup]' : c.debtorName} (Kreditur: {c.clientName})
-                          </option>
-                        ))}
-                      </optgroup>
-                    )}
-                  </select>
+                    onChange={setCaseId}
+                    options={activeCases.map(c => {
+                      const isClosed = c.status === 'CLOSED';
+                      const debtor = isClosed ? '[Kasus Ditutup]' : c.debtorName;
+                      const cat = c.clientType === 'PERORANGAN' ? 'PERORANGAN' : 'MULTIFINANCE';
+                      return {
+                        value: c.id,
+                        label: `[${cat}] ${c.caseNo} — ${debtor}`,
+                        subLabel: `Kreditur: ${c.clientName}`
+                      };
+                    })}
+                  />
                 </div>
 
                 {/* Info Card Selected Case */}

@@ -7,6 +7,7 @@ import {
   Camera, FileText, ChevronRight, Filter, Search, Tag, ExternalLink, MapPin,
   Car, AlertCircle, CheckSquare, Sparkles, Navigation, Trash2, Send, Percent, ShieldCheck, Lock
 } from 'lucide-react';
+import { SearchableSelect } from "../common/SearchableSelect";
 import { UnitExecutionModal } from './UnitExecutionModal';
 import { TransferPartnerCommissionModal } from './TransferPartnerCommissionModal';
 import { calculateRepossessionTierFee, executeUnitRepossessionAndCloseCase } from '../../utils/tierFeeCalculator';
@@ -717,6 +718,7 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                   </tr>
                 ) : (
                   filteredCollections.map((act) => {
+                    const parentCase = store.cases.find((c) => c.id === act.caseId || c.caseNo === act.caseNo);
                     const isPer = act.clientType === 'PERORANGAN';
                     const photoCount = act.photos?.length || 0;
 
@@ -1130,49 +1132,30 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
             </div>
 
             {/* Step 1: Case Selection with Distinction */}
-            <div>
+            <div className="relative z-[60]">
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Pilih Berkas Perkara / Kasus (Scroll down untuk Multifinance & Perorangan) <span className="text-red-400">*</span>
+                Pilih Berkas Perkara / Kasus (Ketik untuk mencari) <span className="text-red-400">*</span>
               </label>
-              <select
+              <SearchableSelect
                 value={selectedCaseId}
-                onChange={(e) => setSelectedCaseId(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 shadow-inner"
-              >
-                {(!store.cases || store.cases.length === 0) && (
-                  <option value="">-- Belum Ada Berkas Kasus --</option>
-                )}
-
-                {multifinanceCases.length > 0 && (
-                  <optgroup label="🏢 Klien Multifinance / Lembaga Pembiayaan">
-                    {multifinanceCases.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        [MULTIFINANCE] {c.caseNo || '-'} — {c.debtorName || '-'} ({c.clientName || 'Multifinance'}) - OS: Rp {(c.principalDebtOS || 0).toLocaleString('id-ID')}
-                      </option>
-                    ))}
-                  </optgroup>
-                )}
-
-                {peroranganCases.length > 0 && (
-                  <optgroup label="👤 Klien Perorangan / Kreditur Individu">
-                    {peroranganCases.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        [PERORANGAN] {c.caseNo || '-'} — {c.debtorName || '-'} (Kreditur: {c.clientName || 'Perorangan'}) - Piutang: Rp {(c.principalDebtOS || 0).toLocaleString('id-ID')}
-                      </option>
-                    ))}
-                  </optgroup>
-                )}
-
-                {(store.cases || []).filter(c => !activeCases.some(ac => ac.id === c.id)).length > 0 && (
-                  <optgroup label="📁 Berkas Kasus Lainnya">
-                    {(store.cases || []).filter(c => !activeCases.some(ac => ac.id === c.id)).map((c) => (
-                      <option key={c.id} value={c.id}>
-                        [{c.clientType || 'KASUS'}] {c.caseNo || '-'} — {c.status === 'CLOSED' ? '[Kasus Ditutup]' : (c.debtorName || '-')} ({c.status || '-'})
-                      </option>
-                    ))}
-                  </optgroup>
-                )}
-              </select>
+                onChange={setSelectedCaseId}
+                placeholder="-- Pilih atau Cari Berkas Kasus --"
+                options={(store.cases || []).map(c => {
+                  const isClosed = c.status === 'CLOSED';
+                  const debtor = isClosed ? '[Kasus Ditutup]' : (c.debtorName || '-');
+                  const cat = c.clientType === 'PERORANGAN' ? 'PERORANGAN' : 'MULTIFINANCE';
+                  const os = (c.principalDebtOS || 0).toLocaleString('id-ID');
+                  const isOther = !activeCases.some(ac => ac.id === c.id);
+                  let label = `[${cat}] ${c.caseNo || '-'} — ${debtor}`;
+                  if (isOther) label = `[${c.status}] ${label}`;
+                  
+                  return {
+                    value: c.id,
+                    label,
+                    subLabel: `Klien: ${c.clientName || '-'} | Piutang: Rp ${os}`
+                  };
+                })}
+              />
             </div>
 
             {/* Selected Case Summary Card */}
@@ -1336,20 +1319,15 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                 <label className="block text-xs text-slate-400 mb-1">
                   Petugas / Mitra Lapangan / PIC <span className="text-red-400">*</span>
                 </label>
-                <select
+                <SearchableSelect 
                   value={personnelId}
-                  onChange={(e) => setPersonnelId(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
-                >
-                  {(store.personnel || []).map((p) => {
-                    const roleLabel = p.position || (p.type ? p.type.replace(/_/g, ' ') : 'Petugas Lapangan');
-                    return (
-                      <option key={p.id} value={p.id}>
-                        {p.fullName || 'Petugas'} ({roleLabel})
-                      </option>
-                    );
-                  })}
-                </select>
+                  onChange={setPersonnelId}
+                  options={(store.personnel || []).map(p => ({
+                    value: p.id,
+                    label: p.fullName || 'Petugas',
+                    subLabel: p.position || (p.type ? p.type.replace(/_/g, ' ') : 'Petugas Lapangan')
+                  }))}
+                />
               </div>
 
               <div>
@@ -1373,25 +1351,25 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                 <label className="block text-xs text-slate-400 mb-1">
                   Hasil Tindakan / Outcome <span className="text-red-400">*</span>
                 </label>
-                <select
+                <SearchableSelect 
                   value={outcome}
-                  onChange={(e) => {
-                    const val = e.target.value as any;
-                    setOutcome(val);
+                  onChange={(val) => {
+                    setOutcome(val as any);
                     if (val === 'DEPOSIT_PAID') {
                       setHasPayment(true);
                     }
                   }}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-medium"
-                >
-                  <option value="PROMISE_TO_PAY">Janji Bayar (Promise to Pay)</option>
-                  <option value="DEPOSIT_PAID">Pembayaran Titipan / Pelunasan</option>
-                  <option value="MEDIATION_AGREED">Sepakat Mediasi Kantor</option>
-                  <option value="UNIT_FOUND">Unit Ditemukan / Teridentifikasi</option>
-                  <option value="REPOSSESSED">Unit Berhasil Ditarik / Diserahterimakan</option>
-                  <option value="UNREACHABLE">Debitur Tidak di Rumah / Nomor Tidak Aktif</option>
-                  <option value="REFUSED">Menolak Bayar / Tidak Kooperatif</option>
-                </select>
+                  searchable={false}
+                  options={[
+                    { value: 'PROMISE_TO_PAY', label: 'Janji Bayar (Promise to Pay)' },
+                    { value: 'DEPOSIT_PAID', label: 'Pembayaran Titipan / Pelunasan' },
+                    { value: 'MEDIATION_AGREED', label: 'Sepakat Mediasi Kantor' },
+                    { value: 'UNIT_FOUND', label: 'Unit Ditemukan / Teridentifikasi' },
+                    { value: 'REPOSSESSED', label: 'Unit Berhasil Ditarik / Diserahterimakan' },
+                    { value: 'UNREACHABLE', label: 'Debitur Tidak di Rumah / Nomor Tidak Aktif' },
+                    { value: 'REFUSED', label: 'Menolak Bayar / Tidak Kooperatif' },
+                  ]}
+                />
               </div>
 
               <div>
@@ -1455,16 +1433,17 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                     <label className="block text-[11px] text-slate-400 mb-1">
                       Kategori Kendaraan
                     </label>
-                    <select
+                    <SearchableSelect 
                       value={repossessionVehicleType}
-                      onChange={(e) => setRepossessionVehicleType(e.target.value as any)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
-                    >
-                      <option value="MOTORCYCLE">Sepeda Motor (Roda 2)</option>
-                      <option value="PASSENGER_CAR">Mobil Penumpang / MPV / SUV</option>
-                      <option value="COMMERCIAL_VEHICLE">Mobil Komersial / Truk / Box</option>
-                      <option value="HEAVY_EQUIPMENT">Alat Berat / Heavy Unit</option>
-                    </select>
+                      onChange={(val) => setRepossessionVehicleType(val as any)}
+                      searchable={false}
+                      options={[
+                        { value: 'MOTORCYCLE', label: 'Sepeda Motor (Roda 2)' },
+                        { value: 'PASSENGER_CAR', label: 'Mobil Penumpang / MPV / SUV' },
+                        { value: 'COMMERCIAL_VEHICLE', label: 'Mobil Komersial / Truk / Box' },
+                        { value: 'HEAVY_EQUIPMENT', label: 'Alat Berat / Heavy Unit' },
+                      ]}
+                    />
                   </div>
 
                   <div>
@@ -1485,17 +1464,18 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                     <label className="block text-[11px] text-slate-400 mb-1">
                       Kondisi Fisik Unit
                     </label>
-                    <select
+                    <SearchableSelect 
                       value={repossessionCondition}
-                      onChange={(e) => setRepossessionCondition(e.target.value as any)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
-                    >
-                      <option value="EXCELLENT">Sangat Baik / Mulus</option>
-                      <option value="GOOD">Baik / Normal</option>
-                      <option value="FAIR">Cukup / Baret Minor</option>
-                      <option value="DAMAGED">Rusak / Tidak Jalan</option>
-                      <option value="PARTS_MISSING">Komponen Hilang / Oplosan</option>
-                    </select>
+                      onChange={(val) => setRepossessionCondition(val as any)}
+                      searchable={false}
+                      options={[
+                        { value: 'EXCELLENT', label: 'Sangat Baik / Mulus' },
+                        { value: 'GOOD', label: 'Baik / Normal' },
+                        { value: 'FAIR', label: 'Cukup / Baret Minor' },
+                        { value: 'DAMAGED', label: 'Rusak / Tidak Jalan' },
+                        { value: 'PARTS_MISSING', label: 'Mesin Mati / Part Hilang' },
+                      ]}
+                    />
                   </div>
 
                   <div>
@@ -1648,15 +1628,15 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
 
                   <div>
                     <label className="block text-[11px] text-slate-400 mb-1">Metode Penerimaan</label>
-                    <select
+                    <SearchableSelect 
                       value={paymentMethod}
-                      onChange={(e) => setPaymentMethod(e.target.value as any)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white"
-                    >
-                      <option value="TRANSFER">Transfer Bank / Virtual Account</option>
-                      <option value="CASH_RECEIPT">Kwitansi Tunai Lapangan</option>
-                      <option value="MEDIATION_ESCROW">Rekening Escrow Mediasi</option>
-                    </select>
+                      onChange={(val) => setPaymentMethod(val as any)}
+                      searchable={false}
+                      options={[
+                        { value: 'TRANSFER', label: 'Transfer Bank PT' },
+                        { value: 'CASH', label: 'Tunai / Cash' },
+                      ]}
+                    />
                   </div>
 
                   <div>
@@ -1719,21 +1699,20 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                       />
 
                       <div className="flex-1 min-w-0 space-y-1">
-                        <select
+                        <SearchableSelect 
                           value={photo.category}
-                          onChange={(e) =>
-                            updatePhotoMeta(photo.id, { category: e.target.value as any })
-                          }
-                          className="w-full bg-slate-950 border border-slate-800 rounded p-1 text-[10px] text-amber-300 font-semibold"
-                        >
-                          <option value="RUMAH_DEBITUR">Rumah Debitur</option>
-                          <option value="TEMU_DEBITUR">Pertemuan Debitur</option>
-                          <option value="UNIT_KENDARAAN">Unit Kendaraan / Aset</option>
-                          <option value="SURAT_BERITA_ACARA">Surat Berita Acara / SP</option>
-                          <option value="KWITANSI_BAYAR">Kwitansi Tanda Terima</option>
-                          <option value="LOKASI_KANTOR">Lokasi Mediasi Kantor</option>
-                          <option value="LAINNYA">Screenshot Chat WA / Lainnya</option>
-                        </select>
+                          onChange={(val) => updatePhotoMeta(photo.id, { category: val as any })}
+                          searchable={false}
+                          options={[
+                            { value: 'RUMAH_DEBITUR', label: 'Rumah Debitur' },
+                            { value: 'TEMU_DEBITUR', label: 'Pertemuan Debitur' },
+                            { value: 'KENDARAAN', label: 'Kendaraan' },
+                            { value: 'STNK', label: 'STNK' },
+                            { value: 'KUNCI', label: 'Kunci' },
+                            { value: 'KTP_DEBITUR', label: 'KTP Debitur' },
+                            { value: 'LAINNYA', label: 'Lainnya' },
+                          ]}
+                        />
 
                         <input
                           type="text"

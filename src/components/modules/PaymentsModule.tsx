@@ -22,6 +22,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { PaymentReceipt } from './PaymentReceipt';
+import { SearchableSelect } from "../common/SearchableSelect";
 import { TransferPartnerCommissionModal } from './TransferPartnerCommissionModal';
 import { calculatePaymentTierFee, PaymentTierCalculationResult } from '../../utils/tierFeeCalculator';
 
@@ -619,21 +620,24 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
             </div>
 
             {/* Case Selector */}
-            <div>
+            <div className="relative z-[60]">
               <label className="block text-xs font-semibold text-slate-300 mb-1">
                 Pilih Kasus / Perkara Debitur <span className="text-rose-400">*</span>
               </label>
-              <select
+              <SearchableSelect
                 value={caseId}
-                onChange={(e) => setCaseId(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none"
-              >
-                {availableCases.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.caseNo} - {c.status === 'CLOSED' ? '[Kasus Ditutup]' : c.debtorName} ({c.clientName}) | DPD: {c.overdueDays} Hari | Petugas: {c.currentPersonnelName || 'Belum ditugaskan'}
-                  </option>
-                ))}
-              </select>
+                onChange={setCaseId}
+                options={availableCases.map((c) => {
+                  const isClosed = c.status === 'CLOSED';
+                  const cat = c.clientType === 'PERORANGAN' ? 'PERORANGAN' : 'MULTIFINANCE';
+                  const debtorName = isClosed ? '[Kasus Ditutup]' : c.debtorName;
+                  return {
+                    value: c.id,
+                    label: `[${cat}] ${c.caseNo} — ${debtorName}`,
+                    subLabel: `Klien: ${c.clientName} | DPD: ${c.overdueDays} Hari | Petugas: ${c.currentPersonnelName || 'Belum ditugaskan'}`
+                  };
+                })}
+              />
             </div>
 
             {/* Debtor & Personnel Badge Banner */}
@@ -678,14 +682,15 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Metode Pembayaran</label>
-                <select
+                <SearchableSelect 
                   value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value as any)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:border-indigo-500 focus:outline-none"
-                >
-                  <option value="TRANSFER">Transfer Bank (Rekening Penampung PT)</option>
-                  <option value="CASH">Tunai / Cash Kwitansi Lapangan</option>
-                </select>
+                  onChange={(val) => setPaymentMethod(val as any)}
+                  searchable={false}
+                  options={[
+                    { value: 'TRANSFER', label: 'Transfer Bank (Rekening Penampung PT)' },
+                    { value: 'CASH', label: 'Tunai / Cash Kwitansi Lapangan' },
+                  ]}
+                />
               </div>
             </div>
 
@@ -786,15 +791,16 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
                 <label className="block text-xs font-semibold text-slate-300 mb-1">
                   Klasifikasi Status Kasus
                 </label>
-                <select
+                <SearchableSelect 
                   value={paymentType}
-                  onChange={(e) => setPaymentType(e.target.value as any)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none"
-                >
-                  <option value="PARTIAL_PAYMENT">Angsuran / Partial Payment (Kasus Tetap Open)</option>
-                  <option value="FULL_PAYMENT">Pelunasan / Full Payment (Otomatis CLOSE Kasus)</option>
-                  <option value="SETTLEMENT_NEGOTIATED">Settlement Negosiasi (Otomatis CLOSE Kasus)</option>
-                </select>
+                  onChange={(val) => setPaymentType(val as any)}
+                  searchable={false}
+                  options={[
+                    { value: 'PARTIAL_PAYMENT', label: 'Angsuran / Partial Payment (Kasus Tetap Open)' },
+                    { value: 'FULL_PAYMENT', label: 'Pelunasan / Full Payment (Otomatis CLOSE Kasus)' },
+                    { value: 'SETTLEMENT_NEGOTIATED', label: 'Settlement Negosiasi (Otomatis CLOSE Kasus)' },
+                  ]}
+                />
               </div>
 
               <div>

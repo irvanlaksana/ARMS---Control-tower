@@ -419,109 +419,15 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
                   ⚠️ Semua kasus telah selesai/lunas. Tidak ada berkas kasus aktif baru untuk ditugaskan.
                 </div>
               ) : (
-                <select
-                  value={caseId}
-                  onChange={(e) => setCaseId(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-                >
-                  {isEditing && selectedCase && !activeCases.some(c => c.id === selectedCase.id) && (
-                    <optgroup label="📌 Kasus Terpilih (Saat Ini)">
-                      <option value={selectedCase.id}>
-                        [{selectedCase.clientType || 'KASUS'}] {selectedCase.caseNo} — {selectedCase.debtorName} ({selectedCase.clientName})
-                      </option>
-                    </optgroup>
-                  )}
-
-                  {multifinanceCases.length > 0 && (
-                    <optgroup label="🏢 Kasus Multifinance / Perusahaan">
-                      {multifinanceCases.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          [MULTIFINANCE] {c.caseNo} — {c.debtorName} ({c.clientName})
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-
-                  {peroranganCases.length > 0 && (
-                    <optgroup label="👤 Kasus Klien Perorangan (Kreditur Individu)">
-                      {peroranganCases.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          [PERORANGAN] {c.caseNo} — {c.debtorName} (Kreditur: {c.clientName})
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-                </select>
-              )}
-            </div>
-
-            {/* Selected Case Info Summary */}
-            {selectedCase && (
-              <div
-                className={`p-3.5 rounded-xl border text-xs space-y-1.5 ${
-                  isPerorangan
-                    ? 'bg-amber-950/20 border-amber-800/40 text-amber-200'
-                    : 'bg-indigo-950/20 border-indigo-800/40 text-indigo-200'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-slate-400 font-semibold uppercase">
-                    Detail Kasus Terpilih
-                  </span>
-                  {isPerorangan ? (
-                    <span className="bg-amber-900 text-amber-200 text-[10px] px-2 py-0.5 rounded font-bold">
-                      👤 Klien Perorangan
-                    </span>
-                  ) : (
-                    <span className="bg-indigo-900 text-indigo-200 text-[10px] px-2 py-0.5 rounded font-bold">
-                      🏢 Multifinance
-                    </span>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 pt-1 text-slate-200">
-                  <div>
-                    <span className="text-[10px] text-slate-400 block">Kreditur / Klien:</span>
-                    <span className="font-bold truncate block">{selectedCase.clientName || '-'}</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-slate-400 block">Debitur:</span>
-                    <span className="font-bold truncate block">{selectedCase.debtorName || '-'}</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-slate-400 block">Dasar Dokumen / Kontrak:</span>
-                    <span className="font-mono truncate block">
-                      {selectedCase.multifinanceContractNo || selectedCase.contractId || '-'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-slate-400 block">Nilai Pokok (OS):</span>
-                    <span className="font-bold text-emerald-400">
-                      Rp {(selectedCase.principalDebtOS || 0).toLocaleString('id-ID')}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-xs text-slate-400 mb-1 font-semibold">
-                Pilih Mitra Lapangan / Agency Eksternal <span className="text-red-400">*</span>
-              </label>
-              <select
-                value={personnelId}
-                onChange={(e) => setPartnerId(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-              >
-                {(store.personnel || []).map((p) => {
-                  const roleLabel = p.position || (p.type ? p.type.replace(/_/g, ' ') : 'Mitra Lapangan');
-                  return (
-                    <option key={p.id} value={p.id}>
-                      {p.fullName} — {roleLabel}
-                    </option>
-                  );
-                })}
-              </select>
+                <SearchableSelect 
+                  value={personnelId}
+                  onChange={setPartnerId}
+                  options={(store.personnel || []).map((pr) => ({
+                    value: pr.id,
+                    label: pr.fullName,
+                    subLabel: pr.type === 'MITRA_DC' ? 'Mitra DC' : 'Internal'
+                  }))}
+                />
             </div>
 
             <div>

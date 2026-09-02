@@ -362,558 +362,153 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
         </div>
 
         {/* Client Type Filter */}
-        <select
-          value={filterClientType}
-          onChange={(e) => setFilterClientType(e.target.value as any)}
-          className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-slate-200 focus:outline-none"
-        >
-          <option value="ALL">🏢 Semua Klien (Multifinance & Perorangan)</option>
-          <option value="MULTIFINANCE">🏢 Multifinance / Lembaga</option>
-          <option value="PERORANGAN">👤 Klien Perorangan (Individu)</option>
-        </select>
-
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-slate-200 focus:outline-none"
-        >
-          <option value="ALL">Semua Status</option>
-          <option value="NEW">NEW</option>
-          <option value="ASSIGNED">ASSIGNED</option>
-          <option value="FIELD_ACTION">FIELD ACTION</option>
-          <option value="IN_MEDIATION">IN MEDIATION</option>
-          <option value="UNIT_RECOVERED">UNIT RECOVERED</option>
-          <option value="FULL_PAID">FULL PAID</option>
-          <option value="SETTLED">SETTLED</option>
-          <option value="CLOSED">CLOSED</option>
-        </select>
+        <div className="w-full sm:w-48 relative z-50">
+          <SearchableSelect 
+            value={filterClientType}
+            onChange={(val) => setFilterClientType(val as any)}
+            searchable={false}
+            options={[
+              { value: 'ALL', label: 'Semua Client (ALL)' },
+              { value: 'MULTIFINANCE', label: 'Multifinance' },
+              { value: 'PERORANGAN', label: 'Perorangan' }
+            ]}
+          />
+        </div>
+        <div className="w-full sm:w-48 relative z-40">
+          <SearchableSelect 
+            value={filterStatus}
+            onChange={(val) => setFilterStatus(val as any)}
+            searchable={false}
+            options={[
+              { value: 'ALL', label: 'Semua Status' },
+              { value: 'OPEN', label: 'OPEN' },
+              { value: 'IN_PROGRESS', label: 'IN_PROGRESS' },
+              { value: 'CLOSED', label: 'CLOSED' },
+              { value: 'CANCELLED', label: 'CANCELLED' }
+            ]}
+          />
+        </div>
       </div>
 
-      {/* Cases Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
-        {/* Desktop Table View */}
-        <div className="hidden lg:block overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden mt-4">
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="w-full text-left text-xs whitespace-nowrap">
+            <thead className="bg-slate-950/50 text-slate-400 border-b border-slate-800">
               <tr>
-                <th className="py-3 px-4">Case No</th>
-                <th className="py-3 px-4">Pemberi Kuasa / Client</th>
-                <th className="py-3 px-4">Debtor & NIK</th>
-                <th className="py-3 px-4">Asset Info</th>
-                <th className="py-3 px-4 text-right">OS Principal Debt</th>
-                <th className="py-3 px-4">Fee Snapshot</th>
-                <th className="py-3 px-4">Assigned Partner</th>
-                <th className="py-3 px-4 text-center">Berkas (GDrive)</th>
-                <th className="py-3 px-4 text-center">Status</th>
-                {canEdit && <th className="py-3 px-4 text-center">Aksi</th>}
+                <th className="px-4 py-3 font-medium">Case Details</th>
+                <th className="px-4 py-3 font-medium">Debtor Info</th>
+                <th className="px-4 py-3 font-medium">Asset / Collateral</th>
+                <th className="px-4 py-3 font-medium text-right">Principal OS</th>
+                <th className="px-4 py-3 font-medium text-center">Status</th>
+                <th className="px-4 py-3 font-medium text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
-              {filteredCases.length === 0 ? (
-                <tr>
-                  <td colSpan={canEdit ? 10 : 9} className="py-8 text-center text-slate-500 text-xs">
-                    Tidak ada data kasus penagihan yang cocok dengan filter.
+            <tbody className="divide-y divide-slate-800/50">
+              {filteredCases.map(c => (
+                <tr key={c.id} className="hover:bg-slate-800/20 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="font-medium text-white">{c.caseNo}</div>
+                    <div className="text-[10px] text-slate-500">{c.clientName} {c.clientType === 'PERORANGAN' ? '[PERORANGAN]' : ''}</div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="font-medium text-slate-300">{c.debtorName}</div>
+                  </td>
+                  <td className="px-4 py-3 text-slate-400">
+                    {c.assetSummary}
+                  </td>
+                  <td className="px-4 py-3 text-right font-medium text-white">
+                    Rp {c.principalDebtOS.toLocaleString('id-ID')}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <span className={`px-2 py-1 rounded text-[10px] font-medium ${c.status === 'OPEN' ? 'bg-indigo-900/50 text-indigo-400' : c.status === 'CLOSED' ? 'bg-emerald-900/50 text-emerald-400' : 'bg-amber-900/50 text-amber-400'}`}>
+                      {c.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <button onClick={() => handleEditClick(c)} className="p-1.5 text-slate-400 hover:text-indigo-400 transition-colors">
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => handleDeleteClick(c.id)} className="p-1.5 text-slate-400 hover:text-rose-400 transition-colors ml-2">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </td>
                 </tr>
-              ) : (
-                filteredCases.map((c) => {
-                  const isCompleted = ['CLOSED', 'SETTLED', 'FULL_PAID', 'UNIT_RECOVERED'].includes(c.status);
-                  const clientObj = store.clients.find(cli => cli.id === c.clientId);
-                  const isPerorangan = c.clientType === 'PERORANGAN' || clientObj?.industry === 'PERORANGAN' || clientObj?.clientType === 'PERORANGAN';
-
-                  return (
-                    <tr key={c.id} className={`transition ${isCompleted ? 'bg-emerald-950/20 hover:bg-emerald-950/40 border-l-2 border-emerald-500' : 'hover:bg-slate-800/40'}`}>
-                      <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">
-                        <div className="flex items-center gap-2">
-                          {c.caseNo}
-                          {isCompleted && <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />}
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <div className="font-medium text-white">{c.clientName}</div>
-                        <div className="mt-1">
-                          {isPerorangan ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] bg-amber-950/60 text-amber-300 border border-amber-800/80 px-1.5 py-0.5 rounded font-medium">
-                              <UserCheck className="w-3 h-3 text-amber-400" /> Klien Perorangan
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-[10px] bg-slate-800 text-slate-300 border border-slate-700 px-1.5 py-0.5 rounded font-medium">
-                              <Building2 className="w-3 h-3 text-indigo-400" /> Multifinance
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4 space-y-1">
-                        {c.status === 'CLOSED' ? (
-                          <div>
-                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400 bg-slate-800/90 px-2 py-0.5 rounded border border-slate-700">
-                              <Lock className="w-3 h-3 text-slate-400" /> [Kasus Ditutup / Data Terproteksi]
-                            </span>
-                            <div className="text-[10px] text-slate-600 font-mono mt-0.5">NIK: ****************</div>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="font-bold text-slate-100 flex items-center gap-1.5 flex-wrap">
-                              <span>{c.debtorName}</span>
-                              {hasDuplicateInCases(c) && (
-                                <span className="bg-amber-950 text-amber-300 text-[9px] px-1.5 py-0.5 rounded border border-amber-800 font-bold flex items-center gap-1" title="Data debitur/kontrak tercatat lebih dari satu kali untuk klien ini">
-                                  <AlertTriangle className="w-2.5 h-2.5 text-amber-400" /> Duplikat Klien
-                                </span>
-                              )}
-                              {c.lawyerStatus && (
-                                <span className="bg-purple-950 text-purple-300 text-[10px] px-1.5 py-0.2 rounded border border-purple-800 font-semibold">
-                                  ⚖️ {c.lawyerStatus}
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-[10px] text-slate-500 font-mono">NIK: {c.debtorNik}</div>
-                          </>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-300 max-w-[180px] truncate">{c.assetSummary}</td>
-                      <td className="py-3.5 px-4 text-right font-bold text-emerald-400 font-mono">
-                        Rp {c.principalDebtOS.toLocaleString('id-ID')}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span className="bg-slate-800 text-slate-200 text-[10px] px-2 py-0.5 rounded border border-slate-700">
-                          {c.feeTypeSnapshot} ({c.feePercentSnapshot}% / Rp {c.feeFixedSnapshot?.toLocaleString('id-ID') || 0})
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-400">{c.currentPersonnelName || 'Unassigned'}</td>
-                      <td className="py-3.5 px-4 text-center">
-                        {c.gDriveFolderUrl ? (
-                          <a
-                            href={c.gDriveFolderUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-indigo-400 hover:text-indigo-300 inline-flex items-center gap-1 text-[11px] bg-indigo-950/40 px-2 py-1 rounded border border-indigo-900/50"
-                          >
-                            📁 View
-                          </a>
-                        ) : (
-                          <span className="text-[10px] text-slate-500">-</span>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4 text-center">
-                        <span className={`text-[10px] px-2.5 py-1 rounded-full border font-semibold ${
-                          isCompleted 
-                            ? 'bg-emerald-950 text-emerald-300 border-emerald-800' 
-                            : 'bg-indigo-950 text-indigo-300 border-indigo-800'
-                        }`}>
-                          {(c.status || '').replace(/_/g, ' ')}
-                        </span>
-                      </td>
-                      {canEdit && (
-                        <td className="py-3.5 px-4 text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => handleOpenAddModal(c)}
-                              className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-indigo-400 transition"
-                              title="Edit Case"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteCase(c.id, c.caseNo)}
-                              className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-red-400 transition"
-                              title="Delete Case"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      )}
-                    </tr>
-                  );
-                })
+              ))}
+              {filteredCases.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
+                    No cases found matching your filters.
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
         </div>
-
-        {/* Mobile Card View */}
-        <div className="lg:hidden p-4 space-y-4">
-          {filteredCases.length === 0 ? (
-            <div className="py-8 text-center text-slate-500 text-xs bg-slate-900/50 rounded-lg border border-slate-800">
-              Tidak ada data kasus penagihan yang cocok dengan filter.
-            </div>
-          ) : (
-            filteredCases.map((c) => {
-              const isCompleted = ['CLOSED', 'SETTLED', 'FULL_PAID', 'UNIT_RECOVERED'].includes(c.status);
-              const clientObj = store.clients.find(cli => cli.id === c.clientId);
-              const isPerorangan = c.clientType === 'PERORANGAN' || clientObj?.industry === 'PERORANGAN' || clientObj?.clientType === 'PERORANGAN';
-
-              return (
-                <div key={c.id} className={`bg-slate-950 border rounded-lg p-4 space-y-3 shadow-sm ${
-                  isCompleted ? 'border-emerald-800 border-l-4 border-l-emerald-500' : 'border-slate-800'
-                }`}>
-                  <div className="flex justify-between items-start gap-2">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-indigo-300 font-mono text-sm">{c.caseNo}</h4>
-                        {isCompleted && <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />}
-                      </div>
-                      <p className="font-medium text-white text-xs mt-0.5">{c.clientName}</p>
-                    </div>
-                    <span className={`text-[9px] px-2 py-0.5 rounded-full border font-semibold shrink-0 ${
-                      isCompleted 
-                        ? 'bg-emerald-950 text-emerald-300 border-emerald-800' 
-                        : 'bg-indigo-950 text-indigo-300 border-indigo-800'
-                    }`}>
-                      {(c.status || '').replace(/_/g, ' ')}
-                    </span>
-                  </div>
-
-                  <div className="bg-slate-900/50 p-2.5 rounded border border-slate-800 space-y-2">
-                    <div>
-                      <div className="flex justify-between items-start">
-                        <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Debitur</span>
-                        <div className="flex items-center gap-1 flex-wrap justify-end">
-                          {hasDuplicateInCases(c) && (
-                            <span className="bg-amber-950 text-amber-300 text-[9px] px-1.5 py-0.5 rounded border border-amber-800 font-bold flex items-center gap-1">
-                              <AlertTriangle className="w-2.5 h-2.5 text-amber-400" /> Duplikat Klien
-                            </span>
-                          )}
-                          {c.lawyerStatus && (
-                            <span className="bg-purple-950 text-purple-300 text-[9px] px-1.5 py-0.5 rounded border border-purple-800 font-semibold">
-                              ⚖️ {c.lawyerStatus}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      {c.status === 'CLOSED' ? (
-                        <div className="mt-1">
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400 bg-slate-800/90 px-2 py-0.5 rounded border border-slate-700">
-                            <Lock className="w-3 h-3 text-slate-400" /> [Kasus Ditutup / Data Terproteksi]
-                          </span>
-                          <span className="text-[10px] text-slate-600 font-mono block mt-0.5">NIK: ****************</span>
-                        </div>
-                      ) : (
-                        <>
-                          <span className="font-bold text-slate-100 text-xs block mt-0.5">{c.debtorName}</span>
-                          <span className="text-[10px] text-slate-400 font-mono">NIK: {c.debtorNik}</span>
-                        </>
-                      )}
-                    </div>
-                    <div className="pt-2 border-t border-slate-800/60">
-                      <span className="text-[10px] text-slate-500 uppercase tracking-wider block mb-0.5">Asset & Debt</span>
-                      <span className="text-slate-300 text-xs block truncate">{c.assetSummary}</span>
-                      <span className="font-bold text-emerald-400 font-mono text-sm block mt-1">
-                        Rp {c.principalDebtOS.toLocaleString('id-ID')}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-2 text-[10px]">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-slate-500 uppercase">Assigned To</span>
-                      <span className="text-slate-300 font-medium">{c.currentPersonnelName || 'Unassigned'}</span>
-                    </div>
-                    {c.gDriveFolderUrl && (
-                      <a
-                        href={c.gDriveFolderUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-indigo-400 hover:text-indigo-300 inline-flex items-center gap-1 bg-indigo-950/40 px-2 py-1 rounded border border-indigo-900/50 transition"
-                      >
-                        📁 Buka Drive
-                      </a>
-                    )}
-                  </div>
-
-                  {canEdit && (
-                    <div className="flex justify-end gap-2 pt-3 border-t border-slate-800 mt-2">
-                      <button
-                        onClick={() => handleOpenAddModal(c)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-indigo-400 rounded-md transition text-[11px] font-semibold"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" /> Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteCase(c.id, c.caseNo)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-red-400 rounded-md transition text-[11px] font-semibold"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" /> Hapus
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })
-          )}
-        </div>
       </div>
 
-      {/* Add Recovery Case Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <form onSubmit={handleCreateCase} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-2xl p-5 sm:p-6 space-y-4 shadow-2xl my-auto max-h-[85vh] overflow-y-auto">
-            <div className="border-b border-slate-800 pb-3">
-              <h3 className="font-bold text-white text-base">
-                {isEditing ? 'Edit Recovery Case' : 'Register New Recovery Case'}
-              </h3>
-              <p className="text-xs text-slate-400 mt-0.5">Daftarkan perkara penagihan/recovery dari Klien Multifinance atau Klien Perorangan</p>
+      {showModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <form onSubmit={handleSaveCase} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-3xl p-6 shadow-2xl my-auto">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+              <h2 className="text-lg font-bold text-white">{isEditing ? 'Edit Case' : 'New Recovery Case'}</h2>
+              <button type="button" onClick={() => { setShowModal(false); resetForm(); }} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
             </div>
-
-            {/* Client Category Selector (Multifinance vs Perorangan) */}
-            <div className="bg-slate-950/80 p-3 rounded-lg border border-slate-800">
-              <label className="block text-xs font-semibold text-slate-300 mb-2">
-                Pilih Tipe Klien / Pemberi Kuasa:
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => handleSwitchCategory('MULTIFINANCE')}
-                  className={`flex items-center justify-center gap-2 p-2.5 rounded-lg border text-xs font-medium transition ${
-                    clientCategory === 'MULTIFINANCE'
-                      ? 'bg-indigo-600/20 border-indigo-500 text-indigo-200 ring-1 ring-indigo-500'
-                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-850'
-                  }`}
-                >
-                  <Building2 className="w-4 h-4 text-indigo-400" />
-                  <span>Client Multifinance / Lembaga</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleSwitchCategory('PERORANGAN')}
-                  className={`flex items-center justify-center gap-2 p-2.5 rounded-lg border text-xs font-medium transition ${
-                    clientCategory === 'PERORANGAN'
-                      ? 'bg-amber-600/20 border-amber-500 text-amber-200 ring-1 ring-amber-500'
-                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-850'
-                  }`}
-                >
-                  <UserIcon className="w-4 h-4 text-amber-400" />
-                  <span>Client Perorangan (Individu)</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Multifinance vs Perorangan Details Selection */}
-            {clientCategory === 'MULTIFINANCE' ? (
-              <div className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800 space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-                    <Building2 className="w-3.5 h-3.5 text-indigo-400" />
-                    Pilih Klien Multifinance / Perusahaan
-                  </label>
-                  <span className="text-[10px] text-slate-500 font-mono">
-                    {multifinanceClients.length} Terdaftar di Master
-                  </span>
-                </div>
-                <select
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Client / Creditor</label>
+                <SearchableSelect 
                   value={clientId}
-                  onChange={(e) => setClientId(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-750 rounded-lg p-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none"
-                >
-                  {multifinanceClients.length === 0 ? (
-                    <option value="">(Belum ada data client multifinance)</option>
-                  ) : (
-                    multifinanceClients.map((cli) => (
-                      <option key={cli.id} value={cli.id}>
-                        {cli.companyName} ({cli.clientCode}) - {cli.industry}
-                      </option>
-                    ))
-                  )}
-                </select>
-                <p className="text-[10px] text-slate-400">
-                  Data diambil dari Master Data Klien (Clients & Creditors Master).
-                </p>
+                  onChange={(val) => {
+                    setClientId(val);
+                    const client = store.clients.find(c => c.id === val);
+                    if (client) {
+                      setClientCategory(client.category);
+                    }
+                  }}
+                  options={store.clients.map(c => ({
+                    value: c.id,
+                    label: c.name,
+                    subLabel: c.category
+                  }))}
+                />
               </div>
-            ) : (
-              <div className="bg-amber-950/20 p-3.5 rounded-xl border border-amber-800/40 space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-amber-300 flex items-center gap-1.5">
-                    <UserCheck className="w-3.5 h-3.5 text-amber-400" />
-                    Pilih Klien Perorangan (Pemberi Kuasa / Kreditur)
-                  </label>
-                  <span className="text-[10px] bg-amber-950/90 text-amber-300 px-2 py-0.5 rounded border border-amber-800/60 font-mono font-medium">
-                    {peroranganClients.length} Terdaftar di Master
-                  </span>
-                </div>
-
-                {peroranganClients.length === 0 ? (
-                  <div className="p-3 bg-amber-950/40 rounded-lg border border-amber-800/60 text-xs text-amber-200 text-center">
-                    Belum ada data Klien Perorangan di Master Data. Silakan daftarkan terlebih dahulu melalui menu <strong>Clients & Creditors Master</strong>.
-                  </div>
-                ) : (
-                  <>
-                    <select
-                      value={peroranganClientId}
-                      onChange={(e) => setPeroranganClientId(e.target.value)}
-                      className="w-full bg-slate-900 border border-amber-800/60 rounded-lg p-2.5 text-xs text-white focus:border-amber-500 focus:outline-none shadow-inner"
-                    >
-                      {peroranganClients.map((cli) => (
-                        <option key={cli.id} value={cli.id}>
-                          {cli.companyName} {cli.nikKtp ? `(NIK: ${cli.nikKtp})` : ''} - Kode: {cli.clientCode}
-                        </option>
-                      ))}
-                    </select>
-
-                    {selectedPerorangan && (
-                      <div className="bg-slate-950/70 p-3 rounded-lg border border-slate-800/90 grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[11px]">
-                        <div>
-                          <span className="text-slate-500 block text-[10px]">NIK KTP Kreditur</span>
-                          <span className="text-slate-200 font-mono font-medium">{selectedPerorangan.nikKtp || '-'}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 block text-[10px]">No. Telepon / WA</span>
-                          <span className="text-slate-200 font-mono font-medium">{selectedPerorangan.phone || '-'}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 block text-[10px]">Alamat Domisili</span>
-                          <span className="text-slate-200 font-medium truncate block" title={selectedPerorangan.address}>
-                            {selectedPerorangan.address || '-'}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* Real-Time Duplicate Warning Alert */}
-            {duplicateWarning?.isDuplicate && (
-              <div className="bg-amber-950/80 border-2 border-amber-500/80 rounded-xl p-3.5 space-y-2 text-amber-200 shadow-lg animate-in fade-in zoom-in-95 duration-200">
-                <div className="flex items-center gap-2 font-bold text-amber-300 text-xs">
-                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 animate-bounce" />
-                  <span>⚠️ PERINGATAN: DATA DEBITUR SUDAH TERDAFTAR PADA KLIEN INI</span>
-                </div>
-                <p className="text-[11px] text-amber-200/90 leading-relaxed">
-                  {duplicateWarning.matchReason}.
-                </p>
-                {duplicateWarning.matchedCase && (
-                  <div className="bg-slate-950/80 p-2.5 rounded-lg border border-amber-800/60 grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px] font-mono">
-                    <div>
-                      <span className="text-slate-500 block">No. Perkara Eksis</span>
-                      <span className="text-indigo-300 font-bold">{duplicateWarning.matchedCase.caseNo}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block">Status Perkara</span>
-                      <span className="text-amber-400 font-bold">{duplicateWarning.matchedCase.status}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block">Field Partner PIC</span>
-                      <span className="text-slate-300">{duplicateWarning.matchedCase.currentPersonnelName || 'Unassigned'}</span>
-                    </div>
-                  </div>
-                )}
-                <div className="text-[10px] text-amber-400/90 font-medium">
-                  💡 <em>Mohon periksa kembali agar tidak terjadi pendaftaran data ganda / double assignment untuk penagihan lapangan.</em>
-                </div>
-              </div>
-            )}
-
-            {/* Case Details Form */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Select Debtor Profile (Pihak Tertagih)</label>
-                <select
-                  value={customerId}
-                  onChange={(e) => setCustomerId(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
-                >
-                  {store.customers.map((cu) => (
-                    <option key={cu.id} value={cu.id}>
-                      {cu.fullName} ({cu.nikKtp})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">
-                  {clientCategory === 'MULTIFINANCE' ? 'Multifinance Contract No' : 'No. Perjanjian / SPH / SPK Perorangan'}
-                </label>
+                <label className="block text-xs text-slate-400 mb-1">Debtor Name</label>
                 <input
                   type="text"
                   required
-                  value={contractNo}
-                  onChange={(e) => setContractNo(e.target.value)}
-                  placeholder={clientCategory === 'MULTIFINANCE' ? 'e.g. ADR-CTR-2026-99' : 'e.g. SPH-PER/2026/045'}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono"
+                  value={debtorName}
+                  onChange={(e) => setDebtorName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
                 />
               </div>
+            </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs text-slate-400">
-                    Produk / Layanan Recovery
-                  </label>
-                  {clientCategory === 'PERORANGAN' ? (
-                    <span className="text-[10px] bg-amber-950 text-amber-300 border border-amber-800/80 px-1.5 py-0.5 rounded font-semibold flex items-center gap-1">
-                      <UserCheck className="w-3 h-3 text-amber-400" /> Khusus Perorangan
-                    </span>
-                  ) : (
-                    <span className="text-[10px] bg-indigo-950 text-indigo-300 border border-indigo-800/80 px-1.5 py-0.5 rounded font-semibold flex items-center gap-1">
-                      <Building2 className="w-3 h-3 text-indigo-400" /> Multifinance
-                    </span>
-                  )}
-                </div>
-                <select
-                  value={serviceId}
-                  onChange={(e) => setServiceId(e.target.value)}
-                  className={`w-full bg-slate-950 border rounded-lg p-2.5 text-xs text-white focus:outline-none ${
-                    clientCategory === 'PERORANGAN' ? 'border-amber-800/70 focus:border-amber-500' : 'border-slate-800 focus:border-indigo-500'
-                  }`}
-                >
-                  {availableServices.length === 0 ? (
-                    <option value="">(Tidak ada produk tersedia untuk kategori ini)</option>
-                  ) : (
-                    availableServices.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} ({s.serviceCode || (s as any).code})
-                      </option>
-                    ))
-                  )}
-                </select>
-                {clientCategory === 'PERORANGAN' ? (
-                  <p className="text-[10px] text-amber-400/90 mt-1.5 leading-tight bg-amber-950/30 p-1.5 rounded border border-amber-900/40">
-                    🔒 <strong>Ketentuan Produk:</strong> Klien perorangan hanya dapat memilih produk <strong>Penagihan & Mediasi Piutang Perorangan</strong>.
-                  </p>
-                ) : (
-                  <p className="text-[10px] text-slate-500 mt-1">
-                    Pilihan produk institusi: Penagihan Unit Fidusia, Somasi Korporat, & Dana Talangan.
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">OS Principal Debt (Nilai Piutang Pokok Rp)</label>
+                <label className="block text-xs text-slate-400 mb-1">Principal Outstanding (Rp)</label>
                 <input
                   type="number"
-                  min="0"
+                  required
                   value={principalDebtOS}
                   onChange={(e) => setPrincipalDebtOS(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">Overdue Days (DPD / Hari Keterlambatan)</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={overdueDays}
-                  onChange={(e) => setOverdueDays(Number(e.target.value))}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
                 />
               </div>
-
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Assign Initial Field Partner</label>
-                <select
+                <label className="block text-xs text-slate-400 mb-1">Assign To Personnel / Mitra</label>
+                <SearchableSelect 
                   value={personnelId}
-                  onChange={(e) => setPartnerId(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
-                >
-                  {(store.personnel || []).map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.fullName} ({p.type})
-                    </option>
-                  ))}
-                </select>
+                  onChange={setPartnerId}
+                  options={(store.personnel || []).map((pr) => ({
+                    value: pr.id,
+                    label: pr.fullName,
+                    subLabel: pr.type === 'MITRA_DC' ? 'Mitra DC' : 'Internal'
+                  }))}
+                />
               </div>
             </div>
 

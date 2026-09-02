@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, LawyerNotice } from '../../types/arms';
+import { SearchableSelect } from '../common/SearchableSelect';
 import { 
   Scale, Plus, FileText, CheckCircle2, Send, ShieldAlert, 
   Copy, Check, Building2, UserCheck, Search, Edit2, Trash2, 
@@ -861,31 +862,24 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
               </div>
             ) : (
               <>
-                <div>
+                <div className="relative z-[60]">
                   <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Pilih Nasabah / Kasus Belum Selesai <span className="text-red-400">*</span>
+                    Pilih Nasabah / Kasus Belum Selesai (Ketik untuk mencari) <span className="text-red-400">*</span>
                   </label>
-                  <select
+                  <SearchableSelect
                     value={selectedCaseId}
-                    onChange={(e) => setSelectedCaseId(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-                  >
-                    <optgroup label="🏢 Kasus Multifinance / Lembaga Pembiayaan">
-                      {multifinanceCases.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          [MULTIFINANCE] {c.caseNo} — {c.debtorName} ({c.clientName}) - Tunggakan: Rp {c.principalDebtOS.toLocaleString('id-ID')}
-                        </option>
-                      ))}
-                    </optgroup>
-
-                    <optgroup label="👤 Kasus Klien Perorangan (Kreditur Individu)">
-                      {peroranganCases.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          [PERORANGAN] {c.caseNo} — {c.debtorName} (Kreditur: {c.clientName}) - Piutang: Rp {c.principalDebtOS.toLocaleString('id-ID')}
-                        </option>
-                      ))}
-                    </optgroup>
-                  </select>
+                    onChange={setSelectedCaseId}
+                    options={activeCases.map((c) => {
+                      const isClosed = c.status === 'CLOSED';
+                      const debtor = isClosed ? '[Kasus Ditutup]' : c.debtorName;
+                      const cat = c.clientType === 'PERORANGAN' ? 'PERORANGAN' : 'MULTIFINANCE';
+                      return {
+                        value: c.id,
+                        label: `[${cat}] ${c.caseNo} — ${debtor}`,
+                        subLabel: `Kreditur: ${c.clientName} | Tunggakan/Piutang: Rp ${c.principalDebtOS.toLocaleString('id-ID')}`
+                      };
+                    })}
+                  />
                 </div>
 
                 {/* Selected Case Info Banner */}

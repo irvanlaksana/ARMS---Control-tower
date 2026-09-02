@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, DanaTalangan, ApprovalRequest } from '../../types/arms';
 import { Coins, Plus, CheckCircle, Clock, AlertTriangle, ShieldCheck, Edit2, Trash2, Lock } from 'lucide-react';
+import { SearchableSelect } from '../common/SearchableSelect';
 
 interface DanaTalanganModuleProps {
   store: ARMSStore;
@@ -155,8 +156,51 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
     setIsEditing(false);
   };
 
+  const [clientFilter, setClientFilter] = useState<'ALL' | 'MULTIFINANCE' | 'PERORANGAN'>('ALL');
+
+  const filteredDana = (store.danaTalangan || []).filter((t) => {
+    if (clientFilter === 'ALL') return true;
+    const parentCase = store.cases.find((c) => c.id === t.caseId || c.caseNo === t.caseNo);
+    const cType = parentCase?.clientType || 'MULTIFINANCE';
+    return cType === clientFilter;
+  });
+
   return (
     <div className="space-y-6">
+      {/* Tabs */}
+      <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 p-1 rounded-lg w-max mb-6">
+        <button
+          onClick={() => setClientFilter('ALL')}
+          className={`px-4 py-2 text-xs font-bold rounded-md transition ${
+            clientFilter === 'ALL'
+              ? 'bg-slate-800 text-white shadow'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          Semua Pengajuan
+        </button>
+        <button
+          onClick={() => setClientFilter('MULTIFINANCE')}
+          className={`px-4 py-2 text-xs font-bold rounded-md transition ${
+            clientFilter === 'MULTIFINANCE'
+              ? 'bg-slate-800 text-white shadow'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          Klien Multifinance
+        </button>
+        <button
+          onClick={() => setClientFilter('PERORANGAN')}
+          className={`px-4 py-2 text-xs font-bold rounded-md transition ${
+            clientFilter === 'PERORANGAN'
+              ? 'bg-slate-800 text-white shadow'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          Klien Perorangan
+        </button>
+      </div>
+
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -196,14 +240,14 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {(store.danaTalangan || []).length === 0 ? (
+              {filteredDana.length === 0 ? (
                 <tr>
                   <td colSpan={canEdit ? 9 : 8} className="py-10 text-center text-slate-500 text-xs">
                     Belum ada permohonan dana talangan likuiditas. Klik tombol <strong>+ New Dana Talangan Request</strong> untuk mengajukan bridging dana eksekusi/tarik unit.
                   </td>
                 </tr>
               ) : (
-                (store.danaTalangan || []).map((t) => {
+                filteredDana.map((t) => {
                   const parentCase = store.cases.find((c) => c.id === t.caseId || c.caseNo === t.caseNo);
                   const isClosed = parentCase?.status === 'CLOSED' || t.status === 'CLOSED';
 
@@ -265,19 +309,22 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
             <h3 className="font-bold text-white text-base">{isEditing ? 'Edit Dana Talangan' : 'Request Dana Talangan Liquidity'}</h3>
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
+              <div className="relative z-[60]">
                 <label className="block text-xs text-slate-400 mb-1">Select Case</label>
-                <select
+                <SearchableSelect
                   value={caseId}
-                  onChange={(e) => setCaseId(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
-                >
-                  {(store.cases || []).filter(c => isEditing && c.id === caseId ? true : c.status !== 'CLOSED').map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.caseNo} - {c.status === 'CLOSED' ? '[Kasus Ditutup]' : c.debtorName}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setCaseId}
+                  options={(store.cases || []).filter(c => isEditing && c.id === caseId ? true : c.status !== 'CLOSED').map((c) => {
+                    const isClosed = c.status === 'CLOSED';
+                    const debtor = isClosed ? '[Kasus Ditutup]' : c.debtorName;
+                    const cat = c.clientType === 'PERORANGAN' ? 'PERORANGAN' : 'MULTIFINANCE';
+                    return {
+                      value: c.id,
+                      label: `[${cat}] ${c.caseNo} — ${debtor}`,
+                      subLabel: `Klien: ${c.clientName}`
+                    };
+                  })}
+                />
               </div>
 
               <div>
