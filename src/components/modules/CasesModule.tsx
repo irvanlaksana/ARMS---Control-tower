@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Case, FeeType, Client, ClientType } from '../../types/arms';
-import { Briefcase, Plus, CheckCircle, Search, Building2, User as UserIcon, UserCheck, ShieldCheck, Edit2, Trash2, AlertTriangle, AlertCircle, Lock } from 'lucide-react';
+import { Briefcase, Plus, CheckCircle, Search, Building2, User as UserIcon, UserCheck, ShieldCheck, Edit2, Trash2, AlertTriangle, AlertCircle, Lock, X } from 'lucide-react';
 import { findDuplicateCaseForClient } from '../../utils/duplicateCheck';
 import { SearchableSelect } from '../common/SearchableSelect';
 
@@ -426,10 +426,10 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
                     </span>
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <button onClick={() => handleEditClick(c)} className="p-1.5 text-slate-400 hover:text-indigo-400 transition-colors">
+                    <button onClick={() => handleOpenAddModal(c)} className="p-1.5 text-slate-400 hover:text-indigo-400 transition-colors">
                       <Edit2 className="w-4 h-4" />
                     </button>
-                    <button onClick={() => handleDeleteClick(c.id)} className="p-1.5 text-slate-400 hover:text-rose-400 transition-colors ml-2">
+                    <button onClick={() => handleDeleteCase(c.id, c.caseNo)} className="p-1.5 text-slate-400 hover:text-rose-400 transition-colors ml-2">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </td>
@@ -447,12 +447,12 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
         </div>
       </div>
 
-      {showModal && (
+      {showAddModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <form onSubmit={handleSaveCase} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-3xl p-6 shadow-2xl my-auto">
+          <form onSubmit={handleCreateCase} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-3xl p-6 shadow-2xl my-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
               <h2 className="text-lg font-bold text-white">{isEditing ? 'Edit Case' : 'New Recovery Case'}</h2>
-              <button type="button" onClick={() => { setShowModal(false); resetForm(); }} className="text-slate-400 hover:text-white">
+              <button type="button" onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -460,35 +460,52 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Client / Creditor</label>
-                <SearchableSelect 
-                  value={clientId}
-                  onChange={(val) => {
-                    setClientId(val);
-                    const client = store.clients.find(c => c.id === val);
-                    if (client) {
-                      setClientCategory(client.category);
-                    }
-                  }}
-                  options={store.clients.map(c => ({
+                <SearchableSelect
+                  value={clientCategory === 'PERORANGAN' ? peroranganClientId : clientId}
+                  onChange={(val) => clientCategory === 'PERORANGAN' ? setPeroranganClientId(val) : setClientId(val)}
+                  options={(clientCategory === 'PERORANGAN' ? peroranganClients : multifinanceClients).map(c => ({
                     value: c.id,
-                    label: c.name,
-                    subLabel: c.category
+                    label: c.companyName,
+                    subLabel: c.clientCode
                   }))}
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Debtor Name</label>
-                <input
-                  type="text"
-                  required
-                  value={debtorName}
-                  onChange={(e) => setDebtorName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                <label className="block text-xs text-slate-400 mb-1">Kategori Klien</label>
+                <SearchableSelect
+                  value={clientCategory}
+                  onChange={(val) => handleSwitchCategory(val as ClientType)}
+                  searchable={false}
+                  options={[
+                    { value: 'MULTIFINANCE', label: 'Multifinance' },
+                    { value: 'PERORANGAN', label: 'Perorangan' },
+                  ]}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Debitur</label>
+                <SearchableSelect
+                  value={customerId}
+                  onChange={setCustomerId}
+                  options={store.customers.map(c => ({ value: c.id, label: c.fullName, subLabel: c.nikKtp }))}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Nomor Kontrak / Bukti Hutang</label>
+                <input type="text" required value={contractNo} onChange={(e) => setContractNo(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white" />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Layanan</label>
+                <SearchableSelect
+                  value={serviceId}
+                  onChange={setServiceId}
+                  options={availableServices.map(s => ({ value: s.id, label: s.name, subLabel: s.serviceCode }))}
+                />
+              </div>
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Principal Outstanding (Rp)</label>
                 <input
@@ -498,6 +515,11 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
                   onChange={(e) => setPrincipalDebtOS(Number(e.target.value))}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
                 />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Hari Tunggakan</label>
+                <input type="number" min="0" required value={overdueDays} onChange={(e) => setOverdueDays(Number(e.target.value))}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white" />
               </div>
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Assign To Personnel / Mitra</label>
