@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Asset } from '../../types/arms';
-import { Car, Plus, Edit2, Trash2, AlertCircle } from 'lucide-react';
+import { Car, Plus, Edit2, Trash2, AlertCircle, Lock } from 'lucide-react';
 
 interface AssetsModuleProps {
   store: ARMSStore;
@@ -188,46 +188,59 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ store, currentUser, 
                   </td>
                 </tr>
               ) : (
-                (store.assets || []).map((a) => (
-                  <tr key={a.id} className="hover:bg-slate-800/40 transition">
-                    <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">{a.assetCode}</td>
-                    <td className="py-3.5 px-4 space-y-0.5">
-                      <div className="font-bold text-white">{a.caseNo}</div>
-                      <div className="text-[11px] text-slate-400">{a.debtorName}</div>
-                    </td>
-                    <td className="py-3.5 px-4 font-semibold text-slate-100">{a.brandModel}</td>
-                    <td className="py-3.5 px-4 font-mono text-emerald-400">{a.policeNoVIN}</td>
-                    <td className="py-3.5 px-4 text-right font-bold text-emerald-400">
-                      Rp {(a.estimatedMarketValue || 0).toLocaleString('id-ID')}
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-300">{a.warehouseLocation || 'In Field'}</td>
-                    <td className="py-3.5 px-4 text-center">
-                      <span className="bg-emerald-950 text-emerald-300 text-[10px] px-2.5 py-1 rounded-full border border-emerald-800 font-semibold">
-                        {(a.physicalStatus || '').replace(/_/g, ' ')}
-                      </span>
-                    </td>
-                    {canEdit && (
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => handleOpenModal(a)}
-                            className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded transition"
-                            title="Edit Aset"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => setDeleteTarget(a)}
-                            className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition"
-                            title="Hapus Aset"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                (store.assets || []).map((a) => {
+                  const parentCase = store.cases.find((c) => c.id === a.caseId || c.caseNo === a.caseNo);
+                  const isClosed = parentCase?.status === 'CLOSED';
+
+                  return (
+                    <tr key={a.id} className="hover:bg-slate-800/40 transition">
+                      <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">{a.assetCode}</td>
+                      <td className="py-3.5 px-4 space-y-0.5">
+                        <div className="font-bold text-white">{a.caseNo}</div>
+                        <div className="text-[11px] text-slate-400">
+                          {isClosed ? (
+                            <span className="text-slate-400 italic inline-flex items-center gap-1 font-normal text-xs">
+                              <Lock className="w-3 h-3 text-slate-400" /> [Kasus Ditutup]
+                            </span>
+                          ) : (
+                            a.debtorName
+                          )}
                         </div>
                       </td>
-                    )}
-                  </tr>
-                ))
+                      <td className="py-3.5 px-4 font-semibold text-slate-100">{a.brandModel}</td>
+                      <td className="py-3.5 px-4 font-mono text-emerald-400">{a.policeNoVIN}</td>
+                      <td className="py-3.5 px-4 text-right font-bold text-emerald-400">
+                        Rp {(a.estimatedMarketValue || 0).toLocaleString('id-ID')}
+                      </td>
+                      <td className="py-3.5 px-4 text-slate-300">{a.warehouseLocation || 'In Field'}</td>
+                      <td className="py-3.5 px-4 text-center">
+                        <span className="bg-emerald-950 text-emerald-300 text-[10px] px-2.5 py-1 rounded-full border border-emerald-800 font-semibold">
+                          {(a.physicalStatus || '').replace(/_/g, ' ')}
+                        </span>
+                      </td>
+                      {canEdit && (
+                        <td className="py-3.5 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => handleOpenModal(a)}
+                              className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded transition"
+                              title="Edit Aset"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteTarget(a)}
+                              className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition"
+                              title="Hapus Aset"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -253,9 +266,9 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ store, currentUser, 
                   onChange={(e) => setCaseId(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
                 >
-                  {(store.cases || []).map((c) => (
+                  {(store.cases || []).filter(c => isEditing && c.id === caseId ? true : c.status !== 'CLOSED').map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.caseNo} - {c.debtorName} ({c.clientName})
+                      {c.caseNo} - {c.status === 'CLOSED' ? '[Kasus Ditutup]' : c.debtorName} ({c.clientName})
                     </option>
                   ))}
                 </select>

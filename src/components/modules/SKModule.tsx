@@ -5,7 +5,7 @@ import {
   FileText, Plus, ExternalLink, HardDrive, UserCheck, 
   Building2, User as UserIcon, Search, Edit2, Trash2, 
   Link2, Check, Copy, Calendar, DollarSign, 
-  Car, ShieldCheck, CheckCircle2, X, AlertCircle, FolderOpen, Eye
+  Car, ShieldCheck, CheckCircle2, X, AlertCircle, FolderOpen, Eye, Lock
 } from 'lucide-react';
 import DriveFilePreview from '../common/DriveFilePreview';
 import { angkaKeTerbilang } from '../../utils/terbilang';
@@ -544,8 +544,12 @@ MASA BERLAKU: ${todayStr} s/d ${endDateStr}`;
     });
   };
 
-  const multifinanceCases = (store.cases || []).filter((c) => c.clientType !== 'PERORANGAN');
-  const peroranganCases = (store.cases || []).filter((c) => c.clientType === 'PERORANGAN');
+  const activeCases = (store.cases || []).filter((c) => {
+    if (isEditing && c.id === caseId) return true;
+    return c.status !== 'CLOSED';
+  });
+  const multifinanceCases = activeCases.filter((c) => c.clientType !== 'PERORANGAN');
+  const peroranganCases = activeCases.filter((c) => c.clientType === 'PERORANGAN');
 
   const allSks = store.sks || [];
   const multifinanceSKCount = allSks.filter((s) => {
@@ -728,7 +732,15 @@ MASA BERLAKU: ${todayStr} s/d ${endDateStr}`;
 
                       {/* Debitur & Pokok */}
                       <td className="p-3.5">
-                        <div className="font-semibold text-slate-100">{sk.debtorName}</div>
+                        <div className="font-semibold text-slate-100">
+                          {parentCase?.status === 'CLOSED' ? (
+                            <span className="text-slate-400 italic inline-flex items-center gap-1 font-normal text-xs">
+                              <Lock className="w-3 h-3 text-slate-400" /> [Kasus Ditutup]
+                            </span>
+                          ) : (
+                            sk.debtorName
+                          )}
+                        </div>
                         {parentCase && (
                           <div className="text-[10px] text-emerald-400 font-mono">
                             OS: Rp {(parentCase.principalDebtOS || 0).toLocaleString('id-ID')}
@@ -962,7 +974,7 @@ MASA BERLAKU: ${todayStr} s/d ${endDateStr}`;
                       <optgroup label="🏢 Klien Multifinance / Lembaga Pembiayaan">
                         {multifinanceCases.map((c) => (
                           <option key={c.id} value={c.id}>
-                            [MULTIFINANCE] {c.caseNo} — {c.debtorName} ({c.clientName})
+                            [MULTIFINANCE] {c.caseNo} — {c.status === 'CLOSED' ? '[Kasus Ditutup]' : c.debtorName} ({c.clientName})
                           </option>
                         ))}
                       </optgroup>
@@ -972,7 +984,7 @@ MASA BERLAKU: ${todayStr} s/d ${endDateStr}`;
                       <optgroup label="👤 Klien Perorangan / Kreditur Individu">
                         {peroranganCases.map((c) => (
                           <option key={c.id} value={c.id}>
-                            [PERORANGAN] {c.caseNo} — {c.debtorName} (Kreditur: {c.clientName})
+                            [PERORANGAN] {c.caseNo} — {c.status === 'CLOSED' ? '[Kasus Ditutup]' : c.debtorName} (Kreditur: {c.clientName})
                           </option>
                         ))}
                       </optgroup>

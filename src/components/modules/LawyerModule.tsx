@@ -4,7 +4,7 @@ import { User, LawyerNotice } from '../../types/arms';
 import { 
   Scale, Plus, FileText, CheckCircle2, Send, ShieldAlert, 
   Copy, Check, Building2, UserCheck, Search, Edit2, Trash2, 
-  HardDrive, ExternalLink, Link2, X, AlertCircle, FolderOpen, Eye
+  HardDrive, ExternalLink, Link2, X, AlertCircle, FolderOpen, Eye, Lock
 } from 'lucide-react';
 import { GoogleDriveFolderPicker } from '../common/GoogleDriveFolderPicker';
 import { QuickGDriveModal } from '../common/QuickGDriveModal';
@@ -672,7 +672,13 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
                       <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">{n.noticeNo}</td>
                       <td className="py-3.5 px-4 space-y-0.5">
                         <div className="font-bold text-white flex items-center gap-1.5">
-                          <span>{n.debtorName}</span>
+                          {parentCase?.status === 'CLOSED' ? (
+                            <span className="text-slate-400 italic inline-flex items-center gap-1 font-normal text-xs">
+                              <Lock className="w-3 h-3 text-slate-400" /> [Kasus Ditutup]
+                            </span>
+                          ) : (
+                            <span>{n.debtorName}</span>
+                          )}
                           <span className="text-[10px] bg-purple-950 text-purple-300 px-1.5 py-0.2 rounded border border-purple-800">
                             ⚖️ Lawyer
                           </span>

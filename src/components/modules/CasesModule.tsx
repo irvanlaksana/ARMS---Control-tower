@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Case, FeeType, Client, ClientType } from '../../types/arms';
-import { Briefcase, Plus, CheckCircle, Search, Building2, User as UserIcon, UserCheck, ShieldCheck, Edit2, Trash2 } from 'lucide-react';
+import { Briefcase, Plus, CheckCircle, Search, Building2, User as UserIcon, UserCheck, ShieldCheck, Edit2, Trash2, AlertTriangle, AlertCircle, Lock } from 'lucide-react';
+import { findDuplicateCaseForClient } from '../../utils/duplicateCheck';
 
 interface CasesModuleProps {
   store: ARMSStore;
@@ -59,6 +60,31 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
 
   const selectedCustomer = store.customers.find((cu) => cu.id === customerId);
   const computedFolderName = `${selectedCustomer?.fullName || 'Debitur'} - [${clientCategory === 'PERORANGAN' ? 'Perorangan' : 'Multifinance'}: ${activeClientName}] - ${assetSummary}`;
+
+  const effectiveClientId = clientCategory === 'PERORANGAN' ? peroranganClientId : clientId;
+
+  // Real-time Duplicate Detection
+  const duplicateWarning = useMemo(() => {
+    if (!showAddModal) return null;
+    return findDuplicateCaseForClient(store.cases || [], effectiveClientId, {
+      customerId,
+      debtorName: selectedCustomer?.fullName,
+      debtorNik: selectedCustomer?.nikKtp,
+      contractNo,
+      excludeCaseId: isEditing ? editId : null,
+    });
+  }, [showAddModal, store.cases, effectiveClientId, customerId, selectedCustomer, contractNo, isEditing, editId]);
+
+  // Check if a case in the list has duplicate debtor under same client
+  const hasDuplicateInCases = (targetCase: Case) => {
+    return (store.cases || []).some(c => 
+      c.id !== targetCase.id &&
+      c.clientId === targetCase.clientId &&
+      ((c.debtorNik && targetCase.debtorNik && c.debtorNik.replace(/\D/g, '') === targetCase.debtorNik.replace(/\D/g, '') && c.debtorNik.replace(/\D/g, '').length >= 10) ||
+       (c.multifinanceContractNo && targetCase.multifinanceContractNo && c.multifinanceContractNo.toLowerCase().trim() === targetCase.multifinanceContractNo.toLowerCase().trim()) ||
+       (c.customerId && c.customerId === targetCase.customerId))
+    );
+  };
 
   const handleSwitchCategory = (cat: ClientType) => {
     setClientCategory(cat);
@@ -142,6 +168,20 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
 
   const handleCreateCase = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // If duplicate is detected, ask confirmation
+    if (duplicateWarning?.isDuplicate) {
+      const confirmProceed = window.confirm(
+        `⚠️ PERINGATAN DATA DEBITUR GANDA (DUPLICATE DETECTED):\n\n` +
+        `${duplicateWarning.matchReason}\n\n` +
+        `Data perkara untuk debitur ini sudah ada di sistem untuk klien yang sama.\n` +
+        `Apakah Anda yakin ingin tetap menyimpan data perkara ini?`
+      );
+      if (!confirmProceed) {
+        return;
+      }
+    }
+
     let actualClientId = clientId;
     let actualClientName = selectedMultifinance?.companyName || 'Multifinance Client';
     let clientCodeForCase = selectedMultifinance?.clientCode || 'CLI';
@@ -404,15 +444,31 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
                         </div>
                       </td>
                       <td className="py-3.5 px-4 space-y-1">
-                        <div className="font-bold text-slate-100 flex items-center gap-1.5 flex-wrap">
-                          <span>{c.debtorName}</span>
-                          {c.lawyerStatus && (
-                            <span className="bg-purple-950 text-purple-300 text-[10px] px-1.5 py-0.2 rounded border border-purple-800 font-semibold">
-                              ⚖️ {c.lawyerStatus}
+                        {c.status === 'CLOSED' ? (
+                          <div>
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400 bg-slate-800/90 px-2 py-0.5 rounded border border-slate-700">
+                              <Lock className="w-3 h-3 text-slate-400" /> [Kasus Ditutup / Data Terproteksi]
                             </span>
-                          )}
-                        </div>
-                        <div className="text-[10px] text-slate-500 font-mono">NIK: {c.debtorNik}</div>
+                            <div className="text-[10px] text-slate-600 font-mono mt-0.5">NIK: ****************</div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="font-bold text-slate-100 flex items-center gap-1.5 flex-wrap">
+                              <span>{c.debtorName}</span>
+                              {hasDuplicateInCases(c) && (
+                                <span className="bg-amber-950 text-amber-300 text-[9px] px-1.5 py-0.5 rounded border border-amber-800 font-bold flex items-center gap-1" title="Data debitur/kontrak tercatat lebih dari satu kali untuk klien ini">
+                                  <AlertTriangle className="w-2.5 h-2.5 text-amber-400" /> Duplikat Klien
+                                </span>
+                              )}
+                              {c.lawyerStatus && (
+                                <span className="bg-purple-950 text-purple-300 text-[10px] px-1.5 py-0.2 rounded border border-purple-800 font-semibold">
+                                  ⚖️ {c.lawyerStatus}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[10px] text-slate-500 font-mono">NIK: {c.debtorNik}</div>
+                          </>
+                        )}
                       </td>
                       <td className="py-3.5 px-4 text-slate-300 max-w-[180px] truncate">{c.assetSummary}</td>
                       <td className="py-3.5 px-4 text-right font-bold text-emerald-400 font-mono">
@@ -512,14 +568,32 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
                     <div>
                       <div className="flex justify-between items-start">
                         <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Debitur</span>
-                        {c.lawyerStatus && (
-                          <span className="bg-purple-950 text-purple-300 text-[9px] px-1.5 py-0.5 rounded border border-purple-800 font-semibold">
-                            ⚖️ {c.lawyerStatus}
-                          </span>
-                        )}
+                        <div className="flex items-center gap-1 flex-wrap justify-end">
+                          {hasDuplicateInCases(c) && (
+                            <span className="bg-amber-950 text-amber-300 text-[9px] px-1.5 py-0.5 rounded border border-amber-800 font-bold flex items-center gap-1">
+                              <AlertTriangle className="w-2.5 h-2.5 text-amber-400" /> Duplikat Klien
+                            </span>
+                          )}
+                          {c.lawyerStatus && (
+                            <span className="bg-purple-950 text-purple-300 text-[9px] px-1.5 py-0.5 rounded border border-purple-800 font-semibold">
+                              ⚖️ {c.lawyerStatus}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <span className="font-bold text-slate-100 text-xs block">{c.debtorName}</span>
-                      <span className="text-[10px] text-slate-400 font-mono">NIK: {c.debtorNik}</span>
+                      {c.status === 'CLOSED' ? (
+                        <div className="mt-1">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400 bg-slate-800/90 px-2 py-0.5 rounded border border-slate-700">
+                            <Lock className="w-3 h-3 text-slate-400" /> [Kasus Ditutup / Data Terproteksi]
+                          </span>
+                          <span className="text-[10px] text-slate-600 font-mono block mt-0.5">NIK: ****************</span>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="font-bold text-slate-100 text-xs block mt-0.5">{c.debtorName}</span>
+                          <span className="text-[10px] text-slate-400 font-mono">NIK: {c.debtorNik}</span>
+                        </>
+                      )}
                     </div>
                     <div className="pt-2 border-t border-slate-800/60">
                       <span className="text-[10px] text-slate-500 uppercase tracking-wider block mb-0.5">Asset & Debt</span>
@@ -696,6 +770,38 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
                     )}
                   </>
                 )}
+              </div>
+            )}
+
+            {/* Real-Time Duplicate Warning Alert */}
+            {duplicateWarning?.isDuplicate && (
+              <div className="bg-amber-950/80 border-2 border-amber-500/80 rounded-xl p-3.5 space-y-2 text-amber-200 shadow-lg animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center gap-2 font-bold text-amber-300 text-xs">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 animate-bounce" />
+                  <span>⚠️ PERINGATAN: DATA DEBITUR SUDAH TERDAFTAR PADA KLIEN INI</span>
+                </div>
+                <p className="text-[11px] text-amber-200/90 leading-relaxed">
+                  {duplicateWarning.matchReason}.
+                </p>
+                {duplicateWarning.matchedCase && (
+                  <div className="bg-slate-950/80 p-2.5 rounded-lg border border-amber-800/60 grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px] font-mono">
+                    <div>
+                      <span className="text-slate-500 block">No. Perkara Eksis</span>
+                      <span className="text-indigo-300 font-bold">{duplicateWarning.matchedCase.caseNo}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block">Status Perkara</span>
+                      <span className="text-amber-400 font-bold">{duplicateWarning.matchedCase.status}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block">Field Partner PIC</span>
+                      <span className="text-slate-300">{duplicateWarning.matchedCase.currentPersonnelName || 'Unassigned'}</span>
+                    </div>
+                  </div>
+                )}
+                <div className="text-[10px] text-amber-400/90 font-medium">
+                  💡 <em>Mohon periksa kembali agar tidak terjadi pendaftaran data ganda / double assignment untuk penagihan lapangan.</em>
+                </div>
               </div>
             )}
 

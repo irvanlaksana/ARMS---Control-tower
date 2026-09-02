@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Customer } from '../../types/arms';
-import { Users, Plus, Edit2, Trash2 } from 'lucide-react';
+import { Users, Plus, Edit2, Trash2, AlertTriangle } from 'lucide-react';
+import { findDuplicateCustomerMaster } from '../../utils/duplicateCheck';
 
 interface CustomersModuleProps {
   store: ARMSStore;
@@ -28,6 +29,27 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
   const [nikKtp, setNikKtp] = useState(''); // Keep this for internal needs/backend if needed, or make optional
 
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS';
+
+  // Real-time duplicate check for customer master
+  const duplicateWarning = useMemo(() => {
+    if (!showModal) return null;
+    return findDuplicateCustomerMaster(store.customers || [], {
+      fullName,
+      contractNo,
+      nikKtp,
+      phone,
+      excludeCustomerId: isEditing ? editId : null,
+    });
+  }, [showModal, store.customers, fullName, contractNo, nikKtp, phone, isEditing, editId]);
+
+  const hasDuplicateCustomerInStore = (cust: Customer) => {
+    return (store.customers || []).some(c => 
+      c.id !== cust.id &&
+      ((c.contractNo && cust.contractNo && c.contractNo.toLowerCase().trim() === cust.contractNo.toLowerCase().trim()) ||
+       (c.nikKtp && cust.nikKtp && c.nikKtp.replace(/\D/g, '') === cust.nikKtp.replace(/\D/g, '') && c.nikKtp.replace(/\D/g, '').length >= 10) ||
+       (c.fullName.toLowerCase().trim() === cust.fullName.toLowerCase().trim() && c.phone && cust.phone && c.phone.replace(/\D/g, '') === cust.phone.replace(/\D/g, '')))
+    );
+  };
 
   const handleOpenModal = (customer?: Customer) => {
     if (customer) {
@@ -81,6 +103,18 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
 
   const handleSaveCustomer = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (duplicateWarning?.isDuplicate) {
+      const confirmProceed = window.confirm(
+        `⚠️ PERINGATAN DATA DEBITUR GANDA (DUPLICATE DETECTED):\n\n` +
+        `${duplicateWarning.matchReason}\n\n` +
+        `Data master debitur ini memiliki kesamaan dengan debitur yang sudah terdaftar.\n` +
+        `Apakah Anda yakin ingin tetap menyimpan profil debitur ini?`
+      );
+      if (!confirmProceed) {
+        return;
+      }
+    }
 
     if (isEditing && editId) {
       const updatedCustomers = store.customers.map(c => {
@@ -193,7 +227,16 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
               {store.customers.map((c) => (
                 <tr key={c.id} className="hover:bg-slate-800/40 transition">
                   <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">{c.customerCode}</td>
-                  <td className="py-3.5 px-4 font-mono text-slate-300">{c.contractNo || '-'}</td>
+                  <td className="py-3.5 px-4 font-mono text-slate-300">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span>{c.contractNo || '-'}</span>
+                      {hasDuplicateCustomerInStore(c) && (
+                        <span className="bg-amber-950 text-amber-300 text-[9px] px-1.5 py-0.5 rounded border border-amber-800 font-bold flex items-center gap-1" title="Data debitur dengan nomor kontrak / identitas serupa terdaftar lebih dari 1 kali">
+                          <AlertTriangle className="w-2.5 h-2.5 text-amber-400" /> Duplikat
+                        </span>
+                      )}
+                    </div>
+                  </td>
                   <td className="py-3.5 px-4 font-bold text-white">{c.fullName}</td>
                   <td className="py-3.5 px-4 text-emerald-400 font-semibold">{c.phone}</td>
                   <td className="py-3.5 px-4 text-slate-300 max-w-[200px] truncate">{c.addressCurrent}</td>
@@ -243,6 +286,38 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
             <h3 className="font-bold text-white text-base border-b border-slate-800 pb-2">
               {isEditing ? 'Edit Data Debitur' : 'Register Data Debitur'}
             </h3>
+
+            {/* Duplicate Debitur Warning Banner */}
+            {duplicateWarning?.isDuplicate && (
+              <div className="bg-amber-950/80 border-2 border-amber-500/80 rounded-xl p-3.5 space-y-2 text-amber-200 shadow-lg animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center gap-2 font-bold text-amber-300 text-xs">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 animate-bounce" />
+                  <span>⚠️ PERINGATAN: DATA DEBITUR SUDAH TERDAFTAR</span>
+                </div>
+                <p className="text-[11px] text-amber-200/90 leading-relaxed">
+                  {duplicateWarning.matchReason}.
+                </p>
+                {duplicateWarning.matchedCustomer && (
+                  <div className="bg-slate-950/80 p-2.5 rounded-lg border border-amber-800/60 grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px] font-mono">
+                    <div>
+                      <span className="text-slate-500 block">Kode Debitur</span>
+                      <span className="text-indigo-300 font-bold">{duplicateWarning.matchedCustomer.customerCode}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block">Nama Terdaftar</span>
+                      <span className="text-white font-bold">{duplicateWarning.matchedCustomer.fullName}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block">No. Kontrak Terdaftar</span>
+                      <span className="text-slate-300">{duplicateWarning.matchedCustomer.contractNo || '-'}</span>
+                    </div>
+                  </div>
+                )}
+                <div className="text-[10px] text-amber-400/90 font-medium">
+                  💡 <em>Mohon periksa data kembali untuk menghindari duplikasi data profil debitur.</em>
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>

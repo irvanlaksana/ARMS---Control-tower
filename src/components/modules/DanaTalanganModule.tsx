@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, DanaTalangan, ApprovalRequest } from '../../types/arms';
-import { Coins, Plus, CheckCircle, Clock, AlertTriangle, ShieldCheck, Edit2, Trash2 } from 'lucide-react';
+import { Coins, Plus, CheckCircle, Clock, AlertTriangle, ShieldCheck, Edit2, Trash2, Lock } from 'lucide-react';
 
 interface DanaTalanganModuleProps {
   store: ARMSStore;
@@ -203,43 +203,56 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
                   </td>
                 </tr>
               ) : (
-                (store.danaTalangan || []).map((t) => (
-                  <tr key={t.id} className="hover:bg-slate-800/40 transition">
-                    <td className="py-3.5 px-4 font-mono font-bold text-amber-300">{t.fundingNo}</td>
-                    <td className="py-3.5 px-4 space-y-0.5">
-                      <div className="font-bold text-white">{t.caseNo}</div>
-                      <div className="text-[11px] text-slate-400">{t.debtorName}</div>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span className="bg-slate-800 text-slate-200 text-[10px] px-2 py-0.5 rounded border border-slate-700">
-                        {(t.purpose || '').replace(/_/g, ' ')}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-right font-bold text-emerald-400">
-                      Rp {t.requestedAmount.toLocaleString('id-ID')}
-                    </td>
-                    <td className="py-3.5 px-4 font-medium text-slate-300">{t.funderSource}</td>
-                    <td className="py-3.5 px-4 font-mono text-amber-300">{t.feeOrInterestRatePercent}%</td>
-                    <td className="py-3.5 px-4 text-slate-400">{t.repayTargetDate || '-'}</td>
-                    <td className="py-3.5 px-4 text-center">
-                      <span className="bg-amber-950 text-amber-300 text-[10px] px-2.5 py-1 rounded-full border border-amber-800 font-semibold">
-                        {(t.status || '').replace(/_/g, ' ')}
-                      </span>
-                    </td>
-                    {canEdit && (
-                      <td className="py-3.5 px-4 text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <button onClick={() => handleEditClick(t)} className="text-slate-400 hover:text-white transition">
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => handleDeleteClick(t.id)} className="text-slate-400 hover:text-rose-400 transition">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                (store.danaTalangan || []).map((t) => {
+                  const parentCase = store.cases.find((c) => c.id === t.caseId || c.caseNo === t.caseNo);
+                  const isClosed = parentCase?.status === 'CLOSED' || t.status === 'CLOSED';
+
+                  return (
+                    <tr key={t.id} className="hover:bg-slate-800/40 transition">
+                      <td className="py-3.5 px-4 font-mono font-bold text-amber-300">{t.fundingNo}</td>
+                      <td className="py-3.5 px-4 space-y-0.5">
+                        <div className="font-bold text-white">{t.caseNo}</div>
+                        <div className="text-[11px] text-slate-400">
+                          {isClosed ? (
+                            <span className="text-slate-400 italic inline-flex items-center gap-1 font-normal text-xs">
+                              <Lock className="w-3 h-3 text-slate-400" /> [Kasus Ditutup]
+                            </span>
+                          ) : (
+                            t.debtorName
+                          )}
                         </div>
                       </td>
-                    )}
-                  </tr>
-                ))
+                      <td className="py-3.5 px-4">
+                        <span className="bg-slate-800 text-slate-200 text-[10px] px-2 py-0.5 rounded border border-slate-700">
+                          {(t.purpose || '').replace(/_/g, ' ')}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-right font-bold text-emerald-400">
+                        Rp {t.requestedAmount.toLocaleString('id-ID')}
+                      </td>
+                      <td className="py-3.5 px-4 font-medium text-slate-300">{t.funderSource}</td>
+                      <td className="py-3.5 px-4 font-mono text-amber-300">{t.feeOrInterestRatePercent}%</td>
+                      <td className="py-3.5 px-4 text-slate-400">{t.repayTargetDate || '-'}</td>
+                      <td className="py-3.5 px-4 text-center">
+                        <span className="bg-amber-950 text-amber-300 text-[10px] px-2.5 py-1 rounded-full border border-amber-800 font-semibold">
+                          {(t.status || '').replace(/_/g, ' ')}
+                        </span>
+                      </td>
+                      {canEdit && (
+                        <td className="py-3.5 px-4 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <button onClick={() => handleEditClick(t)} className="text-slate-400 hover:text-white transition">
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => handleDeleteClick(t.id)} className="text-slate-400 hover:text-rose-400 transition">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -259,9 +272,9 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
                   onChange={(e) => setCaseId(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
                 >
-                  {store.cases.map((c) => (
+                  {(store.cases || []).filter(c => isEditing && c.id === caseId ? true : c.status !== 'CLOSED').map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.caseNo} - {c.debtorName}
+                      {c.caseNo} - {c.status === 'CLOSED' ? '[Kasus Ditutup]' : c.debtorName}
                     </option>
                   ))}
                 </select>

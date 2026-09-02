@@ -694,9 +694,9 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
                 >
                   <option value="">-- Umum (Tidak Terikat Kasus Spesifik) --</option>
-                  {store.cases.map((c) => (
+                  {(store.cases || []).filter(c => c.status !== 'CLOSED').map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.caseNo} - {c.debtorName} ({c.clientName})
+                      {c.caseNo} - {c.status === 'CLOSED' ? '[Kasus Ditutup]' : c.debtorName} ({c.clientName})
                     </option>
                   ))}
                 </select>

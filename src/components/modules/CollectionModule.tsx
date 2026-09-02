@@ -1,13 +1,15 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
-import { User, Collection, CommunicationLog, FieldPhoto, ClientType } from '../../types/arms';
+import { User, Collection, CommunicationLog, FieldPhoto, ClientType, AssetRecovery } from '../../types/arms';
 import { 
   ShieldAlert, Plus, PhoneCall, MessageSquare, Image, Upload, X, Eye, 
   CheckCircle2, Check, X as XIcon, Paperclip, Building2, UserCheck, Calendar, DollarSign,
   Camera, FileText, ChevronRight, Filter, Search, Tag, ExternalLink, MapPin,
-  Car, AlertCircle, CheckSquare, Sparkles, Navigation, Trash2
+  Car, AlertCircle, CheckSquare, Sparkles, Navigation, Trash2, Send, Percent, ShieldCheck, Lock
 } from 'lucide-react';
-import DriveFilePreview from '../common/DriveFilePreview';
+import { UnitExecutionModal } from './UnitExecutionModal';
+import { TransferPartnerCommissionModal } from './TransferPartnerCommissionModal';
+import { calculateRepossessionTierFee, executeUnitRepossessionAndCloseCase } from '../../utils/tierFeeCalculator';
 
 interface CollectionModuleProps {
   store: ARMSStore;
@@ -58,11 +60,11 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
 
   // Modals
   const [showUnifiedModal, setShowUnifiedModal] = useState(false);
+  const [showExecutionModal, setShowExecutionModal] = useState(false);
+  const [selectedRecoveryForTransfer, setSelectedRecoveryForTransfer] = useState<AssetRecovery | null>(null);
   const [selectedPhotoPreview, setSelectedPhotoPreview] = useState<{ photo: FieldPhoto; caseNo: string; debtorName: string; clientName: string } | null>(null);
   const [collectionToDelete, setCollectionToDelete] = useState<Collection | null>(null);
   const [commLogToDelete, setCommLogToDelete] = useState<CommunicationLog | null>(null);
-  // Preview upload indicator for DriveFilePreview
-  const [isUploadingPreview, setIsUploadingPreview] = useState(false);
 
   // Active cases
   const activeCases = store.cases.filter(
@@ -81,6 +83,19 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
   const [followUpAction, setFollowUpAction] = useState('');
   const [nextFollowUpDate, setNextFollowUpDate] = useState('');
   
+  // Repossession / Unit Execution Specific State
+  const [repossessionVehicleType, setRepossessionVehicleType] = useState<'MOTORCYCLE' | 'PASSENGER_CAR' | 'COMMERCIAL_VEHICLE' | 'HEAVY_EQUIPMENT'>('PASSENGER_CAR');
+  const [repossessionVehicleYear, setRepossessionVehicleYear] = useState<number>(new Date().getFullYear() - 2);
+  const [repossessionCondition, setRepossessionCondition] = useState<'EXCELLENT' | 'GOOD' | 'FAIR' | 'DAMAGED' | 'PARTS_MISSING'>('GOOD');
+  const [repossessionHasStnk, setRepossessionHasStnk] = useState<boolean>(true);
+  const [repossessionHasKey, setRepossessionHasKey] = useState<boolean>(true);
+  const [repossessionIsOutOfTown, setRepossessionIsOutOfTown] = useState<boolean>(false);
+  const [repossessionCompanySplitPercent, setRepossessionCompanySplitPercent] = useState<number>(
+    store.settings?.defaultCompanyCommissionSplitPercent ?? 20
+  );
+  const [repossessionBastNo, setRepossessionBastNo] = useState<string>(`BAST-2026-${Math.floor(1000 + Math.random() * 9000)}`);
+  const [repossessionWarehouseLocation, setRepossessionWarehouseLocation] = useState<string>('Gudang ARMS Karawang');
+
   // Payment Section
   const [hasPayment, setHasPayment] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState(0);
@@ -97,6 +112,45 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
   // Selected case details
   const selectedCase = store.cases.find((c) => c.id === selectedCaseId);
   const isPerorangan = selectedCase?.clientType === 'PERORANGAN';
+  const selectedPersonnel = store.personnel.find((p) => p.id === personnelId);
+  const targetClient = store.clients.find((cl) => cl.id === selectedCase?.clientId);
+  const targetFeeConfig = store.fees.find(
+    (f) => f.clientId === selectedCase?.clientId && (f.serviceId === selectedCase?.serviceId || f.feeType === 'TIERED')
+  );
+
+  // Live calculation when interactionType === 'REPOSSESSION'
+  const unitTierCalculation = useMemo(() => {
+    if (!selectedCase) return null;
+    return calculateRepossessionTierFee(
+      {
+        targetCase: selectedCase,
+        client: targetClient,
+        feeConfig: targetFeeConfig,
+        personnel: selectedPersonnel,
+        vehicleType: repossessionVehicleType,
+        vehicleYear: repossessionVehicleYear,
+        hasStnk: repossessionHasStnk,
+        hasKey: repossessionHasKey,
+        physicalCondition: repossessionCondition,
+        isOutOfTown: repossessionIsOutOfTown,
+        companySplitPercent: repossessionCompanySplitPercent,
+      },
+      store.settings?.defaultCompanyCommissionSplitPercent ?? 20
+    );
+  }, [
+    selectedCase,
+    targetClient,
+    targetFeeConfig,
+    selectedPersonnel,
+    repossessionVehicleType,
+    repossessionVehicleYear,
+    repossessionCondition,
+    repossessionHasStnk,
+    repossessionHasKey,
+    repossessionIsOutOfTown,
+    repossessionCompanySplitPercent,
+    store.settings?.defaultCompanyCommissionSplitPercent,
+  ]);
 
   // Handle Photo Upload
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -162,7 +216,7 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
   };
 
   // Save Unified Record
-  const handleSaveUnifiedRecord = async (e: React.FormEvent) => {
+  const handleSaveUnifiedRecord = (e: React.FormEvent) => {
     e.preventDefault();
     const targetCase = selectedCase || (store.cases || []).find((c) => c.id === selectedCaseId) || store.cases?.[0];
     if (!targetCase) return;
@@ -171,45 +225,6 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
     const personnelName = personnel?.fullName || personnel?.name || currentUser.name || 'Petugas Control Tower';
     const nowIso = new Date().toISOString();
     const todayDate = nowIso.split('T')[0];
-
-    // If uploadedPhotos contain data URLs, upload them to Drive first
-    const uploadedPhotosResolved: typeof uploadedPhotos = [];
-
-    const extractFolderIdFromUrl = (u?: string) => {
-      if (!u) return undefined;
-      const m = u.match(/drive\.google\.com\/drive\/folders\/([a-zA-Z0-9_-]+)/);
-      if (m) return m[1];
-      const m2 = u.match(/folders\/([a-zA-Z0-9_-]+)/);
-      if (m2) return m2[1];
-      return undefined;
-    };
-
-    const folderIdToUse = targetCase?.gDriveFolderId || extractFolderIdFromUrl(targetCase?.gDriveFolderUrl) || store.settings?.googleDriveFolderId;
-
-    for (const p of uploadedPhotos) {
-      if (p.url && typeof p.url === 'string' && p.url.startsWith('data:')) {
-        try {
-          const match = p.url.match(/^data:(.+);base64,(.*)$/);
-          const mime = match ? match[1] : 'image/jpeg';
-          const ext = mime.split('/')?.[1] || 'jpg';
-          const fileName = `${(p.caption || 'photo').replace(/[^a-z0-9\-]/gi, '_')}-${Date.now().toString().slice(-6)}.${ext}`;
-          const resp = await fetch('/api/drive/upload', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fileName, mimeType: mime, base64: p.url, folderId: folderIdToUse }),
-          });
-          const j = await resp.json();
-          if (j && j.success) {
-            uploadedPhotosResolved.push({ ...p, url: j.webViewLink || `https://drive.google.com/file/d/${j.fileId}/view?usp=sharing`, driveFileId: j.fileId });
-            continue;
-          }
-        } catch (err) {
-          console.error('Photo upload failed', err);
-        }
-      }
-      // non-data urls or upload failed
-      uploadedPhotosResolved.push(p);
-    }
 
     let newCollections = [...(store.collections || [])];
     let newCommLogs = [...(store.commLogs || [])];
@@ -242,7 +257,7 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
         receiptNo: hasPayment && paymentAmount > 0 ? receiptNo : '-',
         verificationStatus: hasPayment && paymentAmount > 0 ? 'PENDING_VERIFICATION' : 'VERIFIED',
         notes: `[${interactionType}] Pihak: ${contactPerson || 'Debitur'}. ${reportSummary}`,
-        photos: uploadedPhotosResolved.length > 0 ? uploadedPhotosResolved : uploadedPhotos,
+        photos: uploadedPhotos,
         driveFolderUrl: driveFolderUrl || targetCase.gDriveFolderUrl,
         createdAt: nowIso,
       };
@@ -278,12 +293,66 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
         personnelId: personnelId || 'PER-OPS',
         personnelName,
         attachmentDriveUrl: driveFolderUrl || targetCase.gDriveFolderUrl,
-        photos: uploadedPhotosResolved.length > 0 ? uploadedPhotosResolved : uploadedPhotos,
+        photos: uploadedPhotos,
         recordedBy: currentUser.name || currentUser.username || 'Control Tower User',
         createdAt: nowIso,
       };
 
       newCommLogs = [newComm, ...newCommLogs];
+    }
+
+    // Repossession / Unit Execution Workflow (Closes Case, Generates Revenue & BAST)
+    if (interactionType === 'REPOSSESSION') {
+      const calc = unitTierCalculation || calculateRepossessionTierFee(
+        {
+          targetCase,
+          client: targetClient,
+          feeConfig: targetFeeConfig,
+          personnel,
+          vehicleType: repossessionVehicleType,
+          vehicleYear: repossessionVehicleYear,
+          hasStnk: repossessionHasStnk,
+          hasKey: repossessionHasKey,
+          physicalCondition: repossessionCondition,
+          isOutOfTown: repossessionIsOutOfTown,
+          companySplitPercent: repossessionCompanySplitPercent,
+        },
+        store.settings?.defaultCompanyCommissionSplitPercent ?? 20
+      );
+
+      const { updatedStore, newRecovery } = executeUnitRepossessionAndCloseCase(
+        {
+          ...store,
+          collections: newCollections,
+          commLogs: newCommLogs,
+        },
+        targetCase,
+        calc,
+        {
+          bastNo: repossessionBastNo || `BAST-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+          warehouseLocation: repossessionWarehouseLocation || 'Gudang ARMS Karawang',
+          physicalCondition: repossessionCondition,
+          vehicleType: repossessionVehicleType,
+          vehicleYear: repossessionVehicleYear,
+          hasStnk: repossessionHasStnk,
+          hasKey: repossessionHasKey,
+          bastDriveUrl: driveFolderUrl || targetCase.gDriveFolderUrl,
+          notes: reportSummary,
+          currentUser: {
+            username: currentUser.username,
+            role: currentUser.role,
+            name: currentUser.name,
+          }
+        }
+      );
+
+      onUpdateStore(updatedStore);
+      setShowUnifiedModal(false);
+
+      if (calc.isMitraDC) {
+        setSelectedRecoveryForTransfer(newRecovery);
+      }
+      return;
     }
 
     const audit = createAuditEntry(
@@ -439,12 +508,13 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
   store.collections.forEach((col) => {
     const parentCase = store.cases.find((c) => c.id === col.caseId || c.caseNo === col.caseNo);
     const cType = (col.clientType || parentCase?.clientType || 'MULTIFINANCE') as ClientType;
+    const isClosed = parentCase?.status === 'CLOSED';
     if (col.photos && col.photos.length > 0) {
       col.photos.forEach((p) => {
         allFieldPhotos.push({
           photo: p,
           caseNo: col.caseNo,
-          debtorName: col.debtorName,
+          debtorName: isClosed ? '[Kasus Ditutup]' : col.debtorName,
           clientName: col.clientName || parentCase?.clientName || 'Klien',
           clientType: cType,
           source: 'COLLECTION',
@@ -457,6 +527,7 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
   (store.commLogs || []).forEach((log) => {
     const parentCase = (store.cases || []).find((c) => c.id === log.caseId || c.caseNo === log.caseNo);
     const cType = (parentCase?.clientType || 'MULTIFINANCE') as ClientType;
+    const isClosed = parentCase?.status === 'CLOSED';
     if (log.photos && log.photos.length > 0) {
       log.photos.forEach((p) => {
         // avoid duplicate photo id
@@ -464,7 +535,7 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
           allFieldPhotos.push({
             photo: p,
             caseNo: log.caseNo,
-            debtorName: parentCase?.debtorName || log.contactPerson || 'Debitur',
+            debtorName: isClosed ? '[Kasus Ditutup]' : (parentCase?.debtorName || log.contactPerson || 'Debitur'),
             clientName: parentCase?.clientName || 'Klien',
             clientType: cType,
             source: 'COMM_LOG',
@@ -502,13 +573,22 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
         </div>
 
         {canEdit && (
-          <button
-            onClick={() => handleOpenModal('FIELD_VISIT')}
-            className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-lg transition active:scale-95"
-          >
-            <Plus className="w-4 h-4" />
-            <span>recods</span>
-          </button>
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <button
+              onClick={() => handleOpenModal('FIELD_VISIT')}
+              className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-lg transition active:scale-95"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Catat Tindakan / Kunjungan</span>
+            </button>
+            <button
+              onClick={() => setShowExecutionModal(true)}
+              className="flex items-center gap-2 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-lg transition active:scale-95"
+            >
+              <Car className="w-4 h-4" />
+              <span>Eksekusi Unit (Tier & BAST)</span>
+            </button>
+          </div>
         )}
       </div>
 
@@ -650,7 +730,15 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                         </td>
 
                         <td className="py-3.5 px-4 space-y-0.5">
-                          <div className="font-bold text-white">{act.debtorName}</div>
+                          <div className="font-bold text-white">
+                            {parentCase?.status === 'CLOSED' ? (
+                              <span className="text-slate-400 italic inline-flex items-center gap-1 font-normal text-xs">
+                                <Lock className="w-3 h-3 text-slate-400" /> [Kasus Ditutup]
+                              </span>
+                            ) : (
+                              act.debtorName
+                            )}
+                          </div>
                           <div className="text-[11px] text-slate-400">Ref: {act.caseNo}</div>
                         </td>
 
@@ -730,7 +818,25 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                         </td>
 
                         {canEdit && (
-                          <td className="py-3.5 px-4 text-right space-x-1">
+                          <td className="py-3.5 px-4 text-right space-x-1 whitespace-nowrap">
+                            {(() => {
+                              const linkedRecovery = (store.assetRecoveries || []).find(
+                                (r) => (r.caseId === act.caseId || r.caseNo === act.caseNo) && r.personnelType === 'MITRA_DC'
+                              );
+                              if (linkedRecovery && linkedRecovery.partnerPayoutStatus === 'PENDING_TRANSFER') {
+                                return (
+                                  <button
+                                    onClick={() => setSelectedRecoveryForTransfer(linkedRecovery)}
+                                    className="inline-flex items-center gap-1 bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/40 px-2 py-1 rounded text-[10px] font-semibold transition mr-1"
+                                    title="Transfer Komisi ke Mitra DC"
+                                  >
+                                    <Send className="w-3 h-3" />
+                                    <span>Transfer Komisi</span>
+                                  </button>
+                                );
+                              }
+                              return null;
+                            })()}
                             {act.verificationStatus === 'PENDING_VERIFICATION' && (
                               <>
                                 <button
@@ -818,7 +924,15 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
 
                         <td className="py-3.5 px-4 space-y-0.5">
                           <div className="font-bold text-indigo-300">{log.caseNo}</div>
-                          <div className="text-[11px] text-white font-medium">{parentCase?.debtorName || '-'}</div>
+                          <div className="text-[11px] text-white font-medium">
+                            {parentCase?.status === 'CLOSED' ? (
+                              <span className="text-slate-400 italic inline-flex items-center gap-1 font-normal text-xs">
+                                <Lock className="w-3 h-3 text-slate-400" /> [Kasus Ditutup]
+                              </span>
+                            ) : (
+                              parentCase?.debtorName || '-'
+                            )}
+                          </div>
                         </td>
 
                         <td className="py-3.5 px-4">
@@ -1053,7 +1167,7 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                   <optgroup label="📁 Berkas Kasus Lainnya">
                     {(store.cases || []).filter(c => !activeCases.some(ac => ac.id === c.id)).map((c) => (
                       <option key={c.id} value={c.id}>
-                        [{c.clientType || 'KASUS'}] {c.caseNo || '-'} — {c.debtorName || '-'} ({c.status || '-'})
+                        [{c.clientType || 'KASUS'}] {c.caseNo || '-'} — {c.status === 'CLOSED' ? '[Kasus Ditutup]' : (c.debtorName || '-')} ({c.status || '-'})
                       </option>
                     ))}
                   </optgroup>
@@ -1088,7 +1202,15 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
 
                 <div>
                   <span className="text-[10px] text-slate-400 block">Debitur & Dokumen Perjanjian</span>
-                  <div className="font-bold text-white mt-0.5">{selectedCase.debtorName || '-'}</div>
+                  <div className="font-bold text-white mt-0.5">
+                    {selectedCase.status === 'CLOSED' ? (
+                      <span className="text-slate-400 italic inline-flex items-center gap-1 font-normal text-xs">
+                        <Lock className="w-3 h-3 text-slate-400" /> [Kasus Ditutup]
+                      </span>
+                    ) : (
+                      selectedCase.debtorName || '-'
+                    )}
+                  </div>
                   <div className="text-[10px] text-slate-400 font-mono">{selectedCase.multifinanceContractNo || selectedCase.contractId || '-'}</div>
                 </div>
 
@@ -1313,6 +1435,178 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
               />
             </div>
 
+            {/* Repossession / Unit Execution Special Tier Parameters */}
+            {interactionType === 'REPOSSESSION' && (
+              <div className="bg-rose-950/20 border border-rose-800/60 rounded-xl p-4 space-y-4">
+                <div className="flex items-center justify-between border-b border-rose-800/40 pb-2">
+                  <div className="flex items-center gap-2 text-rose-300">
+                    <Car className="w-4 h-4 text-rose-400" />
+                    <span className="text-xs font-bold uppercase tracking-wider">
+                      Parameter Eksekusi Unit & Perhitungan Tier Otomatis
+                    </span>
+                  </div>
+                  <span className="text-[10px] bg-rose-900/60 text-rose-200 px-2 py-0.5 rounded border border-rose-700 font-semibold">
+                    Auto-Close Kasus & Revenue Split
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] text-slate-400 mb-1">
+                      Kategori Kendaraan
+                    </label>
+                    <select
+                      value={repossessionVehicleType}
+                      onChange={(e) => setRepossessionVehicleType(e.target.value as any)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
+                    >
+                      <option value="MOTORCYCLE">Sepeda Motor (Roda 2)</option>
+                      <option value="PASSENGER_CAR">Mobil Penumpang / MPV / SUV</option>
+                      <option value="COMMERCIAL_VEHICLE">Mobil Komersial / Truk / Box</option>
+                      <option value="HEAVY_EQUIPMENT">Alat Berat / Heavy Unit</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] text-slate-400 mb-1">
+                      Tahun Pembuatan Unit
+                    </label>
+                    <input
+                      type="number"
+                      min={2000}
+                      max={new Date().getFullYear()}
+                      value={repossessionVehicleYear}
+                      onChange={(e) => setRepossessionVehicleYear(Number(e.target.value))}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] text-slate-400 mb-1">
+                      Kondisi Fisik Unit
+                    </label>
+                    <select
+                      value={repossessionCondition}
+                      onChange={(e) => setRepossessionCondition(e.target.value as any)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
+                    >
+                      <option value="EXCELLENT">Sangat Baik / Mulus</option>
+                      <option value="GOOD">Baik / Normal</option>
+                      <option value="FAIR">Cukup / Baret Minor</option>
+                      <option value="DAMAGED">Rusak / Tidak Jalan</option>
+                      <option value="PARTS_MISSING">Komponen Hilang / Oplosan</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] text-slate-400 mb-1">
+                      Nomor Berita Acara (BAST)
+                    </label>
+                    <input
+                      type="text"
+                      value={repossessionBastNo}
+                      onChange={(e) => setRepossessionBastNo(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] text-slate-400 mb-1">
+                      Lokasi Gudang Pool Penitipan
+                    </label>
+                    <input
+                      type="text"
+                      value={repossessionWarehouseLocation}
+                      onChange={(e) => setRepossessionWarehouseLocation(e.target.value)}
+                      placeholder="e.g. Gudang Pool Karawang"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] text-slate-400 mb-1">
+                      Bagi Hasil Pendapatan Perusahaan (%)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={repossessionCompanySplitPercent}
+                        onChange={(e) => setRepossessionCompanySplitPercent(Number(e.target.value))}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-emerald-400 font-bold"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">%</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Checkboxes */}
+                <div className="flex flex-wrap gap-4 pt-1">
+                  <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={repossessionHasStnk}
+                      onChange={(e) => setRepossessionHasStnk(e.target.checked)}
+                      className="w-4 h-4 rounded text-rose-600 bg-slate-900 border-slate-700"
+                    />
+                    <span>Ada STNK Asli</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={repossessionHasKey}
+                      onChange={(e) => setRepossessionHasKey(e.target.checked)}
+                      className="w-4 h-4 rounded text-rose-600 bg-slate-900 border-slate-700"
+                    />
+                    <span>Ada Kunci Kontak</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={repossessionIsOutOfTown}
+                      onChange={(e) => setRepossessionIsOutOfTown(e.target.checked)}
+                      className="w-4 h-4 rounded text-rose-600 bg-slate-900 border-slate-700"
+                    />
+                    <span>Penarikan Luar Kota</span>
+                  </label>
+                </div>
+
+                {/* Live Calculation Display */}
+                {unitTierCalculation && (
+                  <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-2 text-xs">
+                    <div className="flex justify-between items-center text-slate-400">
+                      <span>Total Gross Fee Eksekusi (Tiering):</span>
+                      <span className="font-bold font-mono text-white text-sm">
+                        Rp {unitTierCalculation.totalGrossFee.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-slate-400">
+                      <span>Pendapatan Perusahaan ({unitTierCalculation.companyFeePercent}%):</span>
+                      <span className="font-bold font-mono text-emerald-400">
+                        Rp {unitTierCalculation.companyFeeAmount.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                    {unitTierCalculation.isMitraDC ? (
+                      <div className="flex justify-between items-center text-slate-400">
+                        <span>Hak Komisi Mitra DC ({unitTierCalculation.partnerCommissionPercent}%):</span>
+                        <span className="font-bold font-mono text-amber-400">
+                          Rp {unitTierCalculation.partnerCommissionAmount.toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="text-[11px] text-indigo-300 bg-indigo-950/40 p-1.5 rounded border border-indigo-900/50">
+                        Pelaksana: <strong>Karyawan Internal</strong> (100% Fee Masuk ke Pendapatan Perusahaan).
+                      </div>
+                    )}
+                    <div className="text-[10px] text-slate-500 pt-1 border-t border-slate-800/80">
+                      {unitTierCalculation.breakdownReason}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Step 6: Payment Details (Collapsible / Checkbox) */}
             <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3">
               <div className="flex items-center justify-between">
@@ -1510,77 +1804,69 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
         </div>
       )}
 
-      {/* FULL PHOTO PREVIEW MODAL (replaced by DriveFilePreview) */}
-      <DriveFilePreview
-        open={!!selectedPhotoPreview}
-        onClose={() => setSelectedPhotoPreview(null)}
-        fileUrl={selectedPhotoPreview?.photo.url}
-        fileName={selectedPhotoPreview?.photo.caption}
-        isUploading={isUploadingPreview}
-        driveFileId={selectedPhotoPreview?.photo.driveFileId}
-        webViewLink={selectedPhotoPreview?.photo.url}
-        onUpload={async () => {
-          if (!selectedPhotoPreview) return;
-          const sp = selectedPhotoPreview;
-          const p = sp.photo;
-          if (typeof p.url === 'string' && p.url.startsWith('data:')) {
-            setIsUploadingPreview(true);
-            try {
-              const match = p.url.match(/^data:(.+);base64,(.*)$/);
-              const mime = match ? match[1] : 'image/jpeg';
-              const ext = mime.split('/')?.[1] || 'jpg';
-              const fileName = `${(p.caption || 'photo').replace(/[^a-z0-9\-]/gi, '_')}-${Date.now().toString().slice(-6)}.${ext}`;
+      {/* FULL PHOTO PREVIEW MODAL */}
+      {selectedPhotoPreview && (
+        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-3xl w-full overflow-hidden shadow-2xl flex flex-col">
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs font-bold text-indigo-300">
+                    {selectedPhotoPreview.caseNo}
+                  </span>
+                  <span className="text-xs text-slate-400">•</span>
+                  <span className="text-xs font-bold text-white">
+                    {selectedPhotoPreview.debtorName}
+                  </span>
+                </div>
+                <div className="text-[11px] text-slate-400 mt-0.5">
+                  Klien: {selectedPhotoPreview.clientName}
+                </div>
+              </div>
 
-              const extractFolderIdFromUrl = (u?: string) => {
-                if (!u) return undefined;
-                const m = u.match(/drive\.google\.com\/drive\/folders\/([a-zA-Z0-9_-]+)/);
-                if (m) return m[1];
-                const m2 = u.match(/folders\/([a-zA-Z0-9_-]+)/);
-                if (m2) return m2[1];
-                return undefined;
-              };
+              <button
+                onClick={() => setSelectedPhotoPreview(null)}
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-              const targetCase = (store.cases || []).find(c => c.caseNo === sp.caseNo) || (store.cases || [])[0];
-              const folderIdToUse = targetCase?.gDriveFolderId || extractFolderIdFromUrl(targetCase?.gDriveFolderUrl) || store.settings?.googleDriveFolderId;
+            <div className="bg-slate-950 flex items-center justify-center p-4 max-h-[60vh] overflow-hidden">
+              <img
+                src={selectedPhotoPreview.photo.url}
+                alt={selectedPhotoPreview.photo.caption}
+                className="max-h-[55vh] w-auto max-w-full object-contain rounded-lg shadow-lg border border-slate-800"
+              />
+            </div>
 
-              const resp = await fetch('/api/drive/upload', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fileName, mimeType: mime, base64: p.url, folderId: folderIdToUse }),
-              });
+            <div className="p-4 bg-slate-900 border-t border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="bg-amber-950 text-amber-300 text-[10px] px-2 py-0.5 rounded border border-amber-800 font-bold uppercase">
+                    {(selectedPhotoPreview.photo?.category || 'DOKUMENTASI').replace(/_/g, ' ')}
+                  </span>
+                  <span className="text-slate-400 text-[11px]">
+                    Waktu: {selectedPhotoPreview.photo?.timestamp || '-'}
+                  </span>
+                </div>
+                <p className="text-slate-200 mt-1 font-medium">{selectedPhotoPreview.photo.caption}</p>
+              </div>
 
-              const j = await resp.json();
-              if (j && j.success) {
-                const newUrl = j.webViewLink || `https://drive.google.com/file/d/${j.fileId}/view?usp=sharing`;
-
-                // Update local uploadedPhotos if present
-                setUploadedPhotos(prev => prev.map(ph => ph.id === p.id ? { ...ph, url: newUrl, driveFileId: j.fileId } : ph));
-
-                // Update store: collections
-                const updatedCollections = (store.collections || []).map(col => ({
-                  ...col,
-                  photos: (col.photos || []).map(ph => ph.id === p.id ? { ...ph, url: newUrl, driveFileId: j.fileId } : ph)
-                }));
-                // Update store: commLogs
-                const updatedCommLogs = (store.commLogs || []).map(log => ({
-                  ...log,
-                  photos: (log.photos || []).map(ph => ph.id === p.id ? { ...ph, url: newUrl, driveFileId: j.fileId } : ph)
-                }));
-
-                const audit = createAuditEntry(currentUser.username, currentUser.role, 'UPDATE', 'Collections_Photos', p.id, `Upload photo via preview for case ${sp.caseNo}`);
-
-                onUpdateStore({ ...store, collections: updatedCollections, commLogs: updatedCommLogs, auditLogs: [audit, ...(store.auditLogs || [])] });
-
-                setSelectedPhotoPreview(null);
-              }
-            } catch (err) {
-              console.error('Preview upload failed', err);
-            } finally {
-              setIsUploadingPreview(false);
-            }
-          }
-        }}
-      />
+              <a
+                href={selectedPhotoPreview.photo.url}
+                download={`Bukti-Foto-${selectedPhotoPreview.caseNo}.jpg`}
+                target="_blank"
+                rel="noreferrer"
+                className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition self-end sm:self-auto shrink-0"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Buka Ukuran Penuh</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Delete Collection Confirmation Modal */}
       {collectionToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
@@ -1685,6 +1971,36 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Unit Execution Modal (Tier-Based Fee Calculation & Case Closure) */}
+      {showExecutionModal && (
+        <UnitExecutionModal
+          store={store}
+          currentUser={currentUser}
+          onClose={() => setShowExecutionModal(false)}
+          onSuccess={(updatedStore, createdRecovery) => {
+            onUpdateStore(updatedStore);
+            setShowExecutionModal(false);
+            if (createdRecovery && createdRecovery.personnelType === 'MITRA_DC') {
+              setSelectedRecoveryForTransfer(createdRecovery);
+            }
+          }}
+        />
+      )}
+
+      {/* Partner Commission Transfer Modal */}
+      {selectedRecoveryForTransfer && (
+        <TransferPartnerCommissionModal
+          store={store}
+          currentUser={currentUser}
+          recovery={selectedRecoveryForTransfer}
+          onClose={() => setSelectedRecoveryForTransfer(null)}
+          onSuccess={(updatedStore) => {
+            onUpdateStore(updatedStore);
+            setSelectedRecoveryForTransfer(null);
+          }}
+        />
       )}
     </div>
   );

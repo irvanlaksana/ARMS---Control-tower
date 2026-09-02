@@ -365,10 +365,30 @@ export interface AssetRecovery {
   assetDescription: string;
   personnelId: string;
   personnelName: string;
+  personnelType?: 'KARYAWAN' | 'MITRA_DC';
   recoveryDate: string;
   warehouseLocation: string;
   physicalCondition: 'EXCELLENT' | 'GOOD' | 'FAIR' | 'DAMAGED' | 'PARTS_MISSING';
-  repossessionFee: number;
+  vehicleType?: 'MOTORCYCLE' | 'PASSENGER_CAR' | 'COMMERCIAL_VEHICLE' | 'HEAVY_EQUIPMENT' | 'OTHER';
+  vehicleYear?: number;
+  hasStnk?: boolean;
+  hasKey?: boolean;
+  tierAppliedName?: string;
+  tierAppliedBasis?: string;
+  tierBaseAmount?: number;
+  tierModifiersTotal?: number;
+  repossessionFee: number; // Gross fee billed to client
+  companyFeePercent?: number; // Company percentage share (e.g. 20%)
+  companyFeeAmount?: number; // Nominal company revenue (e.g. 20% * repossessionFee)
+  partnerCommissionAmount?: number; // Nominal DC partner share (e.g. 80% * repossessionFee)
+  partnerPayoutStatus?: 'NOT_APPLICABLE' | 'PENDING_TRANSFER' | 'TRANSFERRED' | 'REJECTED';
+  partnerTransferDate?: string;
+  partnerTransferRef?: string;
+  partnerTransferProofUrl?: string;
+  partnerBankName?: string;
+  partnerAccountNo?: string;
+  partnerAccountName?: string;
+  paidFromCashAccountId?: string;
   status: 'PENDING_INSPECTION' | 'STORED' | 'READY_FOR_LIQUIDATION' | 'RELEASED_TO_CLIENT';
   bastDriveUrl?: string;
   createdAt: string;
@@ -412,6 +432,28 @@ export interface Payment {
   manualSplits?: { name: string; amount: number }[];
   verificationStatus: 'PENDING' | 'VERIFIED' | 'REJECTED';
   verifiedBy?: string;
+  
+  // Tiering & Partner Commission Fields
+  personnelId?: string;
+  personnelName?: string;
+  personnelType?: 'KARYAWAN' | 'MITRA_DC';
+  tierAppliedName?: string;
+  tierAppliedBasis?: string;
+  tierPercent?: number;
+  grossAgencyFee?: number;
+  companyFeePercent?: number;
+  companyRevenueAmount?: number;
+  partnerCommissionPercent?: number;
+  partnerCommissionAmount?: number;
+  partnerPayoutStatus?: 'NOT_APPLICABLE' | 'PENDING_TRANSFER' | 'TRANSFERRED' | 'REJECTED';
+  partnerTransferDate?: string;
+  partnerTransferRef?: string;
+  partnerTransferProofUrl?: string;
+  partnerBankName?: string;
+  partnerAccountNo?: string;
+  partnerAccountName?: string;
+  paidFromCashAccountId?: string;
+  
   createdAt: string;
 }
 
@@ -604,6 +646,7 @@ export interface AppSettings {
   companyAddress: string;
   companyLogo?: string;
   defaultFeePercent: number;
+  defaultCompanyCommissionSplitPercent?: number; // Persentase Fee Perusahaan dari Eksekusi Mitra DC (default 20%)
   autoSyncWithGoogleSheets: boolean;
   lastSyncedAt?: string;
 }
