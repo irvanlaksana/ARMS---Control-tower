@@ -38,14 +38,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
     if (role === 'APPROVER_EXECUTIVE') {
       return [
-        'DASHBOARD', 'APPROVALS', 'CASES', 'CONTRACTS', 'SK', 'LAWYER', 'COLLECTION', 'TALANGAN',
+        'DASHBOARD', 'APPROVALS', 'CASES', 'LETTER_GENERATOR', 'CONTRACTS', 'SK', 'LAWYER', 'COLLECTION', 'TALANGAN',
         'PETTY_CASH', 'EXPENSES', 'PAYMENTS', 'SETTLEMENT', 'FINANCE', 'REPORTS', 'DOCUMENTS', 'AUDIT', 'CLIENTS'
       ].includes(tab);
     }
 
     if (role === 'VIEWER_COMMISSIONER') {
       return [
-        'DASHBOARD', 'CASES', 'LAWYER', 'COLLECTION', 'FINANCE', 'PETTY_CASH', 'TALANGAN', 'REPORTS', 'DOCUMENTS', 'AUDIT'
+        'DASHBOARD', 'CASES', 'LETTER_GENERATOR', 'LAWYER', 'COLLECTION', 'FINANCE', 'PETTY_CASH', 'TALANGAN', 'REPORTS', 'DOCUMENTS', 'AUDIT'
       ].includes(tab);
     }
 
@@ -82,6 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       title: 'OPERASIONAL & LAPANGAN',
       items: [
         { id: 'CASES', label: 'Kasus & Piutang', shortLabel: 'Kasus', icon: Briefcase },
+        { id: 'LETTER_GENERATOR', label: 'Generator Surat Tugas / BAST', shortLabel: 'Generator Surat', icon: FileText },
         { id: 'SK', label: 'Surat Kuasa (SK)', shortLabel: 'Surat Kuasa', icon: FileText },
         { id: 'ASSIGNMENTS', label: 'Penugasan Lapangan', shortLabel: 'Penugasan', icon: Users },
         { id: 'LAWYER', label: 'Lawyer & Somasi', shortLabel: 'Lawyer', icon: Scale },

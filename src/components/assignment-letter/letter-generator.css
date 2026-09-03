@@ -1,0 +1,187 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  background: #eef1f6;
+}
+
+/* ====== DOCUMENT (F4 / FOLIO SHEET — 215 x 330 mm) ====== */
+:root {
+  --paper-w: 215mm;
+  --paper-h: 330mm;
+}
+
+.sheet {
+  width: var(--paper-w);
+  min-height: var(--paper-h);
+  background: #fff;
+  color: #000;
+  font-family: "Times New Roman", "Liberation Serif", Times, serif;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+}
+
+.sheet-bast {
+  padding: 11mm 9mm 9mm 9mm;
+  font-size: 9.4pt;
+  line-height: 1.24;
+}
+
+.sheet-penyerahan {
+  padding: 26mm 25mm 22mm 25mm;
+  font-size: 11.5pt;
+  line-height: 1.34;
+}
+
+.sheet-tugas {
+  padding: 15mm 20mm 18mm 20mm;
+  font-size: 11pt;
+  line-height: 1.36;
+}
+
+.sheet-tugas p,
+.sheet-tugas li,
+.sheet-tugas td {
+  font-size: 11pt;
+}
+
+.doc-table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.doc-table td,
+.doc-table th {
+  border: 1px solid #000;
+  padding: 1px 3px;
+  vertical-align: middle;
+  font-weight: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.tick {
+  font-family: "DejaVu Sans", "Segoe UI Symbol", Arial, sans-serif;
+  font-size: 8.5pt;
+  line-height: 1;
+}
+
+.u-line {
+  border-bottom: 1px solid #000;
+  display: inline-block;
+  min-width: 40mm;
+}
+
+.zoom-stage {
+  position: relative;
+}
+
+.zoom-wrap {
+  transform-origin: top left;
+  width: max-content;
+}
+
+.page-card {
+  display: block;
+}
+
+/* thin scrollbars in the app shell */
+.thin-scroll::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 99px;
+}
+.thin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ====== PRINT ====== */
+@media print {
+  @page {
+    size: 215mm 330mm; /* F4 / Folio */
+    margin: 0;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-root,
+  .print-scroll {
+    display: block !important;
+    position: static !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+    height: auto !important;
+    max-height: none !important;
+    width: auto !important;
+  }
+
+  main,
+  aside {
+    display: block !important;
+    background: #fff !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .zoom-stage,
+  .zoom-wrap,
+  .page-list,
+  .page-card,
+  .page-shadow {
+    transform: none !important;
+    zoom: 1 !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    display: block !important;
+    box-shadow: none !important;
+    outline: none !important;
+    border: none !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+    --tw-ring-offset-shadow: 0 0 #0000 !important;
+  }
+
+  .sheet {
+    box-shadow: none !important;
+    margin: 0 !important;
+    outline: none !important;
+    border: none !important;
+    width: var(--paper-w) !important;
+    height: 329mm; /* 1mm toleransi agar tidak tumpah ke halaman baru */
+    min-height: 0 !important;
+    overflow: hidden !important;
+    break-after: page;
+    page-break-after: always;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .sheet:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+}
