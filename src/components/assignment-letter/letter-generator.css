@@ -96,6 +96,43 @@ body {
   opacity: 1;
 }
 
+/* Match the dark slate application shell while keeping the paper preview white. */
+.generator-form .bg-white {
+  background-color: #0f172a !important;
+}
+
+.generator-form .bg-slate-50 {
+  background-color: #020617 !important;
+}
+
+.generator-form .bg-slate-100 {
+  background-color: #1e293b !important;
+}
+
+.generator-form .border-slate-100,
+.generator-form .border-slate-200 {
+  border-color: #334155 !important;
+}
+
+.generator-form .text-slate-800,
+.generator-form .text-slate-700,
+.generator-form .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+.generator-form .text-slate-500,
+.generator-form .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+.generator-form .hover\:bg-slate-50:hover {
+  background-color: #1e293b !important;
+}
+
+.generator-form .hover\:bg-slate-100:hover {
+  background-color: #334155 !important;
+}
+
 @media (max-width: 767px) {
   .generator-toolbar {
     align-items: flex-start;

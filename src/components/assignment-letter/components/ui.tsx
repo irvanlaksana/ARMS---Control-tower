@@ -20,32 +20,32 @@ export function Section({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-shadow duration-200 hover:shadow-[0_3px_10px_-2px_rgba(15,23,42,0.12)]">
+    <div className="overflow-hidden rounded-lg border border-slate-800 bg-slate-950 shadow-lg shadow-black/10 transition-shadow duration-200 hover:border-slate-700">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="group flex w-full items-center gap-2 px-2.5 py-2 text-left transition-colors hover:bg-slate-50"
+        className="group flex w-full items-center gap-2 px-2.5 py-2 text-left transition-colors hover:bg-slate-900"
       >
         {icon && (
           <span className="text-[13px] leading-none transition-transform duration-200 group-hover:scale-110">
             {icon}
           </span>
         )}
-        <span className="text-[12px] font-semibold tracking-tight text-slate-800">
+        <span className="text-[12px] font-semibold tracking-tight text-white">
           {title}
         </span>
         {badge && (
-          <span className="rounded-full bg-indigo-50 px-1.5 py-[1px] text-[9px] font-bold uppercase tracking-wide text-indigo-500">
+          <span className="rounded-full bg-indigo-950 px-1.5 py-[1px] text-[9px] font-bold uppercase tracking-wide text-indigo-300">
             {badge}
           </span>
         )}
         {hint && (
-          <span className="truncate text-[10.5px] font-normal text-slate-400">
+          <span className="truncate text-[10.5px] font-normal text-slate-500">
             {hint}
           </span>
         )}
         <svg
-          className={`ml-auto shrink-0 text-slate-300 transition-all duration-300 group-hover:text-slate-500 ${
+          className={`ml-auto shrink-0 text-slate-600 transition-all duration-300 group-hover:text-slate-300 ${
             open ? "rotate-180" : ""
           }`}
           width="12"
@@ -64,7 +64,7 @@ export function Section({
         }`}
       >
         <div className="overflow-hidden">
-          <div className="border-t border-slate-100 px-2.5 py-2.5">{children}</div>
+          <div className="border-t border-slate-800 px-2.5 py-2.5">{children}</div>
         </div>
       </div>
     </div>
@@ -97,7 +97,7 @@ export function Field({
 }) {
   return (
     <label className={`block min-w-0 ${span ? "col-span-full" : ""}`}>
-      <span className="mb-0.5 block truncate text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+      <span className="mb-0.5 block truncate text-[10px] font-semibold uppercase tracking-wide text-slate-500">
         {label}
       </span>
       {children}
@@ -107,7 +107,7 @@ export function Field({
 }
 
 const inputCls =
-  "w-full rounded-md border border-slate-200 bg-white px-2 py-1 text-[12.5px] text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100";
+  "w-full rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-[12.5px] text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-950";
 
 export function TextInput(
   props: React.InputHTMLAttributes<HTMLInputElement> & { upper?: boolean },
@@ -154,8 +154,8 @@ export function Segmented<T extends string>({
           onClick={() => onChange(o.value)}
           className={`flex-1 truncate rounded px-1.5 py-1 text-[11.5px] font-medium transition ${
             value === o.value
-              ? "bg-white text-indigo-600 shadow-sm"
-              : "text-slate-500 hover:text-slate-700"
+              ? "bg-indigo-600 text-white shadow-sm"
+              : "text-slate-400 hover:text-slate-200"
           }`}
         >
           {o.label}
@@ -183,7 +183,7 @@ export function Check({
         onChange={(e) => onChange(e.target.checked)}
         className="h-3.5 w-3.5 shrink-0 accent-indigo-600"
       />
-      <span className="text-[11.5px] leading-snug text-slate-600">{children}</span>
+      <span className="text-[11.5px] leading-snug text-slate-300">{children}</span>
     </label>
   );
 }
@@ -198,10 +198,10 @@ export function Btn({
   variant?: "primary" | "ghost" | "dark";
 }) {
   const styles: Record<string, string> = {
-    primary: "bg-indigo-600 text-white shadow-sm shadow-indigo-200 hover:bg-indigo-700",
-    dark: "bg-slate-900 text-white hover:bg-slate-800",
+    primary: "bg-indigo-600 text-white shadow-sm shadow-indigo-950 hover:bg-indigo-500",
+    dark: "bg-slate-800 text-white hover:bg-slate-700",
     ghost:
-      "border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900",
+      "border border-slate-700 bg-slate-900 text-slate-300 hover:border-slate-600 hover:text-white",
   };
   return (
     <button

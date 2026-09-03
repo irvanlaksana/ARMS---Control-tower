@@ -86,11 +86,11 @@ export default function AssignmentLetterGenerator({ initialData, isPersonal, onC
   let pageNo = 0;
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-[#e7eaf0]">
-      <div className="generator-toolbar no-print flex items-center justify-between border-b border-slate-300 bg-white px-4 py-2">
+    <div className="fixed inset-0 z-[60] flex flex-col bg-slate-950">
+      <div className="generator-toolbar no-print flex items-center justify-between border-b border-slate-800 bg-slate-900 px-4 py-2">
         <div>
-          <h2 className="text-sm font-bold text-slate-900">Generator Surat Penugasan Lapangan</h2>
-          <p className="text-[11px] text-slate-500">{isPersonal ? "Debitur perorangan · Surat Penyerahan tidak digunakan" : "Debitur perusahaan"}</p>
+          <h2 className="text-sm font-bold text-white">Generator Surat Penugasan Lapangan</h2>
+          <p className="text-[11px] text-slate-400">{isPersonal ? "Debitur perorangan · Surat Penyerahan tidak digunakan" : "Debitur perusahaan"}</p>
         </div>
         <div className="generator-actions flex gap-2">
           <Btn variant="primary" onClick={() => onSave(data)}>Simpan Surat</Btn>
@@ -99,10 +99,10 @@ export default function AssignmentLetterGenerator({ initialData, isPersonal, onC
         </div>
       </div>
       <div className="generator-body flex min-h-0 flex-1">
-        <aside className="generator-form no-print thin-scroll w-[350px] shrink-0 overflow-y-auto border-r border-slate-200 bg-slate-50 p-3 flex flex-col">
+        <aside className="generator-form no-print thin-scroll w-[350px] shrink-0 overflow-y-auto border-r border-slate-800 bg-slate-900 p-3 flex flex-col">
           <FormPanel data={data} set={set} setJenis={setJenis} setChecklist={setChecklist} />
           
-          <div className="mt-4 pt-4 border-t border-slate-200">
+          <div className="mt-4 pt-4 border-t border-slate-800">
             <button
               onClick={() => setIsGenerated(true)}
               className="w-full flex justify-center items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 px-4 rounded-xl shadow-md shadow-emerald-600/20 transition-all active:scale-95"
@@ -116,25 +116,25 @@ export default function AssignmentLetterGenerator({ initialData, isPersonal, onC
           {!isGenerated ? (
             <div className="flex flex-col items-center justify-center flex-1 text-slate-500 bg-slate-50">
               <FileText className="w-16 h-16 mb-4 text-slate-300" />
-              <p className="font-semibold text-slate-600">Preview Belum Digenerate</p>
-              <p className="text-sm mt-1">Silakan lengkapi form dan klik tombol "Generate Surat".</p>
+              <p className="font-semibold text-slate-300">Preview Belum Digenerate</p>
+              <p className="text-sm mt-1 text-slate-500">Silakan lengkapi form dan klik tombol "Generate Surat".</p>
             </div>
           ) : (
             <>
-              <div className="no-print flex flex-wrap items-center gap-2 border-b border-slate-300 bg-slate-100 px-3 py-2">
-            <div className="flex gap-1 rounded-lg bg-white p-1">
+              <div className="no-print flex flex-wrap items-center gap-2 border-b border-slate-800 bg-slate-900 px-3 py-2">
+            <div className="flex gap-1 rounded-lg bg-slate-950 p-1">
               {([["both", "Semua"], ["tugas", "Surat Tugas"], ...(isPersonal ? [] : [["penyerahan", "Penyerahan"] as const]), ["bast", "BAST"]] as const).map(([value, label]) => (
-                <button key={value} onClick={() => setPageMode(value)} className={`rounded px-2.5 py-1 text-[11px] ${pageMode === value ? "bg-slate-900 text-white" : "text-slate-600"}`}>
+                <button key={value} onClick={() => setPageMode(value)} className={`rounded px-2.5 py-1 text-[11px] ${pageMode === value ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"}`}>
                   {label}
                 </button>
               ))}
             </div>
-            <span className="text-[11px] text-slate-500">{pageCount} halaman</span>
+            <span className="text-[11px] text-slate-400">{pageCount} halaman</span>
             <div className="ml-auto flex gap-1">
-              <button className="rounded bg-white px-2 py-1 text-xs" onClick={() => { setFitMode("manual"); setZoom((value) => Math.max(0.2, value - 0.1)); }}>−</button>
-              <span className="rounded bg-white px-2 py-1 text-xs">{Math.round(zoom * 100)}%</span>
-              <button className="rounded bg-white px-2 py-1 text-xs" onClick={() => { setFitMode("manual"); setZoom((value) => Math.min(1.6, value + 0.1)); }}>+</button>
-              <button className="rounded bg-white px-2 py-1 text-xs" onClick={() => { setFitMode("width"); fit("width"); }}>Lebar</button>
+              <button className="rounded bg-slate-800 px-2 py-1 text-xs text-slate-200 hover:bg-slate-700" onClick={() => { setFitMode("manual"); setZoom((value) => Math.max(0.2, value - 0.1)); }}>−</button>
+              <span className="rounded bg-slate-800 px-2 py-1 text-xs text-slate-200">{Math.round(zoom * 100)}%</span>
+              <button className="rounded bg-slate-800 px-2 py-1 text-xs text-slate-200 hover:bg-slate-700" onClick={() => { setFitMode("manual"); setZoom((value) => Math.min(1.6, value + 0.1)); }}>+</button>
+              <button className="rounded bg-slate-800 px-2 py-1 text-xs text-slate-200 hover:bg-slate-700" onClick={() => { setFitMode("width"); fit("width"); }}>Lebar</button>
             </div>
           </div>
           <div ref={viewportRef} className="print-scroll thin-scroll flex-1 overflow-auto p-7">
