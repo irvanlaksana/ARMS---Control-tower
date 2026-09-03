@@ -109,7 +109,13 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
   const selectedCase = store.cases?.find(c => c.id === caseId);
   const selectedPersonnel = store.personnel?.find(p => p.id === personnelId);
   const isPerorangan = selectedCase?.clientType === 'PERORANGAN';
-  const skNumberDraft = isEditing ? ((store.sks || store.sk || []).find((s: any) => s.id === editId)?.skNumber || '') : `SK/ARMS/${new Date().getFullYear()}/${Math.floor(1000 + Math.random() * 9000)}`;
+  const skNumberDraft = isEditing
+    ? ((store.sks || []).find((s) => s.id === editId)?.skNumber || '')
+    : `SK/ARMS/${new Date().getFullYear()}/${Math.floor(1000 + Math.random() * 9000)}`;
+  const todayStr = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  const endDate = new Date();
+  endDate.setDate(endDate.getDate() + 3);
+  const endDateStr = endDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
   const handleAddAttachment = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -219,7 +225,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
   const handleOpenGeneratorFromDraft = () => {
     const parentCase = selectedCase;
     const isPer = parentCase?.clientType === 'PERORANGAN';
-    const cName = isPer ? (skKrediturName || parentCase?.clientName || 'Klien') : (parentCase?.clientName || 'Klien');
+    const cName = isPer ? (krediturName || parentCase?.clientName || 'Klien') : (parentCase?.clientName || 'Klien');
     const customer = (store.customers || []).find((c) => c.id === parentCase?.customerId);
     const personnel = selectedPersonnel;
 
@@ -253,6 +259,104 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
       },
     });
     setShowInternalGenerator(true);
+  };
+
+  const handleCreateSK = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCase || !selectedPersonnel) {
+      alert('Silakan pilih berkas perkara dan petugas terlebih dahulu.');
+      return;
+    }
+
+    const skNumber = skNumberDraft;
+    const isPer = selectedCase.clientType === 'PERORANGAN';
+    if (isEditing && editId) {
+      const updatedSKs = (store.sks || []).map((sk) =>
+        sk.id === editId
+          ? {
+              ...sk,
+              skNumber,
+              caseId: selectedCase.id,
+              caseNo: selectedCase.caseNo,
+              debtorName: skDebtorName || selectedCase.debtorName,
+              clientType: selectedCase.clientType || 'MULTIFINANCE',
+              clientName: selectedCase.clientName,
+              pemberiKuasaType: isPer ? pemberiKuasaType : 'PERUSAHAAN',
+              krediturName: isPer ? (krediturName || selectedCase.clientName) : undefined,
+              krediturNik: isPer ? krediturNik : undefined,
+              krediturAddress: isPer ? krediturAddress : undefined,
+              personnelId: selectedPersonnel.id,
+              personnelName: selectedPersonnel.fullName,
+              driveDocumentUrl: driveDocumentUrl.trim() || undefined,
+              driveFolderId: driveFolderId || undefined,
+              driveFolderUrl: driveFolderUrl || undefined,
+            }
+          : sk,
+      );
+      const audit = createAuditEntry(
+        currentUser.username,
+        currentUser.role,
+        'UPDATE',
+        'SK',
+        editId,
+        `Updated Surat Tugas / Kuasa ${skNumber}`,
+      );
+      onUpdateStore({ ...store, sks: updatedSKs, auditLogs: [audit, ...(store.auditLogs || [])] });
+    } else {
+      const uploaded = await uploadFirstAttachmentIfNeeded();
+      const documentUrl = uploaded?.success
+        ? uploaded.webViewLink || `https://drive.google.com/file/d/${uploaded.fileId}/view?usp=sharing`
+        : driveDocumentUrl.trim() || undefined;
+      const newSK: SK = {
+        id: `SK-${Date.now()}`,
+        skNumber,
+        caseId: selectedCase.id,
+        caseNo: selectedCase.caseNo,
+        debtorName: skDebtorName || selectedCase.debtorName,
+        clientType: selectedCase.clientType || 'MULTIFINANCE',
+        clientName: selectedCase.clientName,
+        pemberiKuasaType: isPer ? pemberiKuasaType : 'PERUSAHAAN',
+        krediturName: isPer ? (krediturName || selectedCase.clientName) : undefined,
+        krediturNik: isPer ? krediturNik : undefined,
+        krediturAddress: isPer ? krediturAddress : undefined,
+        personnelId: selectedPersonnel.id,
+        personnelName: selectedPersonnel.fullName,
+        issuedDate: new Date().toISOString().split('T')[0],
+        expiryDate: new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0],
+        status: 'PENDING_APPROVAL',
+        driveDocumentUrl: documentUrl,
+        driveFolderId: driveFolderId || undefined,
+        driveFolderUrl: driveFolderUrl || undefined,
+        createdAt: new Date().toISOString(),
+      };
+      const approvalReq: ApprovalRequest = {
+        id: `APP-SK-${Date.now()}`,
+        requestNo: `REQ-SK-${Math.floor(100 + Math.random() * 900)}`,
+        module: 'SK',
+        targetId: newSK.id,
+        targetReference: skNumber,
+        title: `Penerbitan Surat Tugas / Kuasa ${skNumber}`,
+        requestedBy: currentUser.name,
+        description: `Surat Tugas / Kuasa untuk kasus ${selectedCase.caseNo} (${newSK.debtorName})`,
+        status: 'PENDING',
+        createdAt: new Date().toISOString(),
+      };
+      const audit = createAuditEntry(
+        currentUser.username,
+        currentUser.role,
+        'CREATE',
+        'SK',
+        newSK.id,
+        `Generated Surat Tugas / Kuasa ${skNumber}`,
+      );
+      onUpdateStore({
+        ...store,
+        sks: [newSK, ...(store.sks || [])],
+        approvals: [approvalReq, ...(store.approvals || [])],
+        auditLogs: [audit, ...(store.auditLogs || [])],
+      });
+    }
+    setShowModal(false);
   };
 
   const handleOpenForExistingSK = (sk: SK) => {
