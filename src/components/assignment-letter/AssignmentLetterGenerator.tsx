@@ -85,22 +85,22 @@ export default function AssignmentLetterGenerator({ initialData, isPersonal, onC
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-[#e7eaf0]">
-      <div className="no-print flex items-center justify-between border-b border-slate-300 bg-white px-4 py-2">
+      <div className="generator-toolbar no-print flex items-center justify-between border-b border-slate-300 bg-white px-4 py-2">
         <div>
           <h2 className="text-sm font-bold text-slate-900">Generator Surat Penugasan Lapangan</h2>
           <p className="text-[11px] text-slate-500">{isPersonal ? "Debitur perorangan · Surat Penyerahan tidak digunakan" : "Debitur perusahaan"}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="generator-actions flex gap-2">
           <Btn variant="primary" onClick={() => onSave(data)}>Simpan Surat</Btn>
           <Btn variant="primary" onClick={() => window.print()}>🖨️ Cetak / Simpan PDF</Btn>
           <Btn onClick={onClose}>Tutup</Btn>
         </div>
       </div>
-      <div className="flex min-h-0 flex-1">
-        <aside className="no-print thin-scroll w-[350px] shrink-0 overflow-y-auto border-r border-slate-200 bg-slate-50 p-3">
+      <div className="generator-body flex min-h-0 flex-1">
+        <aside className="generator-form no-print thin-scroll w-[350px] shrink-0 overflow-y-auto border-r border-slate-200 bg-slate-50 p-3">
           <FormPanel data={data} set={set} setJenis={setJenis} setChecklist={setChecklist} />
         </aside>
-        <main className="flex min-w-0 flex-1 flex-col">
+        <main className="generator-preview flex min-w-0 flex-1 flex-col">
           <div className="no-print flex flex-wrap items-center gap-2 border-b border-slate-300 bg-slate-100 px-3 py-2">
             <div className="flex gap-1 rounded-lg bg-white p-1">
               {([["both", "Semua"], ["tugas", "Surat Tugas"], ...(isPersonal ? [] : [["penyerahan", "Penyerahan"] as const]), ["bast", "BAST"]] as const).map(([value, label]) => (

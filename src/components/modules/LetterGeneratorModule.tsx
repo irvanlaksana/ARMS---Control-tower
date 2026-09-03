@@ -18,6 +18,7 @@ export const LetterGeneratorModule: React.FC<Props> = ({ store }) => {
     [store.cases],
   );
   const [isOpen, setIsOpen] = useState(false);
+  const [isDataMenuOpen, setIsDataMenuOpen] = useState(false);
   const [selectedCaseId, setSelectedCaseId] = useState(activeCases[0]?.id || '');
   const [selectedAssignmentId, setSelectedAssignmentId] = useState('');
   const [data, setData] = useState<BastData>(BLANK_DATA);
@@ -86,11 +87,11 @@ export const LetterGeneratorModule: React.FC<Props> = ({ store }) => {
               Buat, lihat preview, cetak, dan simpan dokumen surat penugasan lapangan dari satu modul.
             </p>
           </div>
-          <div className="group relative">
-            <button type="button" className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-md transition hover:bg-emerald-500">
+          <div className="generator-data-menu group relative">
+            <button type="button" onClick={() => setIsDataMenuOpen((open) => !open)} aria-expanded={isDataMenuOpen} className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-md transition hover:bg-emerald-500 md:w-auto">
               <Play className="h-4 w-4" /> Pilih Data & Generator <ChevronDown className="h-4 w-4" />
             </button>
-            <div className="invisible absolute right-0 top-full z-10 mt-2 w-80 rounded-xl border border-slate-700 bg-slate-900 p-3 opacity-0 shadow-2xl transition group-hover:visible group-hover:opacity-100">
+            <div className={`generator-data-dropdown absolute right-0 top-full z-10 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-slate-700 bg-slate-900 p-3 opacity-0 shadow-2xl transition ${isDataMenuOpen ? 'is-open' : 'invisible group-hover:visible group-hover:opacity-100'}`}>
               <div className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Tarik data dari repository</div>
               <label className="mb-2 block text-[11px] text-slate-400">Kasus & piutang</label>
               <select value={selectedCaseId} onChange={(event) => { setSelectedCaseId(event.target.value); setSelectedAssignmentId(''); }} className="mb-3 w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-2 text-xs text-white">
