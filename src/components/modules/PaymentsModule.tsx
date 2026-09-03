@@ -46,7 +46,9 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
     store.settings?.defaultCompanyCommissionSplitPercent ?? 20
   );
   const [customGrossFee, setCustomGrossFee] = useState<number | undefined>(undefined);
-  const [manualSplits, setManualSplits] = useState<{ name: string; amount: number }[]>([]);
+  const [manualSplits, setManualSplits] = useState<
+    { name: string; amount: number; allocation: 'COMPANY' | 'SPLIT' }[]
+  >([]);
   const [proofDriveUrl, setProofDriveUrl] = useState('');
   
   // Destination bank override states for Mitra DC
@@ -125,6 +127,35 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
     );
   }, [selectedCase, selectedClient, selectedFeeConfig, assignedPersonnel, totalPaidByDebitur, companySplitPercent, customGrossFee, store.settings]);
 
+  const manualFeeTotals = useMemo(() => {
+    const validItems = manualSplits.filter((item) => item.amount > 0);
+    const total = validItems.reduce((sum, item) => sum + item.amount, 0);
+    const splitCompany = tierCalcResult.isMitraDC ? companySplitPercent / 100 : 1;
+    const splitPartner = tierCalcResult.isMitraDC ? 1 - companySplitPercent / 100 : 0;
+    const company = validItems.reduce(
+      (sum, item) => sum + item.amount * (item.allocation === 'SPLIT' ? splitCompany : 1),
+      0,
+    );
+    const partner = validItems.reduce(
+      (sum, item) => sum + item.amount * (item.allocation === 'SPLIT' ? splitPartner : 0),
+      0,
+    );
+    return {
+      total,
+      company: Math.round(company),
+      partner: Math.round(partner),
+    };
+  }, [manualSplits, tierCalcResult.isMitraDC, companySplitPercent]);
+
+  const finalFeeTotals = useMemo(
+    () => ({
+      gross: tierCalcResult.grossAgencyFee + manualFeeTotals.total,
+      company: tierCalcResult.companyRevenueAmount + manualFeeTotals.company,
+      partner: tierCalcResult.partnerCommissionAmount + manualFeeTotals.partner,
+    }),
+    [tierCalcResult, manualFeeTotals],
+  );
+
   // Sync bank details when assigned personnel changes
   useEffect(() => {
     if (assignedPersonnel) {
@@ -143,13 +174,16 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
         ? store.payments.find((p) => p.id === editId)?.paymentNo || `PAY-2026-${Math.floor(100 + Math.random() * 900)}`
         : `PAY-2026-${Math.floor(100 + Math.random() * 900)}`;
 
-    const grossFee = tierCalcResult.grossAgencyFee;
-    const companyRevenue = tierCalcResult.companyRevenueAmount;
-    const partnerCommAmount = tierCalcResult.partnerCommissionAmount;
+    const grossFee = finalFeeTotals.gross;
+    const companyRevenue = finalFeeTotals.company;
+    const partnerCommAmount = finalFeeTotals.partner;
 
     const customSplitsStr =
       manualSplits.length > 0
-        ? ', ' + manualSplits.map((s) => `${s.name}: Rp ${s.amount.toLocaleString('id-ID')}`).join(', ')
+        ? ', ' +
+          manualSplits
+            .map((s) => `${s.name}: Rp ${s.amount.toLocaleString('id-ID')} (${s.allocation === 'SPLIT' ? 'Split Mitra' : '100% Perusahaan'})`)
+            .join(', ')
         : '';
 
     let updatedPayments = store.payments;
@@ -715,7 +749,7 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
                   <div className="relative">
                     <span className="absolute left-2.5 top-2 text-[11px] text-slate-400 font-mono">Rp</span>
                     <AmountInput
-                      value={customGrossFee ?? tierCalcResult.grossAgencyFee}
+                      value={finalFeeTotals.gross}
                       onChange={setCustomGrossFee}
                       className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-8 pr-2 py-1.5 text-xs text-white font-mono font-bold focus:border-indigo-500 focus:outline-none"
                     />
@@ -749,7 +783,7 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
                     Pendapatan Perusahaan:
                   </label>
                   <div className="bg-emerald-950/60 border border-emerald-800/80 rounded-lg px-3 py-1.5 text-emerald-400 font-mono font-bold text-xs">
-                    Rp {tierCalcResult.companyRevenueAmount.toLocaleString('id-ID')}
+                    Rp {finalFeeTotals.company.toLocaleString('id-ID')}
                   </div>
                   <span className="text-[9px] text-emerald-500 mt-0.5 block">Otomatis masuk ke Jurnal Pendapatan</span>
                 </div>
@@ -766,7 +800,7 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
                       </span>
                     </div>
                     <span className="font-mono font-bold text-amber-300 text-sm">
-                      Rp {tierCalcResult.partnerCommissionAmount.toLocaleString('id-ID')}
+                      Rp {finalFeeTotals.partner.toLocaleString('id-ID')}
                     </span>
                   </div>
 
@@ -778,10 +812,78 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
                 <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-slate-400 text-[11px] flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-slate-400 shrink-0" />
                   <span>
-                    Penanganan oleh Karyawan Internal. 100% Gross Fee Rp {tierCalcResult.grossAgencyFee.toLocaleString('id-ID')} dicatat sebagai Pendapatan Perusahaan tanpa potongan komisi mitra luar.
+                    Penanganan oleh Karyawan Internal. 100% Gross Fee Rp {finalFeeTotals.gross.toLocaleString('id-ID')} dicatat sebagai Pendapatan Perusahaan tanpa potongan komisi mitra luar.
                   </span>
                 </div>
               )}
+
+              <div className="border-t border-indigo-900/50 pt-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-200">Biaya Tambahan Manual</h4>
+                    <p className="text-[10px] text-slate-500">Tambahkan biaya di luar kalkulasi fee tiering.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setManualSplits((items) => [...items, { name: '', amount: 0, allocation: 'COMPANY' }])
+                    }
+                    className="inline-flex items-center gap-1 rounded-lg border border-indigo-700 bg-indigo-950/70 px-2.5 py-1.5 text-[11px] font-semibold text-indigo-200 hover:bg-indigo-900"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Tambah Biaya
+                  </button>
+                </div>
+                {manualSplits.map((item, index) => (
+                  <div key={index} className="grid grid-cols-1 gap-2 rounded-lg border border-slate-800 bg-slate-950/70 p-2 sm:grid-cols-[1fr_130px_145px_auto]">
+                    <input
+                      value={item.name}
+                      onChange={(e) =>
+                        setManualSplits((items) =>
+                          items.map((current, itemIndex) => itemIndex === index ? { ...current, name: e.target.value } : current),
+                        )
+                      }
+                      placeholder="Nama biaya, contoh: Biaya Tarik"
+                      className="rounded-lg border border-slate-800 bg-slate-900 px-2 py-1.5 text-xs text-white placeholder:text-slate-600 focus:border-indigo-500 focus:outline-none"
+                    />
+                    <AmountInput
+                      value={item.amount}
+                      onChange={(amount) =>
+                        setManualSplits((items) =>
+                          items.map((current, itemIndex) => itemIndex === index ? { ...current, amount } : current),
+                        )
+                      }
+                      className="w-full rounded-lg border border-slate-800 bg-slate-900 px-2 py-1.5 text-xs text-emerald-300 focus:border-indigo-500 focus:outline-none"
+                    />
+                    <select
+                      value={item.allocation}
+                      onChange={(e) =>
+                        setManualSplits((items) =>
+                          items.map((current, itemIndex) => itemIndex === index ? { ...current, allocation: e.target.value as 'COMPANY' | 'SPLIT' } : current),
+                        )
+                      }
+                      className="rounded-lg border border-slate-800 bg-slate-900 px-2 py-1.5 text-[11px] text-slate-200 focus:border-indigo-500 focus:outline-none"
+                    >
+                      <option value="COMPANY">100% Hak Perusahaan</option>
+                      <option value="SPLIT">Split dengan Mitra</option>
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setManualSplits((items) => items.filter((_, itemIndex) => itemIndex !== index))}
+                      className="rounded-lg p-1.5 text-slate-500 hover:bg-red-950/50 hover:text-red-300"
+                      title="Hapus biaya"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+                {manualFeeTotals.total > 0 && (
+                  <div className="grid grid-cols-1 gap-1 text-[11px] text-slate-400 sm:grid-cols-3">
+                    <span>Tambahan: <b className="text-white">Rp {manualFeeTotals.total.toLocaleString('id-ID')}</b></span>
+                    <span>Perusahaan: <b className="text-emerald-400">Rp {manualFeeTotals.company.toLocaleString('id-ID')}</b></span>
+                    <span>Mitra: <b className="text-amber-400">Rp {manualFeeTotals.partner.toLocaleString('id-ID')}</b></span>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Classification & Closing */}

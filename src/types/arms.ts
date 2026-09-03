@@ -429,7 +429,7 @@ export interface Payment {
   passThroughFee?: number;
   proofUrl?: string;
   allocationSummary: string; // e.g. Principal: 80%, Agency Fee: 20%
-  manualSplits?: { name: string; amount: number }[];
+  manualSplits?: { name: string; amount: number; allocation?: 'COMPANY' | 'SPLIT' }[];
   verificationStatus: 'PENDING' | 'VERIFIED' | 'REJECTED';
   verifiedBy?: string;
   
