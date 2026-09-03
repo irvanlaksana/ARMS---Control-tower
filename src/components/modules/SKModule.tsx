@@ -14,6 +14,10 @@ import { SearchableSelect } from "../common/SearchableSelect";
 import { QuickGDriveModal } from '../common/QuickGDriveModal';
 import { LetterPreviewModal, LetterPreviewData } from '../common/LetterPreviewModal';
 import { ROOT_GDRIVE_URL } from '../../data/initialData';
+import AssignmentLetterGenerator from '../assignment-letter/AssignmentLetterGenerator';
+import { BLANK_DATA } from '../assignment-letter/data/defaults';
+import type { BastData } from '../assignment-letter/types';
+import '../assignment-letter/letter-generator.css';
 
 interface SKModuleProps {
   store: ARMSStore;
@@ -23,6 +27,7 @@ interface SKModuleProps {
 
 export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdateStore }) => {
   const [showModal, setShowModal] = useState(false);
+  const canEdit = !currentUser?.role || currentUser.role === 'SUPER_ADMIN_OPS' || currentUser.role === 'APPROVER_EXECUTIVE';
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [clientTypeFilter, setClientTypeFilter] = useState<'ALL' | 'MULTIFINANCE' | 'PERORANGAN'>('ALL');
@@ -95,10 +100,16 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
   const [isUploadingAttachmentPreview, setIsUploadingAttachmentPreview] = useState(false);
 
   // Generator-surat integration popup/modal state
-  const [showGeneratorPopup, setShowGeneratorPopup] = useState(false);
-  const [isSyncingGenerator, setIsSyncingGenerator] = useState(false);
-  const [generatorIssueUrl, setGeneratorIssueUrl] = useState<string | null>(null);
-  const [generatorError, setGeneratorError] = useState<string | null>(null);
+  // Internal Generator State
+  const [showInternalGenerator, setShowInternalGenerator] = useState(false);
+  const [generatorData, setGeneratorData] = useState<BastData>(BLANK_DATA);
+  const [generatorIsPersonal, setGeneratorIsPersonal] = useState(false);
+
+
+  const selectedCase = store.cases?.find(c => c.id === caseId);
+  const selectedPersonnel = store.personnel?.find(p => p.id === personnelId);
+  const isPerorangan = selectedCase?.clientType === 'PERORANGAN';
+  const skNumberDraft = isEditing ? ((store.sks || store.sk || []).find((s: any) => s.id === editId)?.skNumber || '') : `SK/ARMS/${new Date().getFullYear()}/${Math.floor(1000 + Math.random() * 9000)}`;
 
   const handleAddAttachment = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -146,315 +157,6 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
   };
 
   // Sync selected SK / Debtor & Personnel to generator-surat- repository by creating a GitHub issue
-  const syncToGeneratorRepo = async (options?: { skNumber?: string; skId?: string }) => {
-    try {
-      setIsSyncingGenerator(true);
-      setGeneratorError(null);
-      setGeneratorIssueUrl(null);
-
-      const payload = {
-        skNumber: options?.skNumber || skNumberDraft,
-        skId: options?.skId || (isEditing ? editId : undefined),
-        debtor: selectedCase || null,
-        personnel: selectedPersonnel || null,
-        driveDocumentUrl: driveDocumentUrl || null,
-      };
-
-      const resp = await fetch('/api/surat/open-generator', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const j = await resp.json();
-      if (!resp.ok) {
-        setGeneratorError(j?.error || 'Failed creating generator link');
-      } else {
-        // j.url contains the generator app link with encoded payload
-        setGeneratorIssueUrl(j.url || null);
-        try {
-          if (j.url) window.open(j.url, '_blank');
-        } catch (err) {
-          // ignore popup blocker
-        }
-      }
-    } catch (err: any) {
-      console.error('Sync to generator repo failed', err);
-      setGeneratorError(err?.message || String(err));
-    } finally {
-      setIsSyncingGenerator(false);
-    }
-  };
-
-  const canEdit = currentUser.role === 'SUPER_ADMIN_OPS';
-
-  const selectedCase = (store.cases || []).find((cs) => cs.id === caseId) || store.cases?.[0];
-  const selectedPersonnel = (store.personnel || []).find((pr) => pr.id === personnelId) || store.personnel?.[0];
-  const isPerorangan = selectedCase?.clientType === 'PERORANGAN';
-
-  // When selected case changes, auto sync defaults for Perorangan or Multifinance
-  useEffect(() => {
-    if (selectedCase) {
-      const client = (store.clients || []).find(
-        (cl) => cl.id === selectedCase.clientId || cl.companyName === selectedCase.clientName
-      );
-
-      if (selectedCase.clientType === 'PERORANGAN') {
-        setPemberiKuasaType('KREDITUR_PERORANGAN');
-        const kName = client?.contactPerson || client?.companyName?.replace(/\s*\(.*?\)\s*/g, '') || selectedCase.clientName?.replace(/\s*\(.*?\)\s*/g, '') || 'H. Rahmat Hidayat, S.E.';
-        const kNik = client?.nikKtp || '3302101506780002';
-        const kAddr = client?.address || 'Jl. Overste Isdiman No. 88, Purwokerto Lor, Banyumas';
-        setKrediturName(kName);
-        setKrediturNik(kNik);
-        setKrediturAddress(kAddr);
-        setKrediturJob('Wiraswasta / Kreditur Pribadi');
-        setDasarPenagihan(`Surat Pengakuan Hutang (SPH) No. ${selectedCase.contractId || selectedCase.multifinanceContractNo || 'SPH-2026/001'} / Kwitansi Pinjaman Tertanggal 15 Januari 2025`);
-      } else {
-        setPemberiKuasaType('PERUSAHAAN');
-        setDasarPenagihan(`Perjanjian Pembiayaan Konsumen No. ${selectedCase.multifinanceContractNo || selectedCase.contractId || 'ADR-90123847'} / Sertifikat Jaminan Fidusia`);
-      }
-      setCustomNominal(selectedCase.principalDebtOS || 0);
-
-      const customer = (store.customers || []).find((c) => c.id === selectedCase.customerId);
-      setSkContractNo(customer?.contractNo || selectedCase.contractId || selectedCase.multifinanceContractNo || '');
-      setSkDebtorName(selectedCase.debtorName || '');
-      setSkDebtorAddress(customer?.addressCurrent || customer?.addressKtp || selectedCase.debtorAddress || '');
-      setSkDueDate(customer?.dueDate || '');
-      setSkInstallment(customer?.installmentAmount || '');
-      setSkPenalty(customer?.penaltyAmount || '');
-      setSkPhone(customer?.phone || selectedCase.debtorPhone || '');
-      setSkVehicleMerk(customer?.vehicleMerkType || '');
-      setSkVehiclePoliceNo(customer?.vehiclePoliceNo || '');
-    }
-  }, [selectedCase, store.clients, store.customers]);
-
-  const skNumberDraft = selectedCase
-    ? selectedCase.clientType === 'PERORANGAN'
-      ? `ST-DC/MJI-IND/${selectedCase.caseNo}/2026`
-      : `ST-DC/MJI-${selectedCase.caseNo}/2026`
-    : `ST-DC/MJI-OPS/2026/001`;
-  const todayStr = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-  const endDate = new Date();
-  endDate.setDate(endDate.getDate() + 3);
-  const endDateStr = endDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-
-  // Update text draft whenever parameters change
-  useEffect(() => {
-    if (selectedCase && selectedPersonnel) {
-      const nominalVal = customNominal > 0 ? customNominal : selectedCase.principalDebtOS || 0;
-      const terbilangStr = angkaKeTerbilang(nominalVal);
-      const customer = (store.customers || []).find((c) => c.id === selectedCase.customerId);
-      const debtorAddr = customer?.addressCurrent || customer?.addressKtp || selectedCase.debtorAddress || 'JL. Ahmad Yani No. 45, Purwokerto';
-      const employeeJob = selectedPersonnel.position || (selectedPersonnel.type ? selectedPersonnel.type.replace('_', ' ') : 'Kuasa Lapangan & Mediasi');
-      const employeeNik = selectedPersonnel.nikKtp || '3302101234560001';
-      const employeeId = selectedPersonnel.id || 'PER-001';
-
-      if (pemberiKuasaType === 'KREDITUR_PERORANGAN' || selectedCase.clientType === 'PERORANGAN') {
-        const text = `SURAT TUGAS PENAGIHAN PIUTANG PERSEORANGAN
-No. Surat: ${skNumberDraft}
-
-Yang bertanda tangan di bawah ini:
-Nama Lengkap      : ${krediturName || selectedCase.clientName}
-NIK / No. KTP     : ${krediturNik || '3302101506780002'}
-Pekerjaan         : ${krediturJob}
-Alamat Domisili   : ${krediturAddress || 'Alamat Domisili Kreditur'}
-Dalam hal ini bertindak selaku Kreditur / Pemilik Piutang Sah yang sah, selanjutnya disebut sebagai PEMBERI TUGAS.
-
-Dengan ini memberikan tugas penuh, wewenang, dan tanggung jawab penagihan di lapangan kepada :
-Nama Karyawan     : ${selectedPersonnel.fullName}
-NIK               : ${employeeNik}
-Jabatan           : ${employeeJob}
-Yang selanjutnya disebut sebagai PENERIMA TUGAS.
-
-KHUSUS
-Untuk dan atas nama Pemberi Tugas, melakukan tindakan penagihan, mediasi, musyawarah kekeluargaan, penerimaan pembayaran/titipan, serta penyelesaian transaksi piutang perseorangan kepada:
-Nama Debitur      : ${skDebtorName || selectedCase.debtorName}
-NIK Debitur       : ${selectedCase.debtorNik || '-'}
-Alamat Debitur    : ${skDebtorAddress || debtorAddr}
-Jumlah Piutang    : Rp${nominalVal.toLocaleString('id-ID')} (${terbilangStr})
-Dasar Penagihan   : ${dasarPenagihan}
-
-MASA BERLAKU SURAT TUGAS: ${todayStr} s/d ${endDateStr}`;
-
-        setDraftContent(text);
-      } else {
-        const text = `SURAT TUGAS 
-Nomor: ST-DC/MJI/2026/08/${skNumberDraft.split('/').pop() || '0483'}
-
-Yang bertanda tangan di bawah ini, mewakili Manajemen PT MITRA JASATRIA INDONESIA:
-Nama        : ${repName.toUpperCase()}
-Jabatan     : ${repTitle.toUpperCase()}
-
-Dengan ini memberikan tugas penuh, wewenang, dan tanggung jawab penagihan di lapangan kepada :
-Nama        : ${selectedPersonnel.fullName.toUpperCase()}
-NIK         : ${employeeNik}
-Jabatan     : ${employeeJob}
-
-Dan rekan
-Untuk melakukan konfirmasi, penagihan, dan negosiasi penyelesaian kewajiban pembayaran atas nama Debitur/Nasabah dari ${selectedCase.clientName} yang penagihannya dikuasakan kepada PT Mitra Jasatria Indonesia.
-
-Data Nasabah:
-No. Kontrak : ${skContractNo || customer?.contractNo || selectedCase.contractId || selectedCase.multifinanceContractNo || '-'}
-Nama        : ${skDebtorName ? skDebtorName.toUpperCase() : selectedCase.debtorName.toUpperCase()}
-Alamat      : ${skDebtorAddress || debtorAddr || '-'}
-Jatuh Tempo : ${skDueDate || customer?.dueDate || '-'}
-Angsuran    : ${skInstallment || customer?.installmentAmount || '-'}
-Denda       : Rp ${skPenalty || customer?.penaltyAmount || '-'}
-Handphone   : ${skPhone || customer?.phone || '-'}
-
-Spesifikasi Kendaraan:
-Merk/Type   : ${skVehicleMerk || customer?.vehicleMerkType || '-'}
-No. Polisi  : ${skVehiclePoliceNo || customer?.vehiclePoliceNo || '-'}
-
-MASA BERLAKU: ${todayStr} s/d ${endDateStr}`;
-
-        setDraftContent(text);
-      }
-    }
-  }, [
-    selectedCase,
-    selectedPersonnel,
-    companyName,
-    companyAddress,
-    repName,
-    repTitle,
-    city,
-    pemberiKuasaType,
-    krediturName,
-    krediturNik,
-    krediturAddress,
-    krediturJob,
-    dasarPenagihan,
-    customNominal,
-    skNumberDraft,
-    todayStr,
-    endDateStr,
-    store.customers,
-    skContractNo,
-    skDebtorName,
-    skDebtorAddress,
-    skDueDate,
-    skInstallment,
-    skPenalty,
-    skPhone,
-    skVehicleMerk,
-    skVehiclePoliceNo
-  ]);
-
-  const handleCreateSK = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedCase || !selectedPersonnel) return;
-
-    const skNumber = skNumberDraft;
-    const isPer = selectedCase.clientType === 'PERORANGAN';
-
-    if (isEditing && editId) {
-      const updatedSKs = store.sks.map(sk => {
-        if (sk.id === editId) {
-          return {
-            ...sk,
-            skNumber,
-            caseId: selectedCase.id,
-            caseNo: selectedCase.caseNo,
-            debtorName: selectedCase.debtorName,
-            clientType: selectedCase.clientType || 'MULTIFINANCE',
-            clientName: selectedCase.clientName,
-            pemberiKuasaType: isPer ? pemberiKuasaType : 'PERUSAHAAN',
-            krediturName: isPer ? (krediturName || selectedCase.clientName) : undefined,
-            krediturNik: isPer ? krediturNik : undefined,
-            krediturAddress: isPer ? krediturAddress : undefined,
-            personnelId: selectedPersonnel.id,
-            personnelName: selectedPersonnel.fullName,
-            driveDocumentUrl: driveDocumentUrl.trim() || undefined,
-          };
-        }
-        return sk;
-      });
-
-      const audit = createAuditEntry(
-        currentUser.username,
-        currentUser.role,
-        'UPDATE',
-        'SK',
-        editId,
-        `Updated Surat Tugas / Kuasa ${skNumber} (${isPer ? 'Perorangan: ' + selectedCase.clientName : 'Multifinance'})`
-      );
-
-      onUpdateStore({
-        ...store,
-        sks: updatedSKs,
-        auditLogs: [audit, ...(store.auditLogs || [])],
-      });
-    } else {
-      // If attachments include a data URL, upload first attachment and use as driveDocumentUrl
-      try {
-        const uploaded = await uploadFirstAttachmentIfNeeded();
-        if (uploaded && uploaded.success) {
-          const newDocUrl = uploaded.webViewLink || `https://drive.google.com/file/d/${uploaded.fileId}/view?usp=sharing`;
-          setDriveDocumentUrl(newDocUrl);
-          if (!driveFolderId) setDriveFolderId(store.settings?.googleDriveFolderId || '');
-          if (!driveFolderUrl) setDriveFolderUrl(store.settings?.googleDriveFolderUrl || '');
-        }
-      } catch (err) {
-        console.error('Attachment upload step failed', err);
-      }
-
-      const newSK: SK = {
-        id: `SK-${Date.now()}`,
-        skNumber,
-        caseId: selectedCase.id,
-        caseNo: selectedCase.caseNo,
-        debtorName: selectedCase.debtorName,
-        clientType: selectedCase.clientType || 'MULTIFINANCE',
-        clientName: selectedCase.clientName,
-        pemberiKuasaType: isPer ? pemberiKuasaType : 'PERUSAHAAN',
-        krediturName: isPer ? (krediturName || selectedCase.clientName) : undefined,
-        krediturNik: isPer ? krediturNik : undefined,
-        krediturAddress: isPer ? krediturAddress : undefined,
-        personnelId: selectedPersonnel.id,
-        personnelName: selectedPersonnel.fullName,
-        issuedDate: new Date().toISOString().split('T')[0],
-        expiryDate: new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0],
-        status: 'PENDING_APPROVAL',
-        driveDocumentUrl: driveDocumentUrl.trim() || undefined,
-        driveFolderId: driveFolderId || undefined,
-        driveFolderUrl: driveFolderUrl || undefined,
-        createdAt: new Date().toISOString(),
-      };
-
-      const approvalReq: ApprovalRequest = {
-        id: `APP-SK-${Date.now()}`,
-        requestNo: `REQ-SK-${Math.floor(100 + Math.random() * 900)}`,
-        module: 'SK',
-        targetId: newSK.id,
-        targetReference: skNumber,
-        title: `Penerbitan Surat Tugas / Kuasa ${skNumber} (${isPer ? 'Klien Perorangan' : 'Klien Multifinance'})`,
-        requestedBy: currentUser.name,
-        description: `Surat Tugas / Kuasa penagihan piutang ${isPer ? 'perorangan' : 'multifinance'} untuk kasus ${selectedCase.caseNo} (${selectedCase.debtorName}) - Klien: ${selectedCase.clientName}`,
-        status: 'PENDING',
-        createdAt: new Date().toISOString(),
-      };
-
-      const audit = createAuditEntry(
-        currentUser.username,
-        currentUser.role,
-        'CREATE',
-        'SK',
-        newSK.id,
-        `Generated Surat Tugas / Kuasa ${skNumber} (${isPer ? 'Perorangan: ' + selectedCase.clientName : 'Multifinance'})`
-      );
-
-      onUpdateStore({
-        ...store,
-        sks: [newSK, ...(store.sks || [])],
-        approvals: [approvalReq, ...(store.approvals || [])],
-        auditLogs: [audit, ...(store.auditLogs || [])],
-      });
-    }
-
-    setShowModal(false);
-  };
-
   const handleDeleteSK = (id: string, skNo: string) => {
     if (!window.confirm(`Yakin ingin menghapus dokumen "${skNo}"?`)) return;
 
@@ -472,6 +174,85 @@ MASA BERLAKU: ${todayStr} s/d ${endDateStr}`;
       sks: (store.sks || []).filter(s => s.id !== id),
       auditLogs: [audit, ...store.auditLogs],
     });
+  };
+
+
+  const handleOpenGenerator = (sk: SK) => {
+    const parentCase = (store.cases || []).find((c) => c.id === sk.caseId);
+    const isPer = sk.clientType === 'PERORANGAN' || parentCase?.clientType === 'PERORANGAN';
+    const cName = sk.krediturName || sk.clientName || parentCase?.clientName || 'Klien';
+    const customer = (store.customers || []).find((c) => c.id === parentCase?.customerId);
+    const personnel = (store.personnel || []).find((p) => p.id === sk.personnelId);
+
+    const vehicleType = parentCase?.assetSummary?.toLowerCase().includes('motor') ? 'roda2' : 'roda4';
+    const contractNumber = parentCase?.multifinanceContractNo || customer?.contractNo || '';
+    const assetDescription = parentCase?.assetSummary || customer?.vehicleMerkType || '';
+
+    setGeneratorIsPersonal(!!isPer);
+    setGeneratorData({
+      ...BLANK_DATA,
+      jenis: vehicleType,
+      perusahaan: cName,
+      noPerjanjian: contractNumber,
+      namaDebitur: sk.debtorName,
+      bpkbAtasNama: sk.debtorName,
+      mitraNama: sk.personnelName,
+      mitraAlamat: personnel?.address || '',
+      mitraPic: sk.personnelName,
+      merekType: assetDescription,
+      st: {
+        ...BLANK_DATA.st,
+        nomor: sk.skNumber,
+        perusahaan: cName,
+        petugasNama: sk.personnelName,
+        petugasNik: personnel?.nikKtp || '',
+        petugasJabatan: personnel?.position || 'Petugas Lapangan',
+        noKontrak: contractNumber,
+        nasabahNama: sk.debtorName,
+        nasabahAlamat: customer?.addressCurrent || customer?.addressKtp || '',
+        merkType: assetDescription,
+      },
+    });
+    setShowInternalGenerator(true);
+  };
+
+  const handleOpenGeneratorFromDraft = () => {
+    const parentCase = selectedCase;
+    const isPer = parentCase?.clientType === 'PERORANGAN';
+    const cName = isPer ? (skKrediturName || parentCase?.clientName || 'Klien') : (parentCase?.clientName || 'Klien');
+    const customer = (store.customers || []).find((c) => c.id === parentCase?.customerId);
+    const personnel = selectedPersonnel;
+
+    const vehicleType = parentCase?.assetSummary?.toLowerCase().includes('motor') ? 'roda2' : 'roda4';
+    const contractNumber = parentCase?.multifinanceContractNo || customer?.contractNo || '';
+    const assetDescription = parentCase?.assetSummary || customer?.vehicleMerkType || '';
+
+    setGeneratorIsPersonal(!!isPer);
+    setGeneratorData({
+      ...BLANK_DATA,
+      jenis: vehicleType,
+      perusahaan: cName,
+      noPerjanjian: contractNumber,
+      namaDebitur: parentCase?.debtorName || '',
+      bpkbAtasNama: parentCase?.debtorName || '',
+      mitraNama: personnel?.fullName || '',
+      mitraAlamat: personnel?.address || '',
+      mitraPic: personnel?.fullName || '',
+      merekType: assetDescription,
+      st: {
+        ...BLANK_DATA.st,
+        nomor: skNumberDraft,
+        perusahaan: cName,
+        petugasNama: personnel?.fullName || '',
+        petugasNik: personnel?.nikKtp || '',
+        petugasJabatan: personnel?.position || 'Petugas Lapangan',
+        noKontrak: contractNumber,
+        nasabahNama: parentCase?.debtorName || '',
+        nasabahAlamat: customer?.addressCurrent || customer?.addressKtp || '',
+        merkType: assetDescription,
+      },
+    });
+    setShowInternalGenerator(true);
   };
 
   const handleOpenForExistingSK = (sk: SK) => {
@@ -851,6 +632,15 @@ MASA BERLAKU: ${todayStr} s/d ${endDateStr}`;
                             <span>Preview</span>
                           </button>
 
+                          <button
+                            onClick={() => handleOpenGenerator(sk)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-950 hover:bg-emerald-900 text-emerald-200 rounded border border-emerald-800 text-[11px] font-semibold transition shadow-sm"
+                            title="Generate Surat Tugas / BAST"
+                          >
+                            <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Generate Surat</span>
+                          </button>
+
                           {canEdit && (
                             <>
                               <button
@@ -932,7 +722,7 @@ MASA BERLAKU: ${todayStr} s/d ${endDateStr}`;
 
                 <button
                   type="button"
-                  onClick={() => { setShowGeneratorPopup(true); setGeneratorIssueUrl(null); setGeneratorError(null); }}
+                  onClick={handleOpenGeneratorFromDraft}
                   className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white flex items-center gap-2"
                   title="Buat surat di Generator (sinkron data debitur & penerima tugas)"
                 >
@@ -1452,7 +1242,7 @@ MASA BERLAKU: ${todayStr} s/d ${endDateStr}`;
 
                   <button
                     type="button"
-                    onClick={() => { setShowGeneratorPopup(true); setGeneratorIssueUrl(null); setGeneratorError(null); }}
+                    onClick={handleOpenGeneratorFromDraft}
                     className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition flex items-center gap-2"
                     title="Buat di Generator (sinkron data debitur & penerima tugas)"
                   >
@@ -1498,49 +1288,17 @@ MASA BERLAKU: ${todayStr} s/d ${endDateStr}`;
         }}
       />
 
-      {/* Generator-surat Popup */}
-      {showGeneratorPopup && (
-        <div className="fixed inset-0 z-60 bg-black/60 flex items-center justify-center p-3">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="text-white font-bold text-sm">Buat Surat di Generator</h3>
-                <p className="text-xs text-slate-400">Sinkronisasi data debitur dan penerima tugas ke <a href="https://generator-surat-three.vercel.app" target="_blank" rel="noreferrer" className="text-indigo-400 underline">generator-surat-three.vercel.app</a></p>
-              </div>
-              <button onClick={() => setShowGeneratorPopup(false)} className="text-slate-400 hover:text-white"><X className="w-4 h-4" /></button>
-            </div>
-
-            <div className="mt-3 text-xs text-slate-300 space-y-3">
-              <div>
-                <div className="text-slate-400 text-[11px]">Debitur yang akan disinkron:</div>
-                <pre className="bg-slate-800 p-2 rounded text-[11px] text-slate-200 overflow-auto max-h-28">{JSON.stringify(selectedCase || {}, null, 2)}</pre>
-              </div>
-              <div>
-                <div className="text-slate-400 text-[11px]">Petugas penerima tugas:</div>
-                <pre className="bg-slate-800 p-2 rounded text-[11px] text-slate-200 overflow-auto max-h-28">{JSON.stringify(selectedPersonnel || {}, null, 2)}</pre>
-              </div>
-            </div>
-
-            <div className="mt-4 flex items-center justify-between">
-              <div className="text-xs text-slate-400">
-                {generatorError && <div className="text-rose-400">{generatorError}</div>}
-                {generatorIssueUrl && <a href={generatorIssueUrl} target="_blank" rel="noreferrer" className="text-indigo-300 underline">Buka Generator Surat</a>}
-              </div>
-              <div className="flex items-center gap-2">
-                <button onClick={() => setShowGeneratorPopup(false)} className="px-3 py-1.5 bg-slate-800 text-slate-300 rounded">Tutup</button>
-                <button
-                  onClick={() => syncToGeneratorRepo()}
-                  disabled={isSyncingGenerator}
-                  className="px-3 py-1.5 bg-indigo-600 text-white rounded flex items-center gap-2"
-                >
-                  {isSyncingGenerator ? 'Menyinkron...' : 'Buat Issue & Sinkron'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Internal Generator Modal */}
+      {showInternalGenerator && (
+        <AssignmentLetterGenerator
+          initialData={generatorData}
+          isPersonal={generatorIsPersonal}
+          onSave={(data) => {
+            setGeneratorData(data);
+          }}
+          onClose={() => setShowInternalGenerator(false)}
+        />
       )}
-
     </div>
   );
 };

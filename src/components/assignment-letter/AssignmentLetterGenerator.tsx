@@ -1,4 +1,5 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { FileText, Play } from "lucide-react";
 import type { BastData, ChecklistMap, VehicleType } from "./types";
 import { BLANK_DATA, syncChecklist } from "./data/defaults";
 import FormPanel from "./components/FormPanel";
@@ -31,6 +32,7 @@ export default function AssignmentLetterGenerator({ initialData, isPersonal, onC
   );
   const [zoom, setZoom] = useState(0.7);
   const [fitMode, setFitMode] = useState<"width" | "page" | "manual">("width");
+  const [isGenerated, setIsGenerated] = useState(false);
   const viewportRef = useRef<HTMLDivElement>(null);
 
   const set = useCallback(
@@ -97,11 +99,29 @@ export default function AssignmentLetterGenerator({ initialData, isPersonal, onC
         </div>
       </div>
       <div className="generator-body flex min-h-0 flex-1">
-        <aside className="generator-form no-print thin-scroll w-[350px] shrink-0 overflow-y-auto border-r border-slate-200 bg-slate-50 p-3">
+        <aside className="generator-form no-print thin-scroll w-[350px] shrink-0 overflow-y-auto border-r border-slate-200 bg-slate-50 p-3 flex flex-col">
           <FormPanel data={data} set={set} setJenis={setJenis} setChecklist={setChecklist} />
+          
+          <div className="mt-4 pt-4 border-t border-slate-200">
+            <button
+              onClick={() => setIsGenerated(true)}
+              className="w-full flex justify-center items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 px-4 rounded-xl shadow-md shadow-emerald-600/20 transition-all active:scale-95"
+            >
+              <Play className="w-4 h-4" />
+              Generate Surat
+            </button>
+          </div>
         </aside>
         <main className="generator-preview flex min-w-0 flex-1 flex-col">
-          <div className="no-print flex flex-wrap items-center gap-2 border-b border-slate-300 bg-slate-100 px-3 py-2">
+          {!isGenerated ? (
+            <div className="flex flex-col items-center justify-center flex-1 text-slate-500 bg-slate-50">
+              <FileText className="w-16 h-16 mb-4 text-slate-300" />
+              <p className="font-semibold text-slate-600">Preview Belum Digenerate</p>
+              <p className="text-sm mt-1">Silakan lengkapi form dan klik tombol "Generate Surat".</p>
+            </div>
+          ) : (
+            <>
+              <div className="no-print flex flex-wrap items-center gap-2 border-b border-slate-300 bg-slate-100 px-3 py-2">
             <div className="flex gap-1 rounded-lg bg-white p-1">
               {([["both", "Semua"], ["tugas", "Surat Tugas"], ...(isPersonal ? [] : [["penyerahan", "Penyerahan"] as const]), ["bast", "BAST"]] as const).map(([value, label]) => (
                 <button key={value} onClick={() => setPageMode(value)} className={`rounded px-2.5 py-1 text-[11px] ${pageMode === value ? "bg-slate-900 text-white" : "text-slate-600"}`}>
@@ -128,6 +148,8 @@ export default function AssignmentLetterGenerator({ initialData, isPersonal, onC
               </PreviewStage>
             </div>
           </div>
+            </>
+          )}
         </main>
       </div>
     </div>

@@ -447,56 +447,6 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
         </div>
       </div>
 
-      {/* Multifinance Client Summary Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <h3 className="font-bold text-white text-sm flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-blue-400" />
-            <span>Multifinance Clients Portfolio Overview</span>
-          </h3>
-          <button
-            onClick={() => onNavigateTab('CLIENTS')}
-            className="text-xs text-blue-400 hover:text-blue-300"
-          >
-            Manage Clients
-          </button>
-        </div>
-
-        <div className="overflow-x-auto max-h-64">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
-              <tr>
-                <th className="py-2.5 px-3">Client Code</th>
-                <th className="py-2.5 px-3">Company Name</th>
-                <th className="py-2.5 px-3">Tier</th>
-                <th className="py-2.5 px-3">Contact Person</th>
-                <th className="py-2.5 px-3 text-center">Active Cases</th>
-                <th className="py-2.5 px-3 text-right">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60">
-              {(store.clients || []).map((cli) => (
-                <tr key={cli.id} className="hover:bg-slate-800/40 transition">
-                  <td className="py-3 px-3 font-mono font-semibold text-indigo-300">{cli.clientCode}</td>
-                  <td className="py-3 px-3 font-medium text-white">{cli.companyName}</td>
-                  <td className="py-3 px-3">
-                    <span className="bg-slate-800 text-slate-300 text-[10px] px-2 py-0.5 rounded border border-slate-700">
-                      {cli.tier}
-                    </span>
-                  </td>
-                  <td className="py-3 px-3 text-slate-400">{cli.contactPerson}</td>
-                  <td className="py-3 px-3 text-center font-bold text-white">{cli.activeCasesCount}</td>
-                  <td className="py-3 px-3 text-right">
-                    <span className="bg-emerald-950 text-emerald-300 text-[10px] px-2 py-0.5 rounded border border-emerald-800 font-medium">
-                      {cli.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </div>
   );
 };

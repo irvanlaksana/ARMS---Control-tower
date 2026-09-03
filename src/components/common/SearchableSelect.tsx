@@ -37,21 +37,13 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
 
   const closeMenu = () => {
     if (hideTimeout.current) clearTimeout(hideTimeout.current);
-    hideTimeout.current = setTimeout(() => setIsOpen(false), 180);
+    hideTimeout.current = setTimeout(() => setIsOpen(false), 200);
   };
 
   const handleBlur = (event: React.FocusEvent<HTMLDivElement>) => {
     if (!event.relatedTarget || !wrapperRef.current?.contains(event.relatedTarget as Node)) {
       closeMenu();
     }
-  };
-
-  const handleMouseEnter = () => {
-    openMenu();
-  };
-
-  const handleMouseLeave = () => {
-    closeMenu();
   };
 
   useEffect(() => {
@@ -80,52 +72,54 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
 
   return (
     <div 
-      className="relative w-full" 
+      className="relative w-full group" 
       ref={wrapperRef}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      onMouseEnter={openMenu}
+      onMouseLeave={closeMenu}
       onFocus={openMenu}
       onBlur={handleBlur}
     >
       <div 
-        className={`w-full bg-slate-900/60 backdrop-blur-sm border border-slate-700/60 rounded-xl p-2.5 text-xs flex items-center justify-between cursor-pointer transition-all duration-200 ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-indigo-400/40 hover:bg-slate-800/70 hover:shadow-[0_10px_25px_rgba(15,23,42,0.35)]'}`}
+        className={`w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs flex items-center justify-between cursor-pointer transition-all duration-200 ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-indigo-500/50 hover:bg-slate-800/80'}`}
         onMouseDown={(e) => e.preventDefault()}
-        onClick={() => !disabled && setIsOpen((prev) => !prev)}
+        onClick={() => !disabled && setIsOpen(true)}
         tabIndex={disabled ? -1 : 0}
         role="combobox"
         aria-expanded={isOpen}
       >
-        <span className={selectedOption ? 'text-white' : 'text-slate-400'}>
+        <span className={`truncate mr-2 ${selectedOption ? 'text-slate-100 font-medium' : 'text-slate-400'}`}>
           {selectedOption ? selectedOption.label : placeholder}
         </span>
-        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180 text-indigo-400' : ''}`} />
+        <ChevronDown className={`w-4 h-4 text-slate-400 flex-shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180 text-indigo-400' : 'group-hover:text-indigo-400'}`} />
       </div>
 
       {/* Dropdown Menu */}
       <div 
-        className={`absolute z-[100] top-full mt-1 left-0 w-full min-w-[220px] bg-slate-900/98 backdrop-blur-xl border border-slate-700/60 rounded-xl shadow-[0_18px_40px_rgba(15,23,42,0.55)] overflow-hidden flex flex-col transition-all duration-200 origin-top ${isOpen ? 'opacity-100 scale-y-100 translate-y-0' : 'opacity-0 scale-y-95 -translate-y-2 pointer-events-none'}`}
+        className={`absolute z-[100] top-full mt-1.5 left-0 w-full min-w-[220px] bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl overflow-hidden flex flex-col transition-all duration-200 origin-top ${isOpen ? 'opacity-100 scale-y-100 translate-y-0' : 'opacity-0 scale-y-95 -translate-y-2 pointer-events-none'}`}
       >
         {searchable && (
-          <div className="p-2.5 border-b border-slate-800/50 flex items-center gap-2 bg-slate-950/50">
-            <Search className="w-4 h-4 text-slate-400" />
+          <div className="p-2 border-b border-slate-800 flex items-center gap-2 bg-slate-900">
+            <Search className="w-4 h-4 text-slate-500 ml-1" />
             <input 
               autoFocus={isOpen}
               type="text" 
-              className="bg-transparent border-none outline-none text-xs text-white w-full placeholder-slate-500" 
-              placeholder="Cari..." 
+              className="bg-transparent border-none outline-none text-xs text-white w-full placeholder-slate-500 py-1" 
+              placeholder="Ketik untuk mencari..." 
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
           </div>
         )}
-        <div className="max-h-64 overflow-y-auto p-1.5 custom-scrollbar">
+        <div className="max-h-60 overflow-y-auto p-1.5 custom-scrollbar">
           {filteredOptions.length === 0 ? (
-            <div className="p-3 text-xs text-slate-500 text-center">Tidak ditemukan</div>
+            <div className="p-4 text-xs text-slate-500 text-center flex flex-col items-center">
+              <span className="block mb-1">Tidak ada hasil pencarian</span>
+            </div>
           ) : (
             filteredOptions.map(option => (
               <div 
                 key={option.value}
-                className={`px-3 py-2.5 my-0.5 text-xs rounded-lg cursor-pointer flex items-center justify-between transition-colors duration-300 ${String(option.value) === String(value) ? 'bg-indigo-600/20 text-indigo-300' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'}`}
+                className={`px-3 py-2.5 my-0.5 text-xs rounded-lg cursor-pointer flex items-center justify-between transition-colors duration-200 ${String(option.value) === String(value) ? 'bg-indigo-600/10 text-indigo-400 font-medium' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={(e) => {
                   e.preventDefault();
@@ -136,10 +130,10 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
                 }}
               >
                 <div className="flex flex-col gap-0.5">
-                  <span className="font-medium">{option.label}</span>
-                  {option.subLabel && <span className="text-[10px] text-slate-400">{option.subLabel}</span>}
+                  <span>{option.label}</span>
+                  {option.subLabel && <span className="text-[10px] text-slate-500">{option.subLabel}</span>}
                 </div>
-                {String(option.value) === String(value) && <Check className="w-4 h-4" />}
+                {String(option.value) === String(value) && <Check className="w-4 h-4 text-indigo-500" />}
               </div>
             ))
           )}

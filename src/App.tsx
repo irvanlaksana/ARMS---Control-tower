@@ -10,7 +10,6 @@ import { BottomNav } from './components/layout/BottomNav';
 import { DashboardModule } from './components/modules/DashboardModule';
 import { ApprovalCenterModule } from './components/modules/ApprovalCenterModule';
 import { CasesModule } from './components/modules/CasesModule';
-import { LetterGeneratorModule } from './components/modules/LetterGeneratorModule';
 import { DanaTalanganModule } from './components/modules/DanaTalanganModule';
 import { PettyCashModule } from './components/modules/PettyCashModule';
 import { ModalKerjaModule } from './components/modules/ModalKerjaModule';
@@ -87,8 +86,6 @@ export default function App() {
         return <ApprovalCenterModule store={store} currentUser={currentUser} onUpdateStore={handleUpdateStore} />;
       case 'CASES':
         return <CasesModule store={store} currentUser={currentUser} onUpdateStore={handleUpdateStore} />;
-      case 'LETTER_GENERATOR':
-        return <LetterGeneratorModule store={store} currentUser={currentUser} />;
       case 'MODAL_KERJA':
         return <ModalKerjaModule store={store} currentUser={currentUser} onUpdateStore={handleUpdateStore} onNavigateTab={setActiveTab} />;
       case 'TALANGAN':
