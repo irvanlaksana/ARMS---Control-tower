@@ -3,6 +3,7 @@ import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Customer } from '../../types/arms';
 import { Users, Plus, Edit2, Trash2, AlertTriangle } from 'lucide-react';
 import { findDuplicateCustomerMaster } from '../../utils/duplicateCheck';
+import { AmountInput } from '../common/AmountInput';
 
 interface CustomersModuleProps {
   store: ARMSStore;
@@ -21,6 +22,7 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
   const [addressCurrent, setAddressCurrent] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [installmentAmount, setInstallmentAmount] = useState('');
+  const [totalInstallment, setTotalInstallment] = useState(0);
   const [penaltyAmount, setPenaltyAmount] = useState('');
   const [phone, setPhone] = useState('');
   const [vehicleMerkType, setVehicleMerkType] = useState('');
@@ -60,6 +62,7 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
       setAddressCurrent(customer.addressCurrent);
       setDueDate(customer.dueDate || '');
       setInstallmentAmount(customer.installmentAmount || '');
+      setTotalInstallment(customer.totalInstallment || 0);
       setPenaltyAmount(customer.penaltyAmount || '');
       setPhone(customer.phone);
       setVehicleMerkType(customer.vehicleMerkType || '');
@@ -73,6 +76,7 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
       setAddressCurrent('');
       setDueDate('');
       setInstallmentAmount('');
+      setTotalInstallment(0);
       setPenaltyAmount('');
       setPhone('');
       setVehicleMerkType('');
@@ -129,6 +133,7 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
             addressKtp: addressCurrent,
             dueDate,
             installmentAmount,
+            totalInstallment,
             penaltyAmount,
             vehicleMerkType,
             vehiclePoliceNo,
@@ -150,6 +155,9 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
       onUpdateStore({
         ...store,
         customers: updatedCustomers,
+        cases: store.cases.map(c => c.customerId === editId
+          ? { ...c, principalDebtOS: totalInstallment }
+          : c),
         auditLogs: [audit, ...store.auditLogs],
       });
     } else {
@@ -164,6 +172,7 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
         addressKtp: addressCurrent,
         dueDate,
         installmentAmount,
+        totalInstallment,
         penaltyAmount,
         vehicleMerkType,
         vehiclePoliceNo,
@@ -246,8 +255,9 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                     ) : '-'}
                   </td>
                   <td className="py-3.5 px-4 text-amber-300 text-[11px]">
-                    {c.installmentAmount || c.penaltyAmount ? (
+                    {c.totalInstallment || c.installmentAmount || c.penaltyAmount ? (
                       <>
+                        {c.totalInstallment ? <span className="block">Total Angsuran: Rp {c.totalInstallment.toLocaleString('id-ID')}</span> : null}
                         {c.installmentAmount && <span className="block">Angsuran: {c.installmentAmount}</span>}
                         {c.penaltyAmount && <span className="block text-red-400">Denda: Rp {c.penaltyAmount}</span>}
                       </>
@@ -367,6 +377,16 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                   type="text"
                   value={installmentAmount}
                   onChange={(e) => setInstallmentAmount(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Total Angsuran (Rp)</label>
+                <AmountInput
+                  required
+                  value={totalInstallment}
+                  onChange={setTotalInstallment}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
                 />
               </div>

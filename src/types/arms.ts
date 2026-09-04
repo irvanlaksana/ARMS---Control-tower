@@ -161,6 +161,7 @@ export interface Customer {
   emergencyContactPhone: string;
   dueDate?: string;
   installmentAmount?: string;
+  totalInstallment?: number;
   penaltyAmount?: string;
   vehicleMerkType?: string;
   vehiclePoliceNo?: string;

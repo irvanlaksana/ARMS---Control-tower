@@ -5,6 +5,7 @@ interface AmountInputProps {
   onChange: (value: number) => void;
   className?: string;
   required?: boolean;
+  readOnly?: boolean;
   placeholder?: string;
 }
 
@@ -13,6 +14,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
   onChange,
   className,
   required,
+  readOnly,
   placeholder = 'Masukkan nominal',
 }) => (
   <input
@@ -25,6 +27,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
       onChange(digitsOnly ? Number(digitsOnly) : 0);
     }}
     required={required}
+    readOnly={readOnly}
     placeholder={placeholder}
     className={className}
   />

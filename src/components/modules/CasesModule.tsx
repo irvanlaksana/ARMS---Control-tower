@@ -61,9 +61,15 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
     : (selectedPerorangan?.companyName || 'Klien Perorangan');
 
   const selectedCustomer = store.customers.find((cu) => cu.id === customerId);
+  const principalOutstandingFromDebtor = selectedCustomer?.totalInstallment ?? principalDebtOS;
   const computedFolderName = `${selectedCustomer?.fullName || 'Debitur'} - [${clientCategory === 'PERORANGAN' ? 'Perorangan' : 'Multifinance'}: ${activeClientName}] - ${assetSummary}`;
 
   const effectiveClientId = clientCategory === 'PERORANGAN' ? peroranganClientId : clientId;
+
+  const handleCustomerChange = (id: string) => {
+    setCustomerId(id);
+    setPrincipalDebtOS(store.customers.find(c => c.id === id)?.totalInstallment || 0);
+  };
 
   // Real-time Duplicate Detection
   const duplicateWarning = useMemo(() => {
@@ -118,7 +124,7 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
       setCustomerId(c.customerId);
       setContractNo(c.multifinanceContractNo);
       setServiceId(c.serviceId);
-      setPrincipalDebtOS(c.principalDebtOS);
+      setPrincipalDebtOS(store.customers.find(customer => customer.id === c.customerId)?.totalInstallment || c.principalDebtOS);
       setOverdueDays(c.overdueDays);
       setAssetSummary(c.assetSummary);
       setPartnerId(c.currentPersonnelId || '');
@@ -141,7 +147,7 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
         if (multiSrv) setServiceId(multiSrv.id);
       }
       setContractNo(clientCategory === 'PERORANGAN' ? 'SPH-PER/2026/01' : 'ADR-CTR-2026-99');
-      setPrincipalDebtOS(150000000);
+      setPrincipalDebtOS(store.customers.find(customer => customer.id === customerId)?.totalInstallment || 0);
       setOverdueDays(120);
       setAssetSummary(clientCategory === 'MULTIFINANCE' ? 'Honda HR-V Turbo 2022 (B 1234 XYZ)' : 'Surat Pengakuan Hutang');
       setGDriveFolderUrl('');
@@ -198,6 +204,7 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
     const customer = store.customers.find((cu) => cu.id === customerId);
     const service = store.services.find((s) => s.id === serviceId);
     const partner = (store.personnel || []).find((p) => p.id === personnelId);
+    const principalOutstanding = customer?.totalInstallment || 0;
 
     if (isEditing && editId) {
       const updatedCases = store.cases.map(c => {
@@ -213,7 +220,7 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
             multifinanceContractNo: contractNo,
             serviceId,
             serviceName: service?.name || 'Recovery Service',
-            principalDebtOS,
+            principalDebtOS: principalOutstanding,
             overdueDays,
             dpdBucket: overdueDays > 180 ? '180+' : overdueDays > 90 ? '90-180' : '60-90',
             assetSummary,
@@ -265,7 +272,7 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
         multifinanceContractNo: contractNo,
         serviceId,
         serviceName: service?.name || 'Recovery Service',
-        principalDebtOS,
+        principalDebtOS: principalOutstanding,
         overdueDays,
         dpdBucket: overdueDays > 180 ? '180+' : overdueDays > 90 ? '90-180' : '60-90',
         assetSummary,
@@ -490,7 +497,7 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
                 <label className="block text-xs text-slate-400 mb-1">Debitur</label>
                 <SearchableSelect
                   value={customerId}
-                  onChange={setCustomerId}
+                  onChange={handleCustomerChange}
                   options={store.customers.map(c => ({ value: c.id, label: c.fullName, subLabel: c.nikKtp }))}
                 />
               </div>
@@ -511,9 +518,10 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
                 <label className="block text-xs text-slate-400 mb-1">Principal Outstanding (Rp)</label>
                 <AmountInput
                   required
-                  value={principalDebtOS}
-                  onChange={setPrincipalDebtOS}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  value={principalOutstandingFromDebtor}
+                  onChange={() => undefined}
+                  readOnly
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white opacity-70 cursor-not-allowed"
                 />
               </div>
               <div>
