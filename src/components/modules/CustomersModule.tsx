@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Customer } from '../../types/arms';
-import { Users, Plus, Edit2, Trash2, AlertTriangle, Upload, Image as ImageIcon, Eye, X } from 'lucide-react';
+import { Users, Plus, Edit2, Trash2, AlertTriangle, Upload, Image as ImageIcon, Eye, X, CheckCircle, UserCheck, Clock, AlertCircle } from 'lucide-react';
 import { findDuplicateCustomerMaster } from '../../utils/duplicateCheck';
 import { AmountInput } from '../common/AmountInput';
+import { DateInput } from '../common/DateInput';
 
 interface CustomersModuleProps {
   store: ARMSStore;
@@ -55,8 +56,56 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
     );
   };
 
-  const isCustomerClosed = (customerId: string) => {
-    return (store.cases || []).some((caseItem) => caseItem.customerId === customerId && ['CLOSED', 'SETTLED'].includes(caseItem.status || ''));
+  type DebtorProcessStatus = 'NEW' | 'PROCESS' | 'ASSIGNED' | 'CLOSED';
+
+  const getDebtorProcessStatus = (customerId: string): { status: DebtorProcessStatus; label: string; description: string } => {
+    const customerCases = (store.cases || []).filter((caseItem) => caseItem.customerId === customerId);
+    const caseIds = new Set(customerCases.map((caseItem) => caseItem.id));
+
+    const hasClosedCase = customerCases.some((caseItem) =>
+      ['FULL_PAID', 'SETTLED', 'CLOSED', 'UNIT_RECOVERED'].includes(caseItem.status)
+    );
+    const hasRecoveredAsset = (store.assets || []).some((asset) =>
+      caseIds.has(asset.caseId) && ['RECOVERED_WAREHOUSE', 'IN_TRANSIT', 'LIQUIDATED'].includes(asset.physicalStatus)
+    );
+    if (hasClosedCase || hasRecoveredAsset) {
+      return {
+        status: 'CLOSED',
+        label: 'Closed',
+        description: hasRecoveredAsset ? 'Unit sudah ditarik/dikuasai' : 'Pembayaran sudah lunas atau kasus ditutup',
+      };
+    }
+
+    const hasAssignmentAndLetter = customerCases.some((caseItem) => {
+      const hasAssignment = (store.assignments || []).some((assignment) =>
+        assignment.caseId === caseItem.id && !['FAILED', 'REASSIGNED'].includes(assignment.status)
+      );
+      const hasLetter = (store.sks || []).some((sk) =>
+        sk.caseId === caseItem.id && !['REVOKED', 'REJECTED'].includes(sk.status)
+      );
+      return hasAssignment && hasLetter;
+    });
+    if (hasAssignmentAndLetter) {
+      return {
+        status: 'ASSIGNED',
+        label: 'Assigned',
+        description: 'Surat tugas/kuasa dan penugasan lapangan sudah dibuat',
+      };
+    }
+
+    if (customerCases.length > 0) {
+      return {
+        status: 'PROCESS',
+        label: 'Proses',
+        description: 'Debitur sudah dimasukkan ke modul Kasus dan Piutang',
+      };
+    }
+
+    return {
+      status: 'NEW',
+      label: 'Belum Diproses',
+      description: 'Belum dimasukkan ke modul Kasus dan Piutang',
+    };
   };
 
   const handleOpenModal = (customer?: Customer) => {
@@ -258,12 +307,30 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                 <th className="py-3 px-4">Address</th>
                 <th className="py-3 px-4">Vehicle</th>
                 <th className="py-3 px-4">Outstanding</th>
+                <th className="py-3 px-4">Status Proses</th>
                 {canEdit && <th className="py-3 px-4 text-center">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
               {store.customers.map((c) => (
                 <tr key={c.id} className="hover:bg-slate-800/40 transition">
+                  {(() => {
+                    const processStatus = getDebtorProcessStatus(c.id);
+                    const statusStyles = {
+                      NEW: 'bg-slate-800 text-slate-300 border-slate-700',
+                      PROCESS: 'bg-amber-950 text-amber-300 border-amber-800',
+                      ASSIGNED: 'bg-indigo-950 text-indigo-300 border-indigo-800',
+                      CLOSED: 'bg-emerald-950 text-emerald-300 border-emerald-800',
+                    }[processStatus.status];
+                    const StatusIcon = {
+                      NEW: AlertCircle,
+                      PROCESS: Clock,
+                      ASSIGNED: UserCheck,
+                      CLOSED: CheckCircle,
+                    }[processStatus.status];
+
+                    return (
+                      <>
                   <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">{c.customerCode}</td>
                   <td className="py-3.5 px-4 font-mono text-slate-300">
                     <div className="flex items-center gap-1.5 flex-wrap">
@@ -276,14 +343,7 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                     </div>
                   </td>
                   <td className="py-3.5 px-4 font-bold text-white">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span>{c.fullName}</span>
-                      {isCustomerClosed(c.id) && (
-                        <span className="bg-red-950 text-red-300 border border-red-800 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide">
-                          Closed
-                        </span>
-                      )}
-                    </div>
+                    {c.fullName}
                   </td>
                   <td className="py-3.5 px-4 text-emerald-400 font-semibold">{c.phone}</td>
                   <td className="py-3.5 px-4 text-slate-300 max-w-[200px] truncate">{c.addressCurrent}</td>
@@ -307,6 +367,18 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                       </>
                     ) : '-'}
                   </td>
+                  <td className="py-3.5 px-4">
+                    <span
+                      className={`inline-flex items-center gap-1.5 border px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wide ${statusStyles}`}
+                      title={processStatus.description}
+                    >
+                      <StatusIcon className="w-3 h-3" />
+                      {processStatus.label}
+                    </span>
+                    <span className="block mt-1 max-w-[180px] text-[10px] leading-tight text-slate-500">
+                      {processStatus.description}
+                    </span>
+                  </td>
                   {canEdit && (
                     <td className="py-3.5 px-4 text-center">
                       <div className="flex items-center justify-center gap-2">
@@ -327,6 +399,9 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                       </div>
                     </td>
                   )}
+                      </>
+                   );
+                  })()}
                 </tr>
               ))}
             </tbody>
@@ -406,12 +481,9 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
 
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Tanggal Jatuh Tempo</label>
-                <input
-                  type="text"
+                <DateInput
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  placeholder="dd/mm/yyyy"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
                 />
               </div>
 

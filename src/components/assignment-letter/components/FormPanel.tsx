@@ -16,6 +16,7 @@ import ChecklistEditor from "./ChecklistEditor";
 import KopEditor from "./KopEditor";
 import { Check, Field, Grid, Section, Segmented, TextArea, TextInput } from "./ui";
 import type { SuratTugasData } from "../types";
+import { DateInput } from "../../common/DateInput";
 
 interface Props {
   data: BastData;
@@ -87,8 +88,7 @@ export default function FormPanel({ data, set, setJenis, setChecklist }: Props) 
             />
           </Field>
           <Field label="Tanggal BAST">
-            <TextInput
-              type="date"
+            <DateInput
               value={data.tanggalBast}
               onChange={(e) => set("tanggalBast", e.target.value)}
             />
@@ -568,8 +568,7 @@ export default function FormPanel({ data, set, setJenis, setChecklist }: Props) 
             />
           </Field>
           <Field label="Tanggal Surat">
-            <TextInput
-              type="date"
+            <DateInput
               value={data.st.tanggalSuratISO}
               onChange={(e) => st("tanggalSuratISO", e.target.value)}
             />

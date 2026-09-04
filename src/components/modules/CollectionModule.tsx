@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
+import { DateInput } from '../common/DateInput';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Collection, CommunicationLog, FieldPhoto, ClientType, AssetRecovery } from '../../types/arms';
 import { 
@@ -1390,8 +1391,7 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                 <label className="block text-xs text-slate-400 mb-1">
                   Target Tanggal Janji Bayar / Next Action
                 </label>
-                <input
-                  type="date"
+                <DateInput
                   value={nextFollowUpDate}
                   onChange={(e) => setNextFollowUpDate(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"

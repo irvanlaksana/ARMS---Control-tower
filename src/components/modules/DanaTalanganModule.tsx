@@ -4,6 +4,7 @@ import { User, DanaTalangan, ApprovalRequest } from '../../types/arms';
 import { Coins, Plus, CheckCircle, Clock, AlertTriangle, ShieldCheck, Edit2, Trash2, Lock } from 'lucide-react';
 import { SearchableSelect } from '../common/SearchableSelect';
 import { AmountInput } from '../common/AmountInput';
+import { DateInput } from '../common/DateInput';
 
 interface DanaTalanganModuleProps {
   store: ARMSStore;
@@ -377,8 +378,7 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
 
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Repayment Target Date</label>
-                <input
-                  type="date"
+                <DateInput
                   value={repayTargetDate}
                   onChange={(e) => setRepayTargetDate(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"

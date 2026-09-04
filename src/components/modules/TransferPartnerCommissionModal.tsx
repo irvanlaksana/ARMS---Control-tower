@@ -1,4 +1,5 @@
 import { SearchableSelect } from "../common/SearchableSelect";
+import { DateInput } from '../common/DateInput';
 import React, { useState, useEffect } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, AssetRecovery, Payment, Expense, LedgerEntry } from '../../types/arms';
@@ -526,8 +527,7 @@ export const TransferPartnerCommissionModal: React.FC<TransferPartnerCommissionM
 
                 <div>
                   <label className="block text-[11px] text-slate-400 mb-1">Tanggal Transfer</label>
-                  <input
-                    type="date"
+                  <DateInput
                     required
                     value={transferDate}
                     onChange={(e) => setTransferDate(e.target.value)}

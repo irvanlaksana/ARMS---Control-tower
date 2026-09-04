@@ -3,6 +3,7 @@ import { Activity, ArrowUpRight, Briefcase, CalendarDays, DollarSign, FileText, 
 import { ARMSStore } from '../../services/armsDataService';
 import { User } from '../../types/arms';
 import { formatRupiahNumber } from '../../utils/exportUtils';
+import { DateInput } from '../common/DateInput';
 
 interface DailyActivityModuleProps {
   store: ARMSStore;
@@ -201,8 +202,7 @@ export const DailyActivityModule: React.FC<DailyActivityModuleProps> = ({ store 
 
           <label className="flex items-center gap-2 text-xs text-slate-400">
             <CalendarDays className="w-4 h-4 text-indigo-400" />
-            <input
-              type="date"
+            <DateInput
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
               className="bg-slate-950 text-white rounded-lg border border-slate-700 px-2.5 py-1.5 text-xs outline-none"

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { DateInput } from "../common/DateInput";
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, WorkingCapitalTransaction } from '../../types/arms';
 import { 
@@ -564,8 +565,7 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
 
                 <div>
                   <label className="block text-slate-400 mb-1 font-medium">Tanggal Transaksi *</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={transactionDate}
                     onChange={(e) => setTransactionDate(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:border-indigo-500"

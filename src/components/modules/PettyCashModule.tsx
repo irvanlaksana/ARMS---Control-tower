@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { DateInput } from '../common/DateInput';
 import { AmountInput } from '../common/AmountInput';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, PettyCashTransaction } from '../../types/arms';
@@ -602,8 +603,7 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
               {/* Tanggal */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Tanggal Transaksi</label>
-                <input
-                  type="date"
+                <DateInput
                   value={transactionDate}
                   onChange={(e) => setTransactionDate(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
