@@ -66,9 +66,56 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
 
   const effectiveClientId = clientCategory === 'PERORANGAN' ? peroranganClientId : clientId;
 
+  const parseDueDateToDate = (value?: string) => {
+    if (!value) return null;
+    const normalized = value.trim();
+    const formats = [
+      /^(\d{4})-(\d{1,2})-(\d{1,2})$/,
+      /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/,
+      /^(\d{1,2})[-/](\d{1,2})[-/](\d{2})$/,
+    ];
+    for (const regex of formats) {
+      const match = normalized.match(regex);
+      if (!match) continue;
+      if (match.length === 4 && regex.source.includes('\\d{4}')) {
+        const [, year, month, day] = match;
+        const parsed = new Date(Number(year), Number(month) - 1, Number(day));
+        if (!Number.isNaN(parsed.getTime())) return parsed;
+      }
+      if (match.length === 4 && !regex.source.includes('\\d{4}')) {
+        const [, day, month, year] = match;
+        const parsed = new Date(Number(year), Number(month) - 1, Number(day));
+        if (!Number.isNaN(parsed.getTime())) return parsed;
+      }
+    }
+    const fallback = new Date(normalized);
+    return Number.isNaN(fallback.getTime()) ? null : fallback;
+  };
+
+  const calculateOverdueDays = (dueDate?: string) => {
+    const due = parseDueDateToDate(dueDate);
+    if (!due) return 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    due.setHours(0, 0, 0, 0);
+    const diffDays = Math.floor((today.getTime() - due.getTime()) / 86400000);
+    return diffDays > 0 ? diffDays : 0;
+  };
+
+  const availableDebtors = useMemo(() => {
+    return (store.customers || []).filter((customer) => {
+      if (isEditing && customer.id === customerId) return true;
+      const hasClosedCase = (store.cases || []).some((caseItem) => caseItem.customerId === customer.id && caseItem.status === 'CLOSED');
+      return !hasClosedCase;
+    });
+  }, [store.customers, store.cases, isEditing, customerId]);
+
   const handleCustomerChange = (id: string) => {
+    const selectedDebtor = store.customers.find(c => c.id === id);
     setCustomerId(id);
-    setPrincipalDebtOS(store.customers.find(c => c.id === id)?.totalInstallment || 0);
+    setContractNo(selectedDebtor?.contractNo || '');
+    setOverdueDays(calculateOverdueDays(selectedDebtor?.dueDate));
+    setPrincipalDebtOS(selectedDebtor?.totalInstallment || 0);
   };
 
   // Real-time Duplicate Detection
@@ -146,9 +193,14 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
         const multiSrv = store.services.find(s => s.category !== 'PENAGIHAN_PERORANGAN' && !s.serviceCode.includes('PERORANGAN') && !s.name.toLowerCase().includes('perorangan'));
         if (multiSrv) setServiceId(multiSrv.id);
       }
-      setContractNo(clientCategory === 'PERORANGAN' ? 'SPH-PER/2026/01' : 'ADR-CTR-2026-99');
-      setPrincipalDebtOS(store.customers.find(customer => customer.id === customerId)?.totalInstallment || 0);
-      setOverdueDays(120);
+      const firstAvailableCustomer = availableDebtors[0];
+      if (firstAvailableCustomer) {
+        setCustomerId(firstAvailableCustomer.id);
+      }
+      const customerForDefault = store.customers.find((c) => c.id === (firstAvailableCustomer?.id || customerId));
+      setContractNo(customerForDefault?.contractNo || (clientCategory === 'PERORANGAN' ? 'SPH-PER/2026/01' : 'ADR-CTR-2026-99'));
+      setPrincipalDebtOS(customerForDefault?.totalInstallment || 0);
+      setOverdueDays(calculateOverdueDays(customerForDefault?.dueDate));
       setAssetSummary(clientCategory === 'MULTIFINANCE' ? 'Honda HR-V Turbo 2022 (B 1234 XYZ)' : 'Surat Pengakuan Hutang');
       setGDriveFolderUrl('');
     }
@@ -498,7 +550,7 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
                 <SearchableSelect
                   value={customerId}
                   onChange={handleCustomerChange}
-                  options={store.customers.map(c => ({ value: c.id, label: c.fullName, subLabel: c.nikKtp }))}
+                  options={availableDebtors.map(c => ({ value: c.id, label: c.fullName, subLabel: c.nikKtp }))}
                 />
               </div>
               <div>
@@ -526,8 +578,14 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
               </div>
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Hari Tunggakan</label>
-                <input type="number" min="0" required value={overdueDays} onChange={(e) => setOverdueDays(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white" />
+                <input
+                  type="number"
+                  min="0"
+                  required
+                  readOnly
+                  value={overdueDays}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white opacity-80 cursor-not-allowed"
+                />
               </div>
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Assign To Personnel / Mitra</label>

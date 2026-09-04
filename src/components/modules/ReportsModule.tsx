@@ -16,7 +16,8 @@ import {
   Wallet,
   Calendar,
   Filter,
-  Check
+  Check,
+  Activity
 } from 'lucide-react';
 import { downloadCSV, formatRupiahNumber } from '../../utils/exportUtils';
 
@@ -48,7 +49,7 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
       const totalPrincipalOS = clientCases.reduce((acc, curr) => acc + (curr.principalDebtOS || 0), 0);
       const clientPayments = payments.filter((p) => p.clientId === client.id && p.status === 'VERIFIED');
       const totalCollected = clientPayments.reduce((acc, curr) => acc + (curr.amount || 0), 0);
-      const totalAgencyFeeEarned = clientPayments.reduce((acc, curr) => acc + (curr.feePortion || 0), 0);
+      const totalAgencyFeeEarned = clientPayments.reduce((acc, curr) => acc + getPaymentCompanyFee(curr), 0);
 
       const recoveryRate = totalPrincipalOS > 0 ? ((totalCollected / totalPrincipalOS) * 100) : (totalCases > 0 && resolvedCases > 0 ? ((resolvedCases / totalCases) * 100) : 0);
       const avgDpd = totalCases > 0 ? Math.round(clientCases.reduce((acc, curr) => acc + (curr.overdueDays || 0), 0) / totalCases) : 0;
@@ -80,12 +81,45 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
     return list;
   }, [store.cases, selectedClientId]);
 
+  const getPaymentCompanyFee = (payment: any) => {
+    if (typeof payment.companyRevenueAmount === 'number') return payment.companyRevenueAmount;
+    const grossFee = Number(payment.grossAgencyFee ?? payment.successFeeAmount ?? payment.amount * 0.2 ?? 0);
+    const companyPercent = Number(payment.companyFeePercent ?? store.settings?.defaultCompanyCommissionSplitPercent ?? 20);
+    return Math.round((grossFee * companyPercent) / 100);
+  };
+
+  const getPaymentPartnerFee = (payment: any) => {
+    if (typeof payment.partnerCommissionAmount === 'number') return payment.partnerCommissionAmount;
+    const grossFee = Number(payment.grossAgencyFee ?? payment.successFeeAmount ?? payment.amount * 0.2 ?? 0);
+    const companyFee = getPaymentCompanyFee(payment);
+    return Math.max(0, Math.round(grossFee - companyFee));
+  };
+
   // Overall Totals
+  const verifiedPayments = useMemo(() => (store.payments || []).filter((p: any) => (p.verificationStatus || p.status) === 'VERIFIED'), [store.payments]);
   const totalOSAll = useMemo(() => (store.cases || []).reduce((a, b) => a + (b.principalDebtOS || 0), 0), [store.cases]);
-  const totalCollectedAll = useMemo(() => (store.payments || []).filter(p => p.status === 'VERIFIED').reduce((a, b) => a + (b.amount || 0), 0), [store.payments]);
-  const totalAgencyFeeAll = useMemo(() => (store.payments || []).filter(p => p.status === 'VERIFIED').reduce((a, b) => a + (b.feePortion || 0), 0), [store.payments]);
+  const totalCollectedAll = useMemo(() => verifiedPayments.reduce((a, b) => a + (b.amount || 0), 0), [verifiedPayments]);
+  const totalCompanyFeeAll = useMemo(() => verifiedPayments.reduce((a, b) => a + getPaymentCompanyFee(b), 0), [verifiedPayments]);
+  const totalPartnerFeeAll = useMemo(() => verifiedPayments.reduce((a, b) => a + getPaymentPartnerFee(b), 0), [verifiedPayments]);
+  const totalAgencyFeeAll = totalCompanyFeeAll;
   const totalExpensesAll = useMemo(() => (store.expenses || []).reduce((a, b) => a + (b.amount || 0), 0), [store.expenses]);
-  const netProfitEstimated = totalAgencyFeeAll - totalExpensesAll;
+  const standardAccountingReport = useMemo(() => {
+    const revenue = totalCompanyFeeAll;
+    const partnerFee = totalPartnerFeeAll;
+    const operatingExpenses = totalExpensesAll;
+    const grossProfit = revenue;
+    const netProfit = revenue - operatingExpenses;
+    return [
+      { account: 'Pendapatan Usaha (Fee Perusahaan)', value: revenue, type: 'REVENUE' },
+      { account: 'Komisi Mitra / Fee Mitra', value: partnerFee, type: 'PARTNER_FEE' },
+      { account: 'Beban Operasional / Biaya Recovery', value: operatingExpenses, type: 'EXPENSE' },
+      { account: 'Laba Kotor', value: grossProfit, type: 'GROSS_PROFIT' },
+      { account: 'Laba Bersih / Net Profit', value: netProfit, type: 'NET_PROFIT' },
+      { account: 'Total Penerimaan Kas', value: totalCollectedAll, type: 'CASH_IN' },
+      { account: 'Total Outstanding Piutang', value: totalOSAll, type: 'AR' },
+    ];
+  }, [totalCompanyFeeAll, totalPartnerFeeAll, totalExpensesAll, totalCollectedAll, totalOSAll]);
+  const netProfitEstimated = totalCompanyFeeAll - totalExpensesAll;
 
   const showExportNotice = (title: string) => {
     setExportedSuccess(title);
@@ -141,20 +175,23 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
     const dateStr = new Date().toISOString().slice(0, 10);
     const filename = `Laporan_Keuangan_Laba_Rugi_PT_MJ_${dateStr}`;
 
-    const payments = (store.payments || []).map((p, idx) => ({
-      no: idx + 1,
-      type: 'INFLOW_PENDAPATAN',
-      date: p.paymentDate,
-      docNo: p.receiptNo,
-      category: 'Agency Success Fee',
-      client: p.clientName,
-      debtor: p.debtorName,
-      description: `Pelunasan Perkara ${p.caseNo} (${p.method})`,
-      grossAmount: p.amount,
-      feePortion: p.feePortion,
-      netDisbursement: p.amount - p.feePortion,
-      status: p.status,
-    }));
+    const payments = (store.payments || []).map((p, idx) => {
+      const companyFee = getPaymentCompanyFee(p);
+      return {
+        no: idx + 1,
+        type: 'INFLOW_PENDAPATAN',
+        date: p.paymentDate,
+        docNo: p.receiptNo,
+        category: 'Agency Success Fee',
+        client: p.clientName,
+        debtor: p.debtorName,
+        description: `Pelunasan Perkara ${p.caseNo} (${p.method})`,
+        grossAmount: p.amount,
+        feePortion: companyFee,
+        netDisbursement: p.amount - companyFee,
+        status: p.verificationStatus || p.status,
+      };
+    });
 
     const expenses = (store.expenses || []).map((e, idx) => ({
       no: payments.length + idx + 1,
@@ -324,6 +361,20 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
     showExportNotice('Log Kepatuhan & Audit Trail berhasil diunduh langsung!');
   };
 
+  const handleExportStandardAccountingReport = () => {
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const filename = `Laporan_Akuntansi_Standar_${dateStr}`;
+
+    downloadCSV(filename, standardAccountingReport, [
+      { header: 'Akun / Pos', accessor: (row: any) => row.account },
+      { header: 'Nilai (Rp)', accessor: (row: any) => row.value },
+      { header: 'Kategori', accessor: (row: any) => row.type },
+    ]);
+
+    recordAuditAndStore('Laporan Akuntansi Standar', `Exported standard accounting report (${standardAccountingReport.length} lines) to CSV`);
+    showExportNotice('Laporan Akuntansi Standar berhasil diunduh langsung!');
+  };
+
   return (
     <div className="space-y-6">
       {/* Header Banner */}
@@ -344,15 +395,20 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
           </div>
 
           {/* Quick Stats Summary Pill */}
-          <div className="flex items-center gap-3 bg-slate-950/80 border border-slate-800 p-3 rounded-xl">
+          <div className="flex flex-wrap items-center gap-3 bg-slate-950/80 border border-slate-800 p-3 rounded-xl">
             <div>
               <span className="text-[10px] text-slate-500 block uppercase font-mono">Total Piutang OS</span>
               <span className="text-sm font-bold text-amber-300 font-mono">{formatRupiahNumber(totalOSAll)}</span>
             </div>
             <div className="h-8 w-px bg-slate-800" />
             <div>
-              <span className="text-[10px] text-slate-500 block uppercase font-mono">Total Agency Fee</span>
-              <span className="text-sm font-bold text-emerald-400 font-mono">{formatRupiahNumber(totalAgencyFeeAll)}</span>
+              <span className="text-[10px] text-slate-500 block uppercase font-mono">Fee Perusahaan</span>
+              <span className="text-sm font-bold text-emerald-400 font-mono">{formatRupiahNumber(totalCompanyFeeAll)}</span>
+            </div>
+            <div className="h-8 w-px bg-slate-800" />
+            <div>
+              <span className="text-[10px] text-slate-500 block uppercase font-mono">Fee Mitra</span>
+              <span className="text-sm font-bold text-amber-300 font-mono">{formatRupiahNumber(totalPartnerFeeAll)}</span>
             </div>
           </div>
         </div>
@@ -413,14 +469,34 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
               Rincian komprehensif penerimaan Agency Fee, penyaluran bagian kreditur, serta seluruh pengeluaran operasional.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={handleExportFinancialPL}
-            className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg text-xs font-semibold transition shadow-md"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Export CSV Laba Rugi (P&L)</span>
-          </button>
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-300">
+              <div className="bg-slate-950/80 border border-slate-800 rounded-lg p-2">
+                <div className="text-slate-500">Fee Perusahaan</div>
+                <div className="mt-1 font-bold text-emerald-300 font-mono">{formatRupiahNumber(totalCompanyFeeAll)}</div>
+              </div>
+              <div className="bg-slate-950/80 border border-slate-800 rounded-lg p-2">
+                <div className="text-slate-500">Fee Mitra</div>
+                <div className="mt-1 font-bold text-amber-300 font-mono">{formatRupiahNumber(totalPartnerFeeAll)}</div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleExportFinancialPL}
+              className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg text-xs font-semibold transition shadow-md"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Export CSV Laba Rugi (P&L)</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleExportStandardAccountingReport}
+              className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-100 px-3 py-2 rounded-lg text-xs font-semibold transition shadow-md"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>Laporan Akuntansi Standar</span>
+            </button>
+          </div>
         </div>
 
         {/* Card 3: Portofolio Debitur & Kasus */}

@@ -28,10 +28,23 @@ export const DriveFilePreview: React.FC<DriveFilePreviewProps> = ({
   const canOpen = !!webViewLink || (!!fileUrl && !isDataUrl);
   const linkToCopy = webViewLink || fileUrl || '';
 
+  const getEmbeddedPreviewUrl = (rawUrl?: string) => {
+    if (!rawUrl) return '';
+    const trimmed = rawUrl.trim();
+    const driveMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    const idMatch = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/i);
+    const fileId = driveMatch?.[1] || idMatch?.[1];
+    if (fileId) return `https://drive.google.com/file/d/${fileId}/preview`;
+    return trimmed;
+  };
+
+  const previewUrl = isDataUrl ? fileUrl : getEmbeddedPreviewUrl(webViewLink || fileUrl || '');
+  const isImageUrl = !isDataUrl && !!fileUrl && /\.(png|jpe?g|gif|webp|bmp|svg)(\?.*)?$/i.test(fileUrl);
+  const shouldUseIframe = !isDataUrl && !!previewUrl && !isImageUrl && !!fileUrl;
+
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(linkToCopy);
-      // small visual feedback could be added by caller
       console.debug('Copied to clipboard', linkToCopy);
     } catch (err) {
       console.error('Copy failed', err);
@@ -60,16 +73,21 @@ export const DriveFilePreview: React.FC<DriveFilePreviewProps> = ({
         <div className="bg-slate-950 p-2 border border-slate-800 rounded-lg flex items-center justify-center min-h-[220px]">
           {isDataUrl ? (
             <img src={fileUrl} alt={fileName || 'preview'} className="max-h-[420px] w-auto object-contain rounded border border-slate-800" />
-          ) : (
+          ) : shouldUseIframe ? (
+            <iframe
+              src={previewUrl}
+              title={fileName || 'document-preview'}
+              className="w-full h-[420px] rounded border border-slate-800 bg-white"
+              allow="fullscreen"
+            />
+          ) : fileUrl ? (
             <div className="text-slate-300 text-sm text-center">
-              {fileUrl ? (
-                <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-300 underline">
-                  Buka file di tab baru
-                </a>
-              ) : (
-                <div className="text-slate-500">Tidak ada preview. Gunakan tombol Upload jika ini berkas lokal.</div>
-              )}
+              <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-300 underline">
+                Buka file di tab baru
+              </a>
             </div>
+          ) : (
+            <div className="text-slate-500 text-sm text-center">Tidak ada preview. Gunakan tombol Upload jika ini berkas lokal.</div>
           )}
         </div>
 

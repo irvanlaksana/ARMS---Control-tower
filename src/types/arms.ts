@@ -165,6 +165,8 @@ export interface Customer {
   penaltyAmount?: string;
   vehicleMerkType?: string;
   vehiclePoliceNo?: string;
+  ktpPhotoUrl?: string;
+  stnkPhotoUrls?: string[];
   riskNotes: string;
   gDriveFolderUrl?: string;
   createdAt: string;

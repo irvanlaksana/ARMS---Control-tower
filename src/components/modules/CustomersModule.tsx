@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Customer } from '../../types/arms';
-import { Users, Plus, Edit2, Trash2, AlertTriangle } from 'lucide-react';
+import { Users, Plus, Edit2, Trash2, AlertTriangle, Upload, Image as ImageIcon, Eye, X } from 'lucide-react';
 import { findDuplicateCustomerMaster } from '../../utils/duplicateCheck';
 import { AmountInput } from '../common/AmountInput';
 
@@ -27,6 +27,8 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
   const [phone, setPhone] = useState('');
   const [vehicleMerkType, setVehicleMerkType] = useState('');
   const [vehiclePoliceNo, setVehiclePoliceNo] = useState('');
+  const [ktpPhotoUrl, setKtpPhotoUrl] = useState('');
+  const [stnkPhotoUrls, setStnkPhotoUrls] = useState<string[]>([]);
   
   const [nikKtp, setNikKtp] = useState(''); // Keep this for internal needs/backend if needed, or make optional
 
@@ -53,6 +55,10 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
     );
   };
 
+  const isCustomerClosed = (customerId: string) => {
+    return (store.cases || []).some((caseItem) => caseItem.customerId === customerId && ['CLOSED', 'SETTLED'].includes(caseItem.status || ''));
+  };
+
   const handleOpenModal = (customer?: Customer) => {
     if (customer) {
       setIsEditing(true);
@@ -67,6 +73,8 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
       setPhone(customer.phone);
       setVehicleMerkType(customer.vehicleMerkType || '');
       setVehiclePoliceNo(customer.vehiclePoliceNo || '');
+      setKtpPhotoUrl(customer.ktpPhotoUrl || '');
+      setStnkPhotoUrls(customer.stnkPhotoUrls || []);
       setNikKtp(customer.nikKtp || '');
     } else {
       setIsEditing(false);
@@ -81,6 +89,8 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
       setPhone('');
       setVehicleMerkType('');
       setVehiclePoliceNo('');
+      setKtpPhotoUrl('');
+      setStnkPhotoUrls([]);
       setNikKtp('');
     }
     setShowModal(true);
@@ -103,6 +113,21 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
       customers: store.customers.filter(c => c.id !== id),
       auditLogs: [audit, ...store.auditLogs],
     });
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>, target: 'KTP' | 'STNK') => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || '');
+      if (target === 'KTP') {
+        setKtpPhotoUrl(result);
+      } else {
+        setStnkPhotoUrls((prev) => [...prev, result]);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSaveCustomer = (e: React.FormEvent) => {
@@ -137,6 +162,8 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
             penaltyAmount,
             vehicleMerkType,
             vehiclePoliceNo,
+            ktpPhotoUrl,
+            stnkPhotoUrls,
             workplace: c.workplace || '',
           };
         }
@@ -176,6 +203,8 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
         penaltyAmount,
         vehicleMerkType,
         vehiclePoliceNo,
+        ktpPhotoUrl,
+        stnkPhotoUrls,
         workplace: '',
         emergencyContactName: 'Family Contact',
         emergencyContactPhone: phone,
@@ -246,12 +275,27 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                       )}
                     </div>
                   </td>
-                  <td className="py-3.5 px-4 font-bold text-white">{c.fullName}</td>
+                  <td className="py-3.5 px-4 font-bold text-white">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span>{c.fullName}</span>
+                      {isCustomerClosed(c.id) && (
+                        <span className="bg-red-950 text-red-300 border border-red-800 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide">
+                          Closed
+                        </span>
+                      )}
+                    </div>
+                  </td>
                   <td className="py-3.5 px-4 text-emerald-400 font-semibold">{c.phone}</td>
                   <td className="py-3.5 px-4 text-slate-300 max-w-[200px] truncate">{c.addressCurrent}</td>
                   <td className="py-3.5 px-4 text-slate-400">
                     {c.vehicleMerkType ? (
-                      <span className="block text-xs">{c.vehicleMerkType} <br/> <span className="font-mono text-[10px] text-slate-500">{c.vehiclePoliceNo}</span></span>
+                      <span className="block text-xs">
+                        {c.vehicleMerkType}
+                        {Array.isArray(c.stnkPhotoUrls) && c.stnkPhotoUrls.length > 1 && (
+                          <span className="ml-1 inline-flex items-center justify-center rounded-full border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold text-amber-300">+{c.stnkPhotoUrls.length - 1}</span>
+                        )}
+                        <br/> <span className="font-mono text-[10px] text-slate-500">{c.vehiclePoliceNo}</span>
+                      </span>
                     ) : '-'}
                   </td>
                   <td className="py-3.5 px-4 text-amber-300 text-[11px]">
@@ -297,7 +341,6 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
               {isEditing ? 'Edit Data Debitur' : 'Register Data Debitur'}
             </h3>
 
-            {/* Duplicate Debitur Warning Banner */}
             {duplicateWarning?.isDuplicate && (
               <div className="bg-amber-950/80 border-2 border-amber-500/80 rounded-xl p-3.5 space-y-2 text-amber-200 shadow-lg animate-in fade-in zoom-in-95 duration-200">
                 <div className="flex items-center gap-2 font-bold text-amber-300 text-xs">
@@ -367,8 +410,81 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                   type="text"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
+                  placeholder="dd/mm/yyyy"
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Foto KTP</label>
+                <div className="space-y-2">
+                  <label className="flex items-center justify-center w-full gap-2 border border-dashed border-slate-700 rounded-lg p-2.5 text-xs text-slate-300 bg-slate-950 cursor-pointer hover:border-indigo-500 transition">
+                    <Upload className="w-4 h-4 text-indigo-400" />
+                    <span>Upload Foto KTP</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, 'KTP')} />
+                  </label>
+                  {ktpPhotoUrl && (
+                    <div className="relative group">
+                      <img src={ktpPhotoUrl} alt="KTP" className="w-full h-24 object-cover rounded-lg border border-slate-800" />
+                      <button
+                        type="button"
+                        onClick={() => setKtpPhotoUrl('')}
+                        className="absolute top-1 right-1 hidden group-hover:flex items-center justify-center w-6 h-6 rounded-full bg-slate-950/80 text-slate-200 hover:text-red-400"
+                        aria-label="Hapus foto KTP"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-xs text-slate-400 mb-1">Foto STNK</label>
+                <div className="space-y-2">
+                  <label className="flex items-center justify-center w-full gap-2 border border-dashed border-slate-700 rounded-lg p-2.5 text-xs text-slate-300 bg-slate-950 cursor-pointer hover:border-indigo-500 transition">
+                    <ImageIcon className="w-4 h-4 text-indigo-400" />
+                    <span>Upload Foto STNK</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files ?? []) as File[];
+                        files.forEach((file) => {
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            const result = String(reader.result || '');
+                            if (result) setStnkPhotoUrls((prev) => [...prev, result]);
+                          };
+                          reader.readAsDataURL(file);
+                        });
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                  {stnkPhotoUrls.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2">
+                      {stnkPhotoUrls.map((url, index) => (
+                        <div key={`${url}-${index}`} className="relative group">
+                          <img src={url} alt={`STNK ${index + 1}`} className="w-full h-24 object-cover rounded-lg border border-slate-800" />
+                          {index === stnkPhotoUrls.length - 1 && stnkPhotoUrls.length > 1 && (
+                            <span className="absolute top-1 left-1 bg-amber-500/90 text-[9px] font-bold px-1.5 py-0.5 rounded-full text-slate-950">+{stnkPhotoUrls.length - 1}</span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setStnkPhotoUrls((prev) => prev.filter((_, i) => i !== index))}
+                            className="absolute top-1 right-1 hidden group-hover:flex items-center justify-center w-6 h-6 rounded-full bg-slate-950/80 text-slate-200 hover:text-red-400"
+                            aria-label="Hapus foto STNK"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -434,9 +550,8 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                 />
               </div>
             </div>
-            
+
             <div className="hidden">
-              {/* Hidden KTP for backend consistency if required */}
               <input type="text" value={nikKtp} onChange={(e) => setNikKtp(e.target.value)} />
             </div>
 

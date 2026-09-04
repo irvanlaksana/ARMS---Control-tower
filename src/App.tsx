@@ -31,6 +31,7 @@ import { AssetRecoveryModule } from './components/modules/AssetRecoveryModule';
 import { ServicesModule } from './components/modules/ServicesModule';
 import { LawyerModule } from './components/modules/LawyerModule';
 import { ReportsModule } from './components/modules/ReportsModule';
+import { DailyActivityModule } from './components/modules/DailyActivityModule';
 import { DocumentsModule } from './components/modules/DocumentsModule';
 import { UserManagementModule } from './components/modules/UserManagementModule';
 import { AuditLogModule } from './components/modules/AuditLogModule';
@@ -128,6 +129,8 @@ export default function App() {
         return <ServicesModule store={store} currentUser={currentUser} onUpdateStore={handleUpdateStore} />;
       case 'REPORTS':
         return <ReportsModule store={store} currentUser={currentUser} onUpdateStore={handleUpdateStore} />;
+      case 'DAILY_ACTIVITY':
+        return <DailyActivityModule store={store} currentUser={currentUser} onUpdateStore={handleUpdateStore} />;
       case 'DOCUMENTS':
         return <DocumentsModule store={store} />;
       case 'USERS':

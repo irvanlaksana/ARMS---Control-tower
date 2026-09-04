@@ -107,6 +107,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
 
 
   const selectedCase = store.cases?.find(c => c.id === caseId);
+  const selectedCustomer = store.customers?.find(c => c.id === selectedCase?.customerId);
   const selectedPersonnel = store.personnel?.find(p => p.id === personnelId);
   const isPerorangan = selectedCase?.clientType === 'PERORANGAN';
   const skNumberDraft = isEditing
@@ -116,6 +117,20 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
   const endDate = new Date();
   endDate.setDate(endDate.getDate() + 3);
   const endDateStr = endDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  useEffect(() => {
+    if (!selectedCase) return;
+    const customer = store.customers?.find(c => c.id === selectedCase.customerId);
+    setSkContractNo(selectedCase.multifinanceContractNo || customer?.contractNo || '');
+    setSkDebtorName(selectedCase.debtorName || customer?.fullName || '');
+    setSkDebtorAddress(customer?.addressCurrent || customer?.addressKtp || '');
+    setSkDueDate(customer?.dueDate || '');
+    setSkInstallment(customer?.installmentAmount || (customer?.totalInstallment ? `Rp ${customer.totalInstallment.toLocaleString('id-ID')}` : ''));
+    setSkPenalty(customer?.penaltyAmount || '');
+    setSkPhone(customer?.phone || '');
+    setSkVehicleMerk(customer?.vehicleMerkType || selectedCase.assetSummary || '');
+    setSkVehiclePoliceNo(customer?.vehiclePoliceNo || '');
+  }, [selectedCase, store.customers]);
 
   const handleAddAttachment = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -813,17 +828,6 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
               </div>
 
               <div className="flex items-center gap-2">
-                <a
-                  href="https://generator-surat-three.vercel.app"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="p-1.5 text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition flex items-center gap-2"
-                  title="Open Generator Surat (generator-surat-three.vercel.app)"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  <span className="text-xs hidden sm:inline">Generator</span>
-                </a>
-
                 <button
                   type="button"
                   onClick={handleOpenGeneratorFromDraft}

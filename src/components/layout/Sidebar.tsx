@@ -4,7 +4,7 @@ import {
   LayoutDashboard, CheckSquare, Briefcase, Users, PhoneCall, Receipt, ShieldAlert,
   Car, FileText, UserPlus, Building2, DollarSign, Wallet, FileSpreadsheet,
   Settings, FolderGit2, ShieldCheck, Scale, PieChart, Coins, Banknote, Landmark,
-  X, Search, ChevronRight, Layers, Sparkles
+  X, Search, ChevronRight, Layers, Sparkles, Activity
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -104,6 +104,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       title: 'ADMINISTRASI & SISTEM',
       items: [
         { id: 'DOCUMENTS', label: 'Dokumen & Google Drive', shortLabel: 'Dokumen', icon: FileText },
+        { id: 'DAILY_ACTIVITY', label: 'Daily Activity', shortLabel: 'Daily', icon: Activity },
         { id: 'REPORTS', label: 'Laporan & Rekapitulasi', shortLabel: 'Laporan', icon: FileSpreadsheet },
         { id: 'AUDIT', label: 'Log Audit Keamanan', shortLabel: 'Log Audit', icon: ShieldCheck },
         { id: 'USERS', label: 'Kelola Pengguna', shortLabel: 'Pengguna', icon: Users },
