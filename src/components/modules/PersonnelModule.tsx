@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AddressFields } from '../common/AddressFields';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Personnel, PersonnelType } from '../../types/arms';
 import {
@@ -930,16 +931,7 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
                 />
               </div>
 
-              <div className="md:col-span-2">
-                <label className="block text-xs text-slate-400 mb-1">Alamat Lengkap Sesuai KTP</label>
-                <input
-                  type="text"
-                  required
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-                />
-              </div>
+              <AddressFields value={address} onChange={setAddress} label="Alamat Lengkap Sesuai KTP" required />
 
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Nomor WhatsApp / HP</label>

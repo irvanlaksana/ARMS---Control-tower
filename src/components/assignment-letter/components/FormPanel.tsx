@@ -17,6 +17,7 @@ import KopEditor from "./KopEditor";
 import { Check, Field, Grid, Section, Segmented, TextArea, TextInput } from "./ui";
 import type { SuratTugasData } from "../types";
 import { DateInput } from "../../common/DateInput";
+import { AddressFields } from "../../common/AddressFields";
 
 interface Props {
   data: BastData;
@@ -234,12 +235,7 @@ export default function FormPanel({ data, set, setJenis, setChecklist }: Props) 
               />
             </Field>
             <Field label="Alamat Mitra" span>
-              <TextArea
-                rows={2}
-                value={data.mitraAlamat}
-                placeholder="Alamat kantor mitra"
-                onChange={(e) => set("mitraAlamat", e.target.value)}
-              />
+              <AddressFields value={data.mitraAlamat} onChange={(value) => set("mitraAlamat", value)} compact />
             </Field>
           </Grid>
         </div>
@@ -485,11 +481,7 @@ export default function FormPanel({ data, set, setJenis, setChecklist }: Props) 
             />
           </Field>
           <Field label="Alamat" span>
-            <TextArea
-              rows={2}
-              value={data.st.nasabahAlamat}
-              onChange={(e) => st("nasabahAlamat", e.target.value)}
-            />
+            <AddressFields value={data.st.nasabahAlamat} onChange={(value) => st("nasabahAlamat", value)} compact />
           </Field>
           <Field label="Jatuh Tempo">
             <TextInput

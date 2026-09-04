@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { LetterPreviewModal, LetterPreviewData } from '../common/LetterPreviewModal';
 import { EmployeeIdCardModal } from './EmployeeIdCardModal';
+import { AddressFields } from '../common/AddressFields';
 
 interface SettingsGDriveDatabaseTabProps {
   store: ARMSStore;
@@ -1811,18 +1812,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                 />
               </div>
 
-              <div className="sm:col-span-2">
-                <label className="block font-semibold text-slate-300 mb-1">
-                  Alamat Debitur
-                </label>
-                <input
-                  type="text"
-                  placeholder="Alamat domisili atau KTP debitur..."
-                  value={newAddress}
-                  onChange={(e) => setNewAddress(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-emerald-500"
-                />
-              </div>
+              <AddressFields value={newAddress} onChange={setNewAddress} label="Alamat Debitur" compact />
             </div>
 
             <div className="p-3 bg-emerald-950/40 border border-emerald-800/60 rounded-xl text-[11px] text-emerald-300 flex items-start gap-2">

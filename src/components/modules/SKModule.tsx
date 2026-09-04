@@ -12,6 +12,7 @@ import { angkaKeTerbilang } from '../../utils/terbilang';
 import { GoogleDriveFolderPicker } from '../common/GoogleDriveFolderPicker';
 import { SearchableSelect } from "../common/SearchableSelect";
 import { QuickGDriveModal } from '../common/QuickGDriveModal';
+import { AddressFields } from '../common/AddressFields';
 import { LetterPreviewModal, LetterPreviewData } from '../common/LetterPreviewModal';
 import { ROOT_GDRIVE_URL } from '../../data/initialData';
 import AssignmentLetterGenerator from '../assignment-letter/AssignmentLetterGenerator';
@@ -948,16 +949,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                         className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-xs"
                       />
                     </div>
-                    <div>
-                      <label className="block text-slate-400 mb-1 text-[11px] font-semibold">Alamat Domisili Kreditur</label>
-                      <input
-                        type="text"
-                        value={krediturAddress}
-                        onChange={(e) => setKrediturAddress(e.target.value)}
-                        placeholder="Alamat lengkap kreditur"
-                        className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-xs"
-                      />
-                    </div>
+                    <AddressFields value={krediturAddress} onChange={setKrediturAddress} label="Alamat Domisili Kreditur" compact />
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">

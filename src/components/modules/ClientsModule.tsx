@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AddressFields } from '../common/AddressFields';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Client, ClientType } from '../../types/arms';
 import { Building2, Plus, Search, User as UserIcon, UserCheck, Edit2, Trash2 } from 'lucide-react';
@@ -423,16 +424,7 @@ export const ClientsModule: React.FC<ClientsModuleProps> = ({ store, currentUser
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">Alamat Domisili / Kantor</label>
-              <input
-                type="text"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="Alamat lengkap..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
-              />
-            </div>
+            <AddressFields value={address} onChange={setAddress} label="Alamat Domisili / Kantor" />
 
             <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
               <button

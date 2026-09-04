@@ -5,6 +5,7 @@ import { Users, Plus, Edit2, Trash2, AlertTriangle, Upload, Image as ImageIcon, 
 import { findDuplicateCustomerMaster } from '../../utils/duplicateCheck';
 import { AmountInput } from '../common/AmountInput';
 import { DateInput } from '../common/DateInput';
+import { AddressFields } from '../common/AddressFields';
 
 interface CustomersModuleProps {
   store: ARMSStore;
@@ -469,15 +470,7 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                 />
               </div>
 
-              <div className="md:col-span-2">
-                <label className="block text-xs text-slate-400 mb-1">Alamat</label>
-                <input
-                  type="text"
-                  value={addressCurrent}
-                  onChange={(e) => setAddressCurrent(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
-                />
-              </div>
+              <AddressFields value={addressCurrent} onChange={setAddressCurrent} label="Alamat Domisili Debitur" required />
 
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Tanggal Jatuh Tempo</label>
