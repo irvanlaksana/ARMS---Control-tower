@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { ARMSStore, getStoredStore, initializeARMSStore, saveStore } from '../services/armsDataService';
 import { fetchStoreFromFirebase, syncStoreToFirebase, pushFullStoreToFirebase } from '../services/firebaseSyncService';
 
+const CACHE_TIMESTAMP_KEY = 'ARMS_FIREBASE_CACHE_TIMESTAMP_V1';
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
 export function useFirebaseStore() {
   const [store, setStore] = useState<ARMSStore>(() => {
     return getStoredStore() || initializeARMSStore();
@@ -22,12 +25,19 @@ export function useFirebaseStore() {
     let mounted = true;
     let intervalId: NodeJS.Timeout;
 
-    const performSync = async () => {
+    const performSync = async (force = false) => {
+      const cachedAt = Number(localStorage.getItem(CACHE_TIMESTAMP_KEY) || 0);
+      if (!force && cachedAt > 0 && Date.now() - cachedAt < CACHE_TTL_MS) {
+        if (mounted) setIsInitializing(false);
+        return;
+      }
+
       try {
         const updatedStore = await fetchStoreFromFirebase(store);
         if (mounted) {
           setStore(updatedStore);
           saveStore(updatedStore);
+          localStorage.setItem(CACHE_TIMESTAMP_KEY, String(Date.now()));
           lastSyncedStoreRef.current = updatedStore;
           setIsInitializing(false);
         }
@@ -47,7 +57,7 @@ export function useFirebaseStore() {
       if (mounted && !isSyncing) {
         performSync();
       }
-    }, 30000);
+    }, CACHE_TTL_MS);
       
     return () => {
       mounted = false;
@@ -89,6 +99,7 @@ export function useFirebaseStore() {
       // Update local state with latest from Firebase
       setStore(refreshedStore);
       saveStore(refreshedStore);
+      localStorage.setItem(CACHE_TIMESTAMP_KEY, String(Date.now()));
       
       // Diff and push any unsynced local changes (if they exist)
       await syncStoreToFirebase(store, refreshedStore);
