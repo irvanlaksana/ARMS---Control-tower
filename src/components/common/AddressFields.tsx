@@ -9,11 +9,38 @@ interface AddressFieldsProps {
 }
 
 const districtsByRegency: Record<string, string[]> = {
-  'Kabupaten Banyumas': ['Banyumas', 'Baturraden', 'Cilongok', 'Kembaran', 'Purwokerto Selatan', 'Purwokerto Utara', 'Sokaraja', 'Wangon'],
-  'Kabupaten Purbalingga': ['Bobotsari', 'Kalimanah', 'Purbalingga', 'Bukateja'],
-  'Kabupaten Cilacap': ['Cilacap Selatan', 'Cilacap Tengah', 'Cilacap Utara', 'Majenang'],
-  'Kabupaten Kebumen': ['Kebumen', 'Gombong', 'Prembun'],
-  'Kabupaten Banjarnegara': ['Banjarnegara', 'Klampok', 'Wanadadi'],
+  'Kabupaten Banyumas': [
+    'Ajibarang', 'Banyumas', 'Baturraden', 'Cilongok', 'Gumelar', 'Jatilawang',
+    'Kalibagor', 'Karanglewas', 'Kebasen', 'Kedungbanteng', 'Kembaran',
+    'Kemranjen', 'Lumbir', 'Patikraja', 'Pekuncen', 'Purwojati',
+    'Purwokerto Barat', 'Purwokerto Selatan', 'Purwokerto Timur', 'Purwokerto Utara',
+    'Rawalo', 'Sokaraja', 'Somagede', 'Sumbang', 'Sumpiuh', 'Tambak', 'Wangon',
+  ],
+  'Kabupaten Purbalingga': [
+    'Bobotsari', 'Bojongsari', 'Bukateja', 'Kaligondang', 'Kalimanah', 'Karanganyar',
+    'Karangjambu', 'Karangmoncol', 'Karangreja', 'Kejobong', 'Kemangkon',
+    'Kertanegara', 'Kutasari', 'Mrebet', 'Padamara', 'Pengadegan', 'Purbalingga',
+    'Rembang',
+  ],
+  'Kabupaten Cilacap': [
+    'Adipala', 'Bantarsari', 'Binangun', 'Cilacap Selatan', 'Cilacap Tengah',
+    'Cilacap Utara', 'Cimanggu', 'Cipari', 'Dayeuhluhur', 'Gandrungmangu',
+    'Jeruklegi', 'Kampung Laut', 'Karangpucung', 'Kawunganten', 'Kedungreja', 'Kesugihan',
+    'Kroya', 'Majenang', 'Maos', 'Nusawungu', 'Patimuan', 'Sampang', 'Sidareja',
+    'Wanareja',
+  ],
+  'Kabupaten Kebumen': [
+    'Adimulyo', 'Alian', 'Ambal', 'Ayah', 'Bonorowo', 'Buayan', 'Buluspesantren',
+    'Gombong', 'Karanganyar', 'Karanggayam', 'Karangsambung', 'Kebumen', 'Klirong',
+    'Kutowinangun', 'Kuwarasan', 'Mirit', 'Padureso', 'Pejagoan', 'Petanahan',
+    'Poncowarno', 'Prembun', 'Puring', 'Rowokele', 'Sadang', 'Sempor', 'Sruweng',
+  ],
+  'Kabupaten Banjarnegara': [
+    'Banjarmangu', 'Banjarnegara', 'Batur', 'Bawang', 'Kalibening', 'Karangkobar',
+    'Madukara', 'Mandiraja', 'Pagedongan', 'Pagentan', 'Pandanarum', 'Pejawaran',
+    'Punggelan', 'Purwanegara', 'Purwareja Klampok', 'Rakit', 'Sigaluh', 'Susukan',
+    'Wanadadi', 'Wanayasa',
+  ],
 };
 
 const regencies = Object.keys(districtsByRegency);

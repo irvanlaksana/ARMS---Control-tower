@@ -116,6 +116,9 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
     setContractNo(selectedDebtor?.contractNo || '');
     setOverdueDays(calculateOverdueDays(selectedDebtor?.dueDate));
     setPrincipalDebtOS(selectedDebtor?.totalInstallment || 0);
+    if (clientCategory === 'MULTIFINANCE') {
+      setAssetSummary(selectedDebtor?.vehicleMerkType || '');
+    }
   };
 
   // Real-time Duplicate Detection
@@ -155,6 +158,8 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
       if (multiSrv) {
         setServiceId(multiSrv.id);
       }
+      const selectedDebtor = store.customers.find((customer) => customer.id === customerId);
+      setAssetSummary(selectedDebtor?.vehicleMerkType || '');
     }
   };
 
@@ -173,7 +178,11 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
       setServiceId(c.serviceId);
       setPrincipalDebtOS(store.customers.find(customer => customer.id === c.customerId)?.totalInstallment || c.principalDebtOS);
       setOverdueDays(c.overdueDays);
-      setAssetSummary(c.assetSummary);
+      setAssetSummary(
+        c.clientType === 'MULTIFINANCE'
+          ? store.customers.find(customer => customer.id === c.customerId)?.vehicleMerkType || ''
+          : c.assetSummary
+      );
       setPartnerId(c.currentPersonnelId || '');
       setGDriveFolderUrl(c.gDriveFolderUrl || '');
     } else {
@@ -201,7 +210,11 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
       setContractNo(customerForDefault?.contractNo || (clientCategory === 'PERORANGAN' ? 'SPH-PER/2026/01' : 'ADR-CTR-2026-99'));
       setPrincipalDebtOS(customerForDefault?.totalInstallment || 0);
       setOverdueDays(calculateOverdueDays(customerForDefault?.dueDate));
-      setAssetSummary(clientCategory === 'MULTIFINANCE' ? 'Honda HR-V Turbo 2022 (B 1234 XYZ)' : 'Surat Pengakuan Hutang');
+      setAssetSummary(
+        clientCategory === 'MULTIFINANCE'
+          ? customerForDefault?.vehicleMerkType || ''
+          : 'Surat Pengakuan Hutang'
+      );
       setGDriveFolderUrl('');
     }
     setShowAddModal(true);
@@ -610,8 +623,9 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
                 required
                 value={assetSummary}
                 onChange={(e) => setAssetSummary(e.target.value)}
+                readOnly={clientCategory === 'MULTIFINANCE'}
                 placeholder={clientCategory === 'MULTIFINANCE' ? 'e.g. Honda HR-V Turbo 2022 (B 1234 XYZ)' : 'e.g. Surat Pengakuan Hutang & BPKB Motor Vario 2023'}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                className={`w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white ${clientCategory === 'MULTIFINANCE' ? 'opacity-70 cursor-not-allowed' : ''}`}
               />
             </div>
 
