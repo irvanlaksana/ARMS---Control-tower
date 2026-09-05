@@ -305,17 +305,10 @@ body {
     outline: none !important;
     border: none !important;
     width: var(--paper-w) !important;
-    height: 329mm; /* 1mm toleransi agar tidak tumpah ke halaman baru */
+    height: var(--paper-h) !important;
     min-height: 0 !important;
     overflow: hidden !important;
-    break-after: page;
-    page-break-after: always;
     break-inside: avoid;
     page-break-inside: avoid;
-  }
-
-  .sheet:last-child {
-    break-after: auto;
-    page-break-after: auto;
   }
 }

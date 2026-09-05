@@ -69,8 +69,8 @@ export const LetterPreviewModal: React.FC<LetterPreviewModalProps> = ({
     '';
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto print:p-0 print:bg-white print:static">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] my-auto print:max-h-none print:border-none print:shadow-none print:bg-white">
+    <div className="letter-preview-modal fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto print:p-0 print:bg-white print:static">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] my-auto print:max-h-none print:border-none print:shadow-none print:bg-white print:rounded-none">
         
         {/* Top Control Bar (Hidden on Print) */}
         <div className="p-3.5 sm:p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between gap-3 shrink-0 print:hidden">
@@ -149,9 +149,9 @@ export const LetterPreviewModal: React.FC<LetterPreviewModalProps> = ({
 
         {/* Paper Container - Scrollable on modal, pristine white for print */}
         <div className="p-4 sm:p-8 overflow-y-auto bg-slate-800/60 print:p-0 print:bg-white flex justify-center">
-          <div 
+          <div
             ref={printRef}
-            className="w-full max-w-3xl bg-white text-slate-900 rounded-xl sm:rounded-2xl p-6 sm:p-10 shadow-2xl border border-slate-200 print:border-none print:shadow-none print:rounded-none print:p-6"
+            className="letter-preview-paper w-full max-w-3xl bg-white text-slate-900 rounded-xl sm:rounded-2xl p-6 sm:p-10 shadow-2xl border border-slate-200 print:border-none print:shadow-none print:rounded-none print:p-6"
             style={{ fontFamily: '"Times New Roman", Times, Georgia, serif' }}
           >
             {/* RENDER SPECIFIC DOCUMENT TYPE */}

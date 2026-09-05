@@ -37,7 +37,7 @@ select option {
 /* Official F4 / Folio (215mm x 330mm) Print and Document Styles */
 @page {
   size: 215mm 330mm;
-  margin: 7.5mm 15mm 35mm 15mm;
+  margin: 0;
 }
 
 @media print {
@@ -66,6 +66,13 @@ select option {
     background: #ffffff !important;
     box-sizing: border-box !important;
     display: block !important;
+  }
+
+  .letter-preview-paper {
+    width: 215mm !important;
+    max-width: none !important;
+    min-height: 330mm !important;
+    box-sizing: border-box !important;
   }
 
   .keep-together {
