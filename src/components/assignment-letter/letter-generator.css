@@ -229,6 +229,19 @@ body {
     padding: 0 !important;
   }
 
+  #root,
+  .fixed.inset-0,
+  .generator-body,
+  .generator-preview {
+    display: block !important;
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
   .no-print {
     display: none !important;
   }
@@ -274,6 +287,16 @@ body {
     border: none !important;
     --tw-ring-shadow: 0 0 #0000 !important;
     --tw-ring-offset-shadow: 0 0 #0000 !important;
+  }
+
+  .page-card {
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .page-card:last-child {
+    break-after: auto;
+    page-break-after: auto;
   }
 
   .sheet {
