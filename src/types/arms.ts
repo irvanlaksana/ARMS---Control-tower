@@ -544,6 +544,8 @@ export interface PettyCashTransaction {
   recipientOrSource: string;
   personnelId?: string;
   personnelName?: string;
+  requestedByUserId?: string;
+  requestedByUserName?: string;
   caseId?: string;
   caseNo?: string;
   description: string;

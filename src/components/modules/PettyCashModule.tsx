@@ -36,6 +36,7 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
   const [transactionDate, setTransactionDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [recipientOrSource, setRecipientOrSource] = useState<string>('');
   const [personnelId, setPersonnelId] = useState<string>(store.personnel[0]?.id || '');
+  const [requestedByUserId, setRequestedByUserId] = useState<string>(store.users.find((u) => u.status === 'ACTIVE')?.id || '');
   const [caseId, setCaseId] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [proofReceiptUrl, setProofReceiptUrl] = useState<string>('');
@@ -58,6 +59,11 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
 
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS';
   const pettyCashList = store.pettyCash || [];
+  const activeUsers = (store.users || []).filter((u) => u.status === 'ACTIVE');
+  const closedCases = (store.cases || []).filter((c) => c.status === 'CLOSED');
+  const categorySelection = modalType === 'CASH_IN' && caseId
+    ? `CLOSED_CASE:${caseId}`
+    : category;
 
   // Financial Calculations
   const totalCashIn = pettyCashList
@@ -116,6 +122,7 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
       setTransactionDate(item.transactionDate);
       setRecipientOrSource(item.recipientOrSource);
       setPersonnelId(item.personnelId || '');
+      setRequestedByUserId(item.requestedByUserId || '');
       setCaseId(item.caseId || '');
       setDescription(item.description);
       setProofReceiptUrl(item.proofReceiptUrl || '');
@@ -127,6 +134,7 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
       setTransactionDate(new Date().toISOString().split('T')[0]);
       setRecipientOrSource(type === 'CASH_IN' ? 'Bank Mandiri Utama Ops' : '');
       setPersonnelId(store.personnel[0]?.id || '');
+      setRequestedByUserId(activeUsers[0]?.id || '');
       setCaseId('');
       setDescription('');
       setProofReceiptUrl('');
@@ -161,6 +169,7 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
     }
 
     const selectedPersonnel = store.personnel.find((p) => p.id === personnelId);
+    const selectedUser = activeUsers.find((u) => u.id === requestedByUserId);
     const selectedCase = store.cases.find((c) => c.id === caseId);
 
     if (isEditing && editId) {
@@ -176,6 +185,8 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
         recipientOrSource,
         personnelId: selectedPersonnel?.id,
         personnelName: selectedPersonnel?.fullName,
+        requestedByUserId: modalType === 'CASH_IN' ? selectedUser?.id : undefined,
+        requestedByUserName: modalType === 'CASH_IN' ? selectedUser?.name : undefined,
         caseId: selectedCase?.id,
         caseNo: selectedCase?.caseNo,
         description,
@@ -208,6 +219,8 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
         recipientOrSource,
         personnelId: selectedPersonnel?.id,
         personnelName: selectedPersonnel?.fullName,
+        requestedByUserId: modalType === 'CASH_IN' ? selectedUser?.id : undefined,
+        requestedByUserName: modalType === 'CASH_IN' ? selectedUser?.name : undefined,
         caseId: selectedCase?.id,
         caseNo: selectedCase?.caseNo,
         description,
@@ -498,7 +511,9 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
 
                       {/* PIC */}
                       <td className="py-3.5 px-4 text-slate-400">
-                        {item.personnelName || '-'}
+                        {item.type === 'CASH_IN'
+                          ? (item.requestedByUserName || item.personnelName || '-')
+                          : (item.personnelName || '-')}
                       </td>
 
                       {/* Nominal */}
@@ -627,12 +642,32 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1">Kategori Transaksi</label>
               <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value as any)}
+                value={categorySelection}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value.startsWith('CLOSED_CASE:')) {
+                    setCategory('TOP_UP_REPLENISHMENT');
+                    setCaseId(value.replace('CLOSED_CASE:', ''));
+                  } else {
+                    setCategory(value as PettyCashTransaction['category']);
+                    if (modalType === 'CASH_IN') setCaseId('');
+                  }
+                }}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
               >
                 {modalType === 'CASH_IN' ? (
-                  <option value="TOP_UP_REPLENISHMENT">Dropping / Top Up Kas dari Rekening Utama</option>
+                  <>
+                    <option value="TOP_UP_REPLENISHMENT">Dropping / Top Up Kas dari Rekening Utama</option>
+                    {closedCases.length > 0 && (
+                      <optgroup label="Kasus Closed / Debitur">
+                        {closedCases.map((closedCase) => (
+                          <option key={closedCase.id} value={`CLOSED_CASE:${closedCase.id}`}>
+                            Dropping terkait {closedCase.debtorName} ({closedCase.caseNo})
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                  </>
                 ) : (
                   <>
                     <option value="BBM_TOLL_PARKIR">BBM, Tol & Parkir Lapangan</option>
@@ -664,18 +699,30 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">PIC Petugas / Pengaju</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  {modalType === 'CASH_IN' ? 'Petugas Pengajuan' : 'PIC Petugas / Pengaju'}
+                </label>
                 <select
-                  value={personnelId}
-                  onChange={(e) => setPersonnelId(e.target.value)}
+                  value={modalType === 'CASH_IN' ? requestedByUserId : personnelId}
+                  onChange={(e) => modalType === 'CASH_IN'
+                    ? setRequestedByUserId(e.target.value)
+                    : setPersonnelId(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
                 >
-                  <option value="">-- Pilih PIC Petugas --</option>
-                  {store.personnel.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.fullName} ({p.type})
-                    </option>
-                  ))}
+                  <option value="">
+                    {modalType === 'CASH_IN' ? '-- Pilih Pengguna --' : '-- Pilih PIC Petugas --'}
+                  </option>
+                  {modalType === 'CASH_IN'
+                    ? activeUsers.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.name} ({user.role.replace(/_/g, ' ')})
+                      </option>
+                    ))
+                    : store.personnel.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.fullName} ({p.type})
+                      </option>
+                    ))}
                 </select>
               </div>
             </div>
