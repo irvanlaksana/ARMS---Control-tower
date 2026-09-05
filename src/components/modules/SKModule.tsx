@@ -15,10 +15,6 @@ import { QuickGDriveModal } from '../common/QuickGDriveModal';
 import { AddressFields } from '../common/AddressFields';
 import { LetterPreviewModal, LetterPreviewData } from '../common/LetterPreviewModal';
 import { ROOT_GDRIVE_URL } from '../../data/initialData';
-import AssignmentLetterGenerator from '../assignment-letter/AssignmentLetterGenerator';
-import { BLANK_DATA } from '../assignment-letter/data/defaults';
-import type { BastData } from '../assignment-letter/types';
-import '../assignment-letter/letter-generator.css';
 
 interface SKModuleProps {
   store: ARMSStore;
@@ -100,13 +96,6 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
   const [selectedAttachmentPreview, setSelectedAttachmentPreview] = useState<{ src: string; index: number } | null>(null);
   const [isUploadingAttachmentPreview, setIsUploadingAttachmentPreview] = useState(false);
 
-  // Generator-surat integration popup/modal state
-  // Internal Generator State
-  const [showInternalGenerator, setShowInternalGenerator] = useState(false);
-  const [generatorData, setGeneratorData] = useState<BastData>(BLANK_DATA);
-  const [generatorIsPersonal, setGeneratorIsPersonal] = useState(false);
-
-
   const selectedCase = store.cases?.find(c => c.id === caseId);
   const selectedCustomer = store.customers?.find(c => c.id === selectedCase?.customerId);
   const selectedPersonnel = store.personnel?.find(p => p.id === personnelId);
@@ -178,7 +167,6 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
     return null;
   };
 
-  // Sync selected SK / Debtor & Personnel to generator-surat- repository by creating a GitHub issue
   const handleDeleteSK = (id: string, skNo: string) => {
     if (!window.confirm(`Yakin ingin menghapus dokumen "${skNo}"?`)) return;
 
@@ -199,82 +187,12 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
   };
 
 
-  const handleOpenGenerator = (sk: SK) => {
-    const parentCase = (store.cases || []).find((c) => c.id === sk.caseId);
-    const isPer = sk.clientType === 'PERORANGAN' || parentCase?.clientType === 'PERORANGAN';
-    const cName = sk.krediturName || sk.clientName || parentCase?.clientName || 'Klien';
-    const customer = (store.customers || []).find((c) => c.id === parentCase?.customerId);
-    const personnel = (store.personnel || []).find((p) => p.id === sk.personnelId);
-
-    const vehicleType = parentCase?.assetSummary?.toLowerCase().includes('motor') ? 'roda2' : 'roda4';
-    const contractNumber = parentCase?.multifinanceContractNo || customer?.contractNo || '';
-    const assetDescription = parentCase?.assetSummary || customer?.vehicleMerkType || '';
-
-    setGeneratorIsPersonal(!!isPer);
-    setGeneratorData({
-      ...BLANK_DATA,
-      jenis: vehicleType,
-      perusahaan: cName,
-      noPerjanjian: contractNumber,
-      namaDebitur: sk.debtorName,
-      bpkbAtasNama: sk.debtorName,
-      mitraNama: sk.personnelName,
-      mitraAlamat: personnel?.address || '',
-      mitraPic: sk.personnelName,
-      merekType: assetDescription,
-      st: {
-        ...BLANK_DATA.st,
-        nomor: sk.skNumber,
-        perusahaan: cName,
-        petugasNama: sk.personnelName,
-        petugasNik: personnel?.nikKtp || '',
-        petugasJabatan: personnel?.position || 'Petugas Lapangan',
-        noKontrak: contractNumber,
-        nasabahNama: sk.debtorName,
-        nasabahAlamat: customer?.addressCurrent || customer?.addressKtp || '',
-        merkType: assetDescription,
-      },
-    });
-    setShowInternalGenerator(true);
+  const openLetterGenerator = () => {
+    window.open('https://generator-surat-new.vercel.app/', '_blank', 'noopener,noreferrer');
   };
 
   const handleOpenGeneratorFromDraft = () => {
-    const parentCase = selectedCase;
-    const isPer = parentCase?.clientType === 'PERORANGAN';
-    const cName = isPer ? (krediturName || parentCase?.clientName || 'Klien') : (parentCase?.clientName || 'Klien');
-    const customer = (store.customers || []).find((c) => c.id === parentCase?.customerId);
-    const personnel = selectedPersonnel;
-
-    const vehicleType = parentCase?.assetSummary?.toLowerCase().includes('motor') ? 'roda2' : 'roda4';
-    const contractNumber = parentCase?.multifinanceContractNo || customer?.contractNo || '';
-    const assetDescription = parentCase?.assetSummary || customer?.vehicleMerkType || '';
-
-    setGeneratorIsPersonal(!!isPer);
-    setGeneratorData({
-      ...BLANK_DATA,
-      jenis: vehicleType,
-      perusahaan: cName,
-      noPerjanjian: contractNumber,
-      namaDebitur: parentCase?.debtorName || '',
-      bpkbAtasNama: parentCase?.debtorName || '',
-      mitraNama: personnel?.fullName || '',
-      mitraAlamat: personnel?.address || '',
-      mitraPic: personnel?.fullName || '',
-      merekType: assetDescription,
-      st: {
-        ...BLANK_DATA.st,
-        nomor: skNumberDraft,
-        perusahaan: cName,
-        petugasNama: personnel?.fullName || '',
-        petugasNik: personnel?.nikKtp || '',
-        petugasJabatan: personnel?.position || 'Petugas Lapangan',
-        noKontrak: contractNumber,
-        nasabahNama: parentCase?.debtorName || '',
-        nasabahAlamat: customer?.addressCurrent || customer?.addressKtp || '',
-        merkType: assetDescription,
-      },
-    });
-    setShowInternalGenerator(true);
+    openLetterGenerator();
   };
 
   const handleCreateSK = async (e: React.FormEvent) => {
@@ -753,7 +671,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                           </button>
 
                           <button
-                            onClick={() => handleOpenGenerator(sk)}
+                            onClick={openLetterGenerator}
                             className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-950 hover:bg-emerald-900 text-emerald-200 rounded border border-emerald-800 text-[11px] font-semibold transition shadow-sm"
                             title="Generate Surat Tugas / BAST"
                           >
@@ -1388,17 +1306,6 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
         }}
       />
 
-      {/* Internal Generator Modal */}
-      {showInternalGenerator && (
-        <AssignmentLetterGenerator
-          initialData={generatorData}
-          isPersonal={generatorIsPersonal}
-          onSave={(data) => {
-            setGeneratorData(data);
-          }}
-          onClose={() => setShowInternalGenerator(false)}
-        />
-      )}
     </div>
   );
 };
