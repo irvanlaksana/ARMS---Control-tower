@@ -54,10 +54,10 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
   const handlePushFullFirebase = async () => {
     if (!onPushFullFirebase) return;
     setIsPushing(true);
-    setPushStatusMsg('Sedang menginisialisasi tabel (koleksi) dan memicu Push Data Otomatis ke Firebase...');
+    setPushStatusMsg('Sedang menginisialisasi sheet dan memicu Push Data Otomatis ke Google Sheets...');
     try {
       const res = await onPushFullFirebase();
-      setPushStatusMsg(`✅ Sukses! ${res.totalItems} dokumen di ${res.collectionsCount} koleksi/tabel berhasil dikirim dan dibuat otomatis di Firebase Firestore.`);
+      setPushStatusMsg(`✅ Sukses! ${res.totalItems} dokumen di ${res.collectionsCount} sheet berhasil dikirim dan dibuat otomatis di Google Sheets.`);
     } catch (err: any) {
       setPushStatusMsg(`❌ Gagal Push Data: ${err.message || String(err)}`);
     } finally {
@@ -163,7 +163,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
         >
           <div className="flex items-center gap-2">
             <SettingsIcon className="w-4 h-4" />
-            <span>Pengaturan Sistem & Firebase</span>
+            <span>Pengaturan Sistem & Google Sheets</span>
           </div>
         </button>
         <button
@@ -214,7 +214,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-white text-base">Firebase Cloud Database Control & Push Otomatis</h3>
+                <h3 className="font-bold text-white text-base">Google Sheets Cloud Database Control & Push Otomatis</h3>
                 <span className="px-2.5 py-0.5 bg-emerald-900/80 text-emerald-200 border border-emerald-700 text-[10px] font-bold rounded-full animate-pulse">
                   ONLINE LIVE
                 </span>
@@ -223,7 +223,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
                 Database Target: <code className="text-emerald-300 bg-slate-950 px-2 py-0.5 rounded font-mono text-[11px] border border-slate-800">ai-studio-armsptmitrajasat-52aae9e1-5f32-4716-863f-a8a1a969eef9</code>
               </p>
               <p className="text-[11px] text-slate-400 mt-1">
-                Klik tombol di bawah untuk membuat seluruh tabel/koleksi data secara otomatis dan memicu push data penuh ke Firebase Firestore.
+                Klik tombol di bawah untuk membuat seluruh tabel/koleksi data secara otomatis dan memicu push data penuh ke Google Sheets.
               </p>
             </div>
           </div>
@@ -236,7 +236,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
               className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white font-bold text-xs rounded-lg shadow-lg shadow-emerald-950/50 border border-emerald-400/30 transition transform active:scale-95 cursor-pointer"
             >
               <RefreshCw className={`w-4 h-4 ${isPushing ? 'animate-spin text-amber-300' : 'text-emerald-200'}`} />
-              <span>{isPushing ? 'Mengirim & Membuat Tabel...' : '🚀 Push Data Otomatis & Buat Tabel Firebase'}</span>
+              <span>{isPushing ? 'Mengirim & Membuat Sheet...' : '🚀 Push Data Otomatis & Buat Sheet'}</span>
             </button>
           </div>
         </div>

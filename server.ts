@@ -46,11 +46,11 @@ async function startServer() {
 
       const sheets = google.sheets({ version: "v4", auth });
 
-      const requiredTabs = [
-        "Users", "Roles", "Clients", "Partners", "Services", "Fees", "Contracts",
-        "Leads", "Customers", "Cases", "Assignments", "SK", "Communication_Log",
-        "Assets", "Collections", "Payments", "Funding", "Expenses", "Settlements",
-        "Ledger", "Cash", "Documents", "Approvals", "Notifications", "Audit_Log", "Settings"
+            const requiredTabs = [
+        "Users", "Clients", "Personnel", "Services", "Fees", "Contracts",
+        "Leads", "Customers", "Cases", "Assignments", "SK", "Lawyer_Notices", "Communication_Log",
+        "Assets", "Collections", "Asset_Recoveries", "Payments", "Funding", "Expenses", "Settlements",
+        "Ledger", "Cash", "Petty_Cash", "Working_Capital", "Documents", "Drive_Folders", "Approvals", "Notifications", "Audit_Log", "Settings"
       ];
 
       // Get spreadsheet info
@@ -103,11 +103,10 @@ async function startServer() {
       });
       const sheets = google.sheets({ version: "v4", auth });
 
-      const STORE_KEY_MAP: Record<string, string> = {
+            const STORE_KEY_MAP: Record<string, string> = {
         users: "Users",
-        roles: "Roles",
         clients: "Clients",
-        partners: "Partners",
+        personnel: "Personnel",
         services: "Services",
         fees: "Fees",
         contracts: "Contracts",
@@ -116,22 +115,40 @@ async function startServer() {
         cases: "Cases",
         assignments: "Assignments",
         sks: "SK",
+        lawyerNotices: "Lawyer_Notices",
         commLogs: "Communication_Log",
         assets: "Assets",
         collections: "Collections",
-        assetRecoveries: "Collections",
+        assetRecoveries: "Asset_Recoveries",
         payments: "Payments",
         danaTalangan: "Funding",
         expenses: "Expenses",
         settlements: "Settlements",
         ledger: "Ledger",
         cashAccounts: "Cash",
+        pettyCash: "Petty_Cash",
+        workingCapital: "Working_Capital",
         documents: "Documents",
+        driveFolders: "Drive_Folders",
         approvals: "Approvals",
         notifications: "Notifications",
         auditLogs: "Audit_Log",
         settings: "Settings"
       };
+
+            // Verify sheets exist
+      const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
+      const existingSheets = (spreadsheet.data.sheets || []).map(s => s.properties?.title);
+      const requests: any[] = [];
+      const requiredTabs = Object.values(STORE_KEY_MAP);
+      requiredTabs.forEach(tab => {
+        if (!existingSheets.includes(tab)) {
+          requests.push({ addSheet: { properties: { title: tab } } });
+        }
+      });
+      if (requests.length > 0) {
+        await sheets.spreadsheets.batchUpdate({ spreadsheetId, requestBody: { requests } });
+      }
 
       const updatedTabs: string[] = [];
       const keys = Object.keys(data);
@@ -175,6 +192,133 @@ async function startServer() {
       res.status(500).json({
         success: false,
         error: err?.message || "Error syncing to Google Sheets",
+      });
+    }
+  });
+
+  
+  // API Route: Fetch data from Google Sheets
+  app.post("/api/sheets/fetch", async (req, res) => {
+    try {
+      const { spreadsheetId } = req.body;
+      if (!spreadsheetId) {
+        return res.status(400).json({ error: "Missing spreadsheetId" });
+      }
+
+      const auth = new google.auth.GoogleAuth({
+        scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
+      });
+      const sheets = google.sheets({ version: "v4", auth });
+
+            const STORE_KEY_MAP: Record<string, string> = {
+        users: "Users",
+        clients: "Clients",
+        personnel: "Personnel",
+        services: "Services",
+        fees: "Fees",
+        contracts: "Contracts",
+        leads: "Leads",
+        customers: "Customers",
+        cases: "Cases",
+        assignments: "Assignments",
+        sks: "SK",
+        lawyerNotices: "Lawyer_Notices",
+        commLogs: "Communication_Log",
+        assets: "Assets",
+        collections: "Collections",
+        assetRecoveries: "Asset_Recoveries",
+        payments: "Payments",
+        danaTalangan: "Funding",
+        expenses: "Expenses",
+        settlements: "Settlements",
+        ledger: "Ledger",
+        cashAccounts: "Cash",
+        pettyCash: "Petty_Cash",
+        workingCapital: "Working_Capital",
+        documents: "Documents",
+        driveFolders: "Drive_Folders",
+        approvals: "Approvals",
+        notifications: "Notifications",
+        auditLogs: "Audit_Log",
+        settings: "Settings"
+      };
+
+      const data: any = {};
+      const tabsToFetch = Object.values(STORE_KEY_MAP);
+      
+            // Get spreadsheet info to check existing sheets
+      const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
+      const existingSheets = (spreadsheet.data.sheets || []).map(s => s.properties?.title);
+
+      const requests: any[] = [];
+      tabsToFetch.forEach(tab => {
+        if (!existingSheets.includes(tab)) {
+          requests.push({
+            addSheet: {
+              properties: { title: tab }
+            }
+          });
+        }
+      });
+
+      if (requests.length > 0) {
+        await sheets.spreadsheets.batchUpdate({
+          spreadsheetId,
+          requestBody: { requests }
+        });
+      }
+
+      // We can use batchGet to fetch all sheets at once to save API calls
+      const response = await sheets.spreadsheets.values.batchGet({
+        spreadsheetId,
+        ranges: tabsToFetch,
+      });
+
+      const valueRanges = response.data.valueRanges || [];
+      
+      Object.keys(STORE_KEY_MAP).forEach((storeKey) => {
+        const tabName = STORE_KEY_MAP[storeKey];
+        const rangeData = valueRanges.find((r) => r.range && r.range.startsWith(tabName));
+        const rows = rangeData?.values || [];
+        
+        if (rows.length > 1) {
+          const headers = rows[0];
+          data[storeKey] = rows.slice(1).map(row => {
+            const obj: any = {};
+            headers.forEach((h: string, i: number) => {
+              let val = row[i];
+              if (val === 'true') val = true;
+              if (val === 'false') val = false;
+              
+              // try to parse json fields
+              if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) {
+                try { val = JSON.parse(val); } catch(e) {}
+              }
+              
+              obj[h] = val;
+            });
+            return obj;
+          });
+        } else {
+          data[storeKey] = [];
+        }
+      });
+
+      // Format Settings back into an object
+      if (data.settings && Array.isArray(data.settings)) {
+        const settingsObj: any = {};
+        data.settings.forEach((r: any) => {
+          if (r.key) settingsObj[r.key] = r.value;
+        });
+        data.settings = settingsObj;
+      }
+
+      res.json({ success: true, data });
+    } catch (err: any) {
+      console.error("Sheets Fetch Error:", err?.message || err);
+      res.status(500).json({
+        success: false,
+        error: err?.message || "Failed to fetch Google Sheets.",
       });
     }
   });
