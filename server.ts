@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
@@ -21,6 +22,28 @@ async function startServer() {
     next();
   });
 
+  // Google API auth helper (Sheets & Drive).
+  // Prioritas kredensial:
+  //  1. GOOGLE_SERVICE_ACCOUNT_JSON  → inline JSON service account (Vercel/Cloud Run secret)
+  //  2. GOOGLE_APPLICATION_CREDENTIALS → path file JSON service account (.env / host env)
+  //  3. Tanpa kredensial → error jelas (tanpa percobaan metadata GCE yang bising).
+  const authFor = (scopes: string[]) => {
+    const inline = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+    if (inline && inline.trim()) {
+      try {
+        return new google.auth.GoogleAuth({ scopes, credentials: JSON.parse(inline) });
+      } catch (err: any) {
+        throw new Error(`GOOGLE_SERVICE_ACCOUNT_JSON tidak valid: ${err?.message || err}`);
+      }
+    }
+    if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      return new google.auth.GoogleAuth({ scopes });
+    }
+    throw new Error(
+      "Google API belum dikonfigurasi. Set env GOOGLE_SERVICE_ACCOUNT_JSON (isi JSON service account, disarankan untuk Vercel/Cloud Run) atau GOOGLE_APPLICATION_CREDENTIALS (path file JSON service account).",
+    );
+  };
+
   // API Route: Health Check
   app.get("/api/health", (_req, res) => {
     res.json({
@@ -34,24 +57,28 @@ async function startServer() {
   // API Route: Verify or Create Google Sheets Structure
   app.post("/api/sheets/setup", async (req, res) => {
     try {
-      const { spreadsheetId } = req.body;
+      const { spreadsheetId, tabs } = req.body;
       if (!spreadsheetId) {
         return res.status(400).json({ error: "Missing spreadsheetId" });
       }
 
       // Initialize OAuth Google Auth client
-      const auth = new google.auth.GoogleAuth({
-        scopes: ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive.file"],
-      });
+      const auth = authFor(["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive.file"]);
 
       const sheets = google.sheets({ version: "v4", auth });
 
-            const requiredTabs = [
+      const DEFAULT_TABS = [
         "Users", "Clients", "Personnel", "Services", "Fees", "Contracts",
         "Leads", "Customers", "Cases", "Assignments", "SK", "Lawyer_Notices", "Communication_Log",
         "Assets", "Collections", "Asset_Recoveries", "Payments", "Funding", "Expenses", "Settlements",
         "Ledger", "Cash", "Petty_Cash", "Working_Capital", "Documents", "Drive_Folders", "Approvals", "Notifications", "Audit_Log", "Settings"
       ];
+
+      // Gunakan nama tab kustom dari konfigurasi database bila dikirim
+      const requiredTabs =
+        tabs && typeof tabs === "object" && Object.keys(tabs).length > 0
+          ? Array.from(new Set(Object.values(tabs).filter(Boolean))) as string[]
+          : DEFAULT_TABS;
 
       // Get spreadsheet info
       const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
@@ -90,20 +117,19 @@ async function startServer() {
     }
   });
 
+
   // API Route: Sync data to Google Sheets
   app.post("/api/sheets/sync", async (req, res) => {
     try {
-      const { spreadsheetId, data } = req.body;
+      const { spreadsheetId, data, tabs } = req.body;
       if (!spreadsheetId || !data) {
         return res.status(400).json({ error: "Missing spreadsheetId or data" });
       }
 
-      const auth = new google.auth.GoogleAuth({
-        scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-      });
+      const auth = authFor(["https://www.googleapis.com/auth/spreadsheets"]);
       const sheets = google.sheets({ version: "v4", auth });
 
-            const STORE_KEY_MAP: Record<string, string> = {
+      const STORE_KEY_MAP: Record<string, string> = {
         users: "Users",
         clients: "Clients",
         personnel: "Personnel",
@@ -136,11 +162,18 @@ async function startServer() {
         settings: "Settings"
       };
 
-            // Verify sheets exist
+      // Nama tab dapat dikustomisasi lewat konfigurasi database (settings.databaseConfig)
+      const resolveTab = (key: string) => {
+        const custom = tabs && typeof tabs === "object" ? tabs[key] : undefined;
+        return (custom && String(custom).trim()) || STORE_KEY_MAP[key] || key;
+      };
+
+      // Verify sheets/collection exist (hanya untuk key yang dikirim)
       const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
       const existingSheets = (spreadsheet.data.sheets || []).map(s => s.properties?.title);
       const requests: any[] = [];
-      const requiredTabs = Object.values(STORE_KEY_MAP);
+      const dataKeys = Object.keys(data);
+      const requiredTabs = Array.from(new Set(dataKeys.map(resolveTab).filter(Boolean)));
       requiredTabs.forEach(tab => {
         if (!existingSheets.includes(tab)) {
           requests.push({ addSheet: { properties: { title: tab } } });
@@ -151,10 +184,9 @@ async function startServer() {
       }
 
       const updatedTabs: string[] = [];
-      const keys = Object.keys(data);
 
-      for (const key of keys) {
-        const tabName = STORE_KEY_MAP[key] || key;
+      for (const key of dataKeys) {
+        const tabName = resolveTab(key);
         let records = data[key];
         if (key === "settings" && records && typeof records === "object" && !Array.isArray(records)) {
           records = Object.keys(records).map(k => ({ key: k, value: String(records[k]), updatedAt: new Date().toISOString() }));
@@ -200,17 +232,15 @@ async function startServer() {
   // API Route: Fetch data from Google Sheets
   app.post("/api/sheets/fetch", async (req, res) => {
     try {
-      const { spreadsheetId } = req.body;
+      const { spreadsheetId, tabs } = req.body;
       if (!spreadsheetId) {
         return res.status(400).json({ error: "Missing spreadsheetId" });
       }
 
-      const auth = new google.auth.GoogleAuth({
-        scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
-      });
+      const auth = authFor(["https://www.googleapis.com/auth/spreadsheets.readonly"]);
       const sheets = google.sheets({ version: "v4", auth });
 
-            const STORE_KEY_MAP: Record<string, string> = {
+      const STORE_KEY_MAP: Record<string, string> = {
         users: "Users",
         clients: "Clients",
         personnel: "Personnel",
@@ -243,10 +273,21 @@ async function startServer() {
         settings: "Settings"
       };
 
+      // Nama tab dapat dikustomisasi lewat konfigurasi database (settings.databaseConfig)
+      const resolveTab = (key: string) => {
+        const custom = tabs && typeof tabs === "object" ? tabs[key] : undefined;
+        return (custom && String(custom).trim()) || STORE_KEY_MAP[key] || key;
+      };
+
+      const storeToTab: Record<string, string> = {};
+      Object.keys(STORE_KEY_MAP).forEach((key) => { storeToTab[key] = resolveTab(key); });
+      const tabToStore: Record<string, string> = {};
+      Object.entries(storeToTab).forEach(([key, tab]) => { tabToStore[tab] = key; });
+
       const data: any = {};
-      const tabsToFetch = Object.values(STORE_KEY_MAP);
-      
-            // Get spreadsheet info to check existing sheets
+      const tabsToFetch = Array.from(new Set(Object.values(storeToTab)));
+
+      // Get spreadsheet info to check existing sheets
       const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
       const existingSheets = (spreadsheet.data.sheets || []).map(s => s.properties?.title);
 
@@ -275,12 +316,12 @@ async function startServer() {
       });
 
       const valueRanges = response.data.valueRanges || [];
-      
-      Object.keys(STORE_KEY_MAP).forEach((storeKey) => {
-        const tabName = STORE_KEY_MAP[storeKey];
+
+      Object.keys(storeToTab).forEach((storeKey) => {
+        const tabName = storeToTab[storeKey];
         const rangeData = valueRanges.find((r) => r.range && r.range.startsWith(tabName));
         const rows = rangeData?.values || [];
-        
+
         if (rows.length > 1) {
           const headers = rows[0];
           data[storeKey] = rows.slice(1).map(row => {
@@ -289,12 +330,12 @@ async function startServer() {
               let val = row[i];
               if (val === 'true') val = true;
               if (val === 'false') val = false;
-              
+
               // try to parse json fields
               if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) {
                 try { val = JSON.parse(val); } catch(e) {}
               }
-              
+
               obj[h] = val;
             });
             return obj;
@@ -313,7 +354,7 @@ async function startServer() {
         data.settings = settingsObj;
       }
 
-      res.json({ success: true, data });
+      res.json({ success: true, data, tabs: storeToTab });
     } catch (err: any) {
       console.error("Sheets Fetch Error:", err?.message || err);
       res.status(500).json({
@@ -404,9 +445,7 @@ async function startServer() {
 
       // Prepare auth using Application Default Credentials / Service Account
       // Ensure GOOGLE_APPLICATION_CREDENTIALS is set on the host to point to the service account JSON key
-      const auth = new google.auth.GoogleAuth({
-        scopes: ['https://www.googleapis.com/auth/drive.file'],
-      });
+      const auth = authFor(['https://www.googleapis.com/auth/drive.file']);
 
       const drive = google.drive({ version: 'v3', auth });
 
@@ -439,7 +478,122 @@ async function startServer() {
     }
   });
 
-  // API Route: Create GitHub Issue in generator-surat- to sync SK / Debtor & Personnel data
+  // API Route: Create a folder (or subfolder) in Google Drive
+  // Expects JSON body: { name, parentId (optional) }
+  app.post('/api/drive/create-folder', async (req, res) => {
+    try {
+      const { name, parentId } = req.body || {};
+      if (!name || !String(name).trim()) {
+        return res.status(400).json({ success: false, error: 'Missing folder name' });
+      }
+
+      const auth = authFor(['https://www.googleapis.com/auth/drive.file']);
+      const drive = google.drive({ version: 'v3', auth });
+
+      const fileMetadata: any = {
+        name: String(name).trim(),
+        mimeType: 'application/vnd.google-apps.folder',
+      };
+      if (parentId) fileMetadata.parents = [parentId];
+
+      const created = await drive.files.create({
+        requestBody: fileMetadata,
+        fields: 'id, webViewLink, name',
+      });
+
+      const folderId = created.data.id as string;
+      res.json({
+        success: true,
+        folderId,
+        name: created.data.name || String(name).trim(),
+        webViewLink: `https://drive.google.com/drive/folders/${folderId}?usp=sharing`,
+      });
+    } catch (err: any) {
+      console.error('Drive Create Folder Error:', err?.message || err);
+      res.status(500).json({ success: false, error: err?.message || 'Failed creating Google Drive folder' });
+    }
+  });
+
+  // API Route: Ensure a nested folder structure exists in Google Drive.
+  // Expects JSON body: { path: string[], rootId (optional) }
+  // Finds existing folders by name under each parent, else creates them.
+  app.post('/api/drive/ensure-path', async (req, res) => {
+    try {
+      const { path, rootId } = req.body || {};
+      if (!Array.isArray(path) || path.filter(Boolean).length === 0) {
+        return res.status(400).json({ success: false, error: 'Missing path (array of folder names)' });
+      }
+
+      const auth = authFor(['https://www.googleapis.com/auth/drive.file']);
+      const drive = google.drive({ version: 'v3', auth });
+
+      let currentParentId: string | undefined = rootId || undefined;
+      const created: Array<{ name: string; folderId: string; webViewLink: string }> = [];
+      let lastFolderId = currentParentId || '';
+      let lastWebViewLink = currentParentId ? `https://drive.google.com/drive/folders/${currentParentId}?usp=sharing` : '';
+
+      for (const rawName of path) {
+        const name = String(rawName).trim();
+        if (!name) continue;
+
+        // Cari folder dengan nama sama di parent yang sama (drive.file scope)
+        let existingId: string | undefined;
+        if (currentParentId) {
+          const query = `name = '${name.replace(/'/g, "\\'")}' and '${currentParentId}' in parents and trashed = false and mimeType = 'application/vnd.google-apps.folder'`;
+          try {
+            const list = await drive.files.list({
+              q: query,
+              fields: 'files(id, name)',
+              pageSize: 1,
+            });
+            existingId = list.data.files?.[0]?.id;
+          } catch (searchErr) {
+            // Jika API tidak mendukung query, lanjut buat folder baru
+            console.warn('Drive folder search failed, will create:', String(searchErr));
+          }
+        }
+
+        let folderId = existingId;
+        if (!folderId) {
+          const fileMetadata: any = {
+            name,
+            mimeType: 'application/vnd.google-apps.folder',
+          };
+          if (currentParentId) fileMetadata.parents = [currentParentId];
+          const createdFile = await drive.files.create({
+            requestBody: fileMetadata,
+            fields: 'id, webViewLink, name',
+          });
+          folderId = createdFile.data.id as string;
+          created.push({
+            name,
+            folderId,
+            webViewLink: `https://drive.google.com/drive/folders/${folderId}?usp=sharing`,
+          });
+        }
+
+        currentParentId = folderId;
+        lastFolderId = folderId;
+        lastWebViewLink = `https://drive.google.com/drive/folders/${folderId}?usp=sharing`;
+      }
+
+      if (!lastFolderId) {
+        return res.status(400).json({ success: false, error: 'No folder could be created. Check root folder permission.' });
+      }
+
+      res.json({
+        success: true,
+        folderId: lastFolderId,
+        webViewLink: lastWebViewLink,
+        created,
+      });
+    } catch (err: any) {
+      console.error('Drive Ensure Path Error:', err?.message || err);
+      res.status(500).json({ success: false, error: err?.message || 'Failed creating Google Drive folder structure' });
+    }
+  });
+
+  // API Route: Create GitHub Issue in generate-surat-tugas to sync SK / Debtor & Personnel data
   app.post('/api/surat/create-issue', async (req, res) => {
     try {
       const githubToken = process.env.GITHUB_TOKEN;
@@ -453,7 +607,7 @@ async function startServer() {
       }
 
       const repoOwner = 'irvanlaksana';
-      const repoName = 'generator-surat-';
+      const repoName = 'generate-surat-tugas';
       const issueTitle = `SK: ${skNumber || skId || 'new'} - ${debtor.debtorName || debtor.name || 'Debtor'}`;
 
       const issueBody = `Auto-synced from ARMS - Control Tower\n\n**SK ID / Number:** ${skId || skNumber || ''}\n\n**Debtor (case data):**\n\n\n\`
@@ -461,7 +615,7 @@ ${JSON.stringify(debtor, null, 2)}
 \`
 \n**Personnel (penerima tugas):**\n\n\n\
 ${JSON.stringify(personnel, null, 2)}
-\n**Drive Document URL (if any):** ${driveDocumentUrl || ''}\n\n---\n*(This issue was created automatically by ARMS - Control Tower to seed generator-surat- with debtor & personnel data.)*`;
+\n**Drive Document URL (if any):** ${driveDocumentUrl || ''}\n\n---\n*(This issue was created automatically by ARMS - Control Tower to seed generate-surat-tugas with debtor & personnel data.)*`;
 
       const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/issues`;
 
@@ -485,11 +639,15 @@ ${JSON.stringify(personnel, null, 2)}
       return res.json({ success: true, issueUrl: json.html_url, issueNumber: json.number });
     } catch (err: any) {
       console.error('Create Issue Error:', err?.message || err);
-      res.status(500).json({ success: false, error: err?.message || 'Failed creating GitHub issue' });
+      const cause = err?.cause?.message || '';
+      res.status(500).json({
+        success: false,
+        error: `${err?.message || 'Failed creating GitHub issue'}${cause ? ` (${cause})` : ''}. Pastikan server bisa mengakses api.github.com dan GITHUB_TOKEN valid.`,
+      });
     }
   });
 
-  // API Route: Open generator-surat-three with encoded payload (debtor + personnel)
+  // API Route: Open generator-surat-new UI dengan payload hasil Form Pembuatan Surat Tugas / Kuasa
   app.post('/api/surat/open-generator', async (req, res) => {
     try {
       const { skNumber, skId, debtor, personnel, driveDocumentUrl } = req.body || {};
@@ -497,7 +655,7 @@ ${JSON.stringify(personnel, null, 2)}
         return res.status(400).json({ success: false, error: 'Missing debtor or personnel data in request body' });
       }
 
-      const generatorBase = 'https://generator-surat-three.vercel.app';
+      const generatorBase = 'https://generator-surat-new.vercel.app';
       const payload = { skNumber, skId, debtor, personnel, driveDocumentUrl };
       const encoded = Buffer.from(JSON.stringify(payload)).toString('base64');
       const generatorUrl = `${generatorBase}/?payload=${encodeURIComponent(encoded)}`;

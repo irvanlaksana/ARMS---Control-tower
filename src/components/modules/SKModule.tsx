@@ -15,6 +15,9 @@ import { QuickGDriveModal } from '../common/QuickGDriveModal';
 import { AddressFields } from '../common/AddressFields';
 import { LetterPreviewModal, LetterPreviewData } from '../common/LetterPreviewModal';
 import { ROOT_GDRIVE_URL } from '../../data/initialData';
+import AssignmentLetterGenerator from '../assignment-letter/AssignmentLetterGenerator';
+import { BastData } from '../assignment-letter/types';
+import { buildGeneratorData, buildGeneratorUrl, GeneratorFormInput, GENERATOR_UI_URL, GENERATOR_REPO_URL } from '../../lib/suratGenerator';
 
 interface SKModuleProps {
   store: ARMSStore;
@@ -33,6 +36,11 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
   // Preview Modal state
   const [previewData, setPreviewData] = useState<LetterPreviewData | null>(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+
+  // Generator (sumber repo generate-surat-tugas) state
+  const [showLocalGenerator, setShowLocalGenerator] = useState(false);
+  const [generatorData, setGeneratorData] = useState<{ data: BastData; isPersonal: boolean } | null>(null);
+  const [generatorStatus, setGeneratorStatus] = useState<string | null>(null);
 
   // Quick GDrive Link Modal state
   const [quickDriveModal, setQuickDriveModal] = useState<{
@@ -187,12 +195,89 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
   };
 
 
-  const openLetterGenerator = () => {
-    window.open('https://generator-surat-new.vercel.app/', '_blank', 'noopener,noreferrer');
+  // Kumpulan data dari Form Pembuatan Surat Tugas / Kuasa untuk dikirim ke generator
+  const collectFormInput = (): GeneratorFormInput => ({
+    skNumber: skNumberDraft,
+    companyName: store.settings?.companyName,
+    companyAddress: store.settings?.companyAddress,
+    repName,
+    repTitle,
+    city,
+    isPerorangan: isPerorangan,
+    krediturName,
+    krediturAddress,
+    personnel: selectedPersonnel,
+    caseItem: selectedCase,
+    customer: selectedCustomer,
+    contractNo: skContractNo,
+    debtorName: skDebtorName,
+    debtorAddress: skDebtorAddress,
+    dueDate: skDueDate,
+    installment: skInstallment,
+    penalty: skPenalty,
+    vehicleMerk: skVehicleMerk,
+    vehiclePoliceNo: skVehiclePoliceNo,
+    customNominal,
+    issuedDate: new Date().toISOString().split('T')[0],
+    expiryDate: endDate.toISOString().split('T')[0],
+  });
+
+  // Buka generator LOKAL (kode sumber repo generate-surat-tugas) — form sudah terisi
+  const openLocalGenerator = () => {
+    const data = buildGeneratorData(collectFormInput());
+    setGeneratorData({ data, isPersonal: isPerorangan });
+    setShowLocalGenerator(true);
+    setGeneratorStatus('Generator dibuka dengan data dari Form Pembuatan Surat Tugas / Kuasa.');
+  };
+
+  // Buka UI online generator-surat-new.vercel.app + isi data lewat ?payload / postMessage
+  const openWebGenerator = async () => {
+    const data = buildGeneratorData(collectFormInput());
+    const url = buildGeneratorUrl(data);
+    const win = window.open(url, '_blank', 'noopener,noreferrer');
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(data));
+      setGeneratorStatus('Payload JSON disalin ke clipboard sebagai cadangan autofill generator.');
+    } catch {
+      setGeneratorStatus('URL generator dibuka dengan payload ter-encode.');
+    }
+    if (win) {
+      // Fallback postMessage: generator versi terbaru dapat menerima payload ini
+      setTimeout(() => {
+        try {
+          win.postMessage({ type: 'ARMS_GENERATOR_PAYLOAD', source: 'ARMS-Control-Tower', payload: data }, '*');
+        } catch { /* ignore */ }
+      }, 1500);
+    }
   };
 
   const handleOpenGeneratorFromDraft = () => {
-    openLetterGenerator();
+    openLocalGenerator();
+  };
+
+  // Generate surat dari baris daftar SK (data SK + kasus + debitur + petugas)
+  const handleGenerateFromRow = (skItem: SK) => {
+    const parentCase = (store.cases || []).find((c) => c.id === skItem.caseId);
+    const rowCustomer = (store.customers || []).find((c) => c.id === parentCase?.customerId);
+    const rowPersonnel = (store.personnel || []).find((p) => p.id === skItem.personnelId);
+    const isPer = skItem.clientType === 'PERORANGAN' || parentCase?.clientType === 'PERORANGAN';
+    const data = buildGeneratorData({
+      sk: skItem,
+      skNumber: skItem.skNumber,
+      companyName: store.settings?.companyName,
+      companyAddress: store.settings?.companyAddress,
+      personnel: rowPersonnel,
+      caseItem: parentCase,
+      customer: rowCustomer,
+      isPerorangan: isPer,
+      krediturName: skItem.krediturName,
+      krediturAddress: skItem.krediturAddress,
+      issuedDate: skItem.issuedDate,
+      expiryDate: skItem.expiryDate,
+    });
+    setGeneratorData({ data, isPersonal: isPer });
+    setShowLocalGenerator(true);
+    setGeneratorStatus(`Generator dibuka berisi data SK ${skItem.skNumber}.`);
   };
 
   const handleCreateSK = async (e: React.FormEvent) => {
@@ -412,6 +497,13 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
           </div>
           <p className="text-xs text-slate-400">
             Penerbitan surat tugas resmi, pengelolaan parameter penagihan, serta tautan arsip digital Google Drive
+          </p>
+          <p className="mt-1 text-[10px] text-slate-500 flex flex-wrap items-center gap-1.5">
+            <span>Generator:</span>
+            <a href={GENERATOR_REPO_URL} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">repo generate-surat-tugas</a>
+            <span>·</span>
+            <a href={GENERATOR_UI_URL} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">generator-surat-new.vercel.app</a>
+            <span>· data otomatis terisi dari Form Pembuatan Surat Tugas / Kuasa</span>
           </p>
         </div>
 
@@ -671,9 +763,9 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                           </button>
 
                           <button
-                            onClick={openLetterGenerator}
+                            onClick={() => handleGenerateFromRow(sk)}
                             className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-950 hover:bg-emerald-900 text-emerald-200 rounded border border-emerald-800 text-[11px] font-semibold transition shadow-sm"
-                            title="Generate Surat Tugas / BAST"
+                            title="Buka Generator (sumber repo generate-surat-tugas) berisi data SK ini"
                           >
                             <FileText className="w-3.5 h-3.5 text-emerald-400" />
                             <span>Generate Surat</span>
@@ -749,11 +841,20 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={handleOpenGeneratorFromDraft}
+                  onClick={openWebGenerator}
                   className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white flex items-center gap-2"
-                  title="Buat surat di Generator (sinkron data debitur & penerima tugas)"
+                  title="Buka generator-surat-new.vercel.app dengan data dari form ini (sumber repo generate-surat-tugas)"
                 >
-                  <FileText className="w-4 h-4" />
+                  <ExternalLink className="w-4 h-4" />
+                  Buat di Generator
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenGeneratorFromDraft}
+                  className="px-3 py-1 text-xs bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200 flex items-center gap-2"
+                  title="Buka Generator lokal (kode sumber repo generate-surat-tugas) terisi dari form"
+                >
+                  <FileText className="w-4 h-4 text-indigo-400" />
                   Buat Surat
                 </button>
 
@@ -1260,12 +1361,12 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
 
                   <button
                     type="button"
-                    onClick={handleOpenGeneratorFromDraft}
+                    onClick={openWebGenerator}
                     className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition flex items-center gap-2"
-                    title="Buat di Generator (sinkron data debitur & penerima tugas)"
+                    title="Buka generator-surat-new.vercel.app dengan payload dari Form Pembuatan Surat Tugas / Kuasa"
                   >
                     <ExternalLink className="w-4 h-4" />
-                    Buat di Generator
+                    Buat di Generator (Web)
                   </button>
 
                   <button
@@ -1305,6 +1406,36 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
           }
         }}
       />
+
+      {/* STATUS PAYLOAD GENERATOR */}
+      {generatorStatus && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[70] px-4 py-2 rounded-xl bg-slate-900 border border-indigo-700 text-indigo-200 text-[11px] font-semibold shadow-2xl">
+          {generatorStatus}
+        </div>
+      )}
+
+      {/* GENERATOR LOKAL — kode sumber repo irvanlaksana/generate-surat-tugas
+          (UI yang sama dengan generator-surat-new.vercel.app), data terisi dari Form SPK */}
+      {showLocalGenerator && generatorData && (
+        <AssignmentLetterGenerator
+          initialData={generatorData.data}
+          isPersonal={generatorData.isPersonal}
+          onClose={() => setShowLocalGenerator(false)}
+          onSave={(savedData) => {
+            const audit = createAuditEntry(
+              currentUser.username,
+              currentUser.role,
+              'CREATE',
+              'SK_Generator',
+              savedData.st?.nomor || skNumberDraft,
+              `Generate surat via Generator (repo generate-surat-tugas) untuk ${savedData.namaDebitur || ''}`
+            );
+            onUpdateStore({ ...store, auditLogs: [audit, ...(store.auditLogs || [])] });
+            setShowLocalGenerator(false);
+            setGeneratorStatus('Surat berhasil digenerate & disimpan di arsip (audit log).');
+          }}
+        />
+      )}
 
     </div>
   );

@@ -1,16 +1,174 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Customer } from '../../types/arms';
-import { Users, Plus, Edit2, Trash2, AlertTriangle, Upload, Image as ImageIcon, Eye, X, CheckCircle, UserCheck, Clock, AlertCircle } from 'lucide-react';
+import { Users, Plus, Edit2, Trash2, AlertTriangle, Upload, Image as ImageIcon, Eye, X, CheckCircle, UserCheck, Clock, AlertCircle, Download, FileSpreadsheet, UploadCloud, ClipboardList, CheckCircle2 } from 'lucide-react';
 import { findDuplicateCustomerMaster } from '../../utils/duplicateCheck';
 import { AmountInput } from '../common/AmountInput';
 import { DateInput } from '../common/DateInput';
 import { AddressFields } from '../common/AddressFields';
+import { downloadCSV } from '../../utils/exportUtils';
 
 interface CustomersModuleProps {
   store: ARMSStore;
   currentUser: User;
   onUpdateStore: (newStore: ARMSStore) => void;
+}
+
+/* ---------- CSV / JSON bulk import helpers ---------- */
+
+function parseCsvLine(line: string, delimiter: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') { current += '"'; i++; }
+        else inQuotes = false;
+      } else {
+        current += ch;
+      }
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === delimiter) {
+      result.push(current);
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  result.push(current);
+  return result.map((v) => v.trim());
+}
+
+function parseCsv(text: string): Record<string, string>[] {
+  const content = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const lines = content.split('\n').filter((l) => l.trim() !== '');
+  if (lines.length < 2) return [];
+  const firstLine = lines[0];
+  const delimiter = (firstLine.match(/;/g) || []).length >= (firstLine.match(/,/g) || []).length ? ';' : ',';
+  const headers = parseCsvLine(firstLine, delimiter).map((h) => h.trim());
+  return lines.slice(1).map((line) => {
+    const cells = parseCsvLine(line, delimiter);
+    const row: Record<string, string> = {};
+    headers.forEach((h, i) => { row[h] = cells[i] ?? ''; });
+    return row;
+  });
+}
+
+// Normalisasi header CSV/JSON ke field Customer
+const HEADER_ALIASES: Record<string, string> = {
+  fullname: 'fullName',
+  nama: 'fullName',
+  namadebitur: 'fullName',
+  debitur: 'fullName',
+  namalengkap: 'fullName',
+  customer: 'fullName',
+  customername: 'fullName',
+  customercode: 'customerCode',
+  kodedebitur: 'customerCode',
+  contractno: 'contractNo',
+  nokontrak: 'contractNo',
+  kontrak: 'contractNo',
+  nik: 'nikKtp',
+  nikktp: 'nikKtp',
+  noktp: 'nikKtp',
+  ktp: 'nikKtp',
+  phone: 'phone',
+  nomorhp: 'phone',
+  nomorhandphone: 'phone',
+  handphone: 'phone',
+  hp: 'phone',
+  telepon: 'phone',
+  nohp: 'phone',
+  addresscurrent: 'addressCurrent',
+  alamatdomisili: 'addressCurrent',
+  alamat: 'addressCurrent',
+  alamatdebitur: 'addressCurrent',
+  addressktp: 'addressKtp',
+  alamatktp: 'addressKtp',
+  workplace: 'workplace',
+  pekerjaan: 'workplace',
+  duedate: 'dueDate',
+  jatuhTempo: 'dueDate',
+  tgljatuhtempo: 'dueDate',
+  installmentamount: 'installmentAmount',
+  angsuran: 'installmentAmount',
+  nominalangsuran: 'installmentAmount',
+  totalinstallment: 'totalInstallment',
+  totalangsuran: 'totalInstallment',
+  penaltyamount: 'penaltyAmount',
+  denda: 'penaltyAmount',
+  vehiclemerctype: 'vehicleMerkType',
+  meritipe: 'vehicleMerkType',
+  merktipe: 'vehicleMerkType',
+  merk: 'vehicleMerkType',
+  kendaraan: 'vehicleMerkType',
+  vehiclepoliceNo: 'vehiclePoliceNo',
+  nopol: 'vehiclePoliceNo',
+  nopolisi: 'vehiclePoliceNo',
+  plat: 'vehiclePoliceNo',
+  emergencycontactname: 'emergencyContactName',
+  emergencycontactphone: 'emergencyContactPhone',
+  risknotes: 'riskNotes',
+  gdrivefolderurl: 'gDriveFolderUrl',
+  ktpphotourl: 'ktpPhotoUrl',
+  fotoktp: 'ktpPhotoUrl',
+};
+
+const CUSTOMER_EXPORT_COLUMNS = [
+  'customerCode',
+  'contractNo',
+  'fullName',
+  'nikKtp',
+  'phone',
+  'addressCurrent',
+  'addressKtp',
+  'workplace',
+  'dueDate',
+  'installmentAmount',
+  'totalInstallment',
+  'penaltyAmount',
+  'vehicleMerkType',
+  'vehiclePoliceNo',
+  'emergencyContactName',
+  'emergencyContactPhone',
+  'riskNotes',
+  'gDriveFolderUrl',
+  'createdAt',
+] as const;
+
+function normalizeImportRow(raw: Record<string, unknown> | Record<string, string>): Partial<Customer> {
+  const out: Partial<Customer> = {};
+  const get = (key: string, aliases: string[]): string => {
+    const keys = [key, ...aliases].map((k) => k.toLowerCase().replace(/[\s\-\.]/g, ''));
+    for (const k of Object.keys(raw)) {
+      if (keys.includes(k.toLowerCase().replace(/[\s\-\.]/g, ''))) return String(raw[k] ?? '').trim();
+    }
+    return '';
+  };
+  out.fullName = get('fullName', ['nama', 'namadebitur', 'debitur', 'namalengkap']) || undefined;
+  out.customerCode = get('customerCode', ['kodedebitur']) || undefined;
+  out.contractNo = get('contractNo', ['nokontrak', 'kontrak']) || undefined;
+  out.nikKtp = get('nikKtp', ['nik', 'nikktp', 'noktp']) || undefined;
+  out.phone = get('phone', ['nomorhp', 'handphone', 'hp', 'telepon', 'nohp']) || undefined;
+  out.addressCurrent = get('addressCurrent', ['alamatdomisili', 'alamat', 'alamatdebitur']) || undefined;
+  out.addressKtp = get('addressKtp', ['alamatktp']) || undefined;
+  out.workplace = get('workplace', ['pekerjaan']) || undefined;
+  out.dueDate = get('dueDate', ['jatuhTempo', 'tgljatuhtempo']) || undefined;
+  out.installmentAmount = get('installmentAmount', ['angsuran', 'nominalangsuran']) || undefined;
+  const totalStr = get('totalInstallment', ['totalangsuran']);
+  out.totalInstallment = totalStr ? Number(String(totalStr).replace(/[^\d]/g, '')) || 0 : undefined;
+  out.penaltyAmount = get('penaltyAmount', ['denda']) || undefined;
+  out.vehicleMerkType = get('vehicleMerkType', ['merktipe', 'meritipe', 'merk', 'kendaraan']) || undefined;
+  out.vehiclePoliceNo = get('vehiclePoliceNo', ['nopol', 'nopolisi', 'plat']) || undefined;
+  out.emergencyContactName = get('emergencyContactName', []) || undefined;
+  out.emergencyContactPhone = get('emergencyContactPhone', []) || undefined;
+  out.riskNotes = get('riskNotes', []) || 'Data hasil import bulk';
+  out.gDriveFolderUrl = get('gDriveFolderUrl', []) || undefined;
+  out.ktpPhotoUrl = get('ktpPhotoUrl', ['fotoktp']) || undefined;
+  return out;
 }
 
 export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, currentUser, onUpdateStore }) => {
@@ -33,6 +191,15 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
   const [stnkPhotoUrls, setStnkPhotoUrls] = useState<string[]>([]);
   
   const [nikKtp, setNikKtp] = useState(''); // Keep this for internal needs/backend if needed, or make optional
+
+  // Bulk export / import
+  const [importOpen, setImportOpen] = useState(false);
+  const [importRows, setImportRows] = useState<Partial<Customer>[]>([]);
+  const [importErrors, setImportErrors] = useState<string[]>([]);
+  const [importFileName, setImportFileName] = useState('');
+  const [skipDuplicates, setSkipDuplicates] = useState(true);
+  const [importSummary, setImportSummary] = useState<{ added: number; skipped: number; errors: number } | null>(null);
+  const importFileRef = useRef<HTMLInputElement>(null);
 
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS';
 
@@ -274,9 +441,162 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
     setShowModal(false);
   };
 
+  /* ---------- EXPORT BULK ---------- */
+
+  const handleExportCSV = () => {
+    const columns = CUSTOMER_EXPORT_COLUMNS.map((key) => ({
+      header: key,
+      accessor: (item: Customer) => {
+        const val = (item as any)[key];
+        if (Array.isArray(val)) return JSON.stringify(val);
+        return val;
+      },
+    }));
+    downloadCSV(
+      `ARMS-Debitur-Database-${new Date().toISOString().slice(0, 10)}`,
+      store.customers,
+      columns,
+    );
+    const audit = createAuditEntry(currentUser.username, currentUser.role, 'EXPORT', 'Customers', 'BULK_EXPORT', `Export CSV ${store.customers.length} data debitur`);
+    onUpdateStore({ ...store, auditLogs: [audit, ...store.auditLogs] });
+  };
+
+  const handleExportJSON = () => {
+    if (store.customers.length === 0) {
+      alert('Tidak ada data debitur untuk diexport.');
+      return;
+    }
+    const blob = new Blob([JSON.stringify(store.customers, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ARMS-Debitur-Database-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    const audit = createAuditEntry(currentUser.username, currentUser.role, 'EXPORT', 'Customers', 'BULK_EXPORT_JSON', `Export JSON ${store.customers.length} data debitur`);
+    onUpdateStore({ ...store, auditLogs: [audit, ...store.auditLogs] });
+  };
+
+  /* ---------- IMPORT BULK ---------- */
+
+  const isDuplicateOfExisting = (row: Partial<Customer>) => {
+    const nik = (row.nikKtp || '').replace(/\D/g, '');
+    return (store.customers || []).some((c) =>
+      (row.contractNo && c.contractNo && c.contractNo.toLowerCase().trim() === row.contractNo.toLowerCase().trim()) ||
+      (nik.length >= 10 && c.nikKtp && c.nikKtp.replace(/\D/g, '') === nik) ||
+      (row.fullName && c.fullName.toLowerCase().trim() === row.fullName.toLowerCase().trim() &&
+        row.phone && c.phone && c.phone.replace(/\D/g, '') === row.phone.replace(/\D/g, ''))
+    );
+  };
+
+  const handleImportFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = String(reader.result || '');
+      let parsed: Partial<Customer>[] = [];
+      try {
+        if (file.name.toLowerCase().endsWith('.json')) {
+          const json = JSON.parse(text);
+          const arr = Array.isArray(json) ? json : (json.customers || json.data || []);
+          if (!Array.isArray(arr)) throw new Error('Format JSON harus berupa array data debitur');
+          parsed = arr.map((r: any) => normalizeImportRow(r));
+        } else {
+          parsed = parseCsv(text).map((r) => normalizeImportRow(r));
+        }
+      } catch (err: any) {
+        setImportErrors([`Gagal membaca file: ${err.message || String(err)}`]);
+        setImportRows([]);
+        setImportFileName('');
+        return;
+      }
+
+      const errors: string[] = [];
+      parsed.forEach((row, i) => {
+        if (!row.fullName) {
+          errors.push(`Baris ${i + 1}: Nama Debitur (fullName) wajib diisi.`);
+        }
+      });
+      setImportRows(parsed);
+      setImportErrors(errors);
+      setImportFileName(file.name);
+      setImportSummary(null);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleImport = () => {
+    if (importRows.length === 0) return;
+    const stamp = Date.now();
+    const existingIds = new Set((store.customers || []).map((c) => c.id));
+    let added = 0;
+    let skipped = 0;
+    const newCustomers: Customer[] = [];
+
+    importRows.forEach((row, idx) => {
+      if (!row.fullName) {
+        skipped++;
+        return;
+      }
+      if (skipDuplicates && isDuplicateOfExisting(row)) {
+        skipped++;
+        return;
+      }
+      let id = `CUST-${stamp}${idx}`;
+      if (existingIds.has(id)) id = `${id}-${idx}`;
+      existingIds.add(id);
+      const customerCode = row.customerCode || `DEB-${stamp}${idx}`;
+      newCustomers.push({
+        id,
+        customerCode,
+        contractNo: row.contractNo,
+        nikKtp: row.nikKtp || '',
+        fullName: row.fullName,
+        phone: row.phone || '',
+        addressCurrent: row.addressCurrent || '',
+        addressKtp: row.addressKtp || row.addressCurrent || '',
+        workplace: row.workplace || '',
+        emergencyContactName: row.emergencyContactName || 'Family Contact',
+        emergencyContactPhone: row.emergencyContactPhone || row.phone || '',
+        dueDate: row.dueDate,
+        installmentAmount: row.installmentAmount,
+        totalInstallment: row.totalInstallment || 0,
+        penaltyAmount: row.penaltyAmount,
+        vehicleMerkType: row.vehicleMerkType,
+        vehiclePoliceNo: row.vehiclePoliceNo,
+        ktpPhotoUrl: row.ktpPhotoUrl,
+        stnkPhotoUrls: [],
+        riskNotes: row.riskNotes || 'Data hasil import bulk',
+        gDriveFolderUrl: row.gDriveFolderUrl,
+        createdAt: new Date().toISOString(),
+      });
+      added++;
+    });
+
+    const audit = createAuditEntry(
+      currentUser.username,
+      currentUser.role,
+      'CREATE',
+      'Customers',
+      `BULK-${stamp}`,
+      `Bulk import ${added} data debitur dari ${importFileName} (${skipped} dilewati)`
+    );
+    onUpdateStore({
+      ...store,
+      customers: [...newCustomers, ...(store.customers || [])],
+      auditLogs: [audit, ...store.auditLogs],
+    });
+    setImportSummary({ added, skipped, errors: importErrors.length });
+    setImportRows([]);
+    setImportErrors([]);
+    setImportFileName('');
+    if (importFileRef.current) importFileRef.current.value = '';
+  };
+
   return (
     <div className="space-y-6">
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex items-center justify-between">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Users className="w-5 h-5 text-indigo-400" />
@@ -285,16 +605,55 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
           <p className="text-xs text-slate-400">Master Debtor Profiles, NIK Verification & Risk Notes</p>
         </div>
 
-        {canEdit && (
-          <button
-            onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-md transition"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Debtor Profile</span>
-          </button>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {canEdit && (
+            <>
+              <button
+                onClick={handleExportCSV}
+                className="flex items-center gap-2 bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-800 text-xs font-semibold px-3.5 py-2.5 rounded-lg transition"
+                title="Export seluruh data debitur ke CSV (Excel/Google Sheets)"
+              >
+                <Download className="w-4 h-4 text-emerald-400" />
+                Export CSV
+              </button>
+              <button
+                onClick={handleExportJSON}
+                className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2.5 rounded-lg transition"
+                title="Export seluruh data debitur lengkap ke JSON"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-indigo-400" />
+                Export JSON
+              </button>
+              <button
+                onClick={() => { setImportOpen(true); setImportSummary(null); }}
+                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3.5 py-2.5 rounded-lg transition"
+                title="Import banyak data debitur dari CSV / JSON"
+              >
+                <UploadCloud className="w-4 h-4" />
+                Import Bulk
+              </button>
+            </>
+          )}
+          {canEdit && (
+            <button
+              onClick={() => handleOpenModal()}
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-md transition"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Debtor Profile</span>
+            </button>
+          )}
+        </div>
       </div>
+
+      {importSummary && (
+        <div className="p-3.5 bg-emerald-950/80 border border-emerald-800 rounded-xl text-xs text-emerald-200 flex flex-wrap items-center gap-x-4 gap-y-1">
+          <span className="font-bold flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> Import Bulk Selesai:</span>
+          <span>Ditambahkan: <b className="text-white">{importSummary.added}</b></span>
+          <span>Dilewati / Duplikat: <b className="text-amber-300">{importSummary.skipped}</b></span>
+          <span>Baris Error: <b className="text-rose-300">{importSummary.errors}</b></span>
+        </div>
+      )}
 
       <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
         <div className="overflow-x-auto">
@@ -409,6 +768,136 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
           </table>
         </div>
       </div>
+
+      {/* BULK IMPORT MODAL */}
+      {importOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-3xl p-5 sm:p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto my-auto">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 rounded-xl">
+                  <UploadCloud className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-sm sm:text-base">Import Bulk Data Debitur</h3>
+                  <p className="text-[11px] text-slate-400">Unggah file CSV (Excel/Google Sheets) atau JSON</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setImportOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {importSummary && (
+              <div className="p-3 bg-emerald-950/80 border border-emerald-800 rounded-xl text-xs text-emerald-200 space-y-1">
+                <div className="font-bold flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> Import berhasil!</div>
+                <div>Ditambahkan: <b className="text-white">{importSummary.added}</b> · Dilewati: <b className="text-amber-300">{importSummary.skipped}</b> · Error: <b className="text-rose-300">{importSummary.errors}</b></div>
+              </div>
+            )}
+
+            <label className="border-2 border-dashed border-slate-700 hover:border-indigo-500 bg-slate-950 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition text-center">
+              <Upload className="w-8 h-8 text-slate-400 mb-2" />
+              <span className="font-semibold text-slate-200">Pilih File CSV / JSON</span>
+              <span className="text-[10px] text-slate-500 mt-1">Kolom didukung: customerCode, contractNo, fullName, nikKtp, phone, addressCurrent, addressKtp, dueDate, installmentAmount, totalInstallment, penaltyAmount, vehicleMerkType, vehiclePoliceNo, riskNotes, dll.</span>
+              <input
+                ref={importFileRef}
+                type="file"
+                accept=".csv,.json,text/csv,application/json,text/plain"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleImportFile(file);
+                }}
+              />
+            </label>
+
+            {importFileName && (
+              <div className="text-[11px] text-slate-400 flex items-center gap-2">
+                <ClipboardList className="w-3.5 h-3.5 text-indigo-400" />
+                File: <span className="text-white font-mono">{importFileName}</span> · {importRows.length} baris terbaca
+              </div>
+            )}
+
+            {importErrors.length > 0 && (
+              <div className="p-3 bg-rose-950/80 border border-rose-800 rounded-xl text-[11px] text-rose-200 space-y-1">
+                {importErrors.slice(0, 8).map((e, i) => (
+                  <div key={i}>⚠️ {e}</div>
+                ))}
+                {importErrors.length > 8 && <div>...dan {importErrors.length - 8} error lainnya</div>}
+              </div>
+            )}
+
+            {importRows.length > 0 && (
+              <>
+                <div className="overflow-x-auto border border-slate-800 rounded-xl">
+                  <table className="w-full text-left text-[11px] text-slate-300">
+                    <thead className="bg-slate-950 text-slate-400">
+                      <tr>
+                        <th className="p-2">#</th>
+                        <th className="p-2">Nama Debitur</th>
+                        <th className="p-2">No. Kontrak</th>
+                        <th className="p-2">NIK</th>
+                        <th className="p-2">No. HP</th>
+                        <th className="p-2">Kendaraan</th>
+                        <th className="p-2">Total Angsuran</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60">
+                      {importRows.slice(0, 10).map((row, i) => (
+                        <tr key={i} className={row.fullName ? '' : 'bg-rose-950/30'}>
+                          <td className="p-2 font-mono text-slate-500">{i + 1}</td>
+                          <td className={`p-2 font-semibold ${row.fullName ? 'text-white' : 'text-rose-300'}`}>{row.fullName || <em className="text-rose-400">(nama kosong)</em>}</td>
+                          <td className="p-2 font-mono">{row.contractNo || '-'}</td>
+                          <td className="p-2 font-mono">{row.nikKtp || '-'}</td>
+                          <td className="p-2">{row.phone || '-'}</td>
+                          <td className="p-2">{row.vehicleMerkType || '-'}</td>
+                          <td className="p-2 font-mono text-amber-300">{row.totalInstallment ? `Rp ${row.totalInstallment.toLocaleString('id-ID')}` : '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {importRows.length > 10 && (
+                    <div className="p-2 bg-slate-950 text-[10px] text-slate-500 text-center">…dan {importRows.length - 10} baris lainnya</div>
+                  )}
+                </div>
+
+                <label className="flex items-center gap-2 text-xs text-slate-300 bg-slate-950 border border-slate-800 rounded-xl p-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={skipDuplicates}
+                    onChange={(e) => setSkipDuplicates(e.target.checked)}
+                    className="accent-indigo-500"
+                  />
+                  Lewati data duplikat (cocokkan No. Kontrak / NIK / Nama+No. HP yang sudah terdaftar)
+                </label>
+              </>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setImportOpen(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition"
+              >
+                Tutup
+              </button>
+              <button
+                type="button"
+                disabled={importRows.length === 0}
+                onClick={handleImport}
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white text-xs font-bold rounded-xl transition shadow-lg flex items-center gap-1.5"
+              >
+                <CheckCircle className="w-3.5 h-3.5" />
+                Import {importRows.length} Data Debitur
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">

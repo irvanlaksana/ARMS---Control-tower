@@ -640,6 +640,22 @@ export interface AuditLogEntry {
   ipAddress?: string;
 }
 
+/** Konfigurasi satu database/koleksi pada spreadsheet Google Sheets. */
+export interface DatabaseTabConfig {
+  /** Key koleksi pada ARMSStore (mis. 'customers', 'cases', 'sks'). */
+  collection: string;
+  /** Nama tampilan database di Control Tower. */
+  label: string;
+  /** Nama tab/sheet di Google Spreadsheet. */
+  tabName: string;
+  /** Aktif untuk di-push / di-fetch ke spreadsheet. */
+  enabled: boolean;
+  /** Jumlah record terakhir yang diketahui. */
+  totalRecords?: number;
+  /** Waktu push terakhir yang berhasil. */
+  lastSyncedAt?: string;
+}
+
 export interface AppSettings {
   googleSheetId: string;
   appsScriptWebAppUrl: string;
@@ -653,5 +669,7 @@ export interface AppSettings {
   defaultFeePercent: number;
   defaultCompanyCommissionSplitPercent?: number; // Persentase Fee Perusahaan dari Eksekusi Mitra DC (default 20%)
   autoSyncWithGoogleSheets: boolean;
+  /** Konfigurasi tab/sheet untuk seluruh database ARMS. */
+  databaseConfig?: DatabaseTabConfig[];
   lastSyncedAt?: string;
 }
