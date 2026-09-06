@@ -4,6 +4,7 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { google } from "googleapis";
 import { Readable } from 'stream';
+import { authFor } from "./api/lib/googleAuth.ts";
 
 async function startServer() {
   const app = express();
@@ -22,27 +23,13 @@ async function startServer() {
     next();
   });
 
-  // Google API auth helper (Sheets & Drive).
+  // Google API auth helper (Sheets & Drive) — dipakai bersama via ./api/lib/googleAuth.
   // Prioritas kredensial:
   //  1. GOOGLE_SERVICE_ACCOUNT_JSON  → inline JSON service account (Vercel/Cloud Run secret)
   //  2. GOOGLE_APPLICATION_CREDENTIALS → path file JSON service account (.env / host env)
   //  3. Tanpa kredensial → error jelas (tanpa percobaan metadata GCE yang bising).
-  const authFor = (scopes: string[]) => {
-    const inline = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-    if (inline && inline.trim()) {
-      try {
-        return new google.auth.GoogleAuth({ scopes, credentials: JSON.parse(inline) });
-      } catch (err: any) {
-        throw new Error(`GOOGLE_SERVICE_ACCOUNT_JSON tidak valid: ${err?.message || err}`);
-      }
-    }
-    if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-      return new google.auth.GoogleAuth({ scopes });
-    }
-    throw new Error(
-      "Google API belum dikonfigurasi. Set env GOOGLE_SERVICE_ACCOUNT_JSON (isi JSON service account, disarankan untuk Vercel/Cloud Run) atau GOOGLE_APPLICATION_CREDENTIALS (path file JSON service account).",
-    );
-  };
+  // Kredensial dibaca & divalidasi eksplisit di googleAuth.ts sehingga error ADC
+  // ("Could not load the default credentials") tidak akan muncul lagi.
 
   // API Route: Health Check
   app.get("/api/health", (_req, res) => {
