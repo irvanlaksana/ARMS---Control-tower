@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { google } from 'googleapis';
+import { authFor } from '../lib/googleAuth';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -24,9 +25,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Missing spreadsheetId or data' });
     }
 
-    const auth = new google.auth.GoogleAuth({
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
+    const auth = authFor(['https://www.googleapis.com/auth/spreadsheets']);
     const sheets = google.sheets({ version: 'v4', auth });
 
     const STORE_KEY_MAP: Record<string, string> = {
