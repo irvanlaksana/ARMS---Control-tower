@@ -1,7 +1,6 @@
-import { collection, doc, getDocs, setDoc, deleteDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
 import { ARMSStore } from './armsDataService';
 
+// Function to clean undefined values and prepare data for API
 function cleanData(obj: any): any {
   if (obj === undefined) return null;
   if (obj === null || typeof obj !== 'object') return obj;
@@ -18,98 +17,127 @@ function cleanData(obj: any): any {
   return result;
 }
 
+// Get spreadsheetId from settings or environment
+function getSpreadsheetId(store: ARMSStore): string | null {
+  return store?.settings?.googleSheetId || null;
+}
+
 export async function fetchStoreFromFirebase(currentStore: ARMSStore): Promise<ARMSStore> {
-  const newStore = { ...currentStore };
-  const keys = Object.keys(newStore) as (keyof ARMSStore)[];
-  
-  for (const key of keys) {
-    try {
-      if (key === 'settings') {
-        const snap = await getDocs(collection(db, 'settings'));
-        if (!snap.empty) {
-          newStore.settings = { ...newStore.settings, ...snap.docs[0].data() } as any;
-        }
-      } else {
-        const snap = await getDocs(collection(db, String(key)));
-        if (!snap.empty) {
-          newStore[key] = snap.docs.map(d => d.data()) as any;
-        }
-      }
-    } catch (e) {
-      console.warn(`Failed to fetch ${key} from Firebase`, e);
-    }
+  const spreadsheetId = getSpreadsheetId(currentStore);
+  if (!spreadsheetId) {
+    console.warn("No Google Sheet ID found in settings. Skipping fetch.");
+    return currentStore;
   }
-  return newStore;
+
+  try {
+    const response = await fetch('/api/sheets/fetch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ spreadsheetId })
+    });
+    
+    if (!response.ok) {
+      throw new Error("Failed to fetch from Google Sheets API");
+    }
+
+    const json = await response.json();
+    if (json.success && json.data) {
+      return { ...currentStore, ...json.data };
+    }
+  } catch (e) {
+    console.warn("Failed to fetch data from Google Sheets", e);
+  }
+  
+  return currentStore;
 }
 
 export async function pushFullStoreToFirebase(store: ARMSStore): Promise<{ totalItems: number; collectionsCount: number }> {
-  const keys = Object.keys(store) as (keyof ARMSStore)[];
-  const promises: Promise<void>[] = [];
+  const spreadsheetId = getSpreadsheetId(store);
+  if (!spreadsheetId) {
+    console.warn("No Google Sheet ID found in settings. Skipping sync.");
+    return { totalItems: 0, collectionsCount: 0 };
+  }
+
+  const dataToSync: any = {};
   let totalItems = 0;
   let collectionsCount = 0;
 
+  const keys = Object.keys(store) as (keyof ARMSStore)[];
   for (const key of keys) {
     if (key === 'settings') {
-      if (store.settings) {
-        promises.push(setDoc(doc(db, 'settings', 'main'), cleanData(store.settings)));
-        collectionsCount++;
-        totalItems++;
-      }
+      dataToSync[key] = store.settings;
+      collectionsCount++;
+      totalItems++;
       continue;
     }
-
-    const items = (store[key] as any[]) || [];
-    if (items.length > 0) {
+    
+    const items = store[key] as any[];
+    if (items && items.length > 0) {
+      dataToSync[key] = items.map(cleanData);
       collectionsCount++;
-    }
-    for (const item of items) {
-      if (!item || !item.id) continue;
-      promises.push(setDoc(doc(db, String(key), item.id), cleanData(item)));
-      totalItems++;
+      totalItems += items.length;
+    } else {
+      dataToSync[key] = [];
     }
   }
 
-  await Promise.all(promises);
+  try {
+    const response = await fetch('/api/sheets/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ spreadsheetId, data: dataToSync })
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to sync to Google Sheets API");
+    }
+  } catch (e) {
+    console.error("Firebase (Sheets) sync error", e);
+    throw e;
+  }
+
   return { totalItems, collectionsCount };
 }
 
 export async function syncStoreToFirebase(oldStore: ARMSStore, newStore: ARMSStore) {
+  // For Google Sheets, we just push the full store since it works on entire tabs, 
+  // or we could optimize by only pushing changed tabs. 
+  // Let's optimize by sending only the changed tabs.
+  const spreadsheetId = getSpreadsheetId(newStore);
+  if (!spreadsheetId) {
+    return;
+  }
+
+  const dataToSync: any = {};
   const keys = Object.keys(newStore) as (keyof ARMSStore)[];
-  const promises: Promise<void>[] = [];
+  let hasChanges = false;
   
   for (const key of keys) {
     if (key === 'settings') {
       if (JSON.stringify(oldStore.settings) !== JSON.stringify(newStore.settings)) {
-        promises.push(setDoc(doc(db, 'settings', 'main'), cleanData(newStore.settings)));
+        dataToSync[key] = newStore.settings;
+        hasChanges = true;
       }
       continue;
     }
     
-    const oldItems = (oldStore[key] as any[]) || [];
-    const newItems = (newStore[key] as any[]) || [];
-    
-    const oldMap = new Map(oldItems.map(item => [item.id, item]));
-    const newMap = new Map(newItems.map(item => [item.id, item]));
-    
-    for (const item of newItems) {
-      if (!item.id) continue;
-      const oldItem = oldMap.get(item.id);
-      if (JSON.stringify(item) !== JSON.stringify(oldItem)) {
-        promises.push(setDoc(doc(db, String(key), item.id), cleanData(item)));
-      }
-    }
-    
-    for (const oldItem of oldItems) {
-      if (!oldItem.id) continue;
-      if (!newMap.has(oldItem.id)) {
-        promises.push(deleteDoc(doc(db, String(key), oldItem.id)));
-      }
+    if (JSON.stringify(oldStore[key]) !== JSON.stringify(newStore[key])) {
+      dataToSync[key] = (newStore[key] as any[]).map(cleanData);
+      hasChanges = true;
     }
   }
-  
+
+  if (!hasChanges) {
+    return;
+  }
+
   try {
-    await Promise.all(promises);
+    await fetch('/api/sheets/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ spreadsheetId, data: dataToSync })
+    });
   } catch (e) {
-    console.error('Firebase sync error', e);
+    console.error("Firebase (Sheets) incremental sync error", e);
   }
 }
