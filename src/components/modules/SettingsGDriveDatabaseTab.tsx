@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Client, Personnel, Case, Customer, SK, Contract } from '../../types/arms';
-import { ROOT_GDRIVE_URL } from '../../data/initialData';
+import { ROOT_GDRIVE_URL, ROOT_GDRIVE_ID } from '../../data/initialData';
 import {
   Folder,
   FolderOpen,
@@ -29,8 +29,12 @@ import {
   Scale,
   Car,
   AlertCircle,
-  FileSignature
+  FileSignature,
+  Loader2,
+  RefreshCw,
+  FolderCheck
 } from 'lucide-react';
+import { ensureDrivePath, createDriveFolder, isPlaceholderDriveUrl, isRealDriveFolder, slugify, folderUrlFromId, getRootDriveId } from '../../lib/drive';
 import { LetterPreviewModal, LetterPreviewData } from '../common/LetterPreviewModal';
 import { EmployeeIdCardModal } from './EmployeeIdCardModal';
 import { AddressFields } from '../common/AddressFields';
@@ -51,6 +55,8 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
   const [activeSection, setActiveSection] = useState<ExplorerSection>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [creatingFolderKey, setCreatingFolderKey] = useState<string | null>(null);
+  const [folderActionMsg, setFolderActionMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   // Expanded tree states
   const [expandedClients, setExpandedClients] = useState<Record<string, boolean>>({
@@ -105,10 +111,101 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
 
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS';
   const rootDriveUrl = store.settings?.googleDriveFolderUrl || ROOT_GDRIVE_URL;
+  const rootDriveId = getRootDriveId(store.settings) || ROOT_GDRIVE_ID;
 
   const personnelList = store.personnel || [];
   const clientsList = store.clients || [];
   const casesList = store.cases || [];
+
+  // Folder GDrive dikatakan sudah "nyata" bila URL folder Google Drive valid
+  // (ID 20+ karakter) dan cocok dengan folderId yang tersimpan — menolak
+  // link placeholder lama `&path=` serta ID buatan seperti `GDRIVE-CLI-...`.
+  const isRealFolder = (url?: string, folderId?: string) => {
+    return isRealDriveFolder(url, folderId);
+  };
+
+  const personnelPathSegments = (p: Personnel) => [
+    'PT_MJ_INDONESIA',
+    'DATABASE_KARYAWAN',
+    slugify(p.fullName),
+  ];
+
+  const clientPathSegments = (client: Client) => [
+    'PT_MJ_INDONESIA',
+    'MULTIFINANCE',
+    slugify(client.companyName),
+  ];
+
+  const debtorPathSegments = (debtorCase: Case, client?: Client) => [
+    'PT_MJ_INDONESIA',
+    'MULTIFINANCE',
+    slugify(client?.companyName || debtorCase.clientName),
+    'FOLDER_SKP',
+    `DEBITUR_${slugify(debtorCase.debtorName)}`,
+  ];
+
+  const handleEnsureFolder = async (kind: 'PERSONNEL' | 'CLIENT' | 'CLIENT_SKP' | 'DEBTOR', id: string) => {
+    const key = `${kind}-${id}`;
+    if (creatingFolderKey) return;
+    setCreatingFolderKey(key);
+    setFolderActionMsg(null);
+    try {
+      if (kind === 'PERSONNEL') {
+        const p = personnelList.find((x) => x.id === id);
+        if (!p) throw new Error('Personel tidak ditemukan');
+        const result = await ensureDrivePath(personnelPathSegments(p), rootDriveId);
+        const updatedPersonnel = personnelList.map((x) =>
+          x.id === id
+            ? { ...x, gDriveFolderUrl: result.webViewLink, gDriveFolderId: result.folderId }
+            : x,
+        );
+        const audit = createAuditEntry(currentUser.username, currentUser.role, 'UPDATE', 'Personnel_GDrive', id, `Buat folder GDrive karyawan: ${p.fullName}`);
+        onUpdateStore({ ...store, personnel: updatedPersonnel, auditLogs: [audit, ...store.auditLogs] });
+        setFolderActionMsg({ ok: true, text: `Folder GDrive ${p.fullName} berhasil dibuat/diperbaiki.` });
+      } else if (kind === 'CLIENT') {
+        const client = clientsList.find((x) => x.id === id);
+        if (!client) throw new Error('Klien tidak ditemukan');
+        const result = await ensureDrivePath(clientPathSegments(client), rootDriveId);
+        const updatedClients = clientsList.map((x) =>
+          x.id === id
+            ? { ...x, gDriveFolderUrl: result.webViewLink, gDriveFolderId: result.folderId }
+            : x,
+        );
+        const audit = createAuditEntry(currentUser.username, currentUser.role, 'UPDATE', 'Client_GDrive', id, `Buat folder GDrive klien: ${client.companyName}`);
+        onUpdateStore({ ...store, clients: updatedClients, auditLogs: [audit, ...store.auditLogs] });
+        setFolderActionMsg({ ok: true, text: `Folder GDrive ${client.companyName} berhasil dibuat/diperbaiki.` });
+      } else if (kind === 'CLIENT_SKP') {
+        const client = clientsList.find((x) => x.id === id);
+        if (!client) throw new Error('Klien tidak ditemukan');
+        const result = await ensureDrivePath([...clientPathSegments(client), 'FOLDER_SKP'], rootDriveId);
+        const updatedClients = clientsList.map((x) =>
+          x.id === id
+            ? { ...x, skpDriveFolderUrl: result.webViewLink, skpDriveFolderId: result.folderId }
+            : x,
+        );
+        const audit = createAuditEntry(currentUser.username, currentUser.role, 'UPDATE', 'Client_GDrive', id, `Buat folder SKP GDrive klien: ${client.companyName}`);
+        onUpdateStore({ ...store, clients: updatedClients, auditLogs: [audit, ...store.auditLogs] });
+        setFolderActionMsg({ ok: true, text: `Folder SKP ${client.companyName} berhasil dibuat/diperbaiki.` });
+      } else {
+        const debtorCase = casesList.find((x) => x.id === id);
+        if (!debtorCase) throw new Error('Debitur tidak ditemukan');
+        const client = clientsList.find((x) => x.id === debtorCase.clientId);
+        const result = await ensureDrivePath(debtorPathSegments(debtorCase, client), rootDriveId);
+        const updatedCases = casesList.map((x) =>
+          x.id === id
+            ? { ...x, gDriveFolderUrl: result.webViewLink, gDriveFolderId: result.folderId }
+            : x,
+        );
+        const audit = createAuditEntry(currentUser.username, currentUser.role, 'UPDATE', 'Debtor_GDrive', id, `Buat folder GDrive debitur: ${debtorCase.debtorName}`);
+        onUpdateStore({ ...store, cases: updatedCases, auditLogs: [audit, ...store.auditLogs] });
+        setFolderActionMsg({ ok: true, text: `Folder GDrive debitur ${debtorCase.debtorName} berhasil dibuat/diperbaiki.` });
+      }
+    } catch (err: any) {
+      setFolderActionMsg({ ok: false, text: `Gagal membuat folder: ${err.message || String(err)}. Periksa kredensial service account & folder master.` });
+    } finally {
+      setCreatingFolderKey(null);
+    }
+  };
 
   const toggleClientExpand = (clientId: string) => {
     setExpandedClients((prev) => ({ ...prev, [clientId]: !prev[clientId] }));
@@ -124,11 +221,14 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
   // Open Edit Link Modal
   const openEditLink = (target: typeof editLinkTarget) => {
     if (!target) return;
+    // URL placeholder lama (`&path=`) dibersihkan agar tidak tersimpan kembali
+    const cleanUrl = (u?: string) => (u && !isPlaceholderDriveUrl(u) ? u : '');
+    const cleanId = (u?: string) => (u && !isPlaceholderDriveUrl(u) ? u : '');
     setEditLinkTarget(target);
-    setEditFolderUrl(target.currentFolderUrl || '');
-    setEditFolderId(target.currentFolderId || '');
-    setEditDocUrl(target.currentDocUrl || '');
-    setEditSphUrl(target.currentSphUrl || '');
+    setEditFolderUrl(cleanUrl(target.currentFolderUrl));
+    setEditFolderId(cleanId(target.currentFolderId));
+    setEditDocUrl(cleanUrl(target.currentDocUrl));
+    setEditSphUrl(cleanUrl(target.currentSphUrl));
   };
 
   // Save Edit Link
@@ -407,7 +507,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
   };
 
   // Add Debitur under Multifinance
-  const handleAddDebtor = (e: React.FormEvent) => {
+  const handleAddDebtor = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!addDebtorClientId || !newDebtorName.trim()) return;
 
@@ -418,12 +518,25 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
     const caseId = `CAS-${Date.now().toString().slice(-4)}`;
     const skId = `SK-${Date.now().toString().slice(-4)}`;
 
-    const slugDebtor = newDebtorName.trim().toUpperCase().replace(/\s+/g, '_');
-    const slugClient = targetClient.companyName.toUpperCase().replace(/\s+/g, '_');
+    const slugDebtor = slugify(newDebtorName.trim());
+    const slugClient = slugify(targetClient.companyName);
 
-    const debtorFolderPath = `${rootDriveUrl}&path=PT_MJ_INDONESIA/MULTIFINANCE/${slugClient}/FOLDER_SKP/DEBITUR_${slugDebtor}`;
-    const skpSimulatedUrl = `https://drive.google.com/file/d/SKP_${slugDebtor}_${Date.now().toString().slice(-4)}/view?usp=sharing`;
-    const sphSimulatedUrl = `https://drive.google.com/file/d/SPH_${slugDebtor}_${Date.now().toString().slice(-4)}/view?usp=sharing`;
+    // Buat folder asli di Google Drive: PT_MJ_INDONESIA > MULTIFINANCE > [Klien] > FOLDER_SKP > DEBITUR_[nama]
+    let debtorFolderUrl = '';
+    let debtorFolderId = '';
+    try {
+      const driveResult = await ensureDrivePath(
+        ['PT_MJ_INDONESIA', 'MULTIFINANCE', slugClient, 'FOLDER_SKP', `DEBITUR_${slugDebtor}`],
+        rootDriveId,
+      );
+      debtorFolderUrl = driveResult.webViewLink;
+      debtorFolderId = driveResult.folderId;
+    } catch (err: any) {
+      console.warn('Gagal membuat folder GDrive debitur, memakai folder master:', err);
+      debtorFolderUrl = rootDriveUrl;
+    }
+    const skpSimulatedUrl = '';
+    const sphSimulatedUrl = '';
 
     const newCustomer: Customer = {
       id: custId,
@@ -440,7 +553,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
       vehicleMerkType: newVehicle.trim() || 'Unit Kendaraan Bermotor',
       vehiclePoliceNo: newPoliceNo.trim() || 'B 1234 XYZ',
       riskNotes: 'Data debitur baru diinput melalui Direktori GDrive Multifinance.',
-      gDriveFolderUrl: debtorFolderPath,
+      gDriveFolderUrl: debtorFolderUrl,
       createdAt: new Date().toISOString(),
     };
 
@@ -462,8 +575,8 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
       dpdBucket: '90-180',
       assetSummary: `${newVehicle.trim()} (${newPoliceNo.trim()})`,
       gDriveFolderName: `📁 DEBITUR_${slugDebtor}`,
-      gDriveFolderUrl: debtorFolderPath,
-      gDriveFolderId: `GDRIVE-DEB-${Date.now().toString().slice(-4)}`,
+      gDriveFolderUrl: debtorFolderUrl,
+      gDriveFolderId: debtorFolderId || undefined,
       skpDriveDocumentUrl: skpSimulatedUrl,
       sphDriveDocumentUrl: sphSimulatedUrl,
       feeTypeSnapshot: 'SUCCESS_FEE',
@@ -490,7 +603,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
       status: 'ACTIVE',
       approvedBy: 'Direktur Utama',
       approvedAt: new Date().toISOString(),
-      driveFolderUrl: debtorFolderPath,
+      driveFolderUrl: debtorFolderUrl,
       driveDocumentUrl: skpSimulatedUrl,
       createdAt: new Date().toISOString(),
     };
@@ -681,6 +794,13 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
         </div>
       </div>
 
+      {folderActionMsg && (
+        <div className={`p-3 rounded-xl border text-xs font-semibold flex items-center gap-2 ${folderActionMsg.ok ? 'bg-emerald-950/80 text-emerald-200 border-emerald-700' : 'bg-rose-950/80 text-rose-200 border-rose-700'}`}>
+          {folderActionMsg.ok ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <AlertCircle className="w-4 h-4 text-rose-400" />}
+          <span>{folderActionMsg.text}</span>
+        </div>
+      )}
+
       {/* SECTION 1: DATABASE KARYAWAN PT MJ INDONESIA */}
       {(activeSection === 'ALL' || activeSection === 'KARYAWAN') && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
@@ -710,9 +830,11 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {filteredPersonnel.map((p) => {
-                const folderUrl =
-                  p.gDriveFolderUrl ||
-                  `${rootDriveUrl}&path=PT_MJ_INDONESIA/DATABASE_KARYAWAN/${p.fullName.toUpperCase().replace(/\s+/g, '_')}`;
+                const hasRealFolder = isRealFolder(p.gDriveFolderUrl, p.gDriveFolderId);
+                const folderUrl = hasRealFolder
+                  ? p.gDriveFolderUrl || folderUrlFromId(p.gDriveFolderId)
+                  : '';
+                const folderPlaceholderText = `Folder belum dibuat — klik "Buat Folder GDrive"`;
                 const ktpDocUrl = p.ktpDriveFolderUrl || '';
 
                 return (
@@ -768,7 +890,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                           <span>Folder GDrive Karyawan:</span>
                         </span>
                         <span className="text-[10px] text-indigo-400 font-mono">
-                          📁 {p.fullName.toUpperCase().replace(/\s+/g, '_')}
+                          📁 {slugify(p.fullName)}
                         </span>
                       </div>
 
@@ -776,13 +898,14 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                         <input
                           type="text"
                           readOnly
-                          value={folderUrl}
+                          value={folderUrl || folderPlaceholderText}
                           className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-300 font-mono truncate select-all focus:outline-none"
                         />
                         <button
                           type="button"
                           onClick={() => handleCopyLink(folderUrl, `FLD-${p.id}`)}
-                          className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"
+                          disabled={!folderUrl}
+                          className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed"
                           title="Salin Link Folder"
                         >
                           {copiedId === `FLD-${p.id}` ? (
@@ -791,15 +914,21 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                             <Copy className="w-3.5 h-3.5" />
                           )}
                         </button>
-                        <a
-                          href={folderUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition"
-                          title="Buka Folder di Google Drive"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
+                        {folderUrl ? (
+                          <a
+                            href={folderUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition"
+                            title="Buka Folder di Google Drive"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        ) : (
+                          <span className="px-2 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-[10px] text-slate-500">
+                            Belum dibuat
+                          </span>
+                        )}
                       </div>
 
                       {/* KTP Document Link row */}
@@ -852,6 +981,19 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                         <>
                           <button
                             type="button"
+                            disabled={!!creatingFolderKey}
+                            onClick={() => handleEnsureFolder('PERSONNEL', p.id)}
+                            className="flex items-center gap-1 px-3 py-1.5 bg-blue-950 hover:bg-blue-900 border border-blue-800 text-blue-300 text-xs font-semibold rounded-lg transition disabled:opacity-50"
+                          >
+                            {creatingFolderKey === `PERSONNEL-${p.id}` ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <FolderCheck className="w-3.5 h-3.5 text-blue-400" />
+                            )}
+                            {hasRealFolder ? 'Perbaiki Folder' : 'Buat Folder GDrive'}
+                          </button>
+                          <button
+                            type="button"
                             onClick={() =>
                               openEditLink({
                                 type: 'PERSONNEL',
@@ -860,7 +1002,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                                 currentFolderUrl: p.gDriveFolderUrl || folderUrl,
                                 currentFolderId: p.gDriveFolderId || p.ktpDriveFileId,
                                 currentDocUrl: p.ktpDriveFolderUrl || '',
-                                extraNote: `Struktur: PT MJ INDONESIA > DATABASE KARYAWAN > ${p.fullName.toUpperCase().replace(/\s+/g, '_')}`,
+                                extraNote: `Struktur: PT MJ INDONESIA > DATABASE KARYAWAN > ${slugify(p.fullName)}`,
                               })
                             }
                             className="flex items-center gap-1 px-3 py-1.5 bg-indigo-950 hover:bg-indigo-900 border border-indigo-800 text-indigo-300 text-xs font-semibold rounded-lg transition"
@@ -928,15 +1070,17 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                 const isExpanded = !!expandedClients[client.id];
                 const clientDebtors = casesList.filter((cs) => cs.clientId === client.id);
 
-                const slugClient = client.companyName.toUpperCase().replace(/\s+/g, '_');
-                const clientFolderUrl =
-                  client.gDriveFolderUrl ||
-                  `${rootDriveUrl}&path=PT_MJ_INDONESIA/MULTIFINANCE/${slugClient}`;
+                const slugClient = slugify(client.companyName);
+                const hasRealClientFolder = isRealFolder(client.gDriveFolderUrl, client.gDriveFolderId);
+                const clientFolderUrl = hasRealClientFolder
+                  ? client.gDriveFolderUrl || folderUrlFromId(client.gDriveFolderId)
+                  : '';
                 const proposalUrl = client.proposalDriveUrl || '';
                 const mouUrl = client.mouDriveUrl || '';
-                const skpFolderUrl =
-                  client.skpDriveFolderUrl ||
-                  `${rootDriveUrl}&path=PT_MJ_INDONESIA/MULTIFINANCE/${slugClient}/FOLDER_SKP`;
+                const hasRealSkpFolder = isRealFolder(client.skpDriveFolderUrl, client.skpDriveFolderId);
+                const skpFolderUrl = hasRealSkpFolder
+                  ? client.skpDriveFolderUrl || folderUrlFromId(client.skpDriveFolderId)
+                  : '';
 
                 return (
                   <div
@@ -978,17 +1122,39 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2 shrink-0">
-                        <a
-                          href={clientFolderUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg transition"
-                          title="Buka Folder Multifinance di Google Drive"
-                        >
-                          <FolderOpen className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>Folder Multifinance</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
+                        {clientFolderUrl ? (
+                          <a
+                            href={clientFolderUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg transition"
+                            title="Buka Folder Multifinance di Google Drive"
+                          >
+                            <FolderOpen className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Folder Multifinance</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-950 border border-dashed border-slate-700 text-slate-400 text-xs font-semibold rounded-lg">
+                            <Folder className="w-3.5 h-3.5 text-amber-400" />
+                            Folder belum dibuat
+                          </span>
+                        )}
+                        {canEdit && (
+                          <button
+                            type="button"
+                            disabled={!!creatingFolderKey}
+                            onClick={() => handleEnsureFolder('CLIENT', client.id)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 text-emerald-300 text-xs font-semibold rounded-lg transition disabled:opacity-50"
+                          >
+                            {creatingFolderKey === `CLIENT-${client.id}` ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <FolderCheck className="w-3.5 h-3.5 text-emerald-400" />
+                            )}
+                            {hasRealClientFolder ? 'Perbaiki Folder' : 'Buat Folder'}
+                          </button>
+                        )}
 
                         {canEdit && (
                           <button
@@ -1223,16 +1389,38 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                             </div>
 
                             <div className="flex items-center gap-2">
-                              <a
-                                href={skpFolderUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-1 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-semibold rounded-lg transition"
-                              >
-                                <FolderOpen className="w-3.5 h-3.5" />
-                                <span>Buka Folder SKP GDrive</span>
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
+                              {skpFolderUrl ? (
+                                <a
+                                  href={skpFolderUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-semibold rounded-lg transition"
+                                >
+                                  <FolderOpen className="w-3.5 h-3.5" />
+                                  <span>Buka Folder SKP GDrive</span>
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-950 border border-dashed border-slate-700 text-amber-300/80 text-xs font-semibold rounded-lg">
+                                  <Folder className="w-3.5 h-3.5 text-amber-400" />
+                                  Folder SKP belum dibuat
+                                </span>
+                              )}
+                              {canEdit && (
+                                <button
+                                  type="button"
+                                  disabled={!!creatingFolderKey}
+                                  onClick={() => handleEnsureFolder('CLIENT_SKP', client.id)}
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-950 hover:bg-amber-900 border border-amber-800 text-amber-300 text-xs font-semibold rounded-lg transition disabled:opacity-50"
+                                >
+                                  {creatingFolderKey === `CLIENT_SKP-${client.id}` ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <FolderCheck className="w-3.5 h-3.5 text-amber-400" />
+                                  )}
+                                  Buat Folder SKP
+                                </button>
+                              )}
                             </div>
                           </div>
 
@@ -1256,12 +1444,12 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                           ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                               {clientDebtors.map((debtorCase) => {
-                                const slugDebtor = debtorCase.debtorName
-                                  .toUpperCase()
-                                  .replace(/\s+/g, '_');
-                                const debtorFolder =
-                                  debtorCase.gDriveFolderUrl ||
-                                  `${rootDriveUrl}&path=PT_MJ_INDONESIA/MULTIFINANCE/${slugClient}/FOLDER_SKP/DEBITUR_${slugDebtor}`;
+                                const slugDebtor = slugify(debtorCase.debtorName);
+                                const hasRealDebtorFolder = isRealFolder(debtorCase.gDriveFolderUrl, debtorCase.gDriveFolderId);
+                                const debtorFolder = hasRealDebtorFolder
+                                  ? debtorCase.gDriveFolderUrl || folderUrlFromId(debtorCase.gDriveFolderId)
+                                  : '';
+                                const folderPlaceholder = `Folder belum dibuat — klik "Buat Folder GDrive"`;
                                 const skpDoc = debtorCase.skpDriveDocumentUrl || '';
                                 const sphDoc = debtorCase.sphDriveDocumentUrl || '';
 
@@ -1315,13 +1503,14 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                                         <input
                                           type="text"
                                           readOnly
-                                          value={debtorFolder}
+                                          value={debtorFolder || folderPlaceholder}
                                           className="flex-1 bg-slate-900 border border-slate-800 rounded px-2 py-1 text-[10px] text-slate-300 font-mono truncate select-all"
                                         />
                                         <button
                                           type="button"
                                           onClick={() => handleCopyLink(debtorFolder, `DEB-${debtorCase.id}`)}
-                                          className="p-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded transition"
+                                          disabled={!debtorFolder}
+                                          className="p-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded transition disabled:opacity-40 disabled:cursor-not-allowed"
                                           title="Salin Link Folder Debitur"
                                         >
                                           {copiedId === `DEB-${debtorCase.id}` ? (
@@ -1330,15 +1519,21 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                                             <Copy className="w-3 h-3" />
                                           )}
                                         </button>
-                                        <a
-                                          href={debtorFolder}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="p-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded transition"
-                                          title="Buka Folder di Google Drive"
-                                        >
-                                          <ExternalLink className="w-3 h-3" />
-                                        </a>
+                                        {debtorFolder ? (
+                                          <a
+                                            href={debtorFolder}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="p-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded transition"
+                                            title="Buka Folder di Google Drive"
+                                          >
+                                            <ExternalLink className="w-3 h-3" />
+                                          </a>
+                                        ) : (
+                                          <span className="px-1.5 py-1 bg-slate-900 border border-slate-800 rounded text-[9px] text-slate-500">
+                                            Belum dibuat
+                                          </span>
+                                        )}
                                       </div>
 
                                       {/* SKP & SPH Status Links */}
@@ -1418,6 +1613,19 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
 
                                       {canEdit && (
                                         <>
+                                          <button
+                                            type="button"
+                                            disabled={!!creatingFolderKey}
+                                            onClick={() => handleEnsureFolder('DEBTOR', debtorCase.id)}
+                                            className="px-2.5 py-1.5 bg-amber-950 hover:bg-amber-900 border border-amber-800 text-amber-300 text-xs font-semibold rounded-lg transition flex items-center gap-1 disabled:opacity-50"
+                                          >
+                                            {creatingFolderKey === `DEBTOR-${debtorCase.id}` ? (
+                                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                            ) : (
+                                              <FolderCheck className="w-3.5 h-3.5 text-amber-400" />
+                                            )}
+                                            {hasRealDebtorFolder ? 'Perbaiki Folder' : 'Buat Folder'}
+                                          </button>
                                           <button
                                             type="button"
                                             onClick={() =>
@@ -1818,9 +2026,9 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
             <div className="p-3 bg-emerald-950/40 border border-emerald-800/60 rounded-xl text-[11px] text-emerald-300 flex items-start gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
               <span>
-                Sistem akan secara otomatis membuat path folder Google Drive: <br />
+                Sistem akan otomatis membuat folder asli di Google Drive: <br />
                 <code className="font-mono text-[10px] text-white">
-                  📁 MULTIFINANCE &gt; 📁 {clientsList.find((c) => c.id === addDebtorClientId)?.companyName} &gt; 📁 FOLDER_SKP &gt; 📁 DEBITUR_{newDebtorName.trim().toUpperCase().replace(/\s+/g, '_') || 'NAMA_DEBITUR'}
+                  📁 PT MJ INDONESIA &gt; 📁 MULTIFINANCE &gt; 📁 {clientsList.find((c) => c.id === addDebtorClientId)?.companyName} &gt; 📁 FOLDER_SKP &gt; 📁 DEBITUR_{slugify(newDebtorName.trim()) || 'NAMA_DEBITUR'}
                 </code>
               </span>
             </div>
@@ -1882,7 +2090,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
 
             <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-[11px] space-y-1 font-mono text-slate-300">
               <div>
-                <span className="text-slate-500">Struktur Path:</span> 📁 PT MJ INDONESIA / DATABASE KARYAWAN / {previewKtpPersonnel.fullName.toUpperCase().replace(/\s+/g, '_')} /
+                <span className="text-slate-500">Struktur Path:</span> 📁 PT MJ INDONESIA / DATABASE KARYAWAN / {slugify(previewKtpPersonnel.fullName)} /
               </div>
               <div>
                 <span className="text-slate-500">Link GDrive:</span>{' '}

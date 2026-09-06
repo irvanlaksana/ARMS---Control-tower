@@ -1,12 +1,9 @@
-@import "tailwindcss";
+/* Dimuat bersama index.css di aplikasi ARMS (Tailwind sudah diimpor di sana),
+   jadi blok root/body global dari aplikasi generator asli dilepas agar tidak
+   menimpa tema gelap ARMS Control Tower. */
 
 :root {
-  color-scheme: light;
-}
-
-body {
-  margin: 0;
-  background: #eef1f6;
+  color-scheme: dark;
 }
 
 /* ====== DOCUMENT (F4 / FOLIO SHEET — 215 x 330 mm) ====== */
@@ -216,6 +213,8 @@ body {
 }
 
 /* ====== PRINT ====== */
+/* Semua selector di-scope ke .arms-generator agar tidak memengaruhi
+   pencetakan modul lain di aplikasi ARMS (modal preview, laporan, dll.). */
 @media print {
   @page {
     size: 215mm 330mm; /* F4 / Folio */
@@ -229,10 +228,9 @@ body {
     padding: 0 !important;
   }
 
-  #root,
-  .fixed.inset-0,
-  .generator-body,
-  .generator-preview {
+  .arms-generator,
+  .arms-generator .generator-body,
+  .arms-generator .generator-preview {
     display: block !important;
     position: static !important;
     width: auto !important;
@@ -242,12 +240,12 @@ body {
     overflow: visible !important;
   }
 
-  .no-print {
+  .arms-generator .no-print {
     display: none !important;
   }
 
-  .print-root,
-  .print-scroll {
+  .arms-generator .print-root,
+  .arms-generator .print-scroll {
     display: block !important;
     position: static !important;
     overflow: visible !important;
@@ -259,8 +257,8 @@ body {
     width: auto !important;
   }
 
-  main,
-  aside {
+  .arms-generator main,
+  .arms-generator aside {
     display: block !important;
     background: #fff !important;
     height: auto !important;
@@ -268,11 +266,11 @@ body {
     overflow: visible !important;
   }
 
-  .zoom-stage,
-  .zoom-wrap,
-  .page-list,
-  .page-card,
-  .page-shadow {
+  .arms-generator .zoom-stage,
+  .arms-generator .zoom-wrap,
+  .arms-generator .page-list,
+  .arms-generator .page-card,
+  .arms-generator .page-shadow {
     transform: none !important;
     zoom: 1 !important;
     width: auto !important;
@@ -289,17 +287,17 @@ body {
     --tw-ring-offset-shadow: 0 0 #0000 !important;
   }
 
-  .page-card {
+  .arms-generator .page-card {
     break-after: page;
     page-break-after: always;
   }
 
-  .page-card:last-child {
+  .arms-generator .page-card:last-child {
     break-after: auto;
     page-break-after: auto;
   }
 
-  .sheet {
+  .arms-generator .sheet {
     box-shadow: none !important;
     margin: 0 !important;
     outline: none !important;

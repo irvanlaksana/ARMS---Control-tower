@@ -86,7 +86,7 @@ export default function AssignmentLetterGenerator({ initialData, isPersonal, onC
   let pageNo = 0;
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-slate-950">
+    <div className="arms-generator fixed inset-0 z-[60] flex flex-col bg-slate-950">
       <div className="generator-toolbar no-print flex items-center justify-between border-b border-slate-800 bg-slate-900 px-4 py-2">
         <div>
           <h2 className="text-sm font-bold text-white">Generator Surat Penugasan Lapangan</h2>
