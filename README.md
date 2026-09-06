@@ -147,6 +147,18 @@ npm run build && npm start   # production
 
 > `server.ts` sudah memuat `dotenv/config`, jadi `.env` di folder root otomatis terbaca.
 
+### 5.1b. Validasi kredensial (sebelum/sesudah isi .env)
+```bash
+# Validasi isi kredensial + coba dapat access token dari Google
+npm run validate:creds
+# atau
+node scripts/validate-google-creds.mjs
+
+# Sekaligus uji akses ke spreadsheet database Anda:
+node scripts/validate-google-creds.mjs <SPREADSHEET_ID>
+```
+Skrip akan mencetak pesan spesifik bila file tidak ditemukan, JSON rusak, `private_key` tidak valid, atau spreadsheet tidak di-share — bukan lagi error ADC samar `Could not load the default credentials`.
+
 ### 5.2. Mode Vercel
 1. Buka project di Vercel → **Settings → Environment Variables**.
 2. Tambahkan **`GOOGLE_SERVICE_ACCOUNT_JSON`** dengan value JSON service account (tempel seluruh isi file, termasuk baris baru `\n` pada `private_key` — pastikan JSON valid).
@@ -222,7 +234,9 @@ export GOOGLE_SERVICE_ACCOUNT_JSON="$(cat service-account.json)"
 | Gejala / Error | Penyebab | Solusi |
 |---|---|---|
 | `Google API belum dikonfigurasi. Set env GOOGLE_SERVICE_ACCOUNT_JSON ... atau GOOGLE_APPLICATION_CREDENTIALS` | Kredensial service account belum diset di server | Set salah satu env var (Bab 5), restart server |
-| `Could not load the default credentials...` | Versi lama / kredensial tidak terbaca | Upgrade ke versi dengan `authFor()`; set `GOOGLE_APPLICATION_CREDENTIALS` |
+| `Could not load the default credentials...` | Kredensial belum diset / versi lama tanpa `authFor()` | Repo ini sudah memakai `authFor()` (baca kredensial eksplisit di `api/lib/googleAuth.ts`). Isi `GOOGLE_SERVICE_ACCOUNT_JSON` atau `GOOGLE_APPLICATION_CREDENTIALS`, letakkan file `service-account.json` di root repo, lalu jalankan `node scripts/validate-google-creds.mjs` untuk cek |
+| `File kredensial tidak ditemukan: ...service-account.json` | Path `GOOGLE_APPLICATION_CREDENTIALS` menunjuk file yang belum ada | Letakkan file JSON service account di lokasi tsb (default `./service-account.json` = root repo), lalu jalankan ulang validasi |
+| `GOOGLE_SERVICE_ACCOUNT_JSON tidak valid ... / bukan JSON valid` | Isi env adalah JSON rusak / `private_key` terpotong | Tempel ulang seluruh isi file JSON (pertahankan `\n` pada `private_key`), lalu jalankan `node scripts/validate-google-creds.mjs` |
 | `MetadataLookupWarning` | Server mencoba metadata GCE tanpa kredensial | Set kredensial; versi baru sudah tidak memunculkan warning ini |
 | `403 insufficient permissions` | Service account belum di-share ke spreadsheet/folder | Share spreadsheet & folder root dengan email service account sebagai **Editor** |
 | `Spreadsheet not found` / `404` | Spreadsheet ID salah atau tidak di-share | Salin ID dari URL; pastikan share Editor |
