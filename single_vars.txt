@@ -1,0 +1,4 @@
+src/components/Layout.tsx: {children}
+src/components/modals/GASCodeModal.tsx: {code}
+src/components/layout/Header.tsx: {companyName}
+src/auth/AuthProvider.tsx: {children}
