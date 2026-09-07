@@ -36,7 +36,8 @@ async function startServer() {
     res.json({
       status: "ok",
       system: "ARMS - Control Tower Agency DC",
-      database: "Google Sheets",
+      database: "Supabase & Google Sheets",
+      supabaseConfigured: Boolean(process.env.VITE_SUPABASE_URL && process.env.VITE_SUPABASE_ANON_KEY),
       timestamp: new Date().toISOString(),
     });
   });
