@@ -191,6 +191,10 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
         },
       };
       const res = await pushFullStoreToFirebase(pushStore);
+      const supabaseResult = isSupabaseConfigured ? await pushFullStoreToSupabase(pushStore) : null;
+      if (supabaseResult && !supabaseResult.success) {
+        throw new Error(`Supabase: ${supabaseResult.error || 'sinkronisasi gagal'}`);
+      }
       const counts: Record<string, number> = {};
       for (const cfg of getDatabaseConfigs(pushStore.settings)) {
         if (cfg.collection === 'settings') continue;
@@ -203,7 +207,7 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
       }
       setSetupMsg({
         ok: true,
-        text: `✅ Sukses! ${res.totalItems} dokumen di ${res.collectionsCount} sheet/database berhasil di-push.`,
+        text: `✅ Sukses! ${res.totalItems} dokumen tersimpan di CSV lokal${supabaseResult ? ' dan Supabase' : ''}.`,
       });
     } catch (err: any) {
       setSetupMsg({ ok: false, text: `❌ Gagal push: ${err.message || String(err)}` });

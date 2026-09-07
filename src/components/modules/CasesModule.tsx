@@ -326,7 +326,8 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
 
       const newCase: Case = {
         id: `CAS-${Date.now()}`,
-        caseNo: `CAS-2026-${clientCodeForCase}-${Math.floor(100 + Math.random() * 900)}`,
+        // Nomor perkara harus unik lintas browser/Vercel; random 3 digit mudah bertabrakan.
+        caseNo: `CAS-2026-${clientCodeForCase}-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
         clientId: actualClientId,
         clientName: actualClientName,
         clientType: clientCategory,

@@ -85,18 +85,8 @@ export function findDuplicateCaseForClient(
       }
     }
 
-    // 4. Check Debtor Name
-    if (normTargetName && normTargetName.length >= 4 && cs.debtorName) {
-      const normExistingName = normalizeString(cs.debtorName);
-      if (normExistingName && normExistingName === normTargetName) {
-        return {
-          isDuplicate: true,
-          matchType: 'DEBTOR_NAME',
-          matchReason: `Nama Debitur "${cs.debtorName}" sudah terdaftar pada Klien ini dengan No. Perkara ${cs.caseNo} (No. Kontrak: ${cs.multifinanceContractNo})`,
-          matchedCase: cs,
-        };
-      }
-    }
+    // Nama saja bukan kunci unik: dua debitur dapat memiliki nama yang sama.
+    // Validasi duplikat perkara hanya memakai Customer ID, kontrak, atau NIK.
   }
 
   return { isDuplicate: false };
@@ -144,10 +134,16 @@ export function findDuplicateCustomerMaster(
       };
     }
 
-    if (normName && normName.length >= 4 && c.fullName && normalizeString(c.fullName) === normName) {
+    // Nama saja bukan identitas unik. Hanya anggap sama jika nama + nomor telepon
+    // cocok, sehingga dua orang dengan nama sama tetap dapat disimpan.
+    const normExistingName = normalizeString(c.fullName);
+    const normExistingPhone = normalizeString(c.phone);
+    const normPhone = normalizeString(params.phone);
+    if (normName && normName.length >= 4 && normPhone.length >= 7 &&
+        normExistingName === normName && normExistingPhone === normPhone) {
       return {
         isDuplicate: true,
-        matchReason: `Nama Debitur "${c.fullName}" sudah terdaftar di Master Debitur (${c.nikKtp ? `NIK: ${c.nikKtp}` : `Kontrak: ${c.contractNo || '-'}`})`,
+        matchReason: `Nama dan nomor HP debitur "${c.fullName}" sudah terdaftar di Master Debitur`,
         matchedCustomer: c,
       };
     }

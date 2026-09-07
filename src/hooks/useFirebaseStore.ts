@@ -158,6 +158,9 @@ export function useFirebaseStore() {
         sbResult = await pushFullStoreToSupabase(store);
       }
       
+      if (sbResult && !sbResult.success) {
+        throw new Error(sbResult.error || 'Sinkronisasi Supabase gagal');
+      }
       lastSyncedStoreRef.current = store;
       setError(null);
       return {

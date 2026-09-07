@@ -26,6 +26,8 @@ import { SettingsGDriveDatabaseTab } from './SettingsGDriveDatabaseTab';
 import { SettingsDatabaseTab } from './SettingsDatabaseTab';
 import { getDatabaseConfigs, markDatabaseSynced } from '../../data/databaseConfig';
 import { pushFullStoreToFirebase } from '../../services/firebaseSyncService';
+import { pushFullStoreToSupabase } from '../../services/supabaseService';
+import { isSupabaseConfigured } from '../../lib/supabase';
 import { DatabaseTabConfig } from '../../types/arms';
 import { Landmark, Table2 } from 'lucide-react';
 
@@ -66,6 +68,10 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
         settings: { ...settings, googleSheetId: sheetId, databaseConfig: dbColumns },
       };
       const res = await pushFullStoreToFirebase(pushStore);
+      const supabaseResult = isSupabaseConfigured ? await pushFullStoreToSupabase(pushStore) : null;
+      if (supabaseResult && !supabaseResult.success) {
+        throw new Error(`Supabase: ${supabaseResult.error || 'sinkronisasi gagal'}`);
+      }
       const counts: Record<string, number> = {};
       for (const cfg of getDatabaseConfigs(pushStore.settings)) {
         if (cfg.collection === 'settings') continue;
@@ -75,7 +81,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
       const syncedSettings = markDatabaseSynced(pushStore.settings, counts, res.syncedAt || new Date().toISOString());
       onUpdateStore({ ...pushStore, settings: syncedSettings });
       setSettings(syncedSettings);
-      setPushStatusMsg(`✅ Sukses! ${res.totalItems} dokumen di ${res.collectionsCount} sheet berhasil dikirim dan dibuat otomatis ke CSV lokal.`);
+      setPushStatusMsg(`✅ Sukses! ${res.totalItems} dokumen tersimpan di CSV lokal${supabaseResult ? ' dan Supabase' : ''}.`);
     } catch (err: any) {
       setPushStatusMsg(`❌ Gagal Push Data: ${err.message || String(err)}`);
     } finally {
