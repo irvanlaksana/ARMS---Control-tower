@@ -235,6 +235,7 @@ export const ContractsModule: React.FC<ContractsModuleProps> = ({ store, current
             </tbody>
           </table>
         </div>
+        <Pagination page={contractPagination.page} totalPages={contractPagination.totalPages} totalItems={contractPagination.totalItems} pageSize={contractPagination.pageSize} onPageChange={contractPagination.setPage} />
       </div>
 
       {showModal && (

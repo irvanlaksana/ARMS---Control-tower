@@ -769,6 +769,7 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
             </tbody>
           </table>
         </div>
+        <Pagination page={customerPagination.page} totalPages={customerPagination.totalPages} totalItems={customerPagination.totalItems} pageSize={customerPagination.pageSize} onPageChange={customerPagination.setPage} />
       </div>
 
       {/* BULK IMPORT MODAL */}
