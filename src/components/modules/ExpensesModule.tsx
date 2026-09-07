@@ -196,6 +196,7 @@ export const ExpensesModule: React.FC<ExpensesModuleProps> = ({ store, currentUs
             </tbody>
           </table>
         </div>
+        <Pagination page={expensePagination.page} totalPages={expensePagination.totalPages} totalItems={expensePagination.totalItems} pageSize={expensePagination.pageSize} onPageChange={expensePagination.setPage} />
       </div>
 
       {showModal && (

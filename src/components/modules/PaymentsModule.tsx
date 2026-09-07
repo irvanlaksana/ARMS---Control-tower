@@ -598,8 +598,8 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
               )}
             </tbody>
           </table>
-          <Pagination page={paymentPagination.page} totalPages={paymentPagination.totalPages} totalItems={paymentPagination.totalItems} pageSize={paymentPagination.pageSize} onPageChange={paymentPagination.setPage} />
         </div>
+        <Pagination page={paymentPagination.page} totalPages={paymentPagination.totalPages} totalItems={paymentPagination.totalItems} pageSize={paymentPagination.pageSize} onPageChange={paymentPagination.setPage} />
       </div>
 
       {/* Modal: Official Receipt */}

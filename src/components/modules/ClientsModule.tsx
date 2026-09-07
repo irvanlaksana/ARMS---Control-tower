@@ -300,6 +300,7 @@ export const ClientsModule: React.FC<ClientsModuleProps> = ({ store, currentUser
             </tbody>
           </table>
         </div>
+        <Pagination page={clientPagination.page} totalPages={clientPagination.totalPages} totalItems={clientPagination.totalItems} pageSize={clientPagination.pageSize} onPageChange={clientPagination.setPage} />
       </div>
 
       {showModal && (

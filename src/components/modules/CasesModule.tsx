@@ -522,6 +522,7 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
             </tbody>
           </table>
         </div>
+        <Pagination page={casePagination.page} totalPages={casePagination.totalPages} totalItems={casePagination.totalItems} pageSize={casePagination.pageSize} onPageChange={casePagination.setPage} />
       </div>
 
       {showAddModal && (

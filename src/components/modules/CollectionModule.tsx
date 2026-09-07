@@ -879,8 +879,8 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                 )}
               </tbody>
             </table>
-              <Pagination page={collectionPagination.page} totalPages={collectionPagination.totalPages} totalItems={collectionPagination.totalItems} pageSize={collectionPagination.pageSize} onPageChange={collectionPagination.setPage} />
           </div>
+          <Pagination page={collectionPagination.page} totalPages={collectionPagination.totalPages} totalItems={collectionPagination.totalItems} pageSize={collectionPagination.pageSize} onPageChange={collectionPagination.setPage} />
         </div>
       )}
 
@@ -1041,8 +1041,8 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                 )}
               </tbody>
             </table>
-              <Pagination page={commPagination.page} totalPages={commPagination.totalPages} totalItems={commPagination.totalItems} pageSize={commPagination.pageSize} onPageChange={commPagination.setPage} />
           </div>
+          <Pagination page={commPagination.page} totalPages={commPagination.totalPages} totalItems={commPagination.totalItems} pageSize={commPagination.pageSize} onPageChange={commPagination.setPage} />
         </div>
       )}
 

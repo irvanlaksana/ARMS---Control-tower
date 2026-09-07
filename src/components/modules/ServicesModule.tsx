@@ -112,6 +112,10 @@ export const ServicesModule: React.FC<ServicesModuleProps> = ({
         ))}
       </div>
 
+      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
+        <Pagination page={servicePagination.page} totalPages={servicePagination.totalPages} totalItems={servicePagination.totalItems} pageSize={servicePagination.pageSize} onPageChange={servicePagination.setPage} />
+      </div>
+
       {/* Modal Add Service */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">

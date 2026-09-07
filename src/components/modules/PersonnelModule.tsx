@@ -583,7 +583,7 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
               Belum ada data pada folder {activeFolder === 'ALL' ? 'Database' : activeFolder}. Klik "Tambah Karyawan / Mitra Baru" untuk memasukkan data.
             </div>
           ) : (
-            filteredPersonnel.map((p) => (
+            personnelPagination.pageItems.map((p) => (
               <div key={p.id} className="bg-slate-950 border border-slate-800 rounded-lg p-4 space-y-3 shadow-sm">
                 <div>
                   <h4 className="font-bold text-white text-sm">{p.fullName}</h4>
@@ -624,6 +624,8 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
             ))
           )}
         </div>
+
+        <Pagination page={personnelPagination.page} totalPages={personnelPagination.totalPages} totalItems={personnelPagination.totalItems} pageSize={personnelPagination.pageSize} onPageChange={personnelPagination.setPage} />
       </div>
 
       {/* Lightbox KTP Modal (replaced by DriveFilePreview) */}

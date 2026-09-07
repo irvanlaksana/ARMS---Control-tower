@@ -294,6 +294,7 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ store, currentUser, 
             </tbody>
           </table>
         </div>
+        <Pagination page={assetPagination.page} totalPages={assetPagination.totalPages} totalItems={assetPagination.totalItems} pageSize={assetPagination.pageSize} onPageChange={assetPagination.setPage} />
       </div>
 
       {showModal && (
