@@ -20,13 +20,14 @@ function cleanData(obj: any): any {
 
 // Get spreadsheetId from settings or environment
 function getSpreadsheetId(store: ARMSStore): string | null {
-  return store?.settings?.googleSheetId || null;
+  // Nama workbook lokal. Tidak perlu Spreadsheet ID atau kredensial Google.
+  return store?.settings?.googleSheetId || 'arms-control-tower';
 }
 
 export async function fetchStoreFromFirebase(currentStore: ARMSStore): Promise<ARMSStore> {
   const spreadsheetId = getSpreadsheetId(currentStore);
   if (!spreadsheetId) {
-    console.warn("No Google Sheet ID found in settings. Skipping fetch.");
+    console.warn("Workbook lokal belum tersedia; memakai data lokal dan akan dibuat saat push pertama.");
     return currentStore;
   }
 
@@ -41,7 +42,7 @@ export async function fetchStoreFromFirebase(currentStore: ARMSStore): Promise<A
     });
     
     if (!response.ok) {
-      throw new Error("Failed to fetch from Google Sheets API");
+      throw new Error("Failed to fetch workbook CSV lokal");
     }
 
     const json = await response.json();
@@ -58,7 +59,7 @@ export async function fetchStoreFromFirebase(currentStore: ARMSStore): Promise<A
 export async function pushFullStoreToFirebase(store: ARMSStore): Promise<{ totalItems: number; collectionsCount: number; syncedAt: string }> {
   const spreadsheetId = getSpreadsheetId(store);
   if (!spreadsheetId) {
-    console.warn("No Google Sheet ID found in settings. Skipping sync.");
+    console.warn("Workbook lokal belum tersedia; memakai nama default arms-control-tower.");
     return { totalItems: 0, collectionsCount: 0, syncedAt: new Date().toISOString() };
   }
 
@@ -105,7 +106,7 @@ export async function pushFullStoreToFirebase(store: ARMSStore): Promise<{ total
     });
 
     if (!response.ok) {
-      throw new Error("Failed to sync to Google Sheets API");
+      throw new Error("Failed to sync workbook CSV lokal");
     }
 
     const json = await response.json();
@@ -115,7 +116,7 @@ export async function pushFullStoreToFirebase(store: ARMSStore): Promise<{ total
       syncedAt: json.syncedAt || new Date().toISOString(),
     };
   } catch (e) {
-    console.error("Firebase (Sheets) sync error", e);
+    console.error("Local spreadsheet sync error", e);
     throw e;
   }
 }

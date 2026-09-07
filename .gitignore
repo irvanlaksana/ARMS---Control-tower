@@ -7,3 +7,6 @@ coverage/
 .env*
 !.env.example
 service-account.json
+
+# Generated local spreadsheet workbooks
+storage/spreadsheets/

@@ -56,13 +56,9 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
   const [activeTab, setActiveTab] = useState<'GDRIVE_DATABASE' | 'DATABASE' | 'SYSTEM' | 'BANK_BALANCES' | 'WORKFLOW'>('GDRIVE_DATABASE');
 
   const handlePushFullFirebase = async () => {
-    const sheetId = (settings.googleSheetId || '').trim();
-    if (!sheetId) {
-      setPushStatusMsg('❌ Masukkan Google Spreadsheet ID / URL terlebih dahulu, lalu tekan Simpan.');
-      return;
-    }
+    const sheetId = (settings.googleSheetId || 'arms-control-tower').trim();
     setIsPushing(true);
-    setPushStatusMsg('Sedang menginisialisasi sheet dan memicu Push Data Otomatis ke Google Sheets...');
+    setPushStatusMsg('Sedang menginisialisasi sheet dan memicu Push Data Otomatis ke CSV lokal...');
     try {
       // Pakai settings yang baru diketik (ID spreadsheet + kolom database) agar push sesuai kolom terbaru
       const pushStore: ARMSStore = {
@@ -79,7 +75,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
       const syncedSettings = markDatabaseSynced(pushStore.settings, counts, res.syncedAt || new Date().toISOString());
       onUpdateStore({ ...pushStore, settings: syncedSettings });
       setSettings(syncedSettings);
-      setPushStatusMsg(`✅ Sukses! ${res.totalItems} dokumen di ${res.collectionsCount} sheet berhasil dikirim dan dibuat otomatis di Google Sheets.`);
+      setPushStatusMsg(`✅ Sukses! ${res.totalItems} dokumen di ${res.collectionsCount} sheet berhasil dikirim dan dibuat otomatis ke CSV lokal.`);
     } catch (err: any) {
       setPushStatusMsg(`❌ Gagal Push Data: ${err.message || String(err)}`);
     } finally {
@@ -122,13 +118,9 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
 
   const handleCreateDatabaseColumns = async () => {
     if (!canEdit) return;
-    const id = (settings.googleSheetId || '').trim();
-    if (!id) {
-      setCreateColumnMsg('❌ Masukkan Google Spreadsheet ID / URL terlebih dahulu.');
-      return;
-    }
+    const id = (settings.googleSheetId || 'arms-control-tower').trim();
     setIsCreatingColumns(true);
-    setCreateColumnMsg('Membuat seluruh kolom/tab database di Google Spreadsheet...');
+    setCreateColumnMsg('Membuat seluruh kolom/tab database di workbook CSV lokal...');
     try {
       const resp = await fetch('/api/sheets/setup', {
         method: 'POST',
@@ -321,17 +313,17 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-white text-base">Google Sheets Cloud Database Control & Push Otomatis</h3>
+                <h3 className="font-bold text-white text-base">Local CSV Spreadsheet Database & Push Otomatis</h3>
                 <span className="px-2.5 py-0.5 bg-emerald-900/80 text-emerald-200 border border-emerald-700 text-[10px] font-bold rounded-full animate-pulse">
                   ONLINE LIVE
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                Database Target: <code className="text-emerald-300 bg-slate-950 px-2 py-0.5 rounded font-mono text-[11px] border border-slate-800">{settings.googleSheetId || 'Belum diatur (kosongkan ID spreadsheet)'}</code>
+                Database Target: <code className="text-emerald-300 bg-slate-950 px-2 py-0.5 rounded font-mono text-[11px] border border-slate-800">{settings.googleSheetId || 'arms-control-tower (default)'}</code>
               </p>
               <div className="mt-2 bg-slate-950/70 border border-slate-800 rounded-xl p-3 space-y-2">
                 <label className="block text-[11px] font-semibold text-slate-300">
-                  Kolom Spreadsheet Database (Google Sheets ID / URL):
+                  Nama Workbook Spreadsheet Lokal:
                 </label>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <input
@@ -339,12 +331,12 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
                     disabled={!canEdit}
                     value={settings.googleSheetId || ''}
                     onChange={(e) => setSettings({ ...settings, googleSheetId: e.target.value.trim() })}
-                    placeholder="e.g. 1AbCdefGhIjKlMnOpQrStUvWxYz0123456789"
+                    placeholder="arms-control-tower"
                     className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-emerald-500"
                   />
                   <div className="flex items-center gap-2">
                     <a
-                      href={settings.googleSheetId ? `https://docs.google.com/spreadsheets/d/${settings.googleSheetId}/edit?usp=sharing` : '#'}
+                      href="#"
                       target="_blank"
                       rel="noopener noreferrer"
                       className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition ${
@@ -373,11 +365,11 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
                   </div>
                 </div>
                 <p className="text-[10px] text-slate-500">
-                  ID diambil dari URL Google Sheets (docs.google.com/spreadsheets/d/<b className="text-slate-300">&lt;ID&gt;</b>/edit). Simpan lalu klik <b>Push Data Otomatis</b> untuk membuat &amp; mengisi tabel database.
+                  Isi nama workbook lokal, misalnya <b className="text-slate-300">arms-control-tower</b>. Simpan lalu klik <b>Push Data Otomatis</b> untuk membuat dan mengisi file CSV database.
                 </p>
               </div>
               <p className="text-[11px] text-slate-400 mt-1">
-                Klik tombol di bawah untuk membuat seluruh tabel/koleksi data secara otomatis dan memicu push data penuh ke Google Sheets.
+                Klik tombol di bawah untuk membuat seluruh tab dan memicu push data penuh ke CSV lokal.
               </p>
             </div>
           </div>
