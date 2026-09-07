@@ -1,6 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ARMSStore, getStoredStore, initializeARMSStore, saveStore } from '../services/armsDataService';
 import { fetchStoreFromFirebase, syncStoreToFirebase, pushFullStoreToFirebase } from '../services/firebaseSyncService';
+import {
+  fetchStoreFromSupabase,
+  syncStoreToSupabase,
+  pushFullStoreToSupabase,
+  SupabaseSyncResult,
+} from '../services/supabaseService';
+import { isSupabaseConfigured } from '../lib/supabase';
 
 const CACHE_TIMESTAMP_KEY = 'ARMS_FIREBASE_CACHE_TIMESTAMP_V1';
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -16,11 +23,10 @@ export function useFirebaseStore() {
 
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  // We keep a reference to the latest synced store to properly diff new changes against
-  // what's actually in Firebase, preventing stale closures in the debounced timeout.
+  // We keep a reference to the latest synced store to properly diff new changes
   const lastSyncedStoreRef = useRef<ARMSStore>(store);
 
-  // Initial Fetch from Firebase
+  // Initial Fetch from Remote
   useEffect(() => {
     let mounted = true;
     let intervalId: NodeJS.Timeout;
@@ -33,7 +39,24 @@ export function useFirebaseStore() {
       }
 
       try {
-        const updatedStore = await fetchStoreFromFirebase(store);
+        let updatedStore = store;
+        
+        // 1. Fetch from Firebase / Sheets
+        try {
+          updatedStore = await fetchStoreFromFirebase(updatedStore);
+        } catch (fbErr) {
+          console.warn('Firebase sync note:', fbErr);
+        }
+
+        // 2. Fetch from Supabase if configured
+        if (isSupabaseConfigured) {
+          try {
+            updatedStore = await fetchStoreFromSupabase(updatedStore);
+          } catch (sbErr) {
+            console.warn('Supabase fetch note:', sbErr);
+          }
+        }
+
         if (mounted) {
           setStore(updatedStore);
           saveStore(updatedStore);
@@ -42,7 +65,7 @@ export function useFirebaseStore() {
           setIsInitializing(false);
         }
       } catch (err) {
-        console.warn('Firebase sync failed:', err);
+        console.warn('Initial store sync failed:', err);
         if (mounted) {
           setError(err as Error);
           setIsInitializing(false);
@@ -71,43 +94,53 @@ export function useFirebaseStore() {
     setStore(newStore);
     saveStore(newStore);
     
-    // 2. Debounced push to Firebase
+    // 2. Debounced push to Remote Databases (Firebase & Supabase)
     setIsSyncing(true);
     if (syncTimeoutRef.current) {
       clearTimeout(syncTimeoutRef.current);
     }
 
-    syncTimeoutRef.current = setTimeout(() => {
-      syncStoreToFirebase(lastSyncedStoreRef.current, newStore)
-        .then(() => {
-          lastSyncedStoreRef.current = newStore;
-          setIsSyncing(false);
-        })
-        .catch(e => {
-          console.error('Firebase sync error:', e);
-          setError(e);
-          setIsSyncing(false);
-        });
+    syncTimeoutRef.current = setTimeout(async () => {
+      try {
+        // Sync to Firebase / Sheets
+        await syncStoreToFirebase(lastSyncedStoreRef.current, newStore);
+        
+        // Sync to Supabase
+        if (isSupabaseConfigured) {
+          await syncStoreToSupabase(lastSyncedStoreRef.current, newStore);
+        }
+        
+        lastSyncedStoreRef.current = newStore;
+      } catch (e: any) {
+        console.error('Remote sync error:', e);
+        setError(e);
+      } finally {
+        setIsSyncing(false);
+      }
     }, 500);
   }, []);
 
   const forceSync = useCallback(async () => {
     setIsSyncing(true);
     try {
-      const refreshedStore = await fetchStoreFromFirebase(store);
+      let refreshedStore = await fetchStoreFromFirebase(store);
+      if (isSupabaseConfigured) {
+        refreshedStore = await fetchStoreFromSupabase(refreshedStore);
+      }
       
-      // Update local state with latest from Firebase
       setStore(refreshedStore);
       saveStore(refreshedStore);
       localStorage.setItem(CACHE_TIMESTAMP_KEY, String(Date.now()));
       
-      // Diff and push any unsynced local changes (if they exist)
       await syncStoreToFirebase(store, refreshedStore);
+      if (isSupabaseConfigured) {
+        await syncStoreToSupabase(store, refreshedStore);
+      }
       
       lastSyncedStoreRef.current = refreshedStore;
       setError(null);
     } catch (e: any) {
-      console.error('Manual Firebase sync failed:', e);
+      console.error('Manual sync failed:', e);
       setError(e);
     } finally {
       setIsSyncing(false);
@@ -117,12 +150,38 @@ export function useFirebaseStore() {
   const pushFullData = useCallback(async () => {
     setIsSyncing(true);
     try {
-      const result = await pushFullStoreToFirebase(store);
+      const fbResult = await pushFullStoreToFirebase(store);
+      
+      // Also push to Supabase if configured
+      let sbResult: SupabaseSyncResult | null = null;
+      if (isSupabaseConfigured) {
+        sbResult = await pushFullStoreToSupabase(store);
+      }
+      
+      lastSyncedStoreRef.current = store;
+      setError(null);
+      return {
+        ...fbResult,
+        supabaseResult: sbResult,
+      };
+    } catch (e: any) {
+      console.error('Push full data failed:', e);
+      setError(e);
+      throw e;
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [store]);
+
+  const pushFullSupabase = useCallback(async (): Promise<SupabaseSyncResult> => {
+    setIsSyncing(true);
+    try {
+      const result = await pushFullStoreToSupabase(store);
       lastSyncedStoreRef.current = store;
       setError(null);
       return result;
     } catch (e: any) {
-      console.error('Push full data to Firebase failed:', e);
+      console.error('Push full data to Supabase failed:', e);
       setError(e);
       throw e;
     } finally {
@@ -135,6 +194,7 @@ export function useFirebaseStore() {
     updateStore,
     forceSync,
     pushFullData,
+    pushFullSupabase,
     isInitializing,
     isSyncing,
     error
