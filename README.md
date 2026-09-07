@@ -1,8 +1,16 @@
 # ARMS — Control Tower (Agency Recovery Management System)
 
-Sistem Control Tower untuk agency DC & Recovery Management dengan backend **Google Sheets** (database) dan **Google Drive** (arsip folder/lampiran) yang dikelola dari aplikasi web (React + Vite + Firebase/Google APIs).
+Sistem Control Tower untuk agency DC & Recovery Management dengan database **Supabase/PostgreSQL** dan workbook spreadsheet **CSV lokal**. Sinkronisasi spreadsheet tidak memakai Google Sheets API, service account, OAuth, atau Google Apps Script. CSV bisa dibuka di Excel/LibreOffice dan diimpor ke Google Sheets bila diperlukan. Google Drive tetap opsional hanya untuk arsip dokumen.
 
-Bagian README ini berisi **panduan lengkap setup Google Sheets & Google Drive** — dari pembuatan kredensial Google Cloud sampai konfigurasi di dalam aplikasi ARMS dan solusi error yang umum terjadi.
+## Mode spreadsheet tanpa Google API
+
+- Setiap workbook disimpan di `storage/spreadsheets/<nama-workbook>/` sebagai satu file CSV per tab.
+- `googleSheetId` pada Settings sekarang dipakai sebagai **nama workbook lokal**, bukan ID Google. Jika kosong, aplikasi memakai `arms-control-tower`.
+- Tombol **Buat Sheet Database**, **Push Semua Data**, dan sync berkala tetap memakai endpoint `/api/sheets/*`, tetapi endpoint tersebut hanya membaca/menulis CSV lokal.
+- Jalankan `npm run spreadsheet:setup -- nama-workbook` untuk membuat struktur file CSV. Data aplikasi dapat dipush dari menu Settings.
+- Folder `storage/spreadsheets/` diabaikan Git karena berisi data operasional. Backup folder tersebut atau impor CSV ke spreadsheet secara manual.
+
+Bagian Google API lama di bawah hanya relevan bila ingin mengaktifkan kembali integrasi Google Drive; tidak diperlukan untuk database dan sync spreadsheet.
 
 ---
 

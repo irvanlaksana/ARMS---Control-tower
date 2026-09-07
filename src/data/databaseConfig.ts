@@ -1,7 +1,7 @@
 import { AppSettings, DatabaseTabConfig } from '../types/arms';
 
 /**
- * Daftar resmi seluruh database ARMS yang disinkronkan ke Google Sheets.
+ * Daftar resmi seluruh database ARMS yang disinkronkan ke workbook CSV lokal.
  * `collection` = key pada ARMSStore, `tabName` = nama tab pada spreadsheet.
  */
 export const DEFAULT_DATABASE_TABS: Array<Omit<DatabaseTabConfig, 'enabled' | 'totalRecords' | 'lastSyncedAt'>> = [

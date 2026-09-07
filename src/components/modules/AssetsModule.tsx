@@ -1,3 +1,4 @@
+import { Pagination, usePagination } from '../common/Pagination';
 import React, { useState } from 'react';
 import { AmountInput } from '../common/AmountInput';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
@@ -155,6 +156,8 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ store, currentUser, 
     return cType === clientFilter;
   });
 
+  const assetPagination = usePagination<Asset>(filteredAssets, 10);
+
   return (
     <div className="space-y-6">
       {/* Tabs */}
@@ -234,7 +237,7 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ store, currentUser, 
                   </td>
                 </tr>
               ) : (
-                filteredAssets.map((a) => {
+                assetPagination.pageItems.map((a) => {
                   const parentCase = store.cases.find((c) => c.id === a.caseId || c.caseNo === a.caseNo);
                   const isClosed = parentCase?.status === 'CLOSED';
 

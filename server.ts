@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { google } from "googleapis";
 import { Readable } from 'stream';
@@ -36,320 +37,115 @@ async function startServer() {
     res.json({
       status: "ok",
       system: "ARMS - Control Tower Agency DC",
-      database: "Supabase & Google Sheets",
+      database: "Supabase + local CSV spreadsheet",
       supabaseConfigured: Boolean(process.env.VITE_SUPABASE_URL && process.env.VITE_SUPABASE_ANON_KEY),
       timestamp: new Date().toISOString(),
     });
   });
 
-  // API Route: Verify or Create Google Sheets Structure
-  app.post("/api/sheets/setup", async (req, res) => {
-    try {
-      const { spreadsheetId, tabs } = req.body;
-      if (!spreadsheetId) {
-        return res.status(400).json({ error: "Missing spreadsheetId" });
+  // Spreadsheet sync lokal (CSV) — tidak memakai Google Sheets API.
+  // Setiap tab disimpan sebagai file CSV di storage/spreadsheets/<id>/<tab>.csv.
+  // Format ini bisa dibuka langsung oleh Excel, LibreOffice, atau diimpor ke Google Sheets.
+  const spreadsheetRoot = path.join(process.cwd(), 'storage', 'spreadsheets');
+  const defaultTabs: Record<string, string> = {
+    users: 'Users', clients: 'Clients', personnel: 'Personnel', services: 'Services', fees: 'Fees',
+    contracts: 'Contracts', leads: 'Leads', customers: 'Customers', cases: 'Cases', assignments: 'Assignments',
+    sks: 'SK', lawyerNotices: 'Lawyer_Notices', commLogs: 'Communication_Log', assets: 'Assets',
+    collections: 'Collections', assetRecoveries: 'Asset_Recoveries', payments: 'Payments', danaTalangan: 'Funding',
+    expenses: 'Expenses', settlements: 'Settlements', ledger: 'Ledger', cashAccounts: 'Cash', pettyCash: 'Petty_Cash',
+    workingCapital: 'Working_Capital', documents: 'Documents', driveFolders: 'Drive_Folders', approvals: 'Approvals',
+    notifications: 'Notifications', auditLogs: 'Audit_Log', settings: 'Settings'
+  };
+
+  const safePart = (value: unknown) => String(value || '').trim().replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 120);
+  const csvEscape = (value: unknown) => {
+    if (value === undefined || value === null) return '';
+    const text = typeof value === 'object' ? JSON.stringify(value) : String(value);
+    return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  };
+  const csvParse = (text: string): string[][] => {
+    const rows: string[][] = [];
+    let row: string[] = [], cell = '', quoted = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i], next = text[i + 1];
+      if (quoted && c === '"' && next === '"') { cell += '"'; i++; continue; }
+      if (c === '"') { quoted = !quoted; continue; }
+      if (!quoted && c === ',') { row.push(cell); cell = ''; continue; }
+      if (!quoted && (c === '\n' || c === '\r')) {
+        if (c === '\r' && next === '\n') i++;
+        row.push(cell); cell = '';
+        if (row.some(Boolean)) rows.push(row);
+        row = []; continue;
       }
-
-      // Initialize OAuth Google Auth client
-      const auth = authFor(["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive.file"]);
-
-      const sheets = google.sheets({ version: "v4", auth });
-
-      const DEFAULT_TABS = [
-        "Users", "Clients", "Personnel", "Services", "Fees", "Contracts",
-        "Leads", "Customers", "Cases", "Assignments", "SK", "Lawyer_Notices", "Communication_Log",
-        "Assets", "Collections", "Asset_Recoveries", "Payments", "Funding", "Expenses", "Settlements",
-        "Ledger", "Cash", "Petty_Cash", "Working_Capital", "Documents", "Drive_Folders", "Approvals", "Notifications", "Audit_Log", "Settings"
-      ];
-
-      // Gunakan nama tab kustom dari konfigurasi database bila dikirim
-      const requiredTabs =
-        tabs && typeof tabs === "object" && Object.keys(tabs).length > 0
-          ? Array.from(new Set(Object.values(tabs).filter(Boolean))) as string[]
-          : DEFAULT_TABS;
-
-      // Get spreadsheet info
-      const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
-      const existingSheets = (spreadsheet.data.sheets || []).map(s => s.properties?.title);
-
-      const requests: any[] = [];
-      requiredTabs.forEach(tab => {
-        if (!existingSheets.includes(tab)) {
-          requests.push({
-            addSheet: {
-              properties: { title: tab }
-            }
-          });
-        }
-      });
-
-      if (requests.length > 0) {
-        await sheets.spreadsheets.batchUpdate({
-          spreadsheetId,
-          requestBody: { requests }
-        });
-      }
-
-      res.json({
-        success: true,
-        spreadsheetId,
-        message: `Successfully verified/created all ${requiredTabs.length} sheets in Google Spreadsheet!`,
-        sheets: requiredTabs,
-      });
-    } catch (err: any) {
-      console.error("Sheets Setup Error:", err?.message || err);
-      res.status(500).json({
-        success: false,
-        error: err?.message || "Failed to setup Google Sheets. Please check Spreadsheet ID and permissions.",
-      });
+      cell += c;
     }
+    if (cell || row.length) { row.push(cell); if (row.some(Boolean)) rows.push(row); }
+    return rows;
+  };
+  const parseCell = (value: string): unknown => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    if (/^[{[]/.test(value)) { try { return JSON.parse(value); } catch { /* plain text */ } }
+    return value;
+  };
+  const resolveTab = (key: string, tabs?: Record<string, unknown>) => safePart((tabs && tabs[key]) || defaultTabs[key] || key);
+  const workbookDir = (id: unknown) => path.join(spreadsheetRoot, safePart(id));
+
+  app.post('/api/sheets/setup', async (req, res) => {
+    try {
+      const { spreadsheetId, tabs } = req.body || {};
+      if (!spreadsheetId) return res.status(400).json({ success: false, error: 'Missing spreadsheetId (gunakan nama workbook lokal)' });
+      const dir = workbookDir(spreadsheetId);
+      fs.mkdirSync(dir, { recursive: true });
+      const tabMap = { ...defaultTabs, ...(tabs || {}) } as Record<string, string>;
+      for (const tab of Object.values(tabMap)) {
+        const file = path.join(dir, `${safePart(tab)}.csv`);
+        if (!fs.existsSync(file)) fs.writeFileSync(file, '', 'utf8');
+      }
+      fs.writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify({ spreadsheetId: safePart(spreadsheetId), tabs: tabMap, updatedAt: new Date().toISOString() }, null, 2));
+      return res.json({ success: true, spreadsheetId: safePart(spreadsheetId), sheets: Object.values(tabMap), storage: dir, message: 'Workbook CSV lokal siap. Tidak ada Google API yang dipanggil.' });
+    } catch (err: any) { return res.status(500).json({ success: false, error: err?.message || 'Gagal membuat workbook lokal' }); }
   });
 
-
-  // API Route: Sync data to Google Sheets
-  app.post("/api/sheets/sync", async (req, res) => {
+  app.post('/api/sheets/sync', async (req, res) => {
     try {
-      const { spreadsheetId, data, tabs } = req.body;
-      if (!spreadsheetId || !data) {
-        return res.status(400).json({ error: "Missing spreadsheetId or data" });
-      }
-
-      const auth = authFor(["https://www.googleapis.com/auth/spreadsheets"]);
-      const sheets = google.sheets({ version: "v4", auth });
-
-      const STORE_KEY_MAP: Record<string, string> = {
-        users: "Users",
-        clients: "Clients",
-        personnel: "Personnel",
-        services: "Services",
-        fees: "Fees",
-        contracts: "Contracts",
-        leads: "Leads",
-        customers: "Customers",
-        cases: "Cases",
-        assignments: "Assignments",
-        sks: "SK",
-        lawyerNotices: "Lawyer_Notices",
-        commLogs: "Communication_Log",
-        assets: "Assets",
-        collections: "Collections",
-        assetRecoveries: "Asset_Recoveries",
-        payments: "Payments",
-        danaTalangan: "Funding",
-        expenses: "Expenses",
-        settlements: "Settlements",
-        ledger: "Ledger",
-        cashAccounts: "Cash",
-        pettyCash: "Petty_Cash",
-        workingCapital: "Working_Capital",
-        documents: "Documents",
-        driveFolders: "Drive_Folders",
-        approvals: "Approvals",
-        notifications: "Notifications",
-        auditLogs: "Audit_Log",
-        settings: "Settings"
-      };
-
-      // Nama tab dapat dikustomisasi lewat konfigurasi database (settings.databaseConfig)
-      const resolveTab = (key: string) => {
-        const custom = tabs && typeof tabs === "object" ? tabs[key] : undefined;
-        return (custom && String(custom).trim()) || STORE_KEY_MAP[key] || key;
-      };
-
-      // Verify sheets/collection exist (hanya untuk key yang dikirim)
-      const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
-      const existingSheets = (spreadsheet.data.sheets || []).map(s => s.properties?.title);
-      const requests: any[] = [];
-      const dataKeys = Object.keys(data);
-      const requiredTabs = Array.from(new Set(dataKeys.map(resolveTab).filter(Boolean)));
-      requiredTabs.forEach(tab => {
-        if (!existingSheets.includes(tab)) {
-          requests.push({ addSheet: { properties: { title: tab } } });
-        }
-      });
-      if (requests.length > 0) {
-        await sheets.spreadsheets.batchUpdate({ spreadsheetId, requestBody: { requests } });
-      }
-
+      const { spreadsheetId, data, tabs } = req.body || {};
+      if (!spreadsheetId || !data || typeof data !== 'object') return res.status(400).json({ success: false, error: 'Missing spreadsheetId or data' });
+      const dir = workbookDir(spreadsheetId);
+      fs.mkdirSync(dir, { recursive: true });
       const updatedTabs: string[] = [];
-
-      for (const key of dataKeys) {
-        const tabName = resolveTab(key);
-        let records = data[key];
-        if (key === "settings" && records && typeof records === "object" && !Array.isArray(records)) {
-          records = Object.keys(records).map(k => ({ key: k, value: String(records[k]), updatedAt: new Date().toISOString() }));
-        }
-
-        if (Array.isArray(records) && records.length > 0) {
-          const headers = Object.keys(records[0]);
-          const rows = [
-            headers,
-            ...records.map((r: any) => headers.map(h => {
-              const val = r[h];
-              if (val === undefined || val === null) return "";
-              if (typeof val === 'object') return JSON.stringify(val);
-              return String(val);
-            }))
-          ];
-
-          await sheets.spreadsheets.values.update({
-            spreadsheetId,
-            range: `${tabName}!A1`,
-            valueInputOption: "USER_ENTERED",
-            requestBody: { values: rows },
-          });
-          updatedTabs.push(tabName);
-        }
+      const counts: Record<string, number> = {};
+      for (const [key, raw] of Object.entries(data)) {
+        const tab = resolveTab(key, tabs);
+        const records = key === 'settings' && raw && typeof raw === 'object' && !Array.isArray(raw)
+          ? Object.entries(raw).map(([k, value]) => ({ key: k, value })) : (Array.isArray(raw) ? raw : []);
+        const headers = Array.from(new Set(records.flatMap((record: any) => Object.keys(record || {}))));
+        const csv = headers.length ? [headers.map(csvEscape).join(','), ...records.map((record: any) => headers.map(h => csvEscape(record?.[h])).join(','))].join('\n') + '\n' : '';
+        fs.writeFileSync(path.join(dir, `${tab}.csv`), csv, 'utf8');
+        updatedTabs.push(tab); counts[key] = records.length;
       }
-
-      res.json({
-        success: true,
-        updatedTabs,
-        syncedAt: new Date().toISOString(),
-      });
-    } catch (err: any) {
-      console.error("Sheets Sync Error:", err?.message || err);
-      res.status(500).json({
-        success: false,
-        error: err?.message || "Error syncing to Google Sheets",
-      });
-    }
+      const syncedAt = new Date().toISOString();
+      fs.writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify({ spreadsheetId: safePart(spreadsheetId), tabs: tabs || defaultTabs, counts, updatedAt: syncedAt }, null, 2));
+      return res.json({ success: true, updatedTabs, counts, syncedAt, provider: 'local-csv' });
+    } catch (err: any) { return res.status(500).json({ success: false, error: err?.message || 'Gagal menyimpan CSV spreadsheet lokal' }); }
   });
 
-  
-  // API Route: Fetch data from Google Sheets
-  app.post("/api/sheets/fetch", async (req, res) => {
+  app.post('/api/sheets/fetch', async (req, res) => {
     try {
-      const { spreadsheetId, tabs } = req.body;
-      if (!spreadsheetId) {
-        return res.status(400).json({ error: "Missing spreadsheetId" });
+      const { spreadsheetId, tabs } = req.body || {};
+      if (!spreadsheetId) return res.status(400).json({ success: false, error: 'Missing spreadsheetId' });
+      const dir = workbookDir(spreadsheetId), data: Record<string, any> = {};
+      for (const [key, defaultTab] of Object.entries(defaultTabs)) {
+        const tab = resolveTab(key, tabs), file = path.join(dir, `${tab}.csv`);
+        // Workbook baru tidak boleh menghapus seed/local cache di browser.
+        if (!fs.existsSync(file)) continue;
+        const rows = csvParse(fs.readFileSync(file, 'utf8'));
+        const headers = rows.shift() || [];
+        if (headers.length > 0) data[key] = rows.map(row => Object.fromEntries(headers.map((header, i) => [header, parseCell(row[i] || '')])));
       }
-
-      const auth = authFor(["https://www.googleapis.com/auth/spreadsheets.readonly"]);
-      const sheets = google.sheets({ version: "v4", auth });
-
-      const STORE_KEY_MAP: Record<string, string> = {
-        users: "Users",
-        clients: "Clients",
-        personnel: "Personnel",
-        services: "Services",
-        fees: "Fees",
-        contracts: "Contracts",
-        leads: "Leads",
-        customers: "Customers",
-        cases: "Cases",
-        assignments: "Assignments",
-        sks: "SK",
-        lawyerNotices: "Lawyer_Notices",
-        commLogs: "Communication_Log",
-        assets: "Assets",
-        collections: "Collections",
-        assetRecoveries: "Asset_Recoveries",
-        payments: "Payments",
-        danaTalangan: "Funding",
-        expenses: "Expenses",
-        settlements: "Settlements",
-        ledger: "Ledger",
-        cashAccounts: "Cash",
-        pettyCash: "Petty_Cash",
-        workingCapital: "Working_Capital",
-        documents: "Documents",
-        driveFolders: "Drive_Folders",
-        approvals: "Approvals",
-        notifications: "Notifications",
-        auditLogs: "Audit_Log",
-        settings: "Settings"
-      };
-
-      // Nama tab dapat dikustomisasi lewat konfigurasi database (settings.databaseConfig)
-      const resolveTab = (key: string) => {
-        const custom = tabs && typeof tabs === "object" ? tabs[key] : undefined;
-        return (custom && String(custom).trim()) || STORE_KEY_MAP[key] || key;
-      };
-
-      const storeToTab: Record<string, string> = {};
-      Object.keys(STORE_KEY_MAP).forEach((key) => { storeToTab[key] = resolveTab(key); });
-      const tabToStore: Record<string, string> = {};
-      Object.entries(storeToTab).forEach(([key, tab]) => { tabToStore[tab] = key; });
-
-      const data: any = {};
-      const tabsToFetch = Array.from(new Set(Object.values(storeToTab)));
-
-      // Get spreadsheet info to check existing sheets
-      const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
-      const existingSheets = (spreadsheet.data.sheets || []).map(s => s.properties?.title);
-
-      const requests: any[] = [];
-      tabsToFetch.forEach(tab => {
-        if (!existingSheets.includes(tab)) {
-          requests.push({
-            addSheet: {
-              properties: { title: tab }
-            }
-          });
-        }
-      });
-
-      if (requests.length > 0) {
-        await sheets.spreadsheets.batchUpdate({
-          spreadsheetId,
-          requestBody: { requests }
-        });
-      }
-
-      // We can use batchGet to fetch all sheets at once to save API calls
-      const response = await sheets.spreadsheets.values.batchGet({
-        spreadsheetId,
-        ranges: tabsToFetch,
-      });
-
-      const valueRanges = response.data.valueRanges || [];
-
-      Object.keys(storeToTab).forEach((storeKey) => {
-        const tabName = storeToTab[storeKey];
-        const rangeData = valueRanges.find((r) => r.range && r.range.startsWith(tabName));
-        const rows = rangeData?.values || [];
-
-        if (rows.length > 1) {
-          const headers = rows[0];
-          data[storeKey] = rows.slice(1).map(row => {
-            const obj: any = {};
-            headers.forEach((h: string, i: number) => {
-              let val = row[i];
-              if (val === 'true') val = true;
-              if (val === 'false') val = false;
-
-              // try to parse json fields
-              if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) {
-                try { val = JSON.parse(val); } catch(e) {}
-              }
-
-              obj[h] = val;
-            });
-            return obj;
-          });
-        } else {
-          data[storeKey] = [];
-        }
-      });
-
-      // Format Settings back into an object
-      if (data.settings && Array.isArray(data.settings)) {
-        const settingsObj: any = {};
-        data.settings.forEach((r: any) => {
-          if (r.key) settingsObj[r.key] = r.value;
-        });
-        data.settings = settingsObj;
-      }
-
-      res.json({ success: true, data, tabs: storeToTab });
-    } catch (err: any) {
-      console.error("Sheets Fetch Error:", err?.message || err);
-      res.status(500).json({
-        success: false,
-        error: err?.message || "Failed to fetch Google Sheets.",
-      });
-    }
+      if (Array.isArray(data.settings)) data.settings = Object.fromEntries(data.settings.filter(r => r.key).map(r => [r.key, r.value]));
+      return res.json({ success: true, data, provider: 'local-csv' });
+    } catch (err: any) { return res.status(500).json({ success: false, error: err?.message || 'Gagal membaca CSV spreadsheet lokal' }); }
   });
 
   // API Route: Google Apps Script Web App Proxy

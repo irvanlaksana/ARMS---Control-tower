@@ -145,13 +145,9 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
 
   const handleSetupSheets = async () => {
     if (!canEdit) return;
-    const id = sheetId.trim();
-    if (!id) {
-      setSetupMsg({ ok: false, text: 'Masukkan Google Spreadsheet ID terlebih dahulu.' });
-      return;
-    }
+    const id = (sheetId || 'arms-control-tower').trim();
     setIsSettingUp(true);
-    setSetupMsg({ ok: true, text: 'Sedang membuat/memverifikasi seluruh tab database di Google Spreadsheet...' });
+    setSetupMsg({ ok: true, text: 'Sedang membuat/memverifikasi seluruh tab database di workbook CSV lokal...' });
     try {
       const resp = await fetch('/api/sheets/setup', {
         method: 'POST',
@@ -167,7 +163,7 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
       }
       setSetupMsg({
         ok: true,
-        text: `✅ Berhasil! ${json.sheets?.length || 0} tab/sheet database tersedia di Google Spreadsheet.`,
+        text: `✅ Berhasil! ${json.sheets?.length || 0} tab/sheet database tersedia di workbook CSV lokal.`,
       });
       saveConfig(id);
     } catch (err: any) {
@@ -180,7 +176,7 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
   const handlePushAll = async () => {
     const id = (sheetId || '').trim();
     if (!id) {
-      setSetupMsg({ ok: false, text: 'Masukkan Google Spreadsheet ID / URL terlebih dahulu sebelum push.' });
+      setSetupMsg({ ok: false, text: 'Masukkan nama workbook lokal terlebih dahulu sebelum push.' });
       return;
     }
     setIsPushing(true);
@@ -195,6 +191,10 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
         },
       };
       const res = await pushFullStoreToFirebase(pushStore);
+      const supabaseResult = isSupabaseConfigured ? await pushFullStoreToSupabase(pushStore) : null;
+      if (supabaseResult && !supabaseResult.success) {
+        throw new Error(`Supabase: ${supabaseResult.error || 'sinkronisasi gagal'}`);
+      }
       const counts: Record<string, number> = {};
       for (const cfg of getDatabaseConfigs(pushStore.settings)) {
         if (cfg.collection === 'settings') continue;
@@ -207,7 +207,7 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
       }
       setSetupMsg({
         ok: true,
-        text: `✅ Sukses! ${res.totalItems} dokumen di ${res.collectionsCount} sheet/database berhasil di-push.`,
+        text: `✅ Sukses! ${res.totalItems} dokumen tersimpan di CSV lokal${supabaseResult ? ' dan Supabase' : ''}.`,
       });
     } catch (err: any) {
       setSetupMsg({ ok: false, text: `❌ Gagal push: ${err.message || String(err)}` });
@@ -319,9 +319,9 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
               <Layers className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="font-bold text-white text-base">Google Sheets Backup & Sync Control</h3>
+              <h3 className="font-bold text-white text-base">Local CSV Backup & Sync Control</h3>
               <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                Atur nama tab/sheet, status aktif, dan jumlah data untuk masing-masing database ARMS di Google Spreadsheet.
+                Atur nama tab/sheet, status aktif, dan jumlah data untuk masing-masing database ARMS di workbook CSV lokal.
               </p>
             </div>
           </div>
@@ -349,14 +349,14 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1">
               <label className="block text-xs font-semibold text-slate-300 mb-1">
-                Kolom Google Spreadsheet ID / URL:
+                Kolom nama workbook lokal:
               </label>
               <input
                 type="text"
                 disabled={!canEdit}
                 value={sheetId}
                 onChange={(e) => setSheetId(e.target.value)}
-                placeholder="e.g. 1AbCdefGhIjKlMnOpQrStUvWxYz0123456789"
+                placeholder="arms-control-tower"
                 className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-violet-500"
               />
               <p className="text-[11px] text-slate-500 mt-1">
@@ -527,7 +527,7 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
         <div className="p-3.5 border-t border-slate-800 bg-slate-950/50 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
           <span className="flex items-center gap-1.5">
             <Table2 className="w-3.5 h-3.5 text-violet-400" />
-            Data tersinkronkan otomatis ke database Supabase PostgreSQL &amp; Google Spreadsheet.
+            Data tersinkronkan otomatis ke database Supabase PostgreSQL &amp; workbook CSV lokal.
           </span>
           <span>
             Total data aktif: <b className="text-emerald-300">{totalStoreItems}</b>

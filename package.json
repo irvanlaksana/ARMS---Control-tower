@@ -15,6 +15,7 @@
     "db:setup": "node scripts/setup-supabase.mjs",
     "db:schema": "node scripts/setup-supabase.mjs --schema-only",
     "db:seed": "node scripts/setup-supabase.mjs --seed-only",
+    "spreadsheet:setup": "node scripts/sync-spreadsheet.mjs",
     "supabase:link": "npx supabase link",
     "supabase:push": "npx supabase db push"
   },

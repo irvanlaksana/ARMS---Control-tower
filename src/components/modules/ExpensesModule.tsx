@@ -1,3 +1,4 @@
+import { Pagination, usePagination } from '../common/Pagination';
 import React, { useState } from 'react';
 import { AmountInput } from '../common/AmountInput';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
@@ -113,6 +114,8 @@ export const ExpensesModule: React.FC<ExpensesModuleProps> = ({ store, currentUs
     setIsEditing(false);
   };
 
+  const expensePagination = usePagination<Expense>(store.expenses || [], 10);
+
   return (
     <div className="space-y-6">
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex items-center justify-between">
@@ -157,7 +160,7 @@ export const ExpensesModule: React.FC<ExpensesModuleProps> = ({ store, currentUs
                   </td>
                 </tr>
               ) : (
-                store.expenses.map((e) => (
+                expensePagination.pageItems.map((e) => (
                   <tr key={e.id} className="hover:bg-slate-800/40 transition">
                     <td className="py-3.5 px-4 font-mono font-bold text-rose-300">{e.expenseNo}</td>
                     <td className="py-3.5 px-4">

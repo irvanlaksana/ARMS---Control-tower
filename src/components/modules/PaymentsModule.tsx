@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { AmountInput } from '../common/AmountInput';
+import { Pagination, usePagination } from '../common/Pagination';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Payment, LedgerEntry } from '../../types/arms';
 import {
@@ -396,6 +397,8 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
     setIsEditing(false);
   };
 
+  const paymentPagination = usePagination<Payment>(store.payments || [], 10);
+
   return (
     <div className="space-y-6">
       {/* Header Banner */}
@@ -449,7 +452,7 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
                   </td>
                 </tr>
               ) : (
-                store.payments.map((p) => {
+                paymentPagination.pageItems.map((p) => {
                   const targetCase = store.cases.find((c) => c.id === p.caseId || c.caseNo === p.caseNo);
                   const isMitra = p.personnelType === 'MITRA_DC' || (!p.personnelType && (p.executionFeeAmount || 0) > 0);
                   const partnerAmount = p.partnerCommissionAmount ?? (isMitra ? p.executionFeeAmount || 0 : 0);
@@ -595,6 +598,7 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
               )}
             </tbody>
           </table>
+          <Pagination page={paymentPagination.page} totalPages={paymentPagination.totalPages} totalItems={paymentPagination.totalItems} pageSize={paymentPagination.pageSize} onPageChange={paymentPagination.setPage} />
         </div>
       </div>
 
