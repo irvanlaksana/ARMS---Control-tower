@@ -1,3 +1,4 @@
+import { Pagination, usePagination } from '../common/Pagination';
 import React, { useState } from 'react';
 import { AddressFields } from '../common/AddressFields';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
@@ -358,6 +359,8 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
     return matchesFolder && matchesSearch;
   });
 
+  const personnelPagination = usePagination<Personnel>(filteredPersonnel, 10);
+
   return (
     <div className="space-y-6">
       {/* Header Banner */}
@@ -528,7 +531,7 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
                   </td>
                 </tr>
               ) : (
-                filteredPersonnel.map((p) => (
+                personnelPagination.pageItems.map((p) => (
                   <tr key={p.id} className="hover:bg-slate-800/40 transition">
                     <td className="py-2.5 px-2.5">
                       <div className="font-bold text-white">{p.fullName}</div>

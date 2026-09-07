@@ -5,6 +5,7 @@ import { Briefcase, Plus, CheckCircle, Search, Building2, User as UserIcon, User
 import { findDuplicateCaseForClient } from '../../utils/duplicateCheck';
 import { SearchableSelect } from '../common/SearchableSelect';
 import { AmountInput } from '../common/AmountInput';
+import { Pagination, usePagination } from '../common/Pagination';
 
 interface CasesModuleProps {
   store: ARMSStore;
@@ -398,6 +399,8 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
     return true;
   });
 
+  const casePagination = usePagination<Case>(filteredCases, 10);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -479,7 +482,7 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/50">
-              {filteredCases.map(c => (
+              {casePagination.pageItems.map(c => (
                 <tr key={c.id} className="hover:bg-slate-800/20 transition-colors">
                   <td className="px-4 py-3">
                     <div className="font-medium text-white">{c.caseNo}</div>
@@ -495,7 +498,7 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
                     Rp {c.principalDebtOS.toLocaleString('id-ID')}
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <span className={`px-2 py-1 rounded text-[10px] font-medium ${c.status === 'OPEN' ? 'bg-indigo-900/50 text-indigo-400' : c.status === 'CLOSED' ? 'bg-emerald-900/50 text-emerald-400' : 'bg-amber-900/50 text-amber-400'}`}>
+                    <span className={`px-2 py-1 rounded text-[10px] font-medium ${c.status === 'NEW' ? 'bg-indigo-900/50 text-indigo-400' : c.status === 'CLOSED' ? 'bg-emerald-900/50 text-emerald-400' : 'bg-amber-900/50 text-amber-400'}`}>
                       {c.status}
                     </span>
                   </td>

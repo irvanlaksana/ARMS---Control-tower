@@ -155,7 +155,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans antialiased">
+    <div className="h-screen overflow-hidden bg-slate-950 text-slate-100 flex flex-col font-sans antialiased">
       {/* Top Header */}
       <Header
         currentUser={currentUser}

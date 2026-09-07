@@ -11,6 +11,7 @@ import {
 import { SearchableSelect } from "../common/SearchableSelect";
 import { AmountInput } from "../common/AmountInput";
 import { UnitExecutionModal } from './UnitExecutionModal';
+import { Pagination, usePagination } from '../common/Pagination';
 import { TransferPartnerCommissionModal } from './TransferPartnerCommissionModal';
 import { calculateRepossessionTierFee, executeUnitRepossessionAndCloseCase } from '../../utils/tierFeeCalculator';
 
@@ -483,6 +484,8 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
   });
 
   // Filtered Comm Logs
+  const collectionPagination = usePagination<Collection>(filteredCollections, 10);
+
   const filteredCommLogs = store.commLogs.filter((log) => {
     const parentCase = store.cases.find((c) => c.id === log.caseId || c.caseNo === log.caseNo);
     const cType = parentCase?.clientType || 'MULTIFINANCE';
@@ -558,6 +561,8 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
     }
     return true;
   });
+
+  const commPagination = usePagination<CommunicationLog>(filteredCommLogs, 10);
 
   return (
     <div className="space-y-6">
@@ -719,7 +724,7 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                     </td>
                   </tr>
                 ) : (
-                  filteredCollections.map((act) => {
+                  collectionPagination.pageItems.map((act) => {
                     const parentCase = store.cases.find((c) => c.id === act.caseId || c.caseNo === act.caseNo);
                     const isPer = act.clientType === 'PERORANGAN';
                     const photoCount = act.photos?.length || 0;
@@ -874,6 +879,7 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                 )}
               </tbody>
             </table>
+              <Pagination page={collectionPagination.page} totalPages={collectionPagination.totalPages} totalItems={collectionPagination.totalItems} pageSize={collectionPagination.pageSize} onPageChange={collectionPagination.setPage} />
           </div>
         </div>
       )}
@@ -904,7 +910,7 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                     </td>
                   </tr>
                 ) : (
-                  filteredCommLogs.map((log) => {
+                  commPagination.pageItems.map((log) => {
                     const parentCase = store.cases.find((c) => c.id === log.caseId || c.caseNo === log.caseNo);
                     const isPer = parentCase?.clientType === 'PERORANGAN';
                     const photoCount = log.photos?.length || 0;
@@ -1035,6 +1041,7 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                 )}
               </tbody>
             </table>
+              <Pagination page={commPagination.page} totalPages={commPagination.totalPages} totalItems={commPagination.totalItems} pageSize={commPagination.pageSize} onPageChange={commPagination.setPage} />
           </div>
         </div>
       )}

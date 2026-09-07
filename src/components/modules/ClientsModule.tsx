@@ -1,3 +1,4 @@
+import { Pagination, usePagination } from '../common/Pagination';
 import React, { useState } from 'react';
 import { AddressFields } from '../common/AddressFields';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
@@ -167,6 +168,8 @@ export const ClientsModule: React.FC<ClientsModuleProps> = ({ store, currentUser
     return true;
   });
 
+  const clientPagination = usePagination<Client>(filteredClients, 10);
+
   return (
     <div className="space-y-6">
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -236,7 +239,7 @@ export const ClientsModule: React.FC<ClientsModuleProps> = ({ store, currentUser
                   </td>
                 </tr>
               ) : (
-                filteredClients.map((cli) => {
+                clientPagination.pageItems.map((cli) => {
                   const isPerorangan = cli.clientType === 'PERORANGAN' || cli.industry === 'PERORANGAN';
                   return (
                     <tr key={cli.id} className="hover:bg-slate-800/40 transition">

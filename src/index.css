@@ -17,8 +17,14 @@ select option {
 
 /* Keep dense operational tables inside the browser viewport. */
 @media screen {
+  html, body, #root {
+    height: 100%;
+    overflow: hidden;
+  }
+
   main {
     min-width: 0;
+    min-height: 0;
   }
 
   main table th,

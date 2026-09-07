@@ -1,3 +1,4 @@
+import { Pagination, usePagination } from '../common/Pagination';
 import React, { useState } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Service } from '../../types/arms';
@@ -57,6 +58,8 @@ export const ServicesModule: React.FC<ServicesModuleProps> = ({
     setShowModal(false);
   };
 
+  const servicePagination = usePagination<Service>(store.services || [], 10);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -84,7 +87,7 @@ export const ServicesModule: React.FC<ServicesModuleProps> = ({
 
       {/* Services Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        {store.services.map((s) => (
+        {servicePagination.pageItems.map((s) => (
           <div key={s.id} className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3 shadow-lg hover:border-slate-700 transition">
             <div className="flex items-center justify-between">
               <span className="font-mono text-[10px] text-indigo-400 bg-indigo-950 px-2 py-0.5 rounded border border-indigo-800 font-bold">

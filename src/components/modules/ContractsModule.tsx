@@ -1,3 +1,4 @@
+import { Pagination, usePagination } from '../common/Pagination';
 import React, { useState } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Contract, ApprovalRequest } from '../../types/arms';
@@ -139,6 +140,8 @@ export const ContractsModule: React.FC<ContractsModuleProps> = ({ store, current
     setShowModal(false);
   };
 
+  const contractPagination = usePagination<Contract>(store.contracts || [], 10);
+
   return (
     <div className="space-y-6">
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex items-center justify-between">
@@ -176,7 +179,7 @@ export const ContractsModule: React.FC<ContractsModuleProps> = ({ store, current
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {store.contracts.map((c) => (
+              {contractPagination.pageItems.map((c) => (
                 <tr key={c.id} className="hover:bg-slate-800/40 transition">
                   <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">{c.contractNo}</td>
                   <td className="py-3.5 px-4 font-bold text-white">{c.clientName}</td>

@@ -7,6 +7,7 @@ import { AmountInput } from '../common/AmountInput';
 import { DateInput } from '../common/DateInput';
 import { AddressFields } from '../common/AddressFields';
 import { downloadCSV } from '../../utils/exportUtils';
+import { Pagination, usePagination } from '../common/Pagination';
 
 interface CustomersModuleProps {
   store: ARMSStore;
@@ -202,6 +203,7 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
   const importFileRef = useRef<HTMLInputElement>(null);
 
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS';
+  const customerPagination = usePagination<Customer>(store.customers || [], 10);
 
   // Real-time duplicate check for customer master
   const duplicateWarning = useMemo(() => {
@@ -672,7 +674,7 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {store.customers.map((c) => (
+              {customerPagination.pageItems.map((c) => (
                 <tr key={c.id} className="hover:bg-slate-800/40 transition">
                   {(() => {
                     const processStatus = getDebtorProcessStatus(c.id);
