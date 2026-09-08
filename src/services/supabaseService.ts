@@ -114,6 +114,40 @@ function sanitizeForeignKeys(
   return true;
 }
 
+/**
+ * Jaga nilai kolom ber-CHECK CONSTRAINT tetap valid sebelum di-upsert.
+ *
+ * Latar belakang: tabel `collections` hanya menerima payment_method
+ * ('TRANSFER','CASH_RECEIPT','MEDIATION_ESCROW'), sedangkan UI lama (dan
+ * dropdown yang salah menyalin nilai dari tabel `payments`) sempat menyimpan
+ * 'CASH' yang hanya valid di tabel `payments` ('TRANSFER','CASH'). Record
+ * semacam itu gagal di-check constraint collections_payment_method_check dan
+ * terus gagal pada tiap push. Baris yatim yang sudah tersimpan di storage
+ * lokal tidak bisa diperbaiki lewat perubahan UI saja, jadi di sini nilai
+ * legacy dipetakan ulang sebelum dikirim agar push pulih otomatis.
+ */
+function normalizeConstraintValues(
+  tableName: string,
+  rows: Record<string, any>[],
+  warnings: string[]
+): Record<string, any>[] {
+  if (tableName !== 'collections') return rows;
+
+  const collectionsAllowed = new Set(['TRANSFER', 'CASH_RECEIPT', 'MEDIATION_ESCROW']);
+  const mapped = rows.map((row) => {
+    const val = row.payment_method;
+    if (val == null || collectionsAllowed.has(val)) return row;
+
+    const corrected =
+      String(val).toUpperCase() === 'CASH' ? 'CASH_RECEIPT' : 'TRANSFER';
+    warnings.push(
+      `${tableName} (id: ${row.id ?? '-'}): payment_method '${val}' tidak valid untuk tabel collections, dipetakan ke '${corrected}'`
+    );
+    return { ...row, payment_method: corrected };
+  });
+  return mapped;
+}
+
 /** Buang duplikat id dalam satu batch (ON CONFLICT tidak boleh kena baris yang sama 2x). */
 function dedupeById(rows: Record<string, any>[], tableName: string, warnings: string[]) {
   const map = new Map<string, Record<string, any>>();
@@ -227,8 +261,9 @@ export async function pushFullStoreToSupabase(store: ARMSStore): Promise<Supabas
       rows = rows.filter((r) => r.id);
     }
 
-    // 3. Dedupe + bersihkan foreign key menggantung
+    // 3. Normalisasi nilai ber-check-constraint + dedupe + bersihkan foreign key
     rows = dedupeById(rows, tableName, warnings);
+    rows = normalizeConstraintValues(tableName, rows, warnings);
     rows = rows.filter((row) => sanitizeForeignKeys(tableName, row, savedIds, warnings));
     if (rows.length === 0) continue;
 
@@ -297,6 +332,7 @@ export async function syncStoreToSupabase(oldStore: ARMSStore, newStore: ARMSSto
 
       let rows = newItems.map((item: any) => toSupabaseRow(tableName, item).row).filter((r: any) => r.id);
       rows = dedupeById(rows, tableName, warnings);
+      rows = normalizeConstraintValues(tableName, rows, warnings);
       rows = rows.filter((row) => sanitizeForeignKeys(tableName, row, knownIds, warnings));
       if (!rows.length) continue;
 

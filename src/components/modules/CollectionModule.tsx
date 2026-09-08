@@ -1654,7 +1654,8 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                       searchable={false}
                       options={[
                         { value: 'TRANSFER', label: 'Transfer Bank PT' },
-                        { value: 'CASH', label: 'Tunai / Cash' },
+                        { value: 'CASH_RECEIPT', label: 'Tunai / Cash (Kwitansi Lapangan)' },
+                        { value: 'MEDIATION_ESCROW', label: 'Mediasi / Penitipan Kantor (Escrow)' },
                       ]}
                     />
                   </div>
