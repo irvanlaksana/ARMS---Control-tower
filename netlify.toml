@@ -1,0 +1,48 @@
+# ==============================================================================
+# Netlify — ARMS Control Tower
+# ==============================================================================
+# Aplikasi:  Vite + React (SPA) -> build ke `dist/`
+# Database:  Google Cloud Firestore (Firebase) — diakses langsung dari browser
+#            via firebase-applet-config.json (tersisip, public web config).
+# Functions: Netlify Functions (netlify/functions) — Google Drive & Google Sheets
+#            memakai Service Account (secret GOOGLE_SERVICE_ACCOUNT_JSON).
+#
+# Setelah import repo di Netlify, set environment variables:
+#   Build env : (tidak ada yang wajib)
+#   Runtime   : GOOGLE_SERVICE_ACCOUNT_JSON  (seluruh isi file JSON service
+#                                           account — dipakai Drive + Sheets)
+#             : GITHUB_TOKEN (opsional, modul Surat create-issue)
+# ==============================================================================
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[functions]
+  node_bundler = "esbuild"
+  # googleapis besar; biarkan termuat dari node_modules (tidak di-bundle)
+  external_node_modules = ["googleapis"]
+
+  [functions."api/**"]
+    # Upload berkas & payload besar (base64) butuh maxDuration lebih lama
+    max_duration = 60
+
+# ------------------------------------------------------------------------------
+# SPA fallback: semua route yang bukan file statis & bukan /api/* -> index.html
+# (Netlify Functions di /api/* selalu diprioritaskan di atas redirect ini.)
+# ------------------------------------------------------------------------------
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Header keamanan dasar
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"

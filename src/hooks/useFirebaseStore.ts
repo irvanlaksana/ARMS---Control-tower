@@ -1,35 +1,57 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ARMSStore, getStoredStore, initializeARMSStore, saveStore } from '../services/armsDataService';
-import { fetchStoreFromFirebase, syncStoreToFirebase, pushFullStoreToFirebase } from '../services/firebaseSyncService';
 import {
-  fetchStoreFromSupabase,
-  syncStoreToSupabase,
-  pushFullStoreToSupabase,
-  SupabaseSyncResult,
-} from '../services/supabaseService';
-import { isSupabaseConfigured } from '../lib/supabase';
+  fetchStoreFromFirestore,
+  syncStoreToFirestore,
+  pushFullStoreToFirestore,
+  FirestoreSyncResult,
+} from '../services/firestoreService';
+import { pushToGoogleSheets } from '../services/googleSheetsService';
 
-const CACHE_TIMESTAMP_KEY = 'ARMS_FIREBASE_CACHE_TIMESTAMP_V1';
+const CACHE_TIMESTAMP_KEY = 'ARMS_FIRESTORE_CACHE_TIMESTAMP_V1';
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
+export interface PushFullResult {
+  totalItems: number;
+  collectionsCount: number;
+  syncedAt: string;
+  /** Hasil push ke database utama (Firestore). */
+  firestoreResult: FirestoreSyncResult;
+  /** Hasil ekspor opsional ke Google Sheets (null bila Spreadsheet ID belum diisi). */
+  sheetsResult: { totalItems: number; collectionsCount: number; syncedAt: string } | null;
+  /** Error non-fatal dari ekspor Google Sheets (database utama tetap sukses). */
+  sheetsError?: string;
+}
+
+/**
+ * Hook store ARMS — Google Firestore sebagai database UTAMA & SATU-SATUNYA
+ * sumber cloud. localStorage hanya cache cepat (offline-first).
+ *
+ *  - Saat mount: tarik seluruh 30 koleksi dari Firestore (jika cache masih
+ *    segar < 5 menit, langsung pakai cache).
+ *  - Setiap perubahan store: optimistic update + push inkremental (debounce
+ *    500ms) ke Firestore, termasuk DELETE dokumen yang dihapus.
+ *  - `pushFullData`: push penuh ke Firestore (+ ekspor Google Sheets bila
+ *    Spreadsheet ID terisi — ekspor opsional, bukan database).
+ */
 export function useFirebaseStore() {
   const [store, setStore] = useState<ARMSStore>(() => {
     return getStoredStore() || initializeARMSStore();
   });
-  
+
   const [isInitializing, setIsInitializing] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
+  const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // We keep a reference to the latest synced store to properly diff new changes
   const lastSyncedStoreRef = useRef<ARMSStore>(store);
 
-  // Initial Fetch from Remote
+  // Initial Fetch from Firestore
   useEffect(() => {
     let mounted = true;
-    let intervalId: NodeJS.Timeout;
+    let intervalId: ReturnType<typeof setInterval>;
 
     const performSync = async (force = false) => {
       const cachedAt = Number(localStorage.getItem(CACHE_TIMESTAMP_KEY) || 0);
@@ -39,24 +61,7 @@ export function useFirebaseStore() {
       }
 
       try {
-        let updatedStore = store;
-        
-        // 1. Supabase as PRIMARY database if configured
-        if (isSupabaseConfigured) {
-          try {
-            updatedStore = await fetchStoreFromSupabase(updatedStore);
-          } catch (sbErr) {
-            console.warn('Supabase fetch note:', sbErr);
-          }
-        } else {
-          // 2. Fallback to local workbook / Sheets cache
-          try {
-            updatedStore = await fetchStoreFromFirebase(updatedStore);
-          } catch (fbErr) {
-            console.warn('Local workbook fetch note:', fbErr);
-          }
-        }
-
+        const updatedStore = await fetchStoreFromFirestore(store);
         if (mounted) {
           setStore(updatedStore);
           saveStore(updatedStore);
@@ -65,7 +70,7 @@ export function useFirebaseStore() {
           setIsInitializing(false);
         }
       } catch (err) {
-        console.warn('Initial store sync failed:', err);
+        console.warn('Initial Firestore sync failed, memakai data lokal:', err);
         if (mounted) {
           setError(err as Error);
           setIsInitializing(false);
@@ -75,13 +80,13 @@ export function useFirebaseStore() {
 
     performSync();
 
-    // Auto-sync periodically
+    // Auto-sync berkala (refresh data dari Firestore)
     intervalId = setInterval(() => {
       if (mounted && !isSyncing) {
         performSync();
       }
     }, CACHE_TTL_MS);
-      
+
     return () => {
       mounted = false;
       clearInterval(intervalId);
@@ -93,8 +98,8 @@ export function useFirebaseStore() {
     // 1. Optimistic Local Update
     setStore(newStore);
     saveStore(newStore);
-    
-    // 2. Debounced push to Remote Database (Supabase as primary)
+
+    // 2. Debounced push inkremental ke Firestore (database utama)
     setIsSyncing(true);
     if (syncTimeoutRef.current) {
       clearTimeout(syncTimeoutRef.current);
@@ -102,21 +107,10 @@ export function useFirebaseStore() {
 
     syncTimeoutRef.current = setTimeout(async () => {
       try {
-        // Sync to Supabase as primary database
-        if (isSupabaseConfigured) {
-          await syncStoreToSupabase(lastSyncedStoreRef.current, newStore);
-        } else {
-          // Local Sheets fallback
-          try {
-            await syncStoreToFirebase(lastSyncedStoreRef.current, newStore);
-          } catch {
-            // ignore local sheet sync error
-          }
-        }
-        
+        await syncStoreToFirestore(lastSyncedStoreRef.current, newStore);
         lastSyncedStoreRef.current = newStore;
       } catch (e: any) {
-        console.error('Remote sync error:', e);
+        console.error('Firestore sync error:', e);
         setError(e);
       } finally {
         setIsSyncing(false);
@@ -127,54 +121,59 @@ export function useFirebaseStore() {
   const forceSync = useCallback(async () => {
     setIsSyncing(true);
     try {
-      let refreshedStore = store;
-      if (isSupabaseConfigured) {
-        refreshedStore = await fetchStoreFromSupabase(refreshedStore);
-      } else {
-        try {
-          refreshedStore = await fetchStoreFromFirebase(refreshedStore);
-        } catch {
-          // ignore
-        }
-      }
-      
+      const refreshedStore = await fetchStoreFromFirestore(store);
+
       setStore(refreshedStore);
       saveStore(refreshedStore);
       localStorage.setItem(CACHE_TIMESTAMP_KEY, String(Date.now()));
-      
-      if (isSupabaseConfigured) {
-        await syncStoreToSupabase(store, refreshedStore);
-      }
-      
+
+      // Pastikan perubahan lokal (jika ada) ikut terkirim ke Firestore
+      await syncStoreToFirestore(store, refreshedStore);
+
       lastSyncedStoreRef.current = refreshedStore;
       setError(null);
     } catch (e: any) {
-      console.error('Manual sync failed:', e);
+      console.error('Manual Firestore sync failed:', e);
       setError(e);
     } finally {
       setIsSyncing(false);
     }
   }, [store]);
 
-  const pushFullData = useCallback(async () => {
+  /**
+   * Push penuh ke Firestore (database utama) + ekspor Google Sheets bila
+   * Spreadsheet ID terisi di settings (opsional, error-nya non-fatal).
+   */
+  const pushFullData = useCallback(async (): Promise<PushFullResult> => {
     setIsSyncing(true);
     try {
-      const fbResult = await pushFullStoreToFirebase(store);
-      
-      // Also push to Supabase if configured
-      let sbResult: SupabaseSyncResult | null = null;
-      if (isSupabaseConfigured) {
-        sbResult = await pushFullStoreToSupabase(store);
+      const firestoreResult = await pushFullStoreToFirestore(store);
+      if (!firestoreResult.success) {
+        throw new Error(firestoreResult.error || 'Sinkronisasi Firestore gagal');
       }
-      
-      if (sbResult && !sbResult.success) {
-        throw new Error(sbResult.error || 'Sinkronisasi Supabase gagal');
+
+      // Ekspor opsional ke Google Sheets (bukan database utama)
+      let sheetsResult: PushFullResult['sheetsResult'] = null;
+      let sheetsError: string | undefined;
+      const hasSheetId = Boolean(store.settings?.googleSheetId?.trim());
+      if (hasSheetId) {
+        try {
+          sheetsResult = await pushToGoogleSheets(store);
+        } catch (sheetErr: any) {
+          sheetsError = sheetErr?.message || String(sheetErr);
+          console.warn('Ekspor Google Sheets gagal (non-fatal):', sheetsError);
+        }
       }
+
       lastSyncedStoreRef.current = store;
       setError(null);
       return {
-        ...fbResult,
-        supabaseResult: sbResult,
+        totalItems: firestoreResult.totalItems,
+        collectionsCount: firestoreResult.collectionsCount,
+        syncedAt: firestoreResult.syncedAt,
+        firestoreResult,
+        sheetsResult,
+        sheetsError,
       };
     } catch (e: any) {
       console.error('Push full data failed:', e);
@@ -185,15 +184,16 @@ export function useFirebaseStore() {
     }
   }, [store]);
 
-  const pushFullSupabase = useCallback(async (): Promise<SupabaseSyncResult> => {
+  /** Push penuh khusus Firestore (tanpa ekspor Sheets). */
+  const pushFullFirestore = useCallback(async (): Promise<FirestoreSyncResult> => {
     setIsSyncing(true);
     try {
-      const result = await pushFullStoreToSupabase(store);
+      const result = await pushFullStoreToFirestore(store);
       lastSyncedStoreRef.current = store;
       setError(null);
       return result;
     } catch (e: any) {
-      console.error('Push full data to Supabase failed:', e);
+      console.error('Push full data to Firestore failed:', e);
       setError(e);
       throw e;
     } finally {
@@ -206,9 +206,9 @@ export function useFirebaseStore() {
     updateStore,
     forceSync,
     pushFullData,
-    pushFullSupabase,
+    pushFullFirestore,
     isInitializing,
     isSyncing,
-    error
+    error,
   };
 }

@@ -1,7 +1,9 @@
 /**
- * Parser sederhana untuk file skema Supabase (PostgreSQL).
- * Dipakai oleh scripts/generate-supabase-columns.mjs dan
- * scripts/validate-supabase-schema.mjs agar keduanya memakai satu sumber logika.
+ * Parser sederhana untuk file skema PostgreSQL (migrasi ARMS di
+ * schema/migrations/*.sql — sumber kebenaran skema, termasuk untuk
+ * migrasi ke Firestore).
+ * Dipakai oleh scripts/generate-firestore-schema.mjs dan
+ * scripts/validate-arms-data.mjs agar keduanya memakai satu sumber logika.
  */
 
 /**

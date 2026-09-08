@@ -1,34 +1,46 @@
 # ARMS — Control Tower (Agency Recovery Management System)
 
-Sistem Control Tower untuk agency DC & Recovery Management dengan database **Supabase/PostgreSQL** dan workbook spreadsheet **CSV lokal**. Sinkronisasi spreadsheet tidak memakai Google Sheets API, service account, OAuth, atau Google Apps Script. CSV bisa dibuka di Excel/LibreOffice dan diimpor ke Google Sheets bila diperlukan. Google Drive tetap opsional hanya untuk arsip dokumen.
+Sistem Control Tower untuk agency DC & Recovery Management dengan **seluruhnya layanan Google**:
 
-## Mode spreadsheet tanpa Google API
+| Fungsi | Layanan Google |
+|---|---|
+| **Database utama** | **Google Cloud Firestore** (Firebase) — 30 koleksi, diakses langsung dari browser |
+| **Login** | Firebase Authentication (Google Sign-In) |
+| **Arsip dokumen** (KTP, SPPI, SKP, BAST, …) | Google Drive (Service Account) |
+| **Ekspor laporan** (opsional) | Google Sheets (Service Account) |
+| **Deployment** | **Netlify** (SPA + Netlify Functions) |
 
-- Setiap workbook disimpan di `storage/spreadsheets/<nama-workbook>/` sebagai satu file CSV per tab.
-- `googleSheetId` pada Settings sekarang dipakai sebagai **nama workbook lokal**, bukan ID Google. Jika kosong, aplikasi memakai `arms-control-tower`.
-- Tombol **Buat Sheet Database**, **Push Semua Data**, dan sync berkala tetap memakai endpoint `/api/sheets/*`, tetapi endpoint tersebut hanya membaca/menulis CSV lokal.
-- Jalankan `npm run spreadsheet:setup -- nama-workbook` untuk membuat struktur file CSV. Data aplikasi dapat dipush dari menu Settings.
-- Folder `storage/spreadsheets/` diabaikan Git karena berisi data operasional. Backup folder tersebut atau impor CSV ke spreadsheet secara manual.
-
-Bagian Google API lama di bawah hanya relevan bila ingin mengaktifkan kembali integrasi Google Drive; tidak diperlukan untuk database dan sync spreadsheet.
+Dokumentasi lengkap migrasi skema & data (Supabase → Firestore): **[`firestore/MIGRATION.md`](firestore/MIGRATION.md)**.
 
 ---
 
 ## 1. Arsitektur & Alur Data
 
 ```
-ARMS UI (React)
+Browser (React SPA — di-host Netlify)
    │
-   ├── POST /api/sheets/setup   → buat/verifikasi tab (sheet) database
-   ├── POST /api/sheets/sync    → tulis data seluruh database ke tab spreadsheet
-   ├── POST /api/sheets/fetch   → baca data dari spreadsheet ke aplikasi
+   ├── Firebase Auth (popup Google Sign-In)
    │
-   ├── POST /api/drive/create-folder → buat satu folder di Google Drive
-   ├── POST /api/drive/ensure-path   → pastikan struktur folder bertingkat ada
-   └── POST /api/drive/upload        → upload file (KTP, SPPI, SKP, SPH, Proposal, MoU) ke folder
+   ├── Firestore SDK (client-side) ──────────────────────────────┐
+   │     • fetch  : getDocs per koleksi (30 koleksi)             │
+   │     • push   : writeBatch (merge), batch 400 dokument       │
+   │     • sync   : push + hapus dokumen yang terhapus           │
+   │     • setel  : satu dokumen settings/app_settings           │
+   │                                                        GOOGLE CLOUD
+   └── fetch /api/*  →  Netlify Functions (serverless)          FIRESTORE
+         ├── /api/health                          status server
+         ├── /api/drive/status|create-folder|
+         │   ensure-path|upload                   → Google Drive
+         ├── /api/sheets/setup|sync|fetch         → Google Sheets (ekspor)
+         └── /api/surat/open-generator|create-issue
 ```
 
-Semua API tersebut memakai **Service Account** (`googleapis`) yang dikonfigurasi lewat environment variable di server. Aplikasi **tidak pernah menyimpan kredensial** Google di browser.
+- **Database = Google** (Firestore). Tidak ada PostgreSQL/Supabase.
+- LocalStorage browser dipakai sebagai cache optimistik (offline-first);
+  sumber kebenaran (remote) = Firestore.
+- **Service Account** (satu saja, dari project Firebase yang sama) dipakai
+  untuk Drive, Sheets, dan skrip migrasi/seed. Kredensial **tidak pernah**
+  masuk ke browser.
 
 ---
 
@@ -36,242 +48,214 @@ Semua API tersebut memakai **Service Account** (`googleapis`) yang dikonfigurasi
 
 | Kebutuhan | Keterangan |
 |---|---|
-| Akun Google | Untuk membuat project di Google Cloud Console |
-| Akun Google Sheets | Spreadsheet tujuan database (bisa dibuat di Google Drive) |
-| Server/aplikasi | Node.js 20+ (`npm run dev` atau `npm run build && npm start`) |
-| Variabel kredensial | Salah satu dari `GOOGLE_SERVICE_ACCOUNT_JSON` atau `GOOGLE_APPLICATION_CREDENTIALS` |
+| Akun Google | Untuk Google Cloud Console & Firebase Console |
+| Firebase project | `gen-lang-client-0940128449` (sudah dikonfigurasi; konfig public di `firebase-applet-config.json`) |
+| Node.js 20+ | `npm run dev` / skrip migrasi |
+| Akun Netlify | Deploy produksi (build otomatis dari `netlify.toml`) |
+| Kredensial | Satu Service Account Google (Bab 3) |
 
 ---
 
 ## 3. Setup Google Cloud (sekali saja)
 
-### Langkah 3.1 — Buat Project Google Cloud
-1. Buka [Google Cloud Console](https://console.cloud.google.com/) → **Select project** → **New Project**.
-2. Beri nama mis. `arms-control-tower` → **Create**.
-3. Pastikan project tersebut terpilih di pojok atas.
+> Konfigurasi web app Firebase **sudah** tersisip di `firebase-applet-config.json`
+> (Auth + Firestore untuk browser). Yang perlu disiapkan hanya **Service Account**.
 
-### Langkah 3.2 — Aktifkan API
-Buka **APIs & Services → Library**, lalu cari dan aktifkan:
+### Langkah 3.1 — Aktifkan API
+Buka [Google Cloud Console](https://console.cloud.google.com/) → project
+**gen-lang-client-0940128449** → **APIs & Services → Library**, aktifkan:
 
-1. **Google Sheets API**
-   https://console.cloud.google.com/apis/library/sheets.googleapis.com
-2. **Google Drive API**
-   https://console.cloud.google.com/apis/library/drive.googleapis.com
+1. **Cloud Firestore API** — database utama (biasanya sudah aktif via Firebase)
+2. **Google Drive API** — arsip dokumen
+3. **Google Sheets API** — ekspor laporan (opsional)
 
-> Keduanya wajib diaktifkan. Setelah aktif, tunggu 1–2 menit sebelum melanjutkan.
+### Langkah 3.2 — Buat Service Account
+1. **APIs & Services → Credentials → Create Credentials → Service account**.
+2. Nama bebas (mis. `arms-service`).
+3. Role: **Cloud Datastore Owner** (untuk skrip seed/validasi Firestore) —
+   untuk Drive/Sheets saja, role tidak wajib (akses dari sharing file).
+4. Buka service account → tab **Keys** → **Add Key → Create new key → JSON**
+   → file JSON terunduh (mis. `service-account.json`).
 
-### Langkah 3.3 — Buat Service Account
-1. Buka **APIs & Services → Credentials → Create Credentials → Service account**.
-2. Nama: `arms-sheets-service` (bebas).
-3. Role tidak wajib diisi (akses ditentukan dari *sharing file*, bukan IAM).
-4. **Done**, lalu klik service account tersebut → tab **Keys** → **Add Key → Create new key → JSON** → file JSON terunduh (mis. `service-account.json`).
-   > **⚠️ Jangan commit file JSON ini ke Git.** Tambahkan ke `.gitignore`, dan jangan upload ke public.
+> **⚠️ Jangan commit file JSON ini ke Git** (sudah ada di `.gitignore`).
 
-### Langkah 3.4 — Catat Email Service Account
-Di halaman service account, salin **email** dengan format:
-
+### Langkah 3.3 — Catat Email Service Account
 ```
-arms-sheets-service@<project-id>.iam.gserviceaccount.com
+arms-service@gen-lang-client-0940128449.iam.gserviceaccount.com
 ```
-
-Email ini akan dipakai untuk *share* spreadsheet dan folder Drive.
+Email ini dipakai untuk *share* folder Drive / spreadsheet (Editor).
 
 ---
 
-## 4. Menyiapkan Spreadsheet Database & Folder Drive
+## 4. Migrasi Database ke Firestore (sekali saja)
 
-### Langkah 4.1 — Buat Spreadsheet
-1. Buka [sheets.new](https://sheets.new) (atau buat lewat Google Drive).
-2. Beri nama mis. `ARMS_Database_2026`.
-3. **Share** spreadsheet tersebut dengan email service account di atas → beri akses **Editor (Writer)**:
-   ```
-   Klik tombol "Bagikan" (Share) → masukkan email service account → Editor → Send
-   ```
-4. Salin **Spreadsheet ID** dari URL:
-   ```
-   https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit#gid=0
-   ```
-   Contoh: `1AbCdefGhIjKlMnOpQrStUvWxYz0123456789`
+Data & skema **yang saat ini ada** (30 tabel: users, clients, personnel,
+services, fees, contracts, customers, cases, assignments, sks, cash_accounts,
+drive_folders, notifications, audit_logs, settings, + 15 koleksi transaksional)
+dipindahkan ke Firestore:
 
-> Alternatif: pastikan spreadsheet dibuat/dimiliki oleh akun yang sudah di-share, atau buat lewat Drive API. Yang terpenting service account memiliki akses **Editor**.
-
-### Langkah 4.2 — Siapkan Folder Master Google Drive
-1. Buat folder root ARMS di Google Drive, mis. `ARMS_CT_2026`.
-2. Klik kanan folder → **Share** → masukkan email service account → akses **Editor**.
-3. Salin **Folder ID** dari URL:
-   ```
-   https://drive.google.com/drive/folders/<FOLDER_ID>
-   ```
-   Contoh: `1BxPvATwEy_0dw8lKROK-PLZVu8Bkp2AS`
-
-> Di aplikasi, folder root dipakai sebagai dasar pembuatan struktur:
-> ```
-> PT_MJ_INDONESIA/
-> ├── DATABASE_KARYAWAN/<NAMA_KARYAWAN>/
-> │   ├── 01_KTP/     ← foto KTP
-> │   └── 02_SPPI/    ← berkas SPPI (opsional)
-> └── MULTIFINANCE/<NAMA_KLIN>/
->     └── FOLDER_SKP/DEBITUR_<NAMA_DEBITUR>/
-> ```
-
-### Langkah 4.3 — (Opsional) Verifikasi Akses via curl
 ```bash
-# Setup / verifikasi sheet (menggunakan kredensial server)
-curl -X POST http://localhost:3000/api/sheets/setup \
-  -H 'Content-Type: application/json' \
-  -d '{"spreadsheetId":"<SPREADSHEET_ID>","tabs":{"customers":"Debitur_2026","cases":"Kasus"}}'
+# 0. Letakkan file service-account.json di root repo (lokal)
+#    atau set env GOOGLE_SERVICE_ACCOUNT_JSON
 
-# Pastikan struktur folder ada / dibuat
-curl -X POST http://localhost:3000/api/drive/ensure-path \
-  -H 'Content-Type: application/json' \
-  -d '{"path":["PT_MJ_INDONESIA","MULTIFINANCE","PT_ADIRA_DINAMIKA_MULTI_FINANCE","FOLDER_SKP"],"rootId":"<FOLDER_ID>"}'
+# 1. (Opsional) Regenerate skema TS bila schema/migrations/*.sql berubah
+npm run db:schema
+
+# 2. Validasi data awal terhadap skema TANPA jaringan
+npm run db:validate:data
+
+# 3. EKSEKUSI: _meta/schema + seed seluruh data + 13 composite indexes
+npm run db:setup
+#    varian: --dry-run | --seed-only | --meta-only | --index-only
+#            --project <id> | --database <id>
+
+# 4. Verifikasi online (jumlah dokumen per koleksi)
+npm run db:validate:firestore
 ```
+
+Setelah itu, browser aplikasi langsung membaca/menulis Firestore yang sama.
+Detail & pemetaan lengkap: [`firestore/MIGRATION.md`](firestore/MIGRATION.md).
 
 ---
 
-## 5. Konfigurasi Kredensial di Server
+## 5. Konfigurasi Kredensial
 
-Server membaca kredensial dari environment variable dengan prioritas:
+Prioritas pembacaan (Netlify Functions & server lokal sama):
 
-1. **`GOOGLE_SERVICE_ACCOUNT_JSON`** — isi **penuh JSON** service account (disarankan untuk Vercel / Cloud Run / secret manager).
-2. **`GOOGLE_APPLICATION_CREDENTIALS`** — **path** ke file JSON service account (untuk VPS / lokal).
+1. **`GOOGLE_SERVICE_ACCOUNT_JSON`** — isi penuh JSON (dipakai di **Netlify**).
+2. **`GOOGLE_APPLICATION_CREDENTIALS`** — path file JSON (VPS / lokal).
+3. **`./service-account.json`** di root repo (lokal saja).
 
 ### 5.1. Mode Lokal (.env)
 ```bash
 cp .env.example .env
 ```
-Isi `.env`:
 ```ini
-# Opsi A: path ke file JSON service account
 GOOGLE_APPLICATION_CREDENTIALS="./service-account.json"
-
-# Opsi B (lebih aman untuk server): isi JSON lengkap dalam satu baris
-# GOOGLE_SERVICE_ACCOUNT_JSON='{"type":"service_account","project_id":"...","private_key":"...","client_email":"..."}' 
+# atau: GOOGLE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}'
 ```
-Jalankan aplikasi:
 ```bash
-npm run dev          # development (Vite + server)
+npm run dev          # development (Vite + Express server lokal)
 # atau
-npm run build && npm start   # production
-```
-
-> `server.ts` sudah memuat `dotenv/config`, jadi `.env` di folder root otomatis terbaca.
-
-### 5.1b. Validasi kredensial (sebelum/sesudah isi .env)
-```bash
-# Validasi isi kredensial + coba dapat access token dari Google
-npm run validate:creds
-# atau
-node scripts/validate-google-creds.mjs
-
-# Sekaligus uji akses ke spreadsheet database Anda:
-node scripts/validate-google-creds.mjs <SPREADSHEET_ID>
-```
-Skrip akan mencetak pesan spesifik bila file tidak ditemukan, JSON rusak, `private_key` tidak valid, atau spreadsheet tidak di-share — bukan lagi error ADC samar `Could not load the default credentials`.
-
-### 5.2. Mode Vercel
-1. Buka project di Vercel → **Settings → Environment Variables**.
-2. Tambahkan **`GOOGLE_SERVICE_ACCOUNT_JSON`** dengan value JSON service account (tempel seluruh isi file, termasuk baris baru `\n` pada `private_key` — pastikan JSON valid).
-3. Deploy ulang aplikasi.
-
-### 5.3. Mode Cloud Run / VPS
-```bash
-export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
 npm run build && npm start
 ```
-Atau simpan sebagai secret inline:
+
+Validasi kredensial:
 ```bash
-export GOOGLE_SERVICE_ACCOUNT_JSON="$(cat service-account.json)"
+npm run validate:creds                      # token Google
+node scripts/validate-google-creds.mjs <SPREADSHEET_ID>   # + uji Sheets
 ```
+
+### 5.2. Mode Netlify (produksi)
+1. Di [app.netlify.com](https://app.netlify.com/) → import repo ini.
+2. Netlify otomatis membaca `netlify.toml` (build `npm run build`, publish `dist`).
+3. **Site settings → Environment variables** → tambahkan
+   **`GOOGLE_SERVICE_ACCOUNT_JSON`** (seluruh isi file JSON, satu baris,
+   `private_key` memakai `\n`).
+4. Deploy. Fungsi `/api/*` langsung aktif.
 
 ---
 
 ## 6. Konfigurasi di Aplikasi ARMS
 
-### 6.1. Tab SYSTEM — Google Sheets Cloud Database Control & Push Otomatis
-
+### 6.1. Tab SYSTEM — Google Firestore Database & Push Otomatis
 1. Buka **Settings → Pengaturan Sistem & Google Sheets**.
-2. Pada kartu **"Google Sheets Cloud Database Control & Push Otomatis"**, isi kolom **"Kolom Spreadsheet Database (Google Sheets ID / URL)"** dengan ID spreadsheet (contoh: `1AbCdef...`), lalu klik **Simpan**.
-3. Di bawahnya ada kartu **"Kolom Spreadsheet untuk Membuat Database"**:
-   - Edit **nama tab/sheet** per database (mis. `customers → Debitur_2026`).
-   - Toggle **ON/OFF** untuk mengaktifkan/nonaktifkan sinkronisasi per database.
-   - Klik **Simpan Kolom** untuk menyimpan konfigurasi.
-   - Klik **Buat Kolom Database** untuk membuat/memverifikasi seluruh tab di spreadsheet.
-4. Klik **🚀 Push Data Otomatis & Buat Sheet** untuk mengisi seluruh data sekaligus.
+2. Banner **"Google Firestore Database & Push Otomatis"** menampilkan
+   project Firestore + status koneksi. **Database utama: Firestore**.
+3. (Opsional) kartu **Export Laporan ke Google Sheets**: isi
+   **Spreadsheet ID / URL** (harus spreadsheet Google asli) →
+   **Buat/Update Tab Database** (membuat 30 tab otomatis) →
+   **🚀 Push Data Otomatis ke Firestore** menuliskan data ke Firestore
+   (primer) + spreadsheet (bila diisi).
+4. **Pull dari Google Firestore** = tarik data terbaru ke aplikasi.
 
 ### 6.2. Tab DATABASE — Pengaturan Semua Database
-
 1. Buka **Settings → Database & Sheet**.
-2. Isi **Google Spreadsheet ID / URL**.
-3. Klik **Buat Sheet Database** (membuat semua tab otomatis).
-4. Klik **Push Semua Data** untuk mengirim seluruh database aktif.
-5. Tabel daftar database menampilkan:
-   - nama tab spreadsheet (bisa diedit),
-   - jumlah data,
-   - status **TERHUBUNG / NONAKTIF**,
-   - waktu sync terakhir,
-   - toggle **ON/OFF** per database.
+2. Banner **Google Firestore Database (Database Utama)** — tombol
+   **Pull / Push Firestore**.
+3. (Opsional) **Google Spreadsheet ID / URL** sebagai target ekspor laporan.
+4. Tabel 30 database menampilkan nama **Koleksi Firestore** (mis.
+   `lawyer_notices`), jumlah data, status **TERHUBUNG/NONAKTIF**, waktu sync,
+   dan toggle ON/OFF.
 
 ### 6.3. Tab GDRIVE_DATABASE — Direktori Google Drive
-
 1. Buka **Settings → 📁 Direktori GDrive & Database Karyawan / Multifinance**.
-2. Untuk setiap **Karyawan**: klik **Buat Folder GDrive** (struktur: `PT_MJ_INDONESIA/DATABASE_KARYAWAN/<NAMA>/01_KTP` dan `.../02_SPPI`).
-   - Form **Edit Data Karyawan / Mitra DC** mengunggah foto KTP ke `01_KTP` dan berkas **SPPI (opsional)** ke `02_SPPI` lewat endpoint `/api/drive/upload`.
-   - Nama file: `KTP_<NAMA>_<timestamp>.jpg` / `SPPI_<NAMA>_<timestamp>.jpg`.
-3. Untuk setiap **Klien Multifinance**: klik **Buat Folder** (struktur: `PT_MJ_INDONESIA/MULTIFINANCE/<NAMA_KLIN>`).
-4. Klik **Buat Folder SKP** untuk folder `FOLDER_SKP` per klien.
-5. Untuk **Debitur**: klik **Buat Folder** → `FOLDER_SKP/DEBITUR_<NAMA>`; atau gunakan **+ Tambah Debitur Baru** (modal **"Tambah Debitur & Buat Folder GDrive Otomatis"**) — folder dibuat otomatis saat menekan **Simpan Debitur & Buat Folder GDrive**.
-6. Setelah folder dibuat, tombol **Buka/Salin** aktif dan folder muncul di GDrive dengan link `drive.google.com/drive/folders/<ID>`.
-
-> Folder hasil pembuatan **asli** (bukan simulasi `&path=`), terdeteksi via `isRealDriveFolder` (ID 25+ karakter base64url).
+2. **Karyawan**: **Buat Folder GDrive**
+   (`PT_MJ_INDONESIA/DATABASE_KARYAWAN/<NAMA>/01_KTP` + `.../02_SPPI`).
+   Form **Edit Data Karyawan / Mitra DC** mengunggah foto KTP ke `01_KTP`
+   dan berkas SPPI ke `02_SPPI` (endpoint `/api/drive/upload`).
+3. **Klien Multifinance**: **Buat Folder**
+   (`PT_MJ_INDONESIA/MULTIFINANCE/<NAMA_KLIN>`) + **Buat Folder SKP**.
+4. **Debitur**: `FOLDER_SKP/DEBITUR_<NAMA>` — otomatis via
+   **Simpan Debitur & Buat Folder GDrive**.
+5. Folder yang dibuat **asli** di Google Drive (link
+   `drive.google.com/drive/folders/<ID>`).
 
 ---
 
-## 7. Referensi Endpoint
+## 7. Referensi Endpoint (Netlify Functions)
 
 | Metode | Endpoint | Fungsi | Body utama |
 |---|---|---|---|
-| GET | `/api/health` | Cek status server | — |
+| GET | `/api/health` | Status server & integrasi | — |
 | POST | `/api/sheets/setup` | Buat/verifikasi tab sheet | `{ spreadsheetId, tabs }` |
-| POST | `/api/sheets/sync` | Tulis data database | `{ spreadsheetId, data, tabs }` |
-| POST | `/api/sheets/fetch` | Baca data spreadsheet | `{ spreadsheetId, tabs }` |
+| POST | `/api/sheets/sync` | Tulis data ke spreadsheet | `{ spreadsheetId, data, tabs }` |
+| POST | `/api/sheets/fetch` | Baca spreadsheet | `{ spreadsheetId, tabs }` |
+| GET | `/api/drive/status` | Status Drive & service account | — |
 | POST | `/api/drive/create-folder` | Buat folder | `{ name, parentId }` |
 | POST | `/api/drive/ensure-path` | Pastikan path folder | `{ path, rootId }` |
 | POST | `/api/drive/upload` | Upload file | `{ fileName, mimeType, base64, folderId }` |
+| POST | `/api/surat/open-generator` | Buka generator surat tugas | `{ skNumber, skId, debtor, personnel, driveDocumentUrl }` |
+| POST | `/api/surat/create-issue` | Sinkron GitHub issue generator | `{ skNumber, skId, debtor, personnel }` |
+
+> Catatan: **database (Firestore) tidak lewat endpoint** — browser
+> berkomunikasi langsung dengan Firestore via SDK.
 
 ---
 
-## 8. Troubleshooting
+## 8. Skrip Utility
+
+| Skrip | Fungsi |
+|---|---|
+| `npm run db:schema` | Generate `src/utils/firestoreSchemaColumns.ts` dari `schema/migrations/*.sql` |
+| `npm run db:validate:data` | Simulasi push Firestore (offline) dengan data awal ARMS |
+| `npm run db:setup` | **Migrasi/seed Firestore**: meta + data + indexes |
+| `npm run db:seed` | Hanya seed data |
+| `npm run db:validate:firestore` | Verifikasi online isi Firestore |
+| `npm run spreadsheet:setup` | Buat spreadsheet Google baru + 30 tab (via Service Account) |
+| `npm run validate:creds` | Validasi Service Account + token Google |
+
+---
+
+## 9. Troubleshooting
 
 | Gejala / Error | Penyebab | Solusi |
 |---|---|---|
-| `Google API belum dikonfigurasi. Set env GOOGLE_SERVICE_ACCOUNT_JSON ... atau GOOGLE_APPLICATION_CREDENTIALS` | Kredensial service account belum diset di server | Set salah satu env var (Bab 5), restart server |
-| `Could not load the default credentials...` | Kredensial belum diset / versi lama tanpa `authFor()` | Repo ini sudah memakai `authFor()` (baca kredensial eksplisit di `api/lib/googleAuth.ts`). Isi `GOOGLE_SERVICE_ACCOUNT_JSON` atau `GOOGLE_APPLICATION_CREDENTIALS`, letakkan file `service-account.json` di root repo, lalu jalankan `node scripts/validate-google-creds.mjs` untuk cek |
-| `File kredensial tidak ditemukan: ...service-account.json` | Path `GOOGLE_APPLICATION_CREDENTIALS` menunjuk file yang belum ada | Letakkan file JSON service account di lokasi tsb (default `./service-account.json` = root repo), lalu jalankan ulang validasi |
-| `GOOGLE_SERVICE_ACCOUNT_JSON tidak valid ... / bukan JSON valid` | Isi env adalah JSON rusak / `private_key` terpotong | Tempel ulang seluruh isi file JSON (pertahankan `\n` pada `private_key`), lalu jalankan `node scripts/validate-google-creds.mjs` |
-| `MetadataLookupWarning` | Server mencoba metadata GCE tanpa kredensial | Set kredensial; versi baru sudah tidak memunculkan warning ini |
-| `403 insufficient permissions` | Service account belum di-share ke spreadsheet/folder | Share spreadsheet & folder root dengan email service account sebagai **Editor** |
-| `Spreadsheet not found` / `404` | Spreadsheet ID salah atau tidak di-share | Salin ID dari URL; pastikan share Editor |
-| `The caller does not have permission` pada Drive | Folder master belum di-share | Share folder root (dan folder induk) ke service account |
-| Folder tampil "Belum dibuat" padahal sudah | Link lama memakai `&path=` / ID buatan (`GDRIVE-CLI-...`) | Klik **Buat Folder / Perbaiki Folder** untuk membuat folder asli |
-| `fetch failed (unable to verify the first certificate)` pada `/api/surat/create-issue` | Koneksi TLS server ke `api.github.com` diblokir | Pastikan server bisa akses internet; cek proxy/trusted CA |
-| Push sukses tapi "0 dokumen" | Spreadsheet ID kosong / belum disimpan | Isi ID, klik **Simpan**, lalu **Push Data Otomatis** |
-| CSV terunduh tidak rapi di Excel | Pemisah koma vs semicolon | Export memakai `;` + UTF-8 BOM; pilih sesuai regional Excel |
-
-### Cek cepat konfigurasi
-```bash
-curl http://localhost:3000/api/health
-# lalu uji:
-curl -X POST http://localhost:3000/api/sheets/setup \
-  -H 'Content-Type: application/json' \
-  -d '{"spreadsheetId":"<SPREADSHEET_ID>"}'
-```
+| `Google Drive belum dikonfigurasi...` | Service account belum diset | Set `GOOGLE_SERVICE_ACCOUNT_JSON` (Netlify) / file lokal, lalu deploy lagi |
+| `403 insufficient permissions` (Sheets/Drive) | File belum di-share ke service account | Share spreadsheet/folder → email SA → **Editor** |
+| `Spreadsheet not found` / `404` | ID spreadsheet salah / bukan spreadsheet Google | Salin ID asli dari URL; **buat lewat `npm run spreadsheet:setup`** |
+| `The caller does not have permission` (Drive) | Folder master belum di-share | Share folder root ke service account |
+| Push Firestore gagal `PERMISSION_DENIED` | SA bukan dari project Firebase yang sama | Pakai SA project `gen-lang-client-0940128449` |
+| Data tidak muncul di UI | Firestore masih kosong | Jalankan `npm run db:setup` (Bab 4), lalu **Pull dari Google Firestore** |
+| `db:validate:data` → error field wajib | Data awal berubah tapi skema tidak | Perbaiki data di `src/data/initialData.ts` atau skema di `schema/migrations/` |
+| Netlify: `Cannot find module 'googleapis'` | Node modules tidak ter-load | Pastikan `external_node_modules = ["googleapis"]` di `netlify.toml` |
+| `fetch failed` pada `/api/surat/create-issue` | Koneksi TLS ke `api.github.com` diblokir | Cek jaringan/proxy server |
 
 ---
 
-## 9. Keamanan
+## 10. Keamanan
 
 - **Jangan pernah** commit `service-account.json`, `.env`, atau token ke Git.
-- Gunakan secret manager (Vercel Env, Cloud Run Secret, dsb.) untuk `GOOGLE_SERVICE_ACCOUNT_JSON`.
-- Berikan service account akses **minimal**: hanya spreadsheet database dan folder Drive yang dibutuhkan (jangan beri akses ke Drive root akun pribadi).
-- Nonaktifkan database yang tidak dipakai melalui tab **Database & Sheet** (toggle OFF) agar tidak ter-push.
+- Di Netlify, simpan Service Account hanya di **Environment Variables**
+  (tidak pernah ke browser).
+- Berikan service account akses **minimal**: hanya folder Drive &
+  spreadsheet yang dibutuhkan.
+- `firestore.rules` saat ini terbuka (project internal). Untuk multi-user
+  publik, batasi dengan Auth:
+  ```
+  match /{document=**} {
+    allow read, write: if request.auth != null;
+  }
+  ```
+- Nonaktifkan database yang tidak dipakai (tab **Database & Sheet**, toggle
+  OFF) agar tidak ikut di-push ke spreadsheet ekspor.

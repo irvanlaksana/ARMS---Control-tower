@@ -2,9 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, DatabaseTabConfig } from '../../types/arms';
 import { getDatabaseConfigs, markDatabaseSynced } from '../../data/databaseConfig';
-import { pushFullStoreToFirebase } from '../../services/firebaseSyncService';
-import { pushFullStoreToSupabase, fetchStoreFromSupabase, SupabaseSyncResult } from '../../services/supabaseService';
-import { isSupabaseConfigured } from '../../lib/supabase';
+import {
+  pushFullStoreToFirestore,
+  fetchStoreFromFirestore,
+  firestoreProjectId,
+  FirestoreSyncResult,
+} from '../../services/firestoreService';
+import { setupGoogleSheets, pushToGoogleSheets } from '../../services/googleSheetsService';
+import { STORE_TO_FIRESTORE_COLLECTION } from '../../utils/firestoreAdapter';
 import {
   Database,
   Table2,
@@ -20,8 +25,6 @@ import {
   PowerOff,
   Zap,
   Server,
-  Cloud,
-  CheckCircle,
 } from 'lucide-react';
 
 interface SettingsDatabaseTabProps {
@@ -32,6 +35,13 @@ interface SettingsDatabaseTabProps {
 }
 
 const canEditFn = (currentUser: User) => currentUser.role === 'SUPER_ADMIN_OPS';
+
+/** Ambil Google Spreadsheet ID (mendukung tempelan URL penuh). */
+function normalizeSheetId(raw: string): string {
+  const trimmed = (raw || '').trim();
+  const m = trimmed.match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : trimmed;
+}
 
 export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
   store,
@@ -46,12 +56,10 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
   const [isSettingUp, setIsSettingUp] = useState(false);
   const [isPushing, setIsPushing] = useState(false);
 
-  // Supabase states
-  const [isPushingSupabase, setIsPushingSupabase] = useState(false);
-  const [isFetchingSupabase, setIsFetchingSupabase] = useState(false);
-  const [supabaseMsg, setSupabaseMsg] = useState<{ ok: boolean; text: string } | null>(null);
-
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+  // Firestore states
+  const [isPushingFirestore, setIsPushingFirestore] = useState(false);
+  const [isFetchingFirestore, setIsFetchingFirestore] = useState(false);
+  const [firestoreMsg, setFirestoreMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
     setConfigs(getDatabaseConfigs(store.settings));
@@ -70,7 +78,7 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
       'UPDATE',
       'Database_Config',
       'APP_SETTINGS_DATABASE',
-      `Update konfigurasi sheet untuk ${configs.length} database ARMS`
+      `Update konfigurasi database untuk ${configs.length} koleksi ARMS`
     );
     onUpdateStore({
       ...store,
@@ -85,31 +93,30 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
     setTimeout(() => setSavedMsg(false), 3000);
   };
 
-  // Push to Supabase
-  const handlePushSupabase = async () => {
-    setIsPushingSupabase(true);
-    setSupabaseMsg({ ok: true, text: 'Sedang mengirim & menyinkronkan seluruh 30 tabel ke database Supabase...' });
+  // Push to Firestore (database utama)
+  const handlePushFirestore = async () => {
+    setIsPushingFirestore(true);
+    setFirestoreMsg({ ok: true, text: 'Sedang mengirim & menyinkronkan seluruh 30 koleksi ke database Google Firestore...' });
     try {
-      const res: SupabaseSyncResult = await pushFullStoreToSupabase(store);
+      const res: FirestoreSyncResult = await pushFullStoreToFirestore(store);
       if (res.warnings?.length) {
-        // Catatan non-fatal (kolom diabaikan, FK menggantung dinolkan, duplikat id).
-        console.warn('[Supabase push] warnings:', res.warnings);
+        console.warn('[Firestore push] warnings:', res.warnings);
       }
       if (res.success) {
         const warnNote = res.warnings?.length
           ? ` (${res.warnings.length} catatan penyesuaian data, lihat console browser)`
           : '';
-        setSupabaseMsg({
+        setFirestoreMsg({
           ok: true,
-          text: `✅ Sukses! ${res.totalItems} dokumen di ${res.collectionsCount} tabel berhasil dikirim dan dibuat otomatis di database Supabase.${warnNote}`,
+          text: `✅ Sukses! ${res.totalItems} dokumen di ${res.collectionsCount} koleksi berhasil dikirim ke Google Firestore (project ${firestoreProjectId}).${warnNote}`,
         });
         const audit = createAuditEntry(
           currentUser.username,
           currentUser.role,
           'UPDATE',
-          'Supabase_Sync',
-          'ALL_TABLES',
-          `Push penuh ${res.totalItems} dokumen ke ${res.collectionsCount} tabel Supabase`
+          'Firestore_Sync',
+          'ALL_COLLECTIONS',
+          `Push penuh ${res.totalItems} dokumen ke ${res.collectionsCount} koleksi Firestore`
         );
         onUpdateStore({
           ...store,
@@ -120,63 +127,59 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
           auditLogs: [audit, ...store.auditLogs],
         });
       } else {
-        console.error('[Supabase push] errors:', res.errors);
+        console.error('[Firestore push] errors:', res.errors);
         const list = res.errors || [];
         const preview = list.slice(0, 3).join(' | ');
         const more = list.length > 3 ? ` (+${list.length - 3} error lain, lihat console browser)` : '';
-        setSupabaseMsg({
+        setFirestoreMsg({
           ok: false,
           text:
-            `❌ Gagal push ke Supabase: ${preview || res.error || 'Terjadi kesalahan tidak diketahui.'}${more}` +
+            `❌ Gagal push ke Firestore: ${preview || res.error || 'Terjadi kesalahan tidak diketahui.'}${more}` +
             (res.totalItems > 0 ? ` — ${res.totalItems} dokumen lain tetap berhasil tersimpan.` : ''),
         });
       }
     } catch (err: any) {
-      setSupabaseMsg({ ok: false, text: `❌ Gagal push ke Supabase: ${err.message || String(err)}` });
+      setFirestoreMsg({ ok: false, text: `❌ Gagal push ke Firestore: ${err.message || String(err)}` });
     } finally {
-      setIsPushingSupabase(false);
+      setIsPushingFirestore(false);
     }
   };
 
-  // Fetch from Supabase
-  const handleFetchSupabase = async () => {
-    setIsFetchingSupabase(true);
-    setSupabaseMsg({ ok: true, text: 'Sedang mengambil data terbaru dari database Supabase...' });
+  // Fetch from Firestore (database utama)
+  const handleFetchFirestore = async () => {
+    setIsFetchingFirestore(true);
+    setFirestoreMsg({ ok: true, text: 'Sedang mengambil data terbaru dari database Google Firestore...' });
     try {
-      const refreshed = await fetchStoreFromSupabase(store);
+      const refreshed = await fetchStoreFromFirestore(store);
       onUpdateStore(refreshed);
-      setSupabaseMsg({
+      setFirestoreMsg({
         ok: true,
-        text: '✅ Sukses mengambil data terbaru dari database Supabase!',
+        text: '✅ Sukses mengambil data terbaru dari Google Firestore!',
       });
     } catch (err: any) {
-      setSupabaseMsg({ ok: false, text: `❌ Gagal mengambil data: ${err.message || String(err)}` });
+      setFirestoreMsg({ ok: false, text: `❌ Gagal mengambil data: ${err.message || String(err)}` });
     } finally {
-      setIsFetchingSupabase(false);
+      setIsFetchingFirestore(false);
     }
   };
 
   const handleSetupSheets = async () => {
     if (!canEdit) return;
-    const id = (sheetId || 'arms-control-tower').trim();
+    const id = normalizeSheetId(sheetId);
+    if (!id) {
+      setSetupMsg({ ok: false, text: 'Masukkan Google Spreadsheet ID terlebih dahulu.' });
+      return;
+    }
     setIsSettingUp(true);
-    setSetupMsg({ ok: true, text: 'Sedang membuat/memverifikasi seluruh tab database di workbook CSV lokal...' });
+    setSetupMsg({ ok: true, text: 'Sedang membuat/memverifikasi seluruh tab database di Google Sheets...' });
     try {
-      const resp = await fetch('/api/sheets/setup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          spreadsheetId: id,
-          tabs: Object.fromEntries(configs.map((c) => [c.collection, c.tabName])),
-        }),
-      });
-      const json = await resp.json();
-      if (!json?.success) {
-        throw new Error(json?.error || 'Gagal membuat sheet database');
+      const result = await setupGoogleSheets(id, Object.fromEntries(configs.map((c) => [c.collection, c.tabName])));
+      if (!result?.success) {
+        throw new Error(result?.error || 'Gagal membuat sheet database');
       }
       setSetupMsg({
         ok: true,
-        text: `✅ Berhasil! ${json.sheets?.length || 0} tab/sheet database tersedia di workbook CSV lokal.`,
+        text: `✅ Berhasil! ${result.sheets?.length || 0} tab/sheet database tersedia di Google Sheets.`,
       });
       saveConfig(id);
     } catch (err: any) {
@@ -187,13 +190,13 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
   };
 
   const handlePushAll = async () => {
-    const id = (sheetId || '').trim();
+    const id = normalizeSheetId(sheetId);
     if (!id) {
-      setSetupMsg({ ok: false, text: 'Masukkan nama workbook lokal terlebih dahulu sebelum push.' });
+      setSetupMsg({ ok: false, text: 'Masukkan Google Spreadsheet ID terlebih dahulu sebelum push (database utama tetap Google Firestore).' });
       return;
     }
     setIsPushing(true);
-    setSetupMsg({ ok: true, text: 'Sedang mengirim data seluruh database aktif ke Google Sheets...' });
+    setSetupMsg({ ok: true, text: 'Sedang mengirim data seluruh database aktif: Google Firestore (utama) + Google Sheets (ekspor)...' });
     try {
       const pushStore: ARMSStore = {
         ...store,
@@ -203,10 +206,18 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
           databaseConfig: configs,
         },
       };
-      const res = await pushFullStoreToFirebase(pushStore);
-      const supabaseResult = isSupabaseConfigured ? await pushFullStoreToSupabase(pushStore) : null;
-      if (supabaseResult && !supabaseResult.success) {
-        throw new Error(`Supabase: ${supabaseResult.error || 'sinkronisasi gagal'}`);
+      // 1. Database UTAMA: Google Firestore
+      const firestoreResult = await pushFullStoreToFirestore(pushStore);
+      if (!firestoreResult.success) {
+        throw new Error(`Firestore: ${firestoreResult.error || 'sinkronisasi gagal'}`);
+      }
+      // 2. Ekspor opsional: Google Sheets
+      let sheetsTotal = 0;
+      try {
+        const sheetsResult = await pushToGoogleSheets(pushStore);
+        sheetsTotal = sheetsResult.totalItems;
+      } catch (sheetErr: any) {
+        console.warn('Ekspor Google Sheets gagal (non-fatal):', sheetErr?.message || sheetErr);
       }
       const counts: Record<string, number> = {};
       for (const cfg of getDatabaseConfigs(pushStore.settings)) {
@@ -215,12 +226,12 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
         counts[cfg.collection] = Array.isArray(items) ? items.length : 0;
       }
       if (canEdit) {
-        const syncedSettings = markDatabaseSynced(pushStore.settings, counts, res.syncedAt || new Date().toISOString());
+        const syncedSettings = markDatabaseSynced(pushStore.settings, counts, firestoreResult.syncedAt);
         onUpdateStore({ ...pushStore, settings: syncedSettings });
       }
       setSetupMsg({
         ok: true,
-        text: `✅ Sukses! ${res.totalItems} dokumen tersimpan di CSV lokal${supabaseResult ? ' dan Supabase' : ''}.`,
+        text: `✅ Sukses! ${firestoreResult.totalItems} dokumen tersimpan di Google Firestore${sheetsTotal ? ` dan ${sheetsTotal} dokumen diekspor ke Google Sheets` : ''}.`,
       });
     } catch (err: any) {
       setSetupMsg({ ok: false, text: `❌ Gagal push: ${err.message || String(err)}` });
@@ -230,8 +241,8 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
   };
 
   const connectedCount = configs.filter((c) => c.enabled || c.collection === 'settings').length;
-  const spreadsheetUrl = sheetId
-    ? `https://docs.google.com/spreadsheets/d/${sheetId.trim()}/edit?usp=sharing`
+  const spreadsheetUrl = normalizeSheetId(sheetId)
+    ? `https://docs.google.com/spreadsheets/d/${normalizeSheetId(sheetId)}/edit?usp=sharing`
     : '';
 
   // Calculate total items in store
@@ -243,7 +254,7 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* 1. SUPABASE CLOUD DATABASE CONTROL BANNER */}
+      {/* 1. FIRESTORE (GOOGLE) CLOUD DATABASE CONTROL BANNER */}
       <div className="bg-gradient-to-r from-emerald-950/80 via-slate-900 to-teal-950/80 border border-emerald-800/80 rounded-2xl p-3.5 sm:p-4 space-y-2.5 shadow-xl">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-2.5">
           <div className="flex items-start gap-2">
@@ -252,13 +263,13 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="font-bold text-white text-base">Supabase PostgreSQL Cloud Database Control</h3>
+                <h3 className="font-bold text-white text-base">Google Firestore Cloud Database Control</h3>
                 <span className="px-2 py-0.5 bg-emerald-950 border border-emerald-600 text-emerald-300 text-[10px] font-bold rounded-full animate-pulse">
                   ONLINE LIVE
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-0.5 leading-normal">
-                Sinkronkan seluruh 30 tabel database sistem ARMS (Cases, Personnel, Payments, SK, Assets, Ledger, DLL) secara otomatis ke Supabase.
+                Database utama ARMS. Seluruh 30 koleksi (Cases, Personnel, Payments, SK, Assets, Ledger, DLL) tersimpan &amp; tersinkron otomatis di Google Cloud Firestore.
               </p>
             </div>
           </div>
@@ -274,57 +285,55 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
             <div>
               <div className="text-xs font-semibold text-slate-300 flex items-center gap-2">
                 <Server className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Target Supabase URL:</span>
+                <span>Project Firebase:</span>
                 <span className="font-mono text-emerald-300 bg-slate-900 px-2 py-0.5 rounded border border-slate-700">
-                  {supabaseUrl || 'https://your-project.supabase.co (set di .env)'}
+                  {firestoreProjectId}
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                {isSupabaseConfigured
-                  ? '✅ Kredensial Supabase terdeteksi aktif di environment.'
-                  : '⚠️ Variabel VITE_SUPABASE_URL & VITE_SUPABASE_ANON_KEY belum terisi di .env.'}
+                ✅ Konfigurasi Firebase tertanam di aplikasi — database &amp; auth Google aktif otomatis.
               </p>
             </div>
 
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                disabled={isFetchingSupabase}
-                onClick={handleFetchSupabase}
+                disabled={isFetchingFirestore}
+                onClick={handleFetchFirestore}
                 className="flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition"
               >
-                <RefreshCw className={`w-3 h-3 ${isFetchingSupabase ? 'animate-spin' : ''}`} />
-                <span>{isFetchingSupabase ? 'Menarik...' : 'Tarik dari Supabase'}</span>
+                <RefreshCw className={`w-3 h-3 ${isFetchingFirestore ? 'animate-spin' : ''}`} />
+                <span>{isFetchingFirestore ? 'Menarik...' : 'Tarik dari Firestore'}</span>
               </button>
 
               <button
                 type="button"
-                disabled={isPushingSupabase}
-                onClick={handlePushSupabase}
+                disabled={isPushingFirestore}
+                onClick={handlePushFirestore}
                 className="flex items-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-emerald-900/30"
               >
-                <Zap className={`w-3.5 h-3.5 ${isPushingSupabase ? 'animate-bounce' : ''}`} />
-                <span>{isPushingSupabase ? 'Mengirim ke Supabase...' : '🚀 Push Data Otomatis ke Supabase'}</span>
+                <Zap className={`w-3.5 h-3.5 ${isPushingFirestore ? 'animate-bounce' : ''}`} />
+                <span>{isPushingFirestore ? 'Mengirim ke Firestore...' : '🚀 Push Data Otomatis ke Firestore'}</span>
               </button>
             </div>
           </div>
 
-          {supabaseMsg && (
+          {firestoreMsg && (
             <div
               className={`p-2.5 rounded-lg border text-xs font-semibold flex items-center gap-2 ${
-                supabaseMsg.ok
+                firestoreMsg.ok
                   ? 'bg-emerald-950/90 text-emerald-200 border-emerald-700'
                   : 'bg-rose-950/90 text-rose-200 border-rose-700'
               }`}
             >
-              {supabaseMsg.ok ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> : <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />}
-              <span>{supabaseMsg.text}</span>
+              {firestoreMsg.ok ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> : <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />}
+              <span>{firestoreMsg.text}</span>
             </div>
           )}
         </div>
       </div>
 
-      {/* 2. GOOGLE SHEETS / DRIVE SYNC CONTROL */}
+      {/* 2. GOOGLE SHEETS EXPORT CONTROL (opsional) */}
       <div className="bg-gradient-to-r from-violet-950/70 via-slate-900 to-indigo-950/70 border border-violet-800/70 rounded-2xl p-3.5 sm:p-4 space-y-2.5 shadow-lg">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-2.5">
           <div className="flex items-start gap-2">
@@ -332,9 +341,9 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
               <Layers className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-white text-base">Local CSV Backup & Sync Control</h3>
+              <h3 className="font-bold text-white text-base">Google Sheets Export &amp; Database Control <span className="text-[10px] font-bold text-violet-300 bg-violet-950 border border-violet-700 px-1.5 py-0.5 rounded-full ml-1">OPSIONAL</span></h3>
               <p className="text-xs text-slate-400 mt-0.5 leading-normal">
-                Atur nama tab/sheet, status aktif, dan jumlah data untuk masing-masing database ARMS di workbook CSV lokal.
+                Ekspor laporan ke Google Sheets (via Service Account) &amp; atur status aktif tiap database. Database utama tetap Google Firestore.
               </p>
             </div>
           </div>
@@ -362,19 +371,18 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="flex-1">
               <label className="block text-xs font-semibold text-slate-300 mb-0.5">
-                Kolom nama workbook lokal:
+                Google Spreadsheet ID (tujuan ekspor laporan):
               </label>
               <input
                 type="text"
                 disabled={!canEdit}
                 value={sheetId}
                 onChange={(e) => setSheetId(e.target.value)}
-                placeholder="arms-control-tower"
+                placeholder="1AbCdefGhIjKlMnOpQrStUvWxYz0123456789"
                 className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-violet-500"
               />
               <p className="text-[11px] text-slate-500 mt-0.5">
-                ID spreadsheet tujuan dibuatnya database. Diambil dari URL:
-                <span className="text-slate-400 font-mono"> docs.google.com/spreadsheets/d/&lt;ID&gt;/edit</span>
+                Diambil dari URL: <span className="text-slate-400 font-mono">docs.google.com/spreadsheets/d/&lt;ID&gt;/edit</span> — spreadsheet harus di-share (Editor) dengan email Service Account Google.
               </p>
             </div>
             <div className="flex items-end gap-2">
@@ -398,7 +406,7 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
                 className="flex items-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white text-xs font-bold rounded-xl transition shadow-lg"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isPushing ? 'animate-spin' : ''}`} />
-                {isPushing ? 'Mengirim...' : 'Push ke Sheets'}
+                {isPushing ? 'Mengirim...' : 'Push ke Firestore + Sheets'}
               </button>
             </div>
           </div>
@@ -421,7 +429,7 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
       {savedMsg && (
         <div className="p-2.5 bg-emerald-950/80 border border-emerald-800 rounded-xl text-emerald-300 text-xs font-semibold flex items-center gap-2">
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-          Konfigurasi database tersimpan & akan disinkronkan otomatis.
+          Konfigurasi database tersimpan &amp; akan disinkronkan otomatis.
         </div>
       )}
 
@@ -430,9 +438,9 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
         <div className="p-3 border-b border-slate-800 bg-slate-950/50 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <FolderTree className="w-3.5 h-3.5 text-violet-400" />
-            <h4 className="text-sm font-bold text-white">Daftar Kolom Database ARMS (30 Tabel)</h4>
+            <h4 className="text-sm font-bold text-white">Daftar Koleksi Database ARMS (30 Koleksi)</h4>
             <span className="bg-slate-800 text-slate-300 text-[10px] px-2 py-0.5 rounded font-mono">
-              {configs.length} tabel
+              {configs.length} koleksi
             </span>
           </div>
           {canEdit && (
@@ -453,7 +461,7 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
               <tr>
                 <th className="p-3 w-6">No</th>
                 <th className="p-3">Database</th>
-                <th className="p-3">Tabel Supabase</th>
+                <th className="p-3">Koleksi Firestore</th>
                 <th className="p-3">Tab di Spreadsheet</th>
                 <th className="p-3 text-center">Jumlah Data</th>
                 <th className="p-3 text-center">Status</th>
@@ -467,6 +475,7 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
                 const items = (store as any)[cfg.collection];
                 const recordCount = isSettings ? 1 : Array.isArray(items) ? items.length : 0;
                 const isDisabled = isSettings || !canEdit;
+                const collectionName = STORE_TO_FIRESTORE_COLLECTION[cfg.collection] || cfg.collection;
                 return (
                   <tr key={cfg.collection} className={`hover:bg-slate-800/30 transition ${!cfg.enabled && !isSettings ? 'opacity-60' : ''}`}>
                     <td className="p-3 text-slate-500 font-mono">{String(idx + 1).padStart(2, '0')}</td>
@@ -475,11 +484,11 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
                         <FileSpreadsheet className="w-3 h-3 text-violet-400 shrink-0" />
                         {cfg.label}
                       </div>
-                      <div className="text-[10px] text-slate-500 font-mono">collection: {cfg.collection}</div>
+                      <div className="text-[10px] text-slate-500 font-mono">store: {cfg.collection}</div>
                     </td>
                     <td className="p-3">
                       <span className="font-mono text-emerald-400 bg-slate-950 px-2 py-1 rounded border border-slate-800 text-[11px]">
-                        public.{cfg.collection === 'danaTalangan' ? 'dana_talangan' : cfg.collection === 'commLogs' ? 'comm_logs' : cfg.collection === 'cashAccounts' ? 'cash_accounts' : cfg.collection === 'pettyCash' ? 'petty_cash' : cfg.collection === 'workingCapital' ? 'working_capital' : cfg.collection === 'lawyerNotices' ? 'lawyer_notices' : cfg.collection === 'assetRecoveries' ? 'asset_recoveries' : cfg.collection === 'auditLogs' ? 'audit_logs' : cfg.collection === 'driveFolders' ? 'drive_folders' : cfg.collection}
+                        {collectionName}
                       </span>
                     </td>
                     <td className="p-3">
@@ -540,7 +549,7 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
         <div className="p-3 border-t border-slate-800 bg-slate-950/50 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
           <span className="flex items-center gap-1.5">
             <Table2 className="w-3 h-3 text-violet-400" />
-            Data tersinkronkan otomatis ke database Supabase PostgreSQL &amp; workbook CSV lokal.
+            Data tersinkronkan otomatis ke database utama Google Cloud Firestore &amp; ekspor opsional Google Sheets.
           </span>
           <span>
             Total data aktif: <b className="text-emerald-300">{totalStoreItems}</b>

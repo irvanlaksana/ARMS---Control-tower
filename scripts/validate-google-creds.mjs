@@ -54,9 +54,19 @@ function resolveCredentials() {
     }
   }
 
+  const localFile = path.resolve(process.cwd(), "service-account.json");
+  if (fs.existsSync(localFile)) {
+    const raw = fs.readFileSync(localFile, "utf8");
+    try {
+      return { source: localFile, creds: JSON.parse(raw) };
+    } catch (err) {
+      throw new Error(`File ${localFile} bukan JSON valid: ${err?.message || err}`);
+    }
+  }
+
   throw new Error(
-    "Tidak ada kredensial Google. Set GOOGLE_SERVICE_ACCOUNT_JSON (isi JSON) " +
-    "atau GOOGLE_APPLICATION_CREDENTIALS (path file JSON service account).",
+    "Tidak ada kredensial Google. Set GOOGLE_SERVICE_ACCOUNT_JSON (isi JSON, dipakai di Netlify), " +
+    "GOOGLE_APPLICATION_CREDENTIALS (path file), atau letakkan service-account.json di root repo.",
   );
 }
 

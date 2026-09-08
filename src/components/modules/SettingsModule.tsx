@@ -25,9 +25,8 @@ import { SettingsBankBalancesTab } from './SettingsBankBalancesTab';
 import { SettingsGDriveDatabaseTab } from './SettingsGDriveDatabaseTab';
 import { SettingsDatabaseTab } from './SettingsDatabaseTab';
 import { getDatabaseConfigs, markDatabaseSynced } from '../../data/databaseConfig';
-import { pushFullStoreToFirebase } from '../../services/firebaseSyncService';
-import { pushFullStoreToSupabase } from '../../services/supabaseService';
-import { isSupabaseConfigured } from '../../lib/supabase';
+import { pushFullStoreToFirestore, firestoreProjectId } from '../../services/firestoreService';
+import { pushToGoogleSheets, setupGoogleSheets } from '../../services/googleSheetsService';
 import { DatabaseTabConfig } from '../../types/arms';
 import { Landmark, Table2 } from 'lucide-react';
 
@@ -58,19 +57,29 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
   const [activeTab, setActiveTab] = useState<'GDRIVE_DATABASE' | 'DATABASE' | 'SYSTEM' | 'BANK_BALANCES' | 'WORKFLOW'>('GDRIVE_DATABASE');
 
   const handlePushFullFirebase = async () => {
-    const sheetId = (settings.googleSheetId || 'arms-control-tower').trim();
+    const sheetId = (settings.googleSheetId || '').trim();
     setIsPushing(true);
-    setPushStatusMsg('Sedang menginisialisasi sheet dan memicu Push Data Otomatis ke CSV lokal...');
+    setPushStatusMsg('Sedang memicu Push Data Otomatis ke Google Firestore (database utama)...');
     try {
       // Pakai settings yang baru diketik (ID spreadsheet + kolom database) agar push sesuai kolom terbaru
       const pushStore: ARMSStore = {
         ...store,
         settings: { ...settings, googleSheetId: sheetId, databaseConfig: dbColumns },
       };
-      const res = await pushFullStoreToFirebase(pushStore);
-      const supabaseResult = isSupabaseConfigured ? await pushFullStoreToSupabase(pushStore) : null;
-      if (supabaseResult && !supabaseResult.success) {
-        throw new Error(`Supabase: ${supabaseResult.error || 'sinkronisasi gagal'}`);
+      // 1. Database UTAMA: Google Firestore
+      const res = await pushFullStoreToFirestore(pushStore);
+      if (!res.success) {
+        throw new Error(`Firestore: ${res.error || 'sinkronisasi gagal'}`);
+      }
+      // 2. Ekspor opsional: Google Sheets (bila Spreadsheet ID terisi)
+      let sheetsNote = '';
+      if (sheetId) {
+        try {
+          const sheetsResult = await pushToGoogleSheets(pushStore);
+          sheetsNote = ` dan ${sheetsResult.totalItems} dokumen diekspor ke Google Sheets`;
+        } catch (sheetErr: any) {
+          console.warn('Ekspor Google Sheets gagal (non-fatal):', sheetErr?.message || sheetErr);
+        }
       }
       const counts: Record<string, number> = {};
       for (const cfg of getDatabaseConfigs(pushStore.settings)) {
@@ -81,7 +90,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
       const syncedSettings = markDatabaseSynced(pushStore.settings, counts, res.syncedAt || new Date().toISOString());
       onUpdateStore({ ...pushStore, settings: syncedSettings });
       setSettings(syncedSettings);
-      setPushStatusMsg(`✅ Sukses! ${res.totalItems} dokumen tersimpan di CSV lokal${supabaseResult ? ' dan Supabase' : ''}.`);
+      setPushStatusMsg(`✅ Sukses! ${res.totalItems} dokumen tersimpan di Google Firestore (project ${firestoreProjectId})${sheetsNote}.`);
     } catch (err: any) {
       setPushStatusMsg(`❌ Gagal Push Data: ${err.message || String(err)}`);
     } finally {
@@ -124,21 +133,18 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
 
   const handleCreateDatabaseColumns = async () => {
     if (!canEdit) return;
-    const id = (settings.googleSheetId || 'arms-control-tower').trim();
+    const trimmedId = (settings.googleSheetId || '').trim();
+    if (!trimmedId) {
+      setCreateColumnMsg('❌ Isi Google Spreadsheet ID terlebih dahulu (dari URL docs.google.com/spreadsheets/d/<ID>/edit).');
+      return;
+    }
+    const id = trimmedId.match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/)?.[1] || trimmedId;
     setIsCreatingColumns(true);
-    setCreateColumnMsg('Membuat seluruh kolom/tab database di workbook CSV lokal...');
+    setCreateColumnMsg('Membuat seluruh kolom/tab database di Google Sheets...');
     try {
-      const resp = await fetch('/api/sheets/setup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          spreadsheetId: id,
-          tabs: Object.fromEntries(dbColumns.map((c) => [c.collection, c.tabName])),
-        }),
-      });
-      const json = await resp.json();
-      if (!json?.success) throw new Error(json?.error || 'Gagal membuat kolom database');
-      setCreateColumnMsg(`✅ Berhasil! ${json.sheets?.length || 0} kolom/tab database dibuat & dipastikan tersedia di spreadsheet.`);
+      const result = await setupGoogleSheets(id, Object.fromEntries(dbColumns.map((c) => [c.collection, c.tabName])));
+      if (!result?.success) throw new Error(result?.error || 'Gagal membuat kolom database');
+      setCreateColumnMsg(`✅ Berhasil! ${result.sheets?.length || 0} kolom/tab database dibuat & dipastikan tersedia di Google Sheets.`);
       handleSaveDbColumns();
     } catch (err: any) {
       setCreateColumnMsg(`❌ Gagal membuat kolom database: ${err.message || String(err)}`);
@@ -213,7 +219,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
             <h2 className="text-xl font-bold text-white">ARMS System Settings & Branding Profile</h2>
           </div>
           <p className="text-xs text-slate-400">
-            Configure Google Drive Storage, Google Sheets Database, Apps Script Endpoint, Company Profile, and Enterprise Logo
+            Configure Google Firestore Database, Google Drive Storage, Google Sheets Export, Company Profile, and Enterprise Logo
           </p>
         </div>
       </div>
@@ -310,7 +316,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
       )}
 
       <div className={activeTab === 'SYSTEM' ? 'space-y-4' : 'hidden'}>
-      {/* Firebase Database Push & Auto-Table Creation Banner */}
+      {/* Google Firestore Database Push Banner */}
       <div className="bg-gradient-to-r from-emerald-950/70 via-slate-900 to-teal-950/70 border border-emerald-800/80 rounded-xl p-3.5 shadow-lg space-y-2">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5">
           <div className="flex items-start gap-2">
@@ -319,17 +325,17 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-white text-base">Local CSV Spreadsheet Database & Push Otomatis</h3>
+                <h3 className="font-bold text-white text-base">Google Firestore Database &amp; Push Otomatis</h3>
                 <span className="px-2 py-0.5 bg-emerald-900/80 text-emerald-200 border border-emerald-700 text-[10px] font-bold rounded-full animate-pulse">
                   ONLINE LIVE
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-0.5 leading-normal">
-                Database Target: <code className="text-emerald-300 bg-slate-950 px-2 py-0.5 rounded font-mono text-[11px] border border-slate-800">{settings.googleSheetId || 'arms-control-tower (default)'}</code>
+                Database Utama: <code className="text-emerald-300 bg-slate-950 px-2 py-0.5 rounded font-mono text-[11px] border border-slate-800">Google Cloud Firestore ({firestoreProjectId})</code>
               </p>
               <div className="mt-1.5 bg-slate-950/70 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
                 <label className="block text-[11px] font-semibold text-slate-300">
-                  Nama Workbook Spreadsheet Lokal:
+                  Google Spreadsheet ID (ekspor laporan, opsional):
                 </label>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <input
@@ -337,12 +343,12 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
                     disabled={!canEdit}
                     value={settings.googleSheetId || ''}
                     onChange={(e) => setSettings({ ...settings, googleSheetId: e.target.value.trim() })}
-                    placeholder="arms-control-tower"
+                    placeholder="1AbCdefGhIjKlMnOpQrStUvWxYz0123456789"
                     className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-emerald-500"
                   />
                   <div className="flex items-center gap-2">
                     <a
-                      href="#"
+                      href={(settings.googleSheetId || '').trim() ? `https://docs.google.com/spreadsheets/d/${(settings.googleSheetId || '').trim().match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/)?.[1] || (settings.googleSheetId || '').trim()}/edit?usp=sharing` : '#'}
                       target="_blank"
                       rel="noopener noreferrer"
                       className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition ${
@@ -358,7 +364,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
                       <button
                         type="button"
                         onClick={() => {
-                          const conf = window.confirm('Simpan ID Spreadsheet ini sebagai database ARMS?');
+                          const conf = window.confirm('Simpan ID Spreadsheet Google ini sebagai target ekspor laporan ARMS?');
                           if (!conf) return;
                           handleSave(new Event('submit') as any);
                         }}
@@ -371,11 +377,12 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
                   </div>
                 </div>
                 <p className="text-[10px] text-slate-500">
-                  Isi nama workbook lokal, misalnya <b className="text-slate-300">arms-control-tower</b>. Simpan lalu klik <b>Push Data Otomatis</b> untuk membuat dan mengisi file CSV database.
+                  Database utama ARMS adalah <b className="text-slate-300">Google Cloud Firestore</b> (aktif otomatis).
+                  ID Spreadsheet Google bersifat opsional — dipakai sebagai ekspor laporan via Service Account.
                 </p>
               </div>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                Klik tombol di bawah untuk membuat seluruh tab dan memicu push data penuh ke CSV lokal.
+                Klik tombol di bawah untuk push data penuh ke Firestore (dan ke Google Sheets bila ID diisi).
               </p>
             </div>
           </div>
@@ -388,7 +395,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
               className="flex items-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white font-bold text-xs rounded-lg shadow-lg shadow-emerald-950/50 border border-emerald-400/30 transition transform active:scale-95 cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isPushing ? 'animate-spin text-amber-300' : 'text-emerald-200'}`} />
-              <span>{isPushing ? 'Mengirim & Membuat Sheet...' : '🚀 Push Data Otomatis & Buat Sheet'}</span>
+              <span>{isPushing ? 'Mengirim ke Firestore...' : '🚀 Push Data Otomatis ke Firestore'}</span>
             </button>
           </div>
         </div>

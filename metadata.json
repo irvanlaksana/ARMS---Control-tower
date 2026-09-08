@@ -1,6 +1,6 @@
 {
   "name": "ARMS — Agency Recovery Management System",
-  "description": "Control Tower Agency DC & Recovery Management System with Supabase database and Google Drive storage for Multifinance & B2B Asset Recovery",
+  "description": "Control Tower Agency DC & Recovery Management System with Google Cloud Firestore database, Firebase Auth, and Google Drive storage for Multifinance & B2B Asset Recovery. Deployed on Netlify.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
