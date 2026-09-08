@@ -187,12 +187,12 @@ export const DailyActivityModule: React.FC<DailyActivityModuleProps> = ({ store 
     .reduce((sum, item) => sum + (item.amount || 0), 0);
 
   return (
-    <div className="space-y-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+    <div className="space-y-2.5">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-3">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2">
             <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-400">
-              <Activity className="w-5 h-5" />
+              <Activity className="w-4 h-4" />
             </div>
             <div>
               <h2 className="text-lg font-bold text-white">Daily Activity</h2>
@@ -201,47 +201,47 @@ export const DailyActivityModule: React.FC<DailyActivityModuleProps> = ({ store 
           </div>
 
           <label className="flex items-center gap-2 text-xs text-slate-400">
-            <CalendarDays className="w-4 h-4 text-indigo-400" />
+            <CalendarDays className="w-3.5 h-3.5 text-indigo-400" />
             <DateInput
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-slate-950 text-white rounded-lg border border-slate-700 px-2.5 py-1.5 text-xs outline-none"
+              className="bg-slate-950 text-white rounded-lg border border-slate-700 px-2 py-1.5 text-xs outline-none"
             />
           </label>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-slate-900 border border-slate-800 rounded-lg p-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+        <div className="bg-slate-900 border border-slate-800 rounded-lg p-2.5">
           <span className="text-[10px] text-slate-400 uppercase">Fee Perusahaan</span>
-          <div className="mt-1 text-lg font-bold text-emerald-300 font-mono">{formatRupiahNumber(totalCompanyFee)}</div>
+          <div className="mt-0.5 text-lg font-bold text-emerald-300 font-mono">{formatRupiahNumber(totalCompanyFee)}</div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-lg p-3">
+        <div className="bg-slate-900 border border-slate-800 rounded-lg p-2.5">
           <span className="text-[10px] text-slate-400 uppercase">Fee Mitra</span>
-          <div className="mt-1 text-lg font-bold text-amber-300 font-mono">{formatRupiahNumber(totalPartnerFee)}</div>
+          <div className="mt-0.5 text-lg font-bold text-amber-300 font-mono">{formatRupiahNumber(totalPartnerFee)}</div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-lg p-3">
+        <div className="bg-slate-900 border border-slate-800 rounded-lg p-2.5">
           <span className="text-[10px] text-slate-400 uppercase">Biaya Operasional</span>
-          <div className="mt-1 text-lg font-bold text-rose-300 font-mono">{formatRupiahNumber(totalOperationalExpense)}</div>
+          <div className="mt-0.5 text-lg font-bold text-rose-300 font-mono">{formatRupiahNumber(totalOperationalExpense)}</div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-lg p-3">
+        <div className="bg-slate-900 border border-slate-800 rounded-lg p-2.5">
           <span className="text-[10px] text-slate-400 uppercase">Jumlah Kegiatan</span>
-          <div className="mt-1 text-lg font-bold text-indigo-300 font-mono">{dailyActivity.length}</div>
+          <div className="mt-0.5 text-lg font-bold text-indigo-300 font-mono">{dailyActivity.length}</div>
         </div>
       </div>
 
       <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-        <div className="border-b border-slate-800 px-4 py-3 flex items-center justify-between">
+        <div className="border-b border-slate-800 px-3 py-2 flex items-center justify-between">
           <div className="text-sm font-semibold text-white">Aktivitas harian</div>
           <div className="text-[10px] text-slate-400 uppercase">{new Date(selectedDate).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
         </div>
 
         <div className="divide-y divide-slate-800">
           {dailyActivity.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 text-sm">
+            <div className="p-6 text-center text-slate-400 text-sm">
               Belum ada aktivitas operasional pada tanggal yang dipilih.
             </div>
           ) : (
@@ -256,11 +256,11 @@ export const DailyActivityModule: React.FC<DailyActivityModuleProps> = ({ store 
               }[item.tone];
 
               return (
-                <div key={item.id} className="px-4 py-3 hover:bg-slate-800/30 transition">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-start gap-3">
+                <div key={item.id} className="px-3 py-2 hover:bg-slate-800/30 transition">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-start gap-2">
                       <div className={`p-1.5 rounded-lg border ${toneClasses}`}>
-                        <Icon className="w-4 h-4" />
+                        <Icon className="w-3.5 h-3.5" />
                       </div>
                       <div className="min-w-0">
                         <div className="text-[10px] uppercase tracking-wide text-slate-400">{item.category}</div>

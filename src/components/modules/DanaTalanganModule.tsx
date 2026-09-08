@@ -168,12 +168,12 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Tabs */}
-      <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 p-1 rounded-lg w-max mb-6">
+      <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 p-1 rounded-lg w-max mb-4">
         <button
           onClick={() => setClientFilter('ALL')}
-          className={`px-4 py-2 text-xs font-bold rounded-md transition ${
+          className={`px-3 py-2 text-xs font-bold rounded-md transition ${
             clientFilter === 'ALL'
               ? 'bg-slate-800 text-white shadow'
               : 'text-slate-400 hover:text-slate-200'
@@ -183,7 +183,7 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
         </button>
         <button
           onClick={() => setClientFilter('MULTIFINANCE')}
-          className={`px-4 py-2 text-xs font-bold rounded-md transition ${
+          className={`px-3 py-2 text-xs font-bold rounded-md transition ${
             clientFilter === 'MULTIFINANCE'
               ? 'bg-slate-800 text-white shadow'
               : 'text-slate-400 hover:text-slate-200'
@@ -193,7 +193,7 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
         </button>
         <button
           onClick={() => setClientFilter('PERORANGAN')}
-          className={`px-4 py-2 text-xs font-bold rounded-md transition ${
+          className={`px-3 py-2 text-xs font-bold rounded-md transition ${
             clientFilter === 'PERORANGAN'
               ? 'bg-slate-800 text-white shadow'
               : 'text-slate-400 hover:text-slate-200'
@@ -203,10 +203,10 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
         </button>
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-2.5">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Coins className="w-5 h-5 text-amber-400" />
+          <div className="flex items-center gap-2 mb-0.5">
+            <Coins className="w-4 h-4 text-amber-400" />
             <h2 className="text-xl font-bold text-white">Dana Talangan & Liquidity Financing</h2>
           </div>
           <p className="text-xs text-slate-400">
@@ -217,9 +217,9 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
         {canEdit && (
           <button
             onClick={() => { resetForm(); setShowModal(true); }}
-            className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-lg shadow-md transition"
+            className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs px-3 py-2 rounded-lg shadow-md transition"
           >
-            <Plus className="w-4 h-4 text-slate-950" />
+            <Plus className="w-3.5 h-3.5 text-slate-950" />
             <span>New Dana Talangan Request</span>
           </button>
         )}
@@ -230,21 +230,21 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-950 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
               <tr>
-                <th className="py-3 px-4">Funding No</th>
-                <th className="py-3 px-4">Case & Debtor</th>
-                <th className="py-3 px-4">Purpose</th>
-                <th className="py-3 px-4 text-right">Requested Amount</th>
-                <th className="py-3 px-4">Funder Source</th>
-                <th className="py-3 px-4">Bridging Fee %</th>
-                <th className="py-3 px-4">Repay Target</th>
-                <th className="py-3 px-4 text-center">Status</th>
-                {canEdit && <th className="py-3 px-4 text-center">Actions</th>}
+                <th className="py-2 px-3">Funding No</th>
+                <th className="py-2 px-3">Case & Debtor</th>
+                <th className="py-2 px-3">Purpose</th>
+                <th className="py-2 px-3 text-right">Requested Amount</th>
+                <th className="py-2 px-3">Funder Source</th>
+                <th className="py-2 px-3">Bridging Fee %</th>
+                <th className="py-2 px-3">Repay Target</th>
+                <th className="py-2 px-3 text-center">Status</th>
+                {canEdit && <th className="py-2 px-3 text-center">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
               {filteredDana.length === 0 ? (
                 <tr>
-                  <td colSpan={canEdit ? 9 : 8} className="py-10 text-center text-slate-500 text-xs">
+                  <td colSpan={canEdit ? 9 : 8} className="py-8 text-center text-slate-500 text-xs">
                     Belum ada permohonan dana talangan likuiditas. Klik tombol <strong>+ New Dana Talangan Request</strong> untuk mengajukan bridging dana eksekusi/tarik unit.
                   </td>
                 </tr>
@@ -255,8 +255,8 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
 
                   return (
                     <tr key={t.id} className="hover:bg-slate-800/40 transition">
-                      <td className="py-3.5 px-4 font-mono font-bold text-amber-300">{t.fundingNo}</td>
-                      <td className="py-3.5 px-4 space-y-0.5">
+                      <td className="py-2.5 px-3 font-mono font-bold text-amber-300">{t.fundingNo}</td>
+                      <td className="py-2.5 px-3 space-y-0.5">
                         <div className="font-bold text-white">{t.caseNo}</div>
                         <div className="text-[11px] text-slate-400">
                           {isClosed ? (
@@ -268,30 +268,30 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
                           )}
                         </div>
                       </td>
-                      <td className="py-3.5 px-4">
+                      <td className="py-2.5 px-3">
                         <span className="bg-slate-800 text-slate-200 text-[10px] px-2 py-0.5 rounded border border-slate-700">
                           {(t.purpose || '').replace(/_/g, ' ')}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 text-right font-bold text-emerald-400">
+                      <td className="py-2.5 px-3 text-right font-bold text-emerald-400">
                         Rp {t.requestedAmount.toLocaleString('id-ID')}
                       </td>
-                      <td className="py-3.5 px-4 font-medium text-slate-300">{t.funderSource}</td>
-                      <td className="py-3.5 px-4 font-mono text-amber-300">{t.feeOrInterestRatePercent}%</td>
-                      <td className="py-3.5 px-4 text-slate-400">{t.repayTargetDate || '-'}</td>
-                      <td className="py-3.5 px-4 text-center">
-                        <span className="bg-amber-950 text-amber-300 text-[10px] px-2.5 py-1 rounded-full border border-amber-800 font-semibold">
+                      <td className="py-2.5 px-3 font-medium text-slate-300">{t.funderSource}</td>
+                      <td className="py-2.5 px-3 font-mono text-amber-300">{t.feeOrInterestRatePercent}%</td>
+                      <td className="py-2.5 px-3 text-slate-400">{t.repayTargetDate || '-'}</td>
+                      <td className="py-2.5 px-3 text-center">
+                        <span className="bg-amber-950 text-amber-300 text-[10px] px-2 py-1 rounded-full border border-amber-800 font-semibold">
                           {(t.status || '').replace(/_/g, ' ')}
                         </span>
                       </td>
                       {canEdit && (
-                        <td className="py-3.5 px-4 text-center">
+                        <td className="py-2.5 px-3 text-center">
                           <div className="flex items-center justify-center gap-2">
                             <button onClick={() => handleEditClick(t)} className="text-slate-400 hover:text-white transition">
-                              <Edit2 className="w-4 h-4" />
+                              <Edit2 className="w-3.5 h-3.5" />
                             </button>
                             <button onClick={() => handleDeleteClick(t.id)} className="text-slate-400 hover:text-rose-400 transition">
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </td>
@@ -306,13 +306,13 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <form onSubmit={handleCreateTalangan} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3">
+          <form onSubmit={handleCreateTalangan} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-lg p-4 space-y-2.5 shadow-2xl">
             <h3 className="font-bold text-white text-base">{isEditing ? 'Edit Dana Talangan' : 'Request Dana Talangan Liquidity'}</h3>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2.5">
               <div className="relative z-[60]">
-                <label className="block text-xs text-slate-400 mb-1">Select Case</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Select Case</label>
                 <SearchableSelect
                   value={caseId}
                   onChange={setCaseId}
@@ -330,11 +330,11 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Purpose Category</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Purpose Category</label>
                 <select
                   value={purpose}
                   onChange={(e) => setPurpose(e.target.value as any)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                 >
                   <option value="PENARIKAN_UNIT">Penarikan Unit</option>
                   <option value="STORAGE_WAREHOUSE">Sewa & Storage Gudang</option>
@@ -345,20 +345,20 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Requested Amount (Rp)</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Requested Amount (Rp)</label>
                 <AmountInput
                   value={requestedAmount}
                   onChange={setRequestedAmount}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white font-mono"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Funder Source Vault</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Funder Source Vault</label>
                 <select
                   value={funderSource}
                   onChange={(e) => setFunderSource(e.target.value as any)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                 >
                   <option value="TALANGAN_VAULT">Talangan Vault (BCA)</option>
                   <option value="INTERNAL_CASH">Kas Operasional Utama</option>
@@ -367,40 +367,40 @@ export const DanaTalanganModule: React.FC<DanaTalanganModuleProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Bridging Fee Rate (%)</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Bridging Fee Rate (%)</label>
                 <input
                   type="number"
                   value={feeRate}
                   onChange={(e) => setFeeRate(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Repayment Target Date</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Repayment Target Date</label>
                 <DateInput
                   value={repayTargetDate}
                   onChange={(e) => setRepayTargetDate(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                 />
               </div>
             </div>
 
-            <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 text-[11px] text-amber-300">
+            <div className="p-2.5 bg-slate-950 rounded-lg border border-slate-800 text-[11px] text-amber-300">
               Note: This request will automatically trigger an Approval Request for Direktur Utama in the Approval Center before disbursement.
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-2 pt-1.5">
               <button
                 type="button"
                 onClick={() => { setShowModal(false); resetForm(); }}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
+                className="px-3 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-amber-600 text-slate-950 text-xs font-bold rounded-lg hover:bg-amber-500"
+                className="px-3 py-2 bg-amber-600 text-slate-950 text-xs font-bold rounded-lg hover:bg-amber-500"
               >
                 {isEditing ? 'Save Changes' : 'Submit for Executive Approval'}
               </button>

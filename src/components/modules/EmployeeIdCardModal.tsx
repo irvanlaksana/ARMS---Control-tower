@@ -708,13 +708,13 @@ export const EmployeeIdCardModal: React.FC<EmployeeIdCardModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl p-5 sm:p-6 space-y-6 shadow-2xl relative my-auto max-h-[85vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-2.5 sm:p-3 overflow-y-auto">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl p-3.5 sm:p-4 space-y-4 shadow-2xl relative my-auto max-h-[85vh] overflow-y-auto">
         {/* Modal Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-gradient-to-br from-red-600 to-red-950 rounded-xl border border-red-500/40 text-white shadow-lg">
-              <CreditCard className="w-6 h-6 text-red-100" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-800 pb-3">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-gradient-to-br from-red-600 to-red-950 rounded-xl border border-red-500/40 text-white shadow-lg">
+              <CreditCard className="w-5 h-5 text-red-100" />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -736,29 +736,29 @@ export const EmployeeIdCardModal: React.FC<EmployeeIdCardModalProps> = ({
             onClick={onClose}
             className="text-slate-400 hover:text-white p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 transition self-end sm:self-center"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Toolbar & View Mode Controls */}
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+        <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
           <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800">
             <button
               type="button"
               onClick={() => setViewMode('BOTH')}
-              className={`px-3 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`px-2.5 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1.5 ${
                 viewMode === 'BOTH'
                   ? 'bg-red-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              <Layers className="w-3.5 h-3.5" />
+              <Layers className="w-3 h-3" />
               <span>Dua Sisi (Depan & Belakang)</span>
             </button>
             <button
               type="button"
               onClick={() => setViewMode('FRONT')}
-              className={`px-3 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`px-2.5 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1.5 ${
                 viewMode === 'FRONT'
                   ? 'bg-red-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-white'
@@ -769,7 +769,7 @@ export const EmployeeIdCardModal: React.FC<EmployeeIdCardModalProps> = ({
             <button
               type="button"
               onClick={() => setViewMode('BACK')}
-              className={`px-3 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`px-2.5 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1.5 ${
                 viewMode === 'BACK'
                   ? 'bg-red-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-white'
@@ -781,8 +781,8 @@ export const EmployeeIdCardModal: React.FC<EmployeeIdCardModalProps> = ({
 
           <div className="flex flex-wrap items-center gap-2">
             {/* Custom Photo Upload Button */}
-            <label className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition cursor-pointer">
-              <Camera className="w-3.5 h-3.5 text-amber-400" />
+            <label className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition cursor-pointer">
+              <Camera className="w-3 h-3 text-amber-400" />
               <span>Ganti Pas Foto</span>
               <input
                 type="file"
@@ -796,10 +796,10 @@ export const EmployeeIdCardModal: React.FC<EmployeeIdCardModalProps> = ({
             <button
               type="button"
               onClick={handleOpenInNewTab}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition cursor-pointer"
               title="Buka Gambar Resolusi Penuh di Tab Baru"
             >
-              <ExternalLink className="w-3.5 h-3.5 text-indigo-400" />
+              <ExternalLink className="w-3 h-3 text-indigo-400" />
               <span>Buka Gambar HD</span>
             </button>
 
@@ -807,9 +807,9 @@ export const EmployeeIdCardModal: React.FC<EmployeeIdCardModalProps> = ({
             <button
               type="button"
               onClick={handlePrint}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition cursor-pointer"
             >
-              <Printer className="w-3.5 h-3.5 text-blue-400" />
+              <Printer className="w-3 h-3 text-blue-400" />
               <span>Cetak Langsung</span>
             </button>
 
@@ -818,12 +818,12 @@ export const EmployeeIdCardModal: React.FC<EmployeeIdCardModalProps> = ({
               type="button"
               disabled={isDownloading}
               onClick={() => handleDownload(viewMode)}
-              className="flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-lg shadow-red-950/50 border border-red-500/30 transition transform active:scale-95 cursor-pointer"
+              className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-lg shadow-red-950/50 border border-red-500/30 transition transform active:scale-95 cursor-pointer"
             >
               {isDownloading ? (
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <RefreshCw className="w-3 h-3 animate-spin" />
               ) : (
-                <Download className="w-3.5 h-3.5" />
+                <Download className="w-3 h-3" />
               )}
               <span>{isDownloading ? 'Sedang Merender HD...' : 'Download ID Card (PNG HD)'}</span>
             </button>
@@ -831,17 +831,17 @@ export const EmployeeIdCardModal: React.FC<EmployeeIdCardModalProps> = ({
         </div>
 
         {downloadSuccess && (
-          <div className="p-3 bg-emerald-950/90 border border-emerald-700 text-emerald-200 text-xs font-semibold rounded-lg flex items-center gap-2 shadow-lg">
-            <CheckCircle className="w-4 h-4 text-emerald-400" />
+          <div className="p-2.5 bg-emerald-950/90 border border-emerald-700 text-emerald-200 text-xs font-semibold rounded-lg flex items-center gap-2 shadow-lg">
+            <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
             <span>ID Card HD berhasil diunduh dalam format PNG 300 DPI siap cetak!</span>
           </div>
         )}
 
         {/* Cards Preview Display Area */}
-        <div className="flex items-center justify-center p-4 bg-slate-950/90 rounded-2xl border border-slate-800/80 overflow-x-auto min-h-[480px]">
+        <div className="flex items-center justify-center p-3 bg-slate-950/90 rounded-2xl border border-slate-800/80 overflow-x-auto min-h-[480px]">
           <div
             ref={bothCardsRef}
-            className="flex flex-wrap items-center justify-center gap-8 p-4 bg-slate-950 rounded-xl"
+            className="flex flex-wrap items-center justify-center gap-4 p-3 bg-slate-950 rounded-xl"
           >
             {/* FRONT SIDE CARD (Tampak Depan) */}
             {(viewMode === 'FRONT' || viewMode === 'BOTH') && (
@@ -854,11 +854,11 @@ export const EmployeeIdCardModal: React.FC<EmployeeIdCardModalProps> = ({
               >
                 {/* Lanyard Hole Cutout Graphic */}
                 <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-2.5 bg-slate-900 border border-red-900/60 rounded-full z-30 shadow-inner flex items-center justify-center">
-                  <div className="w-8 h-1 bg-black rounded-full" />
+                  <div className="w-6 h-1 bg-black rounded-full" />
                 </div>
 
                 {/* Top Geometric Crimson Banner & Letterhead */}
-                <div className="relative pt-6 px-4 pb-3 bg-gradient-to-b from-red-800 via-red-900 to-red-950 border-b border-red-600/40">
+                <div className="relative pt-6 px-3 pb-2 bg-gradient-to-b from-red-800 via-red-900 to-red-950 border-b border-red-600/40">
                   {/* Company Logo & Name */}
                   <div className="flex items-center gap-2.5 relative z-10">
                     <div className="w-10 h-10 rounded-lg bg-black/70 p-1 border border-red-400/50 shadow-md shrink-0 flex items-center justify-center">
@@ -882,7 +882,7 @@ export const EmployeeIdCardModal: React.FC<EmployeeIdCardModalProps> = ({
                   </div>
 
                   {/* Card Type Tag */}
-                  <div className="mt-2 flex items-center justify-between border-t border-red-700/60 pt-1.5">
+                  <div className="mt-1.5 flex items-center justify-between border-t border-red-700/60 pt-1.5">
                     <span className="text-[8.5px] font-black text-amber-300 tracking-wider uppercase">
                       {cardTypeTitle}
                     </span>
@@ -893,7 +893,7 @@ export const EmployeeIdCardModal: React.FC<EmployeeIdCardModalProps> = ({
                 </div>
 
                 {/* Middle Body: Photo & Identity */}
-                <div className="px-5 py-2.5 flex flex-col items-center text-center relative z-10 flex-1 justify-center space-y-2">
+                <div className="px-3.5 py-2 flex flex-col items-center text-center relative z-10 flex-1 justify-center space-y-1.5">
                   {/* Portrait Photo Frame with Red & Metallic Accents */}
                   <div className="relative">
                     <div className="w-28 h-36 rounded-xl p-[3px] bg-gradient-to-b from-red-500 via-red-700 to-black shadow-[0_0_15px_rgba(220,38,38,0.4)] relative">
@@ -906,7 +906,7 @@ export const EmployeeIdCardModal: React.FC<EmployeeIdCardModalProps> = ({
                           />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-b from-slate-900 to-slate-950 flex flex-col items-center justify-center text-slate-500 p-2">
-                            <Camera className="w-8 h-8 text-red-400 mb-1" />
+                            <Camera className="w-6 h-6 text-red-400 mb-0.5" />
                             <span className="text-[8px] text-slate-400 font-semibold">PAS FOTO</span>
                           </div>
                         )}
@@ -915,7 +915,7 @@ export const EmployeeIdCardModal: React.FC<EmployeeIdCardModalProps> = ({
 
                     <div className="absolute -bottom-2 -right-2 w-7 h-7 rounded-full bg-gradient-to-br from-amber-300 via-amber-500 to-yellow-600 p-[1.5px] shadow-lg flex items-center justify-center">
                       <div className="w-full h-full rounded-full bg-black/90 flex items-center justify-center text-amber-300">
-                        <ShieldCheck className="w-4 h-4" />
+                        <ShieldCheck className="w-3.5 h-3.5" />
                       </div>
                     </div>
                   </div>
@@ -955,9 +955,9 @@ export const EmployeeIdCardModal: React.FC<EmployeeIdCardModalProps> = ({
                 </div>
 
                 {/* Card Bottom Barcode & Security Strip */}
-                <div className="px-4 py-2 bg-gradient-to-t from-red-950 via-black to-black border-t border-red-800/50 flex items-center justify-between relative z-10">
+                <div className="px-3 py-2 bg-gradient-to-t from-red-950 via-black to-black border-t border-red-800/50 flex items-center justify-between relative z-10">
                   <div className="flex flex-col items-start">
-                    <div className="flex items-center gap-[2px] h-6 bg-white p-1 rounded">
+                    <div className="flex items-center gap-[2px] h-5 bg-white p-1 rounded">
                       {[3, 1, 2, 4, 1, 3, 2, 1, 4, 2, 1, 3, 1, 2, 3, 1, 4, 2, 1].map((w, i) => (
                         <div
                           key={i}
@@ -971,7 +971,7 @@ export const EmployeeIdCardModal: React.FC<EmployeeIdCardModalProps> = ({
                     </span>
                   </div>
 
-                  <div className="w-8 h-8 bg-white p-0.5 rounded border border-red-500/40 shadow shrink-0 flex items-center justify-center">
+                  <div className="w-6 h-6 bg-white p-0.5 rounded border border-red-500/40 shadow shrink-0 flex items-center justify-center">
                     <QrCode className="w-full h-full text-black" />
                   </div>
                 </div>
@@ -989,18 +989,18 @@ export const EmployeeIdCardModal: React.FC<EmployeeIdCardModalProps> = ({
               >
                 {/* Lanyard Hole Cutout Graphic */}
                 <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-2.5 bg-slate-900 border border-red-900/60 rounded-full z-30 shadow-inner flex items-center justify-center">
-                  <div className="w-8 h-1 bg-black rounded-full" />
+                  <div className="w-6 h-1 bg-black rounded-full" />
                 </div>
 
                 {/* Magnetic Stripe Graphic */}
                 <div className="pt-6">
-                  <div className="w-full h-9 bg-black border-y border-red-900/60 shadow-inner flex items-center px-4">
+                  <div className="w-full h-9 bg-black border-y border-red-900/60 shadow-inner flex items-center px-3">
                     <div className="w-full h-1.5 bg-gradient-to-r from-red-950 via-red-800 to-black opacity-70" />
                   </div>
                 </div>
 
                 {/* Terms of Use & Security Policies */}
-                <div className="px-5 py-2 space-y-2 flex-1 flex flex-col justify-center">
+                <div className="px-3.5 py-2 space-y-1.5 flex-1 flex flex-col justify-center">
                   <div className="border-b border-red-800/40 pb-1 flex items-center justify-between">
                     <span className="text-[9px] font-black text-red-400 tracking-wider uppercase">
                       KETENTUAN PEMEGANG KARTU (TERMS OF USE)
@@ -1008,7 +1008,7 @@ export const EmployeeIdCardModal: React.FC<EmployeeIdCardModalProps> = ({
                     <span className="text-[7.5px] font-mono text-slate-400">ARMS-SEC-V8</span>
                   </div>
 
-                  <ol className="text-[7.5px] text-slate-300 space-y-1 list-decimal list-inside leading-relaxed">
+                  <ol className="text-[7.5px] text-slate-300 space-y-1 list-decimal list-inside leading-normal">
                     <li>
                       Kartu ini adalah tanda pengenal resmi <span className="text-white font-bold">{companyName}</span> dan wajib dikalungkan selama bertugas.
                     </li>
@@ -1024,7 +1024,7 @@ export const EmployeeIdCardModal: React.FC<EmployeeIdCardModalProps> = ({
                   </ol>
 
                   {/* Company Address & Contacts */}
-                  <div className="bg-black/70 border border-red-900/60 rounded-lg p-2.5 space-y-1 text-[7.5px] text-slate-300">
+                  <div className="bg-black/70 border border-red-900/60 rounded-lg p-2 space-y-1 text-[7.5px] text-slate-300">
                     <div className="font-bold text-white text-[8.5px] flex items-center gap-1 border-b border-red-950 pb-1">
                       <Building className="w-3 h-3 text-red-400 shrink-0" />
                       <span className="truncate">{companyName} - HEAD OFFICE</span>
@@ -1058,7 +1058,7 @@ export const EmployeeIdCardModal: React.FC<EmployeeIdCardModalProps> = ({
                           PT. MJT<br />VERIFIED<br />STAMP
                         </div>
                       </div>
-                      <div className="w-24 h-5 border-b border-slate-600 flex items-end justify-center pb-0.5">
+                      <div className="w-24 h-4 border-b border-slate-600 flex items-end justify-center pb-0.5">
                         <span className="font-serif italic text-[11px] text-red-300 opacity-90">Irvan I.</span>
                       </div>
                       <div className="text-[7.5px] font-bold text-white uppercase mt-0.5">DIREKTUR UTAMA</div>
@@ -1067,7 +1067,7 @@ export const EmployeeIdCardModal: React.FC<EmployeeIdCardModalProps> = ({
                 </div>
 
                 {/* Bottom Holographic Brand Band */}
-                <div className="px-4 py-2 bg-gradient-to-r from-red-950 via-black to-red-950 border-t border-red-800/50 flex items-center justify-between text-[7px] text-slate-400 font-mono">
+                <div className="px-3 py-2 bg-gradient-to-r from-red-950 via-black to-red-950 border-t border-red-800/50 flex items-center justify-between text-[7px] text-slate-400 font-mono">
                   <span>AGENCY RECOVERY MANAGEMENT SYSTEM</span>
                   <span className="text-red-400 font-bold">PROPERTY OF PT MJT</span>
                 </div>
@@ -1077,9 +1077,9 @@ export const EmployeeIdCardModal: React.FC<EmployeeIdCardModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800 text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800 text-xs">
           <div className="text-slate-400 flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-amber-400" />
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             <span>Format kartu kompatibel dengan mesin cetak ID Card CR80 standar lanyard (85.6mm x 53.98mm).</span>
           </div>
 
@@ -1087,7 +1087,7 @@ export const EmployeeIdCardModal: React.FC<EmployeeIdCardModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg transition"
+              className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg transition"
             >
               Tutup
             </button>
@@ -1095,9 +1095,9 @@ export const EmployeeIdCardModal: React.FC<EmployeeIdCardModalProps> = ({
               type="button"
               disabled={isDownloading}
               onClick={() => handleDownload('BOTH')}
-              className="flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-lg shadow-md transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-lg shadow-md transition cursor-pointer"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-3 h-3" />
               <span>Download Lembar Cetak Lengkap</span>
             </button>
           </div>

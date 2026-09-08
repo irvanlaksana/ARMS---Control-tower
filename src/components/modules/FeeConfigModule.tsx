@@ -260,11 +260,11 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
   const feePagination = usePagination<FeeConfig>(filteredFees, 10);
 
   return (
-    <div className="space-y-6">
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-2.5">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Settings className="w-5 h-5 text-indigo-400" />
+          <div className="flex items-center gap-2 mb-0.5">
+            <Settings className="w-4 h-4 text-indigo-400" />
             <h2 className="text-xl font-bold text-white">Dynamic Fee Engine Configuration</h2>
           </div>
           <p className="text-xs text-slate-400">
@@ -274,7 +274,7 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
             <input
               type="text"
               value={searchTerm}
@@ -289,9 +289,9 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
           {canEdit && (
             <button
               onClick={() => handleOpenModal()}
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-md transition"
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow-md transition"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5" />
               <span>Configure Fee Rule</span>
             </button>
           )}
@@ -304,19 +304,19 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-950 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
               <tr>
-                <th className="py-3 px-4">Client Company</th>
-                <th className="py-3 px-4">Service Category</th>
-                <th className="py-3 px-4">Fee Structure Type</th>
-                <th className="py-3 px-4">Detail (Percent/Fixed/Tiered)</th>
-                <th className="py-3 px-4">Effective Date</th>
-                <th className="py-3 px-4 text-center">Status</th>
-                {canEdit && <th className="py-3 px-4 text-center">Aksi</th>}
+                <th className="py-2 px-3">Client Company</th>
+                <th className="py-2 px-3">Service Category</th>
+                <th className="py-2 px-3">Fee Structure Type</th>
+                <th className="py-2 px-3">Detail (Percent/Fixed/Tiered)</th>
+                <th className="py-2 px-3">Effective Date</th>
+                <th className="py-2 px-3 text-center">Status</th>
+                {canEdit && <th className="py-2 px-3 text-center">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
               {feePagination.pageItems.length === 0 ? (
                 <tr>
-                  <td colSpan={canEdit ? 7 : 6} className="py-10 text-center text-slate-500 text-xs">
+                  <td colSpan={canEdit ? 7 : 6} className="py-8 text-center text-slate-500 text-xs">
                     {store.fees.length === 0 
                       ? 'Belum ada konfigurasi fee engine. Klik tombol + Configure Dynamic Fee Rule untuk membuat skema pembagian fee.'
                       : 'Tidak ada konfigurasi fee engine yang sesuai filter atau pencarian.'}
@@ -325,14 +325,14 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
               ) : (
                 feePagination.pageItems.map((f) => (
                   <tr key={f.id} className="hover:bg-slate-800/40 transition">
-                    <td className="py-3.5 px-4 font-bold text-white">{f.clientName}</td>
-                    <td className="py-3.5 px-4 text-slate-300">{f.serviceName}</td>
-                    <td className="py-3.5 px-4">
+                    <td className="py-2.5 px-3 font-bold text-white">{f.clientName}</td>
+                    <td className="py-2.5 px-3 text-slate-300">{f.serviceName}</td>
+                    <td className="py-2.5 px-3">
                       <span className="bg-indigo-950 text-indigo-300 text-[10px] px-2 py-0.5 rounded border border-indigo-800 font-bold">
                         {f.feeType}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4">
+                    <td className="py-2.5 px-3">
                       {f.feeType === 'TIERED' ? (
                         renderTieredSummary(f)
                       ) : (
@@ -343,28 +343,28 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
                         </div>
                       )}
                     </td>
-                    <td className="py-3.5 px-4 text-slate-400">{f.effectiveDate}</td>
-                    <td className="py-3.5 px-4 text-center">
-                      <span className="bg-emerald-950 text-emerald-300 text-[10px] px-2.5 py-1 rounded-full border border-emerald-800 font-semibold">
+                    <td className="py-2.5 px-3 text-slate-400">{f.effectiveDate}</td>
+                    <td className="py-2.5 px-3 text-center">
+                      <span className="bg-emerald-950 text-emerald-300 text-[10px] px-2 py-1 rounded-full border border-emerald-800 font-semibold">
                         {f.status}
                       </span>
                     </td>
                     {canEdit && (
-                      <td className="py-3.5 px-4 text-center">
+                      <td className="py-2.5 px-3 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <button
                             onClick={() => handleOpenModal(f)}
                             className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-indigo-400 transition"
                             title="Edit Fee Config"
                           >
-                            <Edit2 className="w-4 h-4" />
+                            <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleDeleteFee(f.id, f.clientName, f.serviceName)}
                             className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-red-400 transition"
                             title="Delete Fee Config"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
@@ -377,16 +377,16 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
         </div>
 
         {/* Mobile Card View */}
-        <div className="lg:hidden p-4 space-y-4">
+        <div className="lg:hidden p-3 space-y-2.5">
           {feePagination.pageItems.length === 0 ? (
-            <div className="py-8 text-center text-slate-500 text-xs bg-slate-900/50 rounded-lg border border-slate-800">
+            <div className="py-6 text-center text-slate-500 text-xs bg-slate-900/50 rounded-lg border border-slate-800">
               {store.fees.length === 0
                 ? 'Belum ada konfigurasi fee engine.'
                 : 'Tidak ada konfigurasi fee engine yang sesuai filter atau pencarian.'}
             </div>
           ) : (
             feePagination.pageItems.map((f) => (
-              <div key={f.id} className="bg-slate-950 border border-slate-800 rounded-lg p-4 space-y-3 shadow-sm">
+              <div key={f.id} className="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-2 shadow-sm">
                 <div className="flex justify-between items-start gap-2">
                   <div>
                     <h4 className="font-bold text-white text-sm">{f.clientName}</h4>
@@ -397,7 +397,7 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
                   </span>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="space-y-1">
                     <span className="block text-[10px] text-slate-500 uppercase tracking-wider">Tipe Fee</span>
                     <span className="inline-block bg-indigo-950 text-indigo-300 text-[10px] px-2 py-0.5 rounded border border-indigo-800 font-bold">
@@ -410,8 +410,8 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
                   </div>
                 </div>
 
-                <div className="bg-slate-900 p-2.5 rounded-md border border-slate-800">
-                  <span className="block text-[10px] text-slate-500 uppercase tracking-wider mb-1">Detail (Persen/Fixed/Tiered)</span>
+                <div className="bg-slate-900 p-2 rounded-md border border-slate-800">
+                  <span className="block text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">Detail (Persen/Fixed/Tiered)</span>
                   {f.feeType === 'TIERED' ? (
                     renderTieredSummary(f)
                   ) : (
@@ -424,18 +424,18 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
                 </div>
 
                 {canEdit && (
-                  <div className="flex justify-end gap-2 pt-2 border-t border-slate-800/60 mt-2">
+                  <div className="flex justify-end gap-2 pt-1.5 border-t border-slate-800/60 mt-1.5">
                     <button
                       onClick={() => handleOpenModal(f)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-indigo-400 rounded-md transition text-[11px] font-semibold"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-indigo-400 rounded-md transition text-[11px] font-semibold"
                     >
-                      <Edit2 className="w-3.5 h-3.5" /> Edit
+                      <Edit2 className="w-3 h-3" /> Edit
                     </button>
                     <button
                       onClick={() => handleDeleteFee(f.id, f.clientName, f.serviceName)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-red-400 rounded-md transition text-[11px] font-semibold"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-red-400 rounded-md transition text-[11px] font-semibold"
                     >
-                      <Trash2 className="w-3.5 h-3.5" /> Hapus
+                      <Trash2 className="w-3 h-3" /> Hapus
                     </button>
                   </div>
                 )}
@@ -455,22 +455,22 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <form onSubmit={handleSaveFee} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-2xl p-6 space-y-4 shadow-2xl max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3">
+          <form onSubmit={handleSaveFee} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-2xl p-4 space-y-2.5 shadow-2xl max-h-[90vh] flex flex-col">
             <h3 className="font-bold text-white text-base shrink-0">
               {isEditing ? 'Edit Fee Engine Rule' : 'Configure Fee Engine Rule'}
             </h3>
 
-            <div className="overflow-y-auto pr-2 space-y-4 flex-1">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="overflow-y-auto pr-2 space-y-2.5 flex-1">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">
+                  <label className="block text-xs text-slate-400 mb-0.5">
                     Pilih Klien ({isPeroranganClient ? 'Perorangan' : 'Multifinance'})
                   </label>
                   <select
                     value={clientId}
                     onChange={(e) => handleClientChange(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:border-indigo-500 focus:outline-none"
                   >
                     {store.clients.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -481,13 +481,13 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">
+                  <label className="block text-xs text-slate-400 mb-0.5">
                     Pilih Produk Layanan {isPeroranganClient && <span className="text-amber-400 font-semibold">(Khusus Perorangan)</span>}
                   </label>
                   <select
                     value={serviceId}
                     onChange={(e) => setServiceId(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:border-indigo-500 focus:outline-none"
                   >
                     {availableServices.map((s) => (
                       <option key={s.id} value={s.id}>
@@ -498,11 +498,11 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
                 </div>
 
                 <div className={feeType === 'TIERED' ? 'col-span-2' : ''}>
-                  <label className="block text-xs text-slate-400 mb-1">Tipe Struktur Fee (Fee Type)</label>
+                  <label className="block text-xs text-slate-400 mb-0.5">Tipe Struktur Fee (Fee Type)</label>
                   <select
                     value={feeType}
                     onChange={(e) => setFeeType(e.target.value as any)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none font-bold"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:border-indigo-500 focus:outline-none font-bold"
                   >
                     <option value="PERCENT">Persentase Flat (%)</option>
                     <option value="FIXED">Nominal Tetap (Rp)</option>
@@ -515,23 +515,23 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
                 {feeType !== 'TIERED' && feeType !== 'CUSTOM' && (
                   <>
                     <div>
-                      <label className="block text-xs text-slate-400 mb-1">Nilai Persentase (%)</label>
+                      <label className="block text-xs text-slate-400 mb-0.5">Nilai Persentase (%)</label>
                       <input
                         type="number"
                         value={percentageValue}
                         onChange={(e) => setPercentageValue(Number(e.target.value))}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono focus:border-indigo-500 focus:outline-none"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white font-mono focus:border-indigo-500 focus:outline-none"
                         disabled={feeType === 'FIXED'}
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs text-slate-400 mb-1">Nominal Tetap (Rp)</label>
+                      <label className="block text-xs text-slate-400 mb-0.5">Nominal Tetap (Rp)</label>
                       <input
                         type="number"
                         value={fixedAmount}
                         onChange={(e) => setFixedAmount(Number(e.target.value))}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono focus:border-indigo-500 focus:outline-none"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white font-mono focus:border-indigo-500 focus:outline-none"
                         disabled={feeType === 'PERCENT'}
                       />
                     </div>
@@ -540,22 +540,22 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
                 
                 {feeType === 'CUSTOM' && (
                   <div className="col-span-2">
-                    <label className="block text-xs text-slate-400 mb-1">Catatan Formula Kustom</label>
+                    <label className="block text-xs text-slate-400 mb-0.5">Catatan Formula Kustom</label>
                     <textarea
                       value={customFormulaNotes}
                       onChange={(e) => setCustomFormulaNotes(e.target.value)}
                       placeholder="e.g. 5% dari total tagihan + biaya transportasi Rp 200,000 jika penagihan di luar kota..."
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white min-h-[100px] focus:border-indigo-500 focus:outline-none"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white min-h-[100px] focus:border-indigo-500 focus:outline-none"
                     />
                   </div>
                 )}
               </div>
 
               {feeType === 'TIERED' && (
-                <div className="mt-4 border border-indigo-900/50 bg-indigo-950/10 rounded-xl p-4 space-y-4">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-2">
+                <div className="mt-3 border border-indigo-900/50 bg-indigo-950/10 rounded-xl p-3 space-y-2.5">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 mb-1.5">
                     <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                      <span className="w-1.5 h-4 bg-indigo-500 rounded-full"></span>
+                      <span className="w-1.5 h-3.5 bg-indigo-500 rounded-full"></span>
                       Pengaturan Fee Bertingkat
                     </h4>
                     
@@ -578,11 +578,11 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Parameter Basis Tiering</label>
+                    <label className="block text-xs text-slate-400 mb-0.5">Parameter Basis Tiering</label>
                     <select
                       value={tieredConfig.basis}
                       onChange={(e) => setTieredConfig({...tieredConfig, basis: e.target.value as any})}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none font-medium"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white focus:border-indigo-500 focus:outline-none font-medium"
                     >
                       <option value="PAYMENT_AMOUNT">Jumlah Pembayaran / Unit (Rp)</option>
                       <option value="VEHICLE_YEAR">Tahun Kendaraan (Tahun)</option>
@@ -592,7 +592,7 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
 
                   {/* Rules Mapping */}
                   <div>
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between mb-1.5">
                       <label className="block text-xs font-semibold text-slate-300">Tingkatan / Tier Rules</label>
                       <button
                         type="button"
@@ -602,19 +602,19 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
                         })}
                         className="flex items-center gap-1 text-[10px] text-indigo-400 hover:text-indigo-300"
                       >
-                        <PlusCircle className="w-3.5 h-3.5" /> Tambah Tier
+                        <PlusCircle className="w-3 h-3" /> Tambah Tier
                       </button>
                     </div>
                     
                     {tieredConfig.rules.length === 0 ? (
-                      <div className="text-center py-4 text-xs text-slate-500 bg-slate-900/50 rounded-lg border border-slate-800">
+                      <div className="text-center py-3 text-xs text-slate-500 bg-slate-900/50 rounded-lg border border-slate-800">
                         Belum ada rule bertingkat yang ditambahkan.
                       </div>
                     ) : (
-                      <div className="space-y-2">
+                      <div className="space-y-1.5">
                         {tieredConfig.rules.map((rule, idx) => (
                           <div key={rule.id} className="flex flex-wrap items-center gap-2 bg-slate-900 p-2 rounded-lg border border-slate-700">
-                            <span className="text-[10px] font-bold text-slate-500 w-4 text-center">{idx + 1}.</span>
+                            <span className="text-[10px] font-bold text-slate-500 w-3.5 text-center">{idx + 1}.</span>
                             
                             <div className="flex items-center gap-1 flex-1 min-w-[120px]">
                               <input
@@ -676,7 +676,7 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
                               }}
                               className="p-1 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 className="w-3 h-3" />
                             </button>
                           </div>
                         ))}
@@ -685,8 +685,8 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
                   </div>
 
                   {/* Modifiers Mapping */}
-                  <div className="pt-2 border-t border-slate-800/60">
-                    <div className="flex items-center justify-between mb-2">
+                  <div className="pt-1.5 border-t border-slate-800/60">
+                    <div className="flex items-center justify-between mb-1.5">
                       <label className="block text-xs font-semibold text-slate-300">Modifikasi Khusus (Kondisional)</label>
                       <button
                         type="button"
@@ -696,12 +696,12 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
                         })}
                         className="flex items-center gap-1 text-[10px] text-amber-400 hover:text-amber-300"
                       >
-                        <PlusCircle className="w-3.5 h-3.5" /> Tambah Kondisi
+                        <PlusCircle className="w-3 h-3" /> Tambah Kondisi
                       </button>
                     </div>
 
                     {tieredConfig.modifiers.length > 0 && (
-                      <div className="space-y-2">
+                      <div className="space-y-1.5">
                         {tieredConfig.modifiers.map((mod, idx) => (
                           <div key={mod.id} className="flex flex-wrap items-center gap-2 bg-slate-900 p-2 rounded-lg border border-slate-700">
                             <input
@@ -749,7 +749,7 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
                               }}
                               className="p-1 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 className="w-3 h-3" />
                             </button>
                           </div>
                         ))}
@@ -760,17 +760,17 @@ export const FeeConfigModule: React.FC<FeeConfigModuleProps> = ({
               )}
             </div>
 
-            <div className="flex justify-end gap-2 pt-4 border-t border-slate-800 shrink-0">
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-800 shrink-0">
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700 font-semibold transition"
+                className="px-3 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700 font-semibold transition"
               >
                 Batal
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-500 shadow-md shadow-indigo-900/20 transition"
+                className="px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-500 shadow-md shadow-indigo-900/20 transition"
               >
                 {isEditing ? 'Simpan Perubahan' : 'Simpan Konfigurasi'}
               </button>

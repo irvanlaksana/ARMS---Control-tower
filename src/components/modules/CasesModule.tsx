@@ -402,12 +402,12 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
   const casePagination = usePagination<Case>(filteredCases, 10);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-2.5">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Briefcase className="w-5 h-5 text-indigo-400" />
+          <div className="flex items-center gap-2 mb-0.5">
+            <Briefcase className="w-4 h-4 text-indigo-400" />
             <h2 className="text-xl font-bold text-white">Cases & Debtors Portfolio (Piutang)</h2>
           </div>
           <p className="text-xs text-slate-400">
@@ -418,24 +418,24 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
         {canEdit && (
           <button
             onClick={() => handleOpenAddModal()}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-md transition"
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow-md transition"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             <span>New Recovery Case</span>
           </button>
         )}
       </div>
 
       {/* Filters & Search */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-3" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by Case No, Debtor Name, or Client..."
-            className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+            className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
           />
         </div>
 
@@ -468,53 +468,53 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
         </div>
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden mt-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden mt-3">
         <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-left text-xs whitespace-nowrap">
             <thead className="bg-slate-950/50 text-slate-400 border-b border-slate-800">
               <tr>
-                <th className="px-4 py-3 font-medium">Case Details</th>
-                <th className="px-4 py-3 font-medium">Debtor Info</th>
-                <th className="px-4 py-3 font-medium">Asset / Collateral</th>
-                <th className="px-4 py-3 font-medium text-right">Principal OS</th>
-                <th className="px-4 py-3 font-medium text-center">Status</th>
-                <th className="px-4 py-3 font-medium text-center">Actions</th>
+                <th className="px-3 py-2 font-medium">Case Details</th>
+                <th className="px-3 py-2 font-medium">Debtor Info</th>
+                <th className="px-3 py-2 font-medium">Asset / Collateral</th>
+                <th className="px-3 py-2 font-medium text-right">Principal OS</th>
+                <th className="px-3 py-2 font-medium text-center">Status</th>
+                <th className="px-3 py-2 font-medium text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/50">
               {casePagination.pageItems.map(c => (
                 <tr key={c.id} className="hover:bg-slate-800/20 transition-colors">
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-2">
                     <div className="font-medium text-white">{c.caseNo}</div>
                     <div className="text-[10px] text-slate-500">{c.clientName} {c.clientType === 'PERORANGAN' ? '[PERORANGAN]' : ''}</div>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-2">
                     <div className="font-medium text-slate-300">{c.debtorName}</div>
                   </td>
-                  <td className="px-4 py-3 text-slate-400">
+                  <td className="px-3 py-2 text-slate-400">
                     {c.assetSummary}
                   </td>
-                  <td className="px-4 py-3 text-right font-medium text-white">
+                  <td className="px-3 py-2 text-right font-medium text-white">
                     Rp {c.principalDebtOS.toLocaleString('id-ID')}
                   </td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="px-3 py-2 text-center">
                     <span className={`px-2 py-1 rounded text-[10px] font-medium ${c.status === 'NEW' ? 'bg-indigo-900/50 text-indigo-400' : c.status === 'CLOSED' ? 'bg-emerald-900/50 text-emerald-400' : 'bg-amber-900/50 text-amber-400'}`}>
                       {c.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="px-3 py-2 text-center">
                     <button onClick={() => handleOpenAddModal(c)} className="p-1.5 text-slate-400 hover:text-indigo-400 transition-colors">
-                      <Edit2 className="w-4 h-4" />
+                      <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button onClick={() => handleDeleteCase(c.id, c.caseNo)} className="p-1.5 text-slate-400 hover:text-rose-400 transition-colors ml-2">
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </td>
                 </tr>
               ))}
               {filteredCases.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={6} className="px-3 py-6 text-center text-slate-500">
                     No cases found matching your filters.
                   </td>
                 </tr>
@@ -533,18 +533,18 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
       </div>
 
       {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <form onSubmit={handleCreateCase} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-3xl p-6 shadow-2xl my-auto">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3 overflow-y-auto">
+          <form onSubmit={handleCreateCase} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-3xl p-4 shadow-2xl my-auto">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
               <h2 className="text-lg font-bold text-white">{isEditing ? 'Edit Case' : 'New Recovery Case'}</h2>
               <button type="button" onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 mb-3">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Client / Creditor</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Client / Creditor</label>
                 <SearchableSelect
                   value={clientCategory === 'PERORANGAN' ? peroranganClientId : clientId}
                   onChange={(val) => clientCategory === 'PERORANGAN' ? setPeroranganClientId(val) : setClientId(val)}
@@ -556,7 +556,7 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Kategori Klien</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Kategori Klien</label>
                 <SearchableSelect
                   value={clientCategory}
                   onChange={(val) => handleSwitchCategory(val as ClientType)}
@@ -569,9 +569,9 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 mb-3">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Debitur</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Debitur</label>
                 <SearchableSelect
                   value={customerId}
                   onChange={handleCustomerChange}
@@ -579,12 +579,12 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Nomor Kontrak / Bukti Hutang</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Nomor Kontrak / Bukti Hutang</label>
                 <input type="text" required value={contractNo} onChange={(e) => setContractNo(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white" />
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white" />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Layanan</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Layanan</label>
                 <SearchableSelect
                   value={serviceId}
                   onChange={setServiceId}
@@ -592,28 +592,28 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Principal Outstanding (Rp)</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Principal Outstanding (Rp)</label>
                 <AmountInput
                   required
                   value={principalOutstandingFromDebtor}
                   onChange={() => undefined}
                   readOnly
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white opacity-70 cursor-not-allowed"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white opacity-70 cursor-not-allowed"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Hari Tunggakan</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Hari Tunggakan</label>
                 <input
                   type="number"
                   min="0"
                   required
                   readOnly
                   value={overdueDays}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white opacity-80 cursor-not-allowed"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white opacity-80 cursor-not-allowed"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Assign To Personnel / Mitra</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Assign To Personnel / Mitra</label>
                 <SearchableSelect 
                   value={personnelId}
                   onChange={setPartnerId}
@@ -627,7 +627,7 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">
+              <label className="block text-xs text-slate-400 mb-0.5">
                 {clientCategory === 'MULTIFINANCE' ? 'Asset Collateral Description (Unit Agunan Fidusia)' : 'Keterangan Agunan / Bukti Hutang (Giro / Kwitansi / Aset Jaminan)'}
               </label>
               <input
@@ -637,17 +637,17 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
                 onChange={(e) => setAssetSummary(e.target.value)}
                 readOnly={clientCategory === 'MULTIFINANCE'}
                 placeholder={clientCategory === 'MULTIFINANCE' ? 'e.g. Honda HR-V Turbo 2022 (B 1234 XYZ)' : 'e.g. Surat Pengakuan Hutang & BPKB Motor Vario 2023'}
-                className={`w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white ${clientCategory === 'MULTIFINANCE' ? 'opacity-70 cursor-not-allowed' : ''}`}
+                className={`w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white ${clientCategory === 'MULTIFINANCE' ? 'opacity-70 cursor-not-allowed' : ''}`}
               />
             </div>
 
-            <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700">
-              <h4 className="text-xs font-bold text-amber-400 mb-1.5">Google Drive Folder Integration</h4>
-              <p className="text-[10px] text-slate-300 mb-2">Nama folder standar untuk arsip berkas perkara ini:</p>
+            <div className="bg-slate-800/50 p-2.5 rounded-lg border border-slate-700">
+              <h4 className="text-xs font-bold text-amber-400 mb-1">Google Drive Folder Integration</h4>
+              <p className="text-[10px] text-slate-300 mb-1.5">Nama folder standar untuk arsip berkas perkara ini:</p>
               <div className="bg-slate-900 border border-slate-700 p-2 rounded text-[11px] font-mono text-emerald-300 mb-2.5 select-all break-all">
                 {computedFolderName}
               </div>
-              <label className="block text-[10px] text-slate-400 mb-1">Paste Link Folder GDrive di sini (Opsional):</label>
+              <label className="block text-[10px] text-slate-400 mb-0.5">Paste Link Folder GDrive di sini (Opsional):</label>
               <input
                 type="text"
                 value={gDriveFolderUrl}
@@ -657,17 +657,17 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
               />
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+            <div className="flex justify-end gap-2 pt-1.5 border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => setShowAddModal(false)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
+                className="px-3 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
               >
                 Batal
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500 shadow-md"
+                className="px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500 shadow-md"
               >
                 {isEditing ? 'Simpan Perubahan' : 'Simpan & Snapshot Fee Perkara'}
               </button>

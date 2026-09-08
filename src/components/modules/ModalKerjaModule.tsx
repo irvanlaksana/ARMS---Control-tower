@@ -211,12 +211,12 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header Banner */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-2.5 shadow-lg">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Landmark className="w-5 h-5 text-indigo-400" />
+          <div className="flex items-center gap-2 mb-0.5">
+            <Landmark className="w-4 h-4 text-indigo-400" />
             <h2 className="text-xl font-bold text-white">Modal Kerja (Working Capital Management)</h2>
           </div>
           <p className="text-xs text-slate-400">
@@ -229,9 +229,9 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
             <button
               type="button"
               onClick={() => onNavigateTab('SETTINGS')}
-              className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2.5 rounded-lg border border-slate-700 transition"
+              className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg border border-slate-700 transition"
             >
-              <Landmark className="w-4 h-4 text-emerald-400" />
+              <Landmark className="w-3.5 h-3.5 text-emerald-400" />
               <span>Kelola Saldo Bank (Setting)</span>
             </button>
           )}
@@ -239,9 +239,9 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
           {canEdit && (
             <button
               onClick={() => handleOpenModal()}
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow-md transition"
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-3 py-2 rounded-lg shadow-md transition"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5" />
               <span>+ Catat Transaksi Modal Kerja</span>
             </button>
           )}
@@ -249,30 +249,30 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
       </div>
 
       {/* Financial Summary KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
         {/* Total Modal Masuk */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-2">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-1.5">
           <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
             <span>Total Modal Disetor (Injection)</span>
             <div className="p-2 rounded-lg bg-emerald-950/80 text-emerald-400 border border-emerald-900/50">
-              <ArrowUpRight className="w-4 h-4" />
+              <ArrowUpRight className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="text-2xl font-bold text-white tracking-tight">
             Rp {totalInjections.toLocaleString('id-ID')}
           </div>
           <div className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
-            <CheckCircle2 className="w-3.5 h-3.5" />
+            <CheckCircle2 className="w-3 h-3" />
             <span>Suntikan Direksi & Pool Investor</span>
           </div>
         </div>
 
         {/* Total Modal Teralokasi */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-2">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-1.5">
           <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
             <span>Modal Teralokasi (Allocated)</span>
             <div className="p-2 rounded-lg bg-blue-950/80 text-blue-400 border border-blue-900/50">
-              <Layers className="w-4 h-4" />
+              <Layers className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="text-2xl font-bold text-white tracking-tight">
@@ -284,11 +284,11 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
         </div>
 
         {/* Pengembalian / Penarikan Modal */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-2">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-1.5">
           <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
             <span>Pengembalian / Penarikan</span>
             <div className="p-2 rounded-lg bg-amber-950/80 text-amber-400 border border-amber-900/50">
-              <ArrowDownRight className="w-4 h-4" />
+              <ArrowDownRight className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="text-2xl font-bold text-white tracking-tight">
@@ -300,11 +300,11 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
         </div>
 
         {/* Saldo Standby Tersedia */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-2">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-1.5">
           <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
             <span>Modal Standby / Unallocated</span>
             <div className="p-2 rounded-lg bg-indigo-950/80 text-indigo-400 border border-indigo-900/50">
-              <Wallet className="w-4 h-4" />
+              <Wallet className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className={`text-2xl font-bold tracking-tight ${standbyCapital >= 0 ? 'text-indigo-300' : 'text-rose-400'}`}>
@@ -317,10 +317,10 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-col md:flex-row items-center justify-between gap-2.5">
         <div className="flex items-center gap-2 w-full md:w-auto">
           <div className="relative flex-1 md:w-80">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+            <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-3" />
             <input
               type="text"
               placeholder="Cari no transaksi, sumber dana, catatan..."
@@ -340,7 +340,7 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
               setTypeFilter('ALL');
               modalPagination.setPage(1);
             }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${
               typeFilter === 'ALL'
                 ? 'bg-indigo-600 text-white font-bold'
                 : 'bg-slate-800 text-slate-400 hover:text-white'
@@ -353,7 +353,7 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
               setTypeFilter('INJECTION');
               modalPagination.setPage(1);
             }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${
               typeFilter === 'INJECTION'
                 ? 'bg-emerald-600 text-white font-bold'
                 : 'bg-slate-800 text-slate-400 hover:text-white'
@@ -366,7 +366,7 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
               setTypeFilter('ALLOCATION');
               modalPagination.setPage(1);
             }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${
               typeFilter === 'ALLOCATION'
                 ? 'bg-blue-600 text-white font-bold'
                 : 'bg-slate-800 text-slate-400 hover:text-white'
@@ -379,7 +379,7 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
               setTypeFilter('RETURN_CAPITAL');
               modalPagination.setPage(1);
             }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${
               typeFilter === 'RETURN_CAPITAL'
                 ? 'bg-amber-600 text-white font-bold'
                 : 'bg-slate-800 text-slate-400 hover:text-white'
@@ -396,14 +396,14 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-950 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
               <tr>
-                <th className="py-3 px-4">No Transaksi</th>
-                <th className="py-3 px-4">Tanggal</th>
-                <th className="py-3 px-4">Jenis Transaksi</th>
-                <th className="py-3 px-4">Sumber / Funder</th>
-                <th className="py-3 px-4">Alokasi Tujuan</th>
-                <th className="py-3 px-4 text-right">Nominal (Rp)</th>
-                <th className="py-3 px-4 text-center">Status</th>
-                <th className="py-3 px-4 text-center">Aksi</th>
+                <th className="py-2 px-3">No Transaksi</th>
+                <th className="py-2 px-3">Tanggal</th>
+                <th className="py-2 px-3">Jenis Transaksi</th>
+                <th className="py-2 px-3">Sumber / Funder</th>
+                <th className="py-2 px-3">Alokasi Tujuan</th>
+                <th className="py-2 px-3 text-right">Nominal (Rp)</th>
+                <th className="py-2 px-3 text-center">Status</th>
+                <th className="py-2 px-3 text-center">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
@@ -419,13 +419,13 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
                 modalPagination.pageItems.map((item) => {
                   return (
                     <tr key={item.id} className="hover:bg-slate-800/40 transition">
-                      <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">
+                      <td className="py-2.5 px-3 font-mono font-bold text-indigo-300">
                         {item.transactionNo}
                       </td>
-                      <td className="py-3.5 px-4 text-slate-400">
+                      <td className="py-2.5 px-3 text-slate-400">
                         {item.transactionDate}
                       </td>
-                      <td className="py-3.5 px-4">
+                      <td className="py-2.5 px-3">
                         <span
                           className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
                             item.type === 'INJECTION'
@@ -442,33 +442,33 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
                             : 'PENGEMBALIAN'}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4">
+                      <td className="py-2.5 px-3">
                         <div className="font-semibold text-white">{item.sourceOrFunder}</div>
                         <div className="text-[10px] text-slate-400">{(item.funderType || '').replace(/_/g, ' ')}</div>
                       </td>
-                      <td className="py-3.5 px-4">
+                      <td className="py-2.5 px-3">
                         <span className="bg-slate-800 text-slate-300 text-[10px] px-2 py-0.5 rounded border border-slate-700 font-medium">
                           {(item.targetAllocation || '').replace(/_/g, ' ')}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 text-right font-mono font-bold text-white">
+                      <td className="py-2.5 px-3 text-right font-mono font-bold text-white">
                         <span className={item.type === 'INJECTION' ? 'text-emerald-400' : 'text-slate-200'}>
                           Rp {item.amount.toLocaleString('id-ID')}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 text-center">
+                      <td className="py-2.5 px-3 text-center">
                         <span className="bg-emerald-950 text-emerald-300 text-[10px] px-2 py-0.5 rounded border border-emerald-800 font-semibold">
                           {item.status}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 text-center">
+                      <td className="py-2.5 px-3 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <button
                             onClick={() => setSelectedForPrint(item)}
                             className="text-slate-400 hover:text-indigo-400 transition"
                             title="Cetak Bukti Transaksi"
                           >
-                            <Printer className="w-4 h-4" />
+                            <Printer className="w-3.5 h-3.5" />
                           </button>
                           {canEdit && (
                             <>
@@ -477,14 +477,14 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
                                 className="text-slate-400 hover:text-white transition"
                                 title="Edit Data"
                               >
-                                <Edit2 className="w-4 h-4" />
+                                <Edit2 className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 onClick={() => setDeleteTarget(item)}
                                 className="text-slate-400 hover:text-rose-400 transition"
                                 title="Hapus Data"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </>
                           )}
@@ -509,25 +509,25 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
 
       {/* Form Modal (Create / Edit) */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-4 shadow-2xl space-y-2.5">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
               <h3 className="font-bold text-white text-sm flex items-center gap-2">
-                <Landmark className="w-4 h-4 text-indigo-400" />
+                <Landmark className="w-3.5 h-3.5 text-indigo-400" />
                 <span>{isEditing ? 'Edit Transaksi Modal Kerja' : 'Catat Transaksi Modal Kerja Baru'}</span>
               </h3>
               <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-white">
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveTransaction} className="space-y-4 text-xs">
+            <form onSubmit={handleSaveTransaction} className="space-y-2.5 text-xs">
               <div>
-                <label className="block text-slate-400 mb-1 font-medium">Jenis Transaksi Modal *</label>
+                <label className="block text-slate-400 mb-0.5 font-medium">Jenis Transaksi Modal *</label>
                 <select
                   value={type}
                   onChange={(e) => setType(e.target.value as any)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:border-indigo-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:border-indigo-500"
                 >
                   <option value="INJECTION">SUNTIKAN MODAL (Inflow / Penambahan Modal Kerja)</option>
                   <option value="ALLOCATION">ALOKASI MODAL (Penempatan ke Pool Ops / Talangan / Kas Kecil)</option>
@@ -536,13 +536,13 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-slate-400 mb-1 font-medium">Tipe Funder / Sumber *</label>
+                  <label className="block text-slate-400 mb-0.5 font-medium">Tipe Funder / Sumber *</label>
                   <select
                     value={funderType}
                     onChange={(e) => setFunderType(e.target.value as any)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:border-indigo-500"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:border-indigo-500"
                   >
                     <option value="DIREKSI_PEMILIK">Direksi / Pemilik Perusahaan</option>
                     <option value="INVESTOR_POOL">Investor / Funder Pool</option>
@@ -552,11 +552,11 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-400 mb-1 font-medium">Alokasi Tujuan *</label>
+                  <label className="block text-slate-400 mb-0.5 font-medium">Alokasi Tujuan *</label>
                   <select
                     value={targetAllocation}
                     onChange={(e) => setTargetAllocation(e.target.value as any)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:border-indigo-500"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:border-indigo-500"
                   >
                     <option value="OPERATIONAL_POOL">Kas Operasional Utama (Bank Mandiri)</option>
                     <option value="TALANGAN_VAULT">Vault Dana Talangan (BCA)</option>
@@ -568,44 +568,44 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1 font-medium">Nama Sumber Dana / Nama Funder *</label>
+                <label className="block text-slate-400 mb-0.5 font-medium">Nama Sumber Dana / Nama Funder *</label>
                 <input
                   type="text"
                   placeholder="Contoh: Setoran Modal Awal Direktur Utama, Suntikan Pool Investor Batavia"
                   value={sourceOrFunder}
                   onChange={(e) => setSourceOrFunder(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:border-indigo-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:border-indigo-500"
                   required
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-slate-400 mb-1 font-medium">Nominal Modal (Rp) *</label>
+                  <label className="block text-slate-400 mb-0.5 font-medium">Nominal Modal (Rp) *</label>
                   <input
                     type="text"
                     inputMode="numeric"
                     min="1"
                     value={amount}
                     onChange={(e) => setAmount(Number(e.target.value.replace(/\D/g, '')) || 0)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:border-indigo-500 font-mono font-bold"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:border-indigo-500 font-mono font-bold"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-400 mb-1 font-medium">Tanggal Transaksi *</label>
+                  <label className="block text-slate-400 mb-0.5 font-medium">Tanggal Transaksi *</label>
                   <DateInput
                     value={transactionDate}
                     onChange={(e) => setTransactionDate(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:border-indigo-500"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:border-indigo-500"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1 font-medium">Keterangan / Peruntukan</label>
+                <label className="block text-slate-400 mb-0.5 font-medium">Keterangan / Peruntukan</label>
                 <textarea
                   rows={2}
                   placeholder="Catatan tujuan setoran, skema bagi hasil/kompensasi, atau nomor perjanjian..."
@@ -616,27 +616,27 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1 font-medium">Link Dokumen Bukti Transfer / Perjanjian</label>
+                <label className="block text-slate-400 mb-0.5 font-medium">Link Dokumen Bukti Transfer / Perjanjian</label>
                 <input
                   type="text"
                   placeholder="https://drive.google.com/..."
                   value={proofDocumentUrl}
                   onChange={(e) => setProofDocumentUrl(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:border-indigo-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:border-indigo-500"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-lg"
+                  className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-lg"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg shadow"
+                  className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg shadow"
                 >
                   {isEditing ? 'Simpan Perubahan' : 'Simpan Transaksi Modal'}
                 </button>
@@ -648,11 +648,11 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
 
       {/* Delete Confirmation Modal */}
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-rose-800/60 rounded-xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center gap-3 text-rose-400">
-              <div className="p-2.5 rounded-full bg-rose-950/80 border border-rose-800">
-                <AlertCircle className="w-6 h-6 text-rose-400" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-rose-800/60 rounded-xl max-w-md w-full p-4 shadow-2xl space-y-2.5">
+            <div className="flex items-center gap-2 text-rose-400">
+              <div className="p-2 rounded-full bg-rose-950/80 border border-rose-800">
+                <AlertCircle className="w-5 h-5 text-rose-400" />
               </div>
               <div>
                 <h3 className="font-bold text-white text-base">Konfirmasi Hapus Transaksi</h3>
@@ -660,7 +660,7 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
               </div>
             </div>
 
-            <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-1.5 text-xs text-slate-300">
+            <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1.5 text-xs text-slate-300">
               <div className="flex justify-between">
                 <span className="text-slate-500">No Transaksi:</span>
                 <span className="font-mono font-bold text-white">{deleteTarget.transactionNo}</span>
@@ -679,18 +679,18 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
               Apakah Anda yakin ingin menghapus catatan transaksi modal kerja ini dari pembukuan? Penghapusan akan dicatat pada log audit sistem.
             </p>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-2 pt-1.5">
               <button
                 type="button"
                 onClick={() => setDeleteTarget(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg"
+                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg"
               >
                 Batal
               </button>
               <button
                 type="button"
                 onClick={handleConfirmDelete}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg shadow"
+                className="px-3 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg shadow"
               >
                 Ya, Hapus Data
               </button>
@@ -701,21 +701,21 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
 
       {/* Print Voucher Modal */}
       {selectedForPrint && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-4 shadow-2xl space-y-2.5">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
               <h3 className="font-bold text-white text-sm flex items-center gap-2">
-                <Printer className="w-4 h-4 text-indigo-400" />
+                <Printer className="w-3.5 h-3.5 text-indigo-400" />
                 <span>Bukti Transaksi Modal Kerja</span>
               </h3>
               <button onClick={() => setSelectedForPrint(null)} className="text-slate-400 hover:text-white">
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
 
             {/* Printable Receipt Card */}
-            <div className="bg-white text-slate-900 p-6 rounded-lg shadow space-y-4 text-xs font-sans">
-              <div className="text-center border-b pb-3 space-y-1">
+            <div className="bg-white text-slate-900 p-4 rounded-lg shadow space-y-2.5 text-xs font-sans">
+              <div className="text-center border-b pb-2 space-y-1">
                 <h4 className="font-extrabold text-sm uppercase tracking-wider text-slate-900">
                   {store.settings?.companyName || 'PT MANDIRI JAYA ARMS'}
                 </h4>
@@ -746,7 +746,7 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
                 </div>
               </div>
 
-              <div className="bg-slate-100 p-3 rounded border border-slate-200 text-center space-y-1">
+              <div className="bg-slate-100 p-2.5 rounded border border-slate-200 text-center space-y-1">
                 <div className="text-[10px] text-slate-500 uppercase font-semibold">Nominal Transaksi</div>
                 <div className="text-lg font-extrabold text-slate-900 font-mono">
                   Rp {selectedForPrint.amount.toLocaleString('id-ID')}
@@ -762,37 +762,37 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
               <div className="grid grid-cols-3 gap-2 pt-6 text-center text-[10px]">
                 <div>
                   <div className="text-slate-500">Penyetor / Funder</div>
-                  <div className="mt-8 font-bold border-t border-slate-300 pt-1">
+                  <div className="mt-6 font-bold border-t border-slate-300 pt-1">
                     ( {selectedForPrint.sourceOrFunder.slice(0, 18)} )
                   </div>
                 </div>
                 <div>
                   <div className="text-slate-500">Petugas Input</div>
-                  <div className="mt-8 font-bold border-t border-slate-300 pt-1">
+                  <div className="mt-6 font-bold border-t border-slate-300 pt-1">
                     ( {selectedForPrint.createdByName || currentUser.name} )
                   </div>
                 </div>
                 <div>
                   <div className="text-slate-500">Direktur / Approver</div>
-                  <div className="mt-8 font-bold border-t border-slate-300 pt-1">
+                  <div className="mt-6 font-bold border-t border-slate-300 pt-1">
                     ( Direksi Operasional )
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+            <div className="flex justify-end gap-2 pt-1.5 border-t border-slate-800">
               <button
                 onClick={() => setSelectedForPrint(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg"
+                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg"
               >
                 Tutup
               </button>
               <button
                 onClick={() => window.print()}
-                className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg shadow"
+                className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg shadow"
               >
-                <Printer className="w-3.5 h-3.5" />
+                <Printer className="w-3 h-3" />
                 <span>Cetak / Cetak PDF</span>
               </button>
             </div>

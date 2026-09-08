@@ -494,12 +494,12 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-xl">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Scale className="w-5 h-5 text-indigo-400" />
+          <div className="flex items-center gap-2 mb-0.5">
+            <Scale className="w-4 h-4 text-indigo-400" />
             <h2 className="text-xl font-bold text-white">
               Surat Somasi & Tindakan Hukum (Lawyer Notice)
             </h2>
@@ -518,19 +518,19 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
               href={store.settings?.googleDriveFolderUrl || ROOT_GDRIVE_URL}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-700 hover:border-indigo-500 text-xs font-semibold rounded-xl transition"
+              className="inline-flex items-center gap-1.5 px-2.5 py-2 bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-700 hover:border-indigo-500 text-xs font-semibold rounded-xl transition"
               title="Buka Folder Google Drive Master ARMS"
             >
-              <FolderOpen className="w-4 h-4 text-blue-400" />
+              <FolderOpen className="w-3.5 h-3.5 text-blue-400" />
               <span>Buka GDrive Master</span>
               <ExternalLink className="w-3 h-3 text-slate-400" />
             </a>
 
             <button
               onClick={() => handleOpenModal()}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-xs font-semibold rounded-xl transition shadow-lg shadow-indigo-600/20 active:scale-95"
+              className="inline-flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-xs font-semibold rounded-xl transition shadow-lg shadow-indigo-600/20 active:scale-95"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5" />
               <span>Buat Surat Somasi Baru</span>
             </button>
           </div>
@@ -538,10 +538,10 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center gap-3">
-          <div className="p-3 bg-indigo-950 text-indigo-400 rounded-lg border border-indigo-800">
-            <FileText className="w-5 h-5" />
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 flex items-center gap-2">
+          <div className="p-2.5 bg-indigo-950 text-indigo-400 rounded-lg border border-indigo-800">
+            <FileText className="w-4 h-4" />
           </div>
           <div>
             <div className="text-xs text-slate-400">Total Surat Legal</div>
@@ -549,9 +549,9 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center gap-3">
-          <div className="p-3 bg-purple-950 text-purple-400 rounded-lg border border-purple-800">
-            <Send className="w-5 h-5" />
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 flex items-center gap-2">
+          <div className="p-2.5 bg-purple-950 text-purple-400 rounded-lg border border-purple-800">
+            <Send className="w-4 h-4" />
           </div>
           <div>
             <div className="text-xs text-slate-400">Terkirim ke Nasabah</div>
@@ -561,9 +561,9 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center gap-3">
-          <div className="p-3 bg-amber-950 text-amber-400 rounded-lg border border-amber-800">
-            <ShieldAlert className="w-5 h-5" />
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 flex items-center gap-2">
+          <div className="p-2.5 bg-amber-950 text-amber-400 rounded-lg border border-amber-800">
+            <ShieldAlert className="w-4 h-4" />
           </div>
           <div>
             <div className="text-xs text-slate-400">Somasi Aktif</div>
@@ -573,9 +573,9 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center gap-3">
-          <div className="p-3 bg-emerald-950 text-emerald-400 rounded-lg border border-emerald-800">
-            <CheckCircle2 className="w-5 h-5" />
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 flex items-center gap-2">
+          <div className="p-2.5 bg-emerald-950 text-emerald-400 rounded-lg border border-emerald-800">
+            <CheckCircle2 className="w-4 h-4" />
           </div>
           <div>
             <div className="text-xs text-slate-400">Kasus Aktif Ter-Cover Lawyer</div>
@@ -587,14 +587,14 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
         <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
           <button
             onClick={() => {
               setClientFilter('ALL');
               lawyerPagination.setPage(1);
             }}
-            className={`px-3 py-1.5 rounded text-xs font-medium transition ${
+            className={`px-2.5 py-1.5 rounded text-xs font-medium transition ${
               clientFilter === 'ALL' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'
             }`}
           >
@@ -605,13 +605,13 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
               setClientFilter('MULTIFINANCE');
               lawyerPagination.setPage(1);
             }}
-            className={`px-3 py-1.5 rounded text-xs font-medium transition flex items-center gap-1.5 ${
+            className={`px-2.5 py-1.5 rounded text-xs font-medium transition flex items-center gap-1.5 ${
               clientFilter === 'MULTIFINANCE'
                 ? 'bg-indigo-900/80 text-indigo-200 border border-indigo-700'
                 : 'text-slate-400 hover:text-indigo-300'
             }`}
           >
-            <Building2 className="w-3.5 h-3.5" />
+            <Building2 className="w-3 h-3" />
             <span>Multifinance</span>
           </button>
           <button
@@ -619,19 +619,19 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
               setClientFilter('PERORANGAN');
               lawyerPagination.setPage(1);
             }}
-            className={`px-3 py-1.5 rounded text-xs font-medium transition flex items-center gap-1.5 ${
+            className={`px-2.5 py-1.5 rounded text-xs font-medium transition flex items-center gap-1.5 ${
               clientFilter === 'PERORANGAN'
                 ? 'bg-amber-900/80 text-amber-200 border border-amber-700'
                 : 'text-slate-400 hover:text-amber-300'
             }`}
           >
-            <UserCheck className="w-3.5 h-3.5" />
+            <UserCheck className="w-3 h-3" />
             <span>Klien Perorangan</span>
           </button>
         </div>
 
         <div className="relative">
-          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
             type="text"
             value={searchTerm}
@@ -647,9 +647,9 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
 
       {/* Main Table */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
-        <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
+        <div className="px-3.5 py-3 border-b border-slate-800 flex items-center justify-between">
           <h3 className="font-bold text-white text-sm flex items-center gap-2">
-            <Scale className="w-4 h-4 text-indigo-400" />
+            <Scale className="w-3.5 h-3.5 text-indigo-400" />
             <span>Daftar Pengajuan & Surat Somasi Lawyer</span>
           </h3>
           <span className="text-xs text-slate-400">
@@ -661,21 +661,21 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-950 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
               <tr>
-                <th className="py-3 px-4">No. Surat Legal</th>
-                <th className="py-3 px-4">Kasus & Nasabah</th>
-                <th className="py-3 px-4">Kategori Klien</th>
-                <th className="py-3 px-4">Jenis Surat / Tindakan</th>
-                <th className="py-3 px-4">Kantor Hukum & Advokat</th>
-                <th className="py-3 px-4">Link Google Drive</th>
-                <th className="py-3 px-4 text-right">Tunggakan Pokok</th>
-                <th className="py-3 px-4 text-center">Status</th>
-                <th className="py-3 px-4 text-center">Aksi</th>
+                <th className="py-2 px-3">No. Surat Legal</th>
+                <th className="py-2 px-3">Kasus & Nasabah</th>
+                <th className="py-2 px-3">Kategori Klien</th>
+                <th className="py-2 px-3">Jenis Surat / Tindakan</th>
+                <th className="py-2 px-3">Kantor Hukum & Advokat</th>
+                <th className="py-2 px-3">Link Google Drive</th>
+                <th className="py-2 px-3 text-right">Tunggakan Pokok</th>
+                <th className="py-2 px-3 text-center">Status</th>
+                <th className="py-2 px-3 text-center">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
               {lawyerPagination.pageItems.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-slate-500 text-xs">
+                  <td colSpan={9} className="py-6 text-center text-slate-500 text-xs">
                     {noticesList.length === 0
                       ? 'Belum ada pengajuan surat legal lawyer. Klik tombol + Buat Surat Somasi Baru untuk memulai.'
                       : 'Tidak ada surat legal lawyer yang sesuai dengan filter atau pencarian.'}
@@ -689,8 +689,8 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
 
                   return (
                     <tr key={n.id} className="hover:bg-slate-800/40 transition">
-                      <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">{n.noticeNo}</td>
-                      <td className="py-3.5 px-4 space-y-0.5">
+                      <td className="py-2.5 px-3 font-mono font-bold text-indigo-300">{n.noticeNo}</td>
+                      <td className="py-2.5 px-3 space-y-0.5">
                         <div className="font-bold text-white flex items-center gap-1.5">
                           {parentCase?.status === 'CLOSED' ? (
                             <span className="text-slate-400 italic inline-flex items-center gap-1 font-normal text-xs">
@@ -706,7 +706,7 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
                         <div className="text-[11px] text-slate-400">Ref: {n.caseNo}</div>
                       </td>
 
-                      <td className="py-3.5 px-4">
+                      <td className="py-2.5 px-3">
                         {isPer ? (
                           <span className="inline-flex items-center gap-1 bg-amber-950/80 text-amber-300 text-[10px] px-2 py-0.5 rounded border border-amber-800/80 font-medium">
                             <UserCheck className="w-3 h-3" /> Perorangan
@@ -721,25 +721,25 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4">{getNoticeBadge(n.noticeType)}</td>
+                      <td className="py-2.5 px-3">{getNoticeBadge(n.noticeType)}</td>
 
-                      <td className="py-3.5 px-4 space-y-0.5">
+                      <td className="py-2.5 px-3 space-y-0.5">
                         <div className="text-slate-200 font-medium">{n.lawyerFirmName}</div>
                         <div className="text-[10px] text-slate-400">{n.lawyerName}</div>
                       </td>
 
                       {/* Google Drive Link */}
-                      <td className="py-3.5 px-4">
+                      <td className="py-2.5 px-3">
                         {hasDriveUrl ? (
                           <div className="flex items-center gap-1.5">
                             <a
                               href={n.driveDocumentUrl}
                               target="_blank"
                               rel="noreferrer"
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-200 border border-indigo-700/80 rounded-lg text-[11px] font-semibold transition group shadow-sm"
+                              className="inline-flex items-center gap-1.5 px-2 py-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-200 border border-indigo-700/80 rounded-lg text-[11px] font-semibold transition group shadow-sm"
                               title="Buka Dokumen di Google Drive"
                             >
-                              <ExternalLink className="w-3.5 h-3.5 text-indigo-400 group-hover:scale-110 transition-transform" />
+                              <ExternalLink className="w-3 h-3 text-indigo-400 group-hover:scale-110 transition-transform" />
                               <span>Buka GDrive</span>
                             </a>
                             <button
@@ -752,9 +752,9 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
                               title="Salin Link Google Drive"
                             >
                               {copiedUrl === n.id ? (
-                                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                <Check className="w-3 h-3 text-emerald-400" />
                               ) : (
-                                <Copy className="w-3.5 h-3.5" />
+                                <Copy className="w-3 h-3" />
                               )}
                             </button>
                           </div>
@@ -776,13 +776,13 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
                         )}
                       </td>
 
-                      <td className="py-3.5 px-4 text-right font-bold text-emerald-400">
+                      <td className="py-2.5 px-3 text-right font-bold text-emerald-400">
                         Rp {n.principalDebtAmount.toLocaleString('id-ID')}
                       </td>
 
-                      <td className="py-3.5 px-4 text-center">{getStatusBadge(n.status)}</td>
+                      <td className="py-2.5 px-3 text-center">{getStatusBadge(n.status)}</td>
 
-                      <td className="py-3.5 px-4 text-center">
+                      <td className="py-2.5 px-3 text-center">
                         <div className="flex items-center justify-center gap-1.5">
                           <button
                             onClick={() => {
@@ -795,19 +795,19 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
                               });
                               setShowPreviewModal(true);
                             }}
-                            className="inline-flex items-center gap-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-200 border border-indigo-800 px-2.5 py-1 rounded text-[11px] font-semibold transition shadow-sm"
+                            className="inline-flex items-center gap-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-200 border border-indigo-800 px-2 py-1 rounded text-[11px] font-semibold transition shadow-sm"
                             title="Pratinjau Format Somasi Resmi / Cetak"
                           >
-                            <Eye className="w-3.5 h-3.5 text-indigo-400" />
+                            <Eye className="w-3 h-3 text-indigo-400" />
                             <span>Preview</span>
                           </button>
 
                           <button
                             onClick={() => setViewNotice(n)}
-                            className="inline-flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2.5 py-1 rounded text-[11px] font-semibold transition"
+                            className="inline-flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2 py-1 rounded text-[11px] font-semibold transition"
                             title="Buka Form & Edit Draft"
                           >
-                            <FileText className="w-3.5 h-3.5 text-indigo-400" />
+                            <FileText className="w-3 h-3 text-indigo-400" />
                             <span>Form</span>
                           </button>
                           {canEdit && (
@@ -817,14 +817,14 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
                                 className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-indigo-400 transition"
                                 title="Edit Notice"
                               >
-                                <Edit2 className="w-4 h-4" />
+                                <Edit2 className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 onClick={() => handleDeleteNotice(n.id, n.noticeNo)}
                                 className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-red-400 transition"
                                 title="Hapus Notice"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </>
                           )}
@@ -865,11 +865,11 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
 
       {/* Modal Add / Edit Legal Service / Notice */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <form onSubmit={handleCreateNotice} className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl p-5 sm:p-6 space-y-4 shadow-2xl my-auto max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-3 overflow-y-auto">
+          <form onSubmit={handleCreateNotice} className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl p-3.5 sm:p-4 space-y-2.5 shadow-2xl my-auto max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
               <div className="flex items-center gap-2">
-                <Scale className="w-5 h-5 text-indigo-400" />
+                <Scale className="w-4 h-4 text-indigo-400" />
                 <h3 className="font-bold text-white text-base">
                   {isEditing ? 'Edit Form Pengajuan Somasi / Surat Legal' : 'Form Buat Pengajuan Somasi / Surat Legal'}
                 </h3>
@@ -884,13 +884,13 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
             </div>
 
             {activeCases.length === 0 ? (
-              <div className="p-4 bg-amber-950/60 border border-amber-800/80 rounded-lg text-xs text-amber-200">
+              <div className="p-3 bg-amber-950/60 border border-amber-800/80 rounded-lg text-xs text-amber-200">
                 ⚠️ Tidak ada kasus aktif yang membutuhkan surat legal. Semua pekerjaan kasus telah selesai/lunas.
               </div>
             ) : (
               <>
                 <div className="relative z-[60]">
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-slate-300 mb-0.5">
                     Pilih Nasabah / Kasus Belum Selesai (Ketik untuk mencari) <span className="text-red-400">*</span>
                   </label>
                   <SearchableSelect
@@ -912,7 +912,7 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
                 {/* Selected Case Info Banner */}
                 {selectedCase && (
                   <div
-                    className={`p-3 rounded-lg border text-xs flex items-center justify-between ${
+                    className={`p-2.5 rounded-lg border text-xs flex items-center justify-between ${
                       isPerorangan
                         ? 'bg-amber-950/20 border-amber-800/40 text-amber-200'
                         : 'bg-indigo-950/20 border-indigo-800/40 text-indigo-200'
@@ -938,15 +938,15 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    <label className="block text-xs font-semibold text-slate-300 mb-0.5">
                       Jenis Surat / Tindakan Lawyer <span className="text-red-400">*</span>
                     </label>
                     <select
                       value={noticeType}
                       onChange={(e) => setNoticeType(e.target.value as LawyerNotice['noticeType'])}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-indigo-500"
                     >
                       <option value="SURAT_KLARIFIKASI">1. Surat Klarifikasi & Konfirmasi Piutang</option>
                       <option value="SOMASI_1">2. Surat Somasi I (Peringatan Hukum I)</option>
@@ -958,7 +958,7 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    <label className="block text-xs font-semibold text-slate-300 mb-0.5">
                       Nama Advokat / Kuasa Hukum
                     </label>
                     <input
@@ -966,27 +966,27 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
                       value={lawyerName}
                       onChange={(e) => setLawyerName(e.target.value)}
                       placeholder="e.g. Dr. Hendra Wijaya, S.H., M.H."
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-indigo-500"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-slate-300 mb-0.5">
                     Kantor Law Firm / Tim Legal Counsel
                   </label>
                   <input
                     type="text"
                     value={lawyerFirmName}
                     onChange={(e) => setLawyerFirmName(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-indigo-500"
                   />
                 </div>
 
                 {/* Google Drive Folder & Document Link Picker */}
-                <div className="bg-slate-950/70 p-4 rounded-xl border border-slate-800/80 space-y-3">
-                  <div className="flex items-center gap-2 text-xs font-bold text-white border-b border-slate-800 pb-2">
-                    <HardDrive className="w-4 h-4 text-indigo-400" />
+                <div className="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80 space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-white border-b border-slate-800 pb-1.5">
+                    <HardDrive className="w-3.5 h-3.5 text-indigo-400" />
                     <span>Google Drive Integrasi Berkas Somasi & Legal</span>
                   </div>
                   <GoogleDriveFolderPicker
@@ -1005,7 +1005,7 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-slate-300 mb-0.5">
                     Catatan Khusus & Latar Belakang Wanprestasi
                   </label>
                   <textarea
@@ -1013,23 +1013,23 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Catatan khusus penunggakan piutang..."
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-indigo-500"
                   />
                 </div>
 
-                <div className="pt-2 flex items-center justify-end gap-3 border-t border-slate-800">
+                <div className="pt-1.5 flex items-center justify-end gap-2 border-t border-slate-800">
                   <button
                     type="button"
                     onClick={() => setShowAddModal(false)}
-                    className="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 text-xs hover:bg-slate-700 transition"
+                    className="px-3 py-2 rounded-lg bg-slate-800 text-slate-300 text-xs hover:bg-slate-700 transition"
                   >
                     Batal
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-lg flex items-center gap-1.5"
+                    className="px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-lg flex items-center gap-1.5"
                   >
-                    <Send className="w-3.5 h-3.5" />
+                    <Send className="w-3 h-3" />
                     <span>{isEditing ? 'Simpan Perubahan' : 'Generate & Simpan Somasi'}</span>
                   </button>
                 </div>
@@ -1041,12 +1041,12 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
 
       {/* View & Edit Notice Modal (Clean Form / Draft Editor) */}
       {viewNotice && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-3xl p-5 sm:p-6 space-y-4 shadow-2xl my-auto max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-3 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-3xl p-3.5 sm:p-4 space-y-2.5 shadow-2xl my-auto max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
-                  <Scale className="w-5 h-5 text-indigo-400" />
+                  <Scale className="w-4 h-4 text-indigo-400" />
                   <h3 className="font-bold text-white text-base">Form & Draft Surat Somasi Legal</h3>
                 </div>
                 <div className="text-xs text-slate-400">
@@ -1063,20 +1063,20 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
             </div>
 
             {/* Quick Status and GDrive Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-950 rounded-xl border border-slate-800 text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-slate-950 rounded-xl border border-slate-800 text-xs">
               <div className="flex items-center gap-2">
                 <span className="text-slate-400">Status Saat Ini:</span>
                 {getStatusBadge(viewNotice.status)}
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 {canEdit && (
                   <div className="flex items-center gap-2">
                     <span className="text-slate-400">Ubah Status:</span>
                     <select
                       value={viewNotice.status}
                       onChange={(e) => handleUpdateNoticeStatus(viewNotice.id, e.target.value as LawyerNotice['status'])}
-                      className="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white"
+                      className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white"
                     >
                       <option value="DRAFT_PROPOSED">Draft Pengajuan</option>
                       <option value="SUBMITTED_TO_LAWYER">Proses Review Advokat</option>
@@ -1092,9 +1092,9 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
                     href={viewNotice.driveDocumentUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-700 rounded-lg text-xs font-semibold transition"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-700 rounded-lg text-xs font-semibold transition"
                   >
-                    <ExternalLink className="w-3.5 h-3.5" />
+                    <ExternalLink className="w-3 h-3" />
                     <span>Buka Dokumen GDrive</span>
                   </a>
                 )}
@@ -1102,7 +1102,7 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
             </div>
 
             {/* Google Drive Folder & Document Link Picker inside View Notice */}
-            <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800 space-y-2">
+            <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800 space-y-1.5">
               <GoogleDriveFolderPicker
                 store={store}
                 currentUser={currentUser}
@@ -1120,7 +1120,7 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
             </div>
 
             {/* Editable Draft Textarea Form */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-semibold text-slate-300">
                   Teks Lengkap Draft Somasi / Surat Legal:
@@ -1130,13 +1130,13 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
                 </span>
               </div>
               <textarea
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-xs text-slate-200 whitespace-pre-wrap leading-relaxed min-h-[20rem] focus:outline-none focus:border-indigo-500 shadow-inner"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-xs text-slate-200 whitespace-pre-wrap leading-normal min-h-[20rem] focus:outline-none focus:border-indigo-500 shadow-inner"
                 value={viewNotice.letterContentDraft}
                 onChange={(e) => handleUpdateNoticeContent(viewNotice.id, e.target.value)}
               />
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800">
               <div className="text-xs text-slate-400">
                 Pembuat: <span className="text-white font-medium">{viewNotice.createdBy}</span> • Tgl: {viewNotice.requestedDate}
               </div>
@@ -1154,23 +1154,23 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
                     });
                     setShowPreviewModal(true);
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-700/60 rounded-lg text-xs font-semibold transition"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-700/60 rounded-lg text-xs font-semibold transition"
                 >
-                  <Eye className="w-3.5 h-3.5 text-indigo-400" />
+                  <Eye className="w-3 h-3 text-indigo-400" />
                   <span>Pratinjau Format Cetak</span>
                 </button>
 
                 <button
                   onClick={() => handleCopyText(viewNotice.letterContentDraft)}
-                  className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-lg border border-slate-700 transition"
+                  className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 transition"
                 >
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
                   <span>{copied ? 'Tersalin!' : 'Salin Teks'}</span>
                 </button>
 
                 <button
                   onClick={() => setViewNotice(null)}
-                  className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition shadow"
+                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition shadow"
                 >
                   Selesai / Tutup
                 </button>

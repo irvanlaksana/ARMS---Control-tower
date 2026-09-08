@@ -632,11 +632,11 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
   };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <div className="space-y-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2.5">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Users className="w-5 h-5 text-indigo-400" />
+          <div className="flex items-center gap-2 mb-0.5">
+            <Users className="w-4 h-4 text-indigo-400" />
             <h2 className="text-xl font-bold text-white">Debtor & Customer Database</h2>
           </div>
           <p className="text-xs text-slate-400">Master Debtor Profiles, NIK Verification & Risk Notes</p>
@@ -647,26 +647,26 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
             <>
               <button
                 onClick={handleExportCSV}
-                className="flex items-center gap-2 bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-800 text-xs font-semibold px-3.5 py-2.5 rounded-lg transition"
+                className="flex items-center gap-2 bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-800 text-xs font-semibold px-3 py-2 rounded-lg transition"
                 title="Export seluruh data debitur ke CSV (Excel/Google Sheets)"
               >
-                <Download className="w-4 h-4 text-emerald-400" />
+                <Download className="w-3.5 h-3.5 text-emerald-400" />
                 Export CSV
               </button>
               <button
                 onClick={handleExportJSON}
-                className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2.5 rounded-lg transition"
+                className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3 py-2 rounded-lg transition"
                 title="Export seluruh data debitur lengkap ke JSON"
               >
-                <FileSpreadsheet className="w-4 h-4 text-indigo-400" />
+                <FileSpreadsheet className="w-3.5 h-3.5 text-indigo-400" />
                 Export JSON
               </button>
               <button
                 onClick={() => { setImportOpen(true); setImportSummary(null); }}
-                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3.5 py-2.5 rounded-lg transition"
+                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition"
                 title="Import banyak data debitur dari CSV / JSON"
               >
-                <UploadCloud className="w-4 h-4" />
+                <UploadCloud className="w-3.5 h-3.5" />
                 Import Bulk
               </button>
             </>
@@ -674,9 +674,9 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
           {canEdit && (
             <button
               onClick={() => handleOpenModal()}
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-md transition"
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow-md transition"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5" />
               <span>Add Debtor Profile</span>
             </button>
           )}
@@ -684,8 +684,8 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
       </div>
 
       {importSummary && (
-        <div className="p-3.5 bg-emerald-950/80 border border-emerald-800 rounded-xl text-xs text-emerald-200 flex flex-wrap items-center gap-x-4 gap-y-1">
-          <span className="font-bold flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> Import Bulk Selesai:</span>
+        <div className="p-3 bg-emerald-950/80 border border-emerald-800 rounded-xl text-xs text-emerald-200 flex flex-wrap items-center gap-x-4 gap-y-1">
+          <span className="font-bold flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Import Bulk Selesai:</span>
           <span>Ditambahkan: <b className="text-white">{importSummary.added}</b></span>
           <span>Dilewati / Duplikat: <b className="text-amber-300">{importSummary.skipped}</b></span>
           <span>Baris Error: <b className="text-rose-300">{importSummary.errors}</b></span>
@@ -693,7 +693,7 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
       )}
 
       {/* Filter & Search Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 p-1 rounded-lg overflow-x-auto">
           {(['ALL', 'NEW', 'PROCESS', 'ASSIGNED', 'CLOSED'] as const).map((st) => (
             <button
@@ -702,7 +702,7 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                 setStatusFilter(st);
                 customerPagination.setPage(1);
               }}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition ${
+              className={`px-2.5 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition ${
                 statusFilter === st
                   ? 'bg-indigo-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
@@ -718,7 +718,7 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
         </div>
 
         <div className="relative flex-1 sm:max-w-xs">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Cari nama, kontrak, nopol, hp..."
@@ -737,15 +737,15 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-950 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
               <tr>
-                <th className="py-3 px-4">Debtor Code</th>
-                <th className="py-3 px-4">No. Kontrak</th>
-                <th className="py-3 px-4">Full Name</th>
-                <th className="py-3 px-4">Phone</th>
-                <th className="py-3 px-4">Address</th>
-                <th className="py-3 px-4">Vehicle</th>
-                <th className="py-3 px-4">Outstanding</th>
-                <th className="py-3 px-4">Status Proses</th>
-                {canEdit && <th className="py-3 px-4 text-center">Aksi</th>}
+                <th className="py-2 px-3">Debtor Code</th>
+                <th className="py-2 px-3">No. Kontrak</th>
+                <th className="py-2 px-3">Full Name</th>
+                <th className="py-2 px-3">Phone</th>
+                <th className="py-2 px-3">Address</th>
+                <th className="py-2 px-3">Vehicle</th>
+                <th className="py-2 px-3">Outstanding</th>
+                <th className="py-2 px-3">Status Proses</th>
+                {canEdit && <th className="py-2 px-3 text-center">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
@@ -777,8 +777,8 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
 
                     return (
                       <>
-                  <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">{c.customerCode}</td>
-                  <td className="py-3.5 px-4 font-mono text-slate-300">
+                  <td className="py-2.5 px-3 font-mono font-bold text-indigo-300">{c.customerCode}</td>
+                  <td className="py-2.5 px-3 font-mono text-slate-300">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span>{c.contractNo || '-'}</span>
                       {hasDuplicateCustomerInStore(c) && (
@@ -788,12 +788,12 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                       )}
                     </div>
                   </td>
-                  <td className="py-3.5 px-4 font-bold text-white">
+                  <td className="py-2.5 px-3 font-bold text-white">
                     {c.fullName}
                   </td>
-                  <td className="py-3.5 px-4 text-emerald-400 font-semibold">{c.phone}</td>
-                  <td className="py-3.5 px-4 text-slate-300 max-w-[200px] truncate">{c.addressCurrent}</td>
-                  <td className="py-3.5 px-4 text-slate-400">
+                  <td className="py-2.5 px-3 text-emerald-400 font-semibold">{c.phone}</td>
+                  <td className="py-2.5 px-3 text-slate-300 max-w-[200px] truncate">{c.addressCurrent}</td>
+                  <td className="py-2.5 px-3 text-slate-400">
                     {c.vehicleMerkType ? (
                       <span className="block text-xs">
                         {c.vehicleMerkType}
@@ -804,7 +804,7 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                       </span>
                     ) : '-'}
                   </td>
-                  <td className="py-3.5 px-4 text-amber-300 text-[11px]">
+                  <td className="py-2.5 px-3 text-amber-300 text-[11px]">
                     {c.totalInstallment || c.installmentAmount || c.penaltyAmount ? (
                       <>
                         {c.totalInstallment ? <span className="block">Total Angsuran: Rp {c.totalInstallment.toLocaleString('id-ID')}</span> : null}
@@ -813,7 +813,7 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                       </>
                     ) : '-'}
                   </td>
-                  <td className="py-3.5 px-4">
+                  <td className="py-2.5 px-3">
                     <span
                       className={`inline-flex items-center gap-1.5 border px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wide ${statusStyles}`}
                       title={processStatus.description}
@@ -821,26 +821,26 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                       <StatusIcon className="w-3 h-3" />
                       {processStatus.label}
                     </span>
-                    <span className="block mt-1 max-w-[180px] text-[10px] leading-tight text-slate-500">
+                    <span className="block mt-0.5 max-w-[180px] text-[10px] leading-tight text-slate-500">
                       {processStatus.description}
                     </span>
                   </td>
                   {canEdit && (
-                    <td className="py-3.5 px-4 text-center">
+                    <td className="py-2.5 px-3 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => handleOpenModal(c)}
                           className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-indigo-400 transition"
                           title="Edit Customer"
                         >
-                          <Edit2 className="w-4 h-4" />
+                          <Edit2 className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDeleteCustomer(c.id, c.fullName)}
                           className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-red-400 transition"
                           title="Delete Customer"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
@@ -866,12 +866,12 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
 
       {/* BULK IMPORT MODAL */}
       {importOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-3xl p-5 sm:p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto my-auto">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-3 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-3xl p-3.5 sm:p-4 space-y-2.5 shadow-2xl max-h-[90vh] overflow-y-auto my-auto">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 rounded-xl">
-                  <UploadCloud className="w-5 h-5" />
+                  <UploadCloud className="w-4 h-4" />
                 </div>
                 <div>
                   <h3 className="font-bold text-white text-sm sm:text-base">Import Bulk Data Debitur</h3>
@@ -883,21 +883,21 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                 onClick={() => setImportOpen(false)}
                 className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
 
             {importSummary && (
-              <div className="p-3 bg-emerald-950/80 border border-emerald-800 rounded-xl text-xs text-emerald-200 space-y-1">
-                <div className="font-bold flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> Import berhasil!</div>
+              <div className="p-2.5 bg-emerald-950/80 border border-emerald-800 rounded-xl text-xs text-emerald-200 space-y-1">
+                <div className="font-bold flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Import berhasil!</div>
                 <div>Ditambahkan: <b className="text-white">{importSummary.added}</b> · Dilewati: <b className="text-amber-300">{importSummary.skipped}</b> · Error: <b className="text-rose-300">{importSummary.errors}</b></div>
               </div>
             )}
 
-            <label className="border-2 border-dashed border-slate-700 hover:border-indigo-500 bg-slate-950 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition text-center">
-              <Upload className="w-8 h-8 text-slate-400 mb-2" />
+            <label className="border-2 border-dashed border-slate-700 hover:border-indigo-500 bg-slate-950 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition text-center">
+              <Upload className="w-6 h-6 text-slate-400 mb-1.5" />
               <span className="font-semibold text-slate-200">Pilih File CSV / JSON</span>
-              <span className="text-[10px] text-slate-500 mt-1">Kolom didukung: customerCode, contractNo, fullName, nikKtp, phone, addressCurrent, addressKtp, dueDate, installmentAmount, totalInstallment, penaltyAmount, vehicleMerkType, vehiclePoliceNo, riskNotes, dll.</span>
+              <span className="text-[10px] text-slate-500 mt-0.5">Kolom didukung: customerCode, contractNo, fullName, nikKtp, phone, addressCurrent, addressKtp, dueDate, installmentAmount, totalInstallment, penaltyAmount, vehicleMerkType, vehiclePoliceNo, riskNotes, dll.</span>
               <input
                 ref={importFileRef}
                 type="file"
@@ -912,13 +912,13 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
 
             {importFileName && (
               <div className="text-[11px] text-slate-400 flex items-center gap-2">
-                <ClipboardList className="w-3.5 h-3.5 text-indigo-400" />
+                <ClipboardList className="w-3 h-3 text-indigo-400" />
                 File: <span className="text-white font-mono">{importFileName}</span> · {importRows.length} baris terbaca
               </div>
             )}
 
             {importErrors.length > 0 && (
-              <div className="p-3 bg-rose-950/80 border border-rose-800 rounded-xl text-[11px] text-rose-200 space-y-1">
+              <div className="p-2.5 bg-rose-950/80 border border-rose-800 rounded-xl text-[11px] text-rose-200 space-y-1">
                 {importErrors.slice(0, 8).map((e, i) => (
                   <div key={i}>⚠️ {e}</div>
                 ))}
@@ -960,7 +960,7 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                   )}
                 </div>
 
-                <label className="flex items-center gap-2 text-xs text-slate-300 bg-slate-950 border border-slate-800 rounded-xl p-3 cursor-pointer">
+                <label className="flex items-center gap-2 text-xs text-slate-300 bg-slate-950 border border-slate-800 rounded-xl p-2.5 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={skipDuplicates}
@@ -972,11 +972,11 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
               </>
             )}
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => setImportOpen(false)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition"
+                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition"
               >
                 Tutup
               </button>
@@ -984,9 +984,9 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                 type="button"
                 disabled={importRows.length === 0}
                 onClick={handleImport}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white text-xs font-bold rounded-xl transition shadow-lg flex items-center gap-1.5"
+                className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white text-xs font-bold rounded-xl transition shadow-lg flex items-center gap-1.5"
               >
-                <CheckCircle className="w-3.5 h-3.5" />
+                <CheckCircle className="w-3 h-3" />
                 Import {importRows.length} Data Debitur
               </button>
             </div>
@@ -995,23 +995,23 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
       )}
 
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <form onSubmit={handleSaveCustomer} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-2xl p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <h3 className="font-bold text-white text-base border-b border-slate-800 pb-2">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3">
+          <form onSubmit={handleSaveCustomer} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-2xl p-4 space-y-2.5 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h3 className="font-bold text-white text-base border-b border-slate-800 pb-1.5">
               {isEditing ? 'Edit Data Debitur' : 'Register Data Debitur'}
             </h3>
 
             {duplicateWarning?.isDuplicate && (
-              <div className="bg-amber-950/80 border-2 border-amber-500/80 rounded-xl p-3.5 space-y-2 text-amber-200 shadow-lg animate-in fade-in zoom-in-95 duration-200">
+              <div className="bg-amber-950/80 border-2 border-amber-500/80 rounded-xl p-3 space-y-1.5 text-amber-200 shadow-lg animate-in fade-in zoom-in-95 duration-200">
                 <div className="flex items-center gap-2 font-bold text-amber-300 text-xs">
-                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 animate-bounce" />
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 animate-bounce" />
                   <span>⚠️ PERINGATAN: DATA DEBITUR SUDAH TERDAFTAR</span>
                 </div>
-                <p className="text-[11px] text-amber-200/90 leading-relaxed">
+                <p className="text-[11px] text-amber-200/90 leading-normal">
                   {duplicateWarning.matchReason}.
                 </p>
                 {duplicateWarning.matchedCustomer && (
-                  <div className="bg-slate-950/80 p-2.5 rounded-lg border border-amber-800/60 grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px] font-mono">
+                  <div className="bg-slate-950/80 p-2 rounded-lg border border-amber-800/60 grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px] font-mono">
                     <div>
                       <span className="text-slate-500 block">Kode Debitur</span>
                       <span className="text-indigo-300 font-bold">{duplicateWarning.matchedCustomer.customerCode}</span>
@@ -1032,32 +1032,32 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">No. Kontrak</label>
+                <label className="block text-xs text-slate-400 mb-0.5">No. Kontrak</label>
                 <input
                   type="text"
                   value={contractNo}
                   onChange={(e) => setContractNo(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Nama</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Nama</label>
                 <input
                   type="text"
                   required
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                 />
               </div>
 
               <AddressFields value={addressCurrent} onChange={setAddressCurrent} label="Alamat Domisili Debitur" required />
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Tanggal Jatuh Tempo</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Tanggal Jatuh Tempo</label>
                 <DateInput
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
@@ -1065,13 +1065,13 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
               </div>
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Foto KTP (Google Drive)</label>
-                <div className="space-y-2">
-                  <label className="flex items-center justify-center w-full gap-2 border border-dashed border-slate-700 rounded-lg p-2.5 text-xs text-slate-300 bg-slate-950 cursor-pointer hover:border-indigo-500 transition">
+                <label className="block text-xs text-slate-400 mb-0.5">Foto KTP (Google Drive)</label>
+                <div className="space-y-1.5">
+                  <label className="flex items-center justify-center w-full gap-2 border border-dashed border-slate-700 rounded-lg p-2 text-xs text-slate-300 bg-slate-950 cursor-pointer hover:border-indigo-500 transition">
                     {isUploadingPhoto ? (
-                      <Loader2 className="w-4 h-4 text-indigo-400 animate-spin" />
+                      <Loader2 className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
                     ) : (
-                      <Upload className="w-4 h-4 text-indigo-400" />
+                      <Upload className="w-3.5 h-3.5 text-indigo-400" />
                     )}
                     <span>{isUploadingPhoto ? 'Mengunggah ke Drive...' : 'Upload Foto KTP (JPG)'}</span>
                     <input type="file" accept="image/*" className="hidden" disabled={isUploadingPhoto} onChange={(e) => handleImageUpload(e, 'KTP')} />
@@ -1093,10 +1093,10 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                       <button
                         type="button"
                         onClick={() => setKtpPhotoUrl('')}
-                        className="absolute top-1 right-1 hidden group-hover:flex items-center justify-center w-6 h-6 rounded-full bg-slate-950/80 text-slate-200 hover:text-red-400"
+                        className="absolute top-1 right-1 hidden group-hover:flex items-center justify-center w-5 h-5 rounded-full bg-slate-950/80 text-slate-200 hover:text-red-400"
                         aria-label="Hapus foto KTP"
                       >
-                        <X className="w-3.5 h-3.5" />
+                        <X className="w-3 h-3" />
                       </button>
                     </div>
                   )}
@@ -1104,13 +1104,13 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-xs text-slate-400 mb-1">Foto STNK (Google Drive)</label>
-                <div className="space-y-2">
-                  <label className="flex items-center justify-center w-full gap-2 border border-dashed border-slate-700 rounded-lg p-2.5 text-xs text-slate-300 bg-slate-950 cursor-pointer hover:border-indigo-500 transition">
+                <label className="block text-xs text-slate-400 mb-0.5">Foto STNK (Google Drive)</label>
+                <div className="space-y-1.5">
+                  <label className="flex items-center justify-center w-full gap-2 border border-dashed border-slate-700 rounded-lg p-2 text-xs text-slate-300 bg-slate-950 cursor-pointer hover:border-indigo-500 transition">
                     {isUploadingPhoto ? (
-                      <Loader2 className="w-4 h-4 text-indigo-400 animate-spin" />
+                      <Loader2 className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
                     ) : (
-                      <ImageIcon className="w-4 h-4 text-indigo-400" />
+                      <ImageIcon className="w-3.5 h-3.5 text-indigo-400" />
                     )}
                     <span>{isUploadingPhoto ? 'Mengunggah ke Drive...' : 'Upload Foto STNK (JPG)'}</span>
                     <input
@@ -1144,10 +1144,10 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                           <button
                             type="button"
                             onClick={() => setStnkPhotoUrls((prev) => prev.filter((_, i) => i !== index))}
-                            className="absolute top-1 right-1 hidden group-hover:flex items-center justify-center w-6 h-6 rounded-full bg-slate-950/80 text-slate-200 hover:text-red-400"
+                            className="absolute top-1 right-1 hidden group-hover:flex items-center justify-center w-5 h-5 rounded-full bg-slate-950/80 text-slate-200 hover:text-red-400"
                             aria-label="Hapus foto STNK"
                           >
-                            <X className="w-3.5 h-3.5" />
+                            <X className="w-3 h-3" />
                           </button>
                         </div>
                       ))}
@@ -1157,65 +1157,65 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
               </div>
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Angsuran</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Angsuran</label>
                 <input
                   type="text"
                   value={installmentAmount}
                   onChange={(e) => setInstallmentAmount(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Total Angsuran (Rp)</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Total Angsuran (Rp)</label>
                 <AmountInput
                   required
                   value={totalInstallment}
                   onChange={setTotalInstallment}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">DENDA</label>
+                <label className="block text-xs text-slate-400 mb-0.5">DENDA</label>
                 <input
                   type="text"
                   value={penaltyAmount}
                   onChange={(e) => setPenaltyAmount(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Nomor Handphone</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Nomor Handphone</label>
                 <input
                   type="text"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                 />
               </div>
             </div>
 
-            <h4 className="font-semibold text-slate-300 text-sm border-b border-slate-800 pb-1 mt-4">Spesifikasi Kendaraan</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <h4 className="font-semibold text-slate-300 text-sm border-b border-slate-800 pb-1 mt-3">Spesifikasi Kendaraan</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Merk/Type</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Merk/Type</label>
                 <input
                   type="text"
                   value={vehicleMerkType}
                   onChange={(e) => setVehicleMerkType(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Nomor Polisi</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Nomor Polisi</label>
                 <input
                   type="text"
                   value={vehiclePoliceNo}
                   onChange={(e) => setVehiclePoliceNo(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white font-mono"
                 />
               </div>
             </div>
@@ -1224,17 +1224,17 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
               <input type="text" value={nikKtp} onChange={(e) => setNikKtp(e.target.value)} />
             </div>
 
-            <div className="flex justify-end gap-2 pt-4 mt-4 border-t border-slate-800">
+            <div className="flex justify-end gap-2 pt-3 mt-3 border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700 font-semibold transition"
+                className="px-3 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700 font-semibold transition"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500 transition shadow-lg shadow-indigo-900/20"
+                className="px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500 transition shadow-lg shadow-indigo-900/20"
               >
                 {isEditing ? 'Simpan Perubahan' : 'Simpan Debitur'}
               </button>

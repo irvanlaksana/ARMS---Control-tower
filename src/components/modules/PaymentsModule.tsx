@@ -425,13 +425,13 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
   const paymentPagination = usePagination<Payment>(filteredPayments, 10);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header Banner */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-2.5">
         <div>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-0.5">
             <div className="p-2 bg-emerald-950/80 border border-emerald-800 rounded-lg text-emerald-400">
-              <DollarSign className="w-5 h-5" />
+              <DollarSign className="w-4 h-4" />
             </div>
             <h2 className="text-xl font-bold text-white">Debtor Payments & Fee Collections</h2>
           </div>
@@ -446,16 +446,16 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
               resetForm();
               setShowModal(true);
             }}
-            className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-md shadow-emerald-950/40 transition cursor-pointer"
+            className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow-md shadow-emerald-950/40 transition cursor-pointer"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             <span>Record Debtor Payment</span>
           </button>
         )}
       </div>
 
       {/* Filters & Search */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 p-1 rounded-lg overflow-x-auto">
           {(
             [
@@ -471,7 +471,7 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
                 setTransferFilter(t.key);
                 paymentPagination.setPage(1);
               }}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition ${
+              className={`px-2.5 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition ${
                 transferFilter === t.key
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
@@ -483,7 +483,7 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
         </div>
 
         <div className="relative flex-1 sm:max-w-xs">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Cari kuitansi, kasus, debitur, mitra..."
@@ -503,13 +503,13 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-950 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
               <tr>
-                <th className="py-3.5 px-4">Receipt No & Date</th>
-                <th className="py-3.5 px-4">Case & Debtor</th>
-                <th className="py-3.5 px-4 text-right">Payment Amount</th>
-                <th className="py-3.5 px-4">Fee Perusahaan (Tier)</th>
-                <th className="py-3.5 px-4">Mitra DC & Komisi</th>
-                <th className="py-3.5 px-4 text-center">Status Transfer</th>
-                <th className="py-3.5 px-4 text-center">Action</th>
+                <th className="py-2.5 px-3">Receipt No & Date</th>
+                <th className="py-2.5 px-3">Case & Debtor</th>
+                <th className="py-2.5 px-3 text-right">Payment Amount</th>
+                <th className="py-2.5 px-3">Fee Perusahaan (Tier)</th>
+                <th className="py-2.5 px-3">Mitra DC & Komisi</th>
+                <th className="py-2.5 px-3 text-center">Status Transfer</th>
+                <th className="py-2.5 px-3 text-center">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
@@ -532,12 +532,12 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
 
                   return (
                     <tr key={p.id} className="hover:bg-slate-800/40 transition">
-                      <td className="py-3.5 px-4">
+                      <td className="py-2.5 px-3">
                         <div className="font-mono font-bold text-emerald-400">{p.paymentNo}</div>
                         <div className="text-[11px] text-slate-500">{p.paymentDate}</div>
                       </td>
 
-                      <td className="py-3.5 px-4 space-y-0.5">
+                      <td className="py-2.5 px-3 space-y-0.5">
                         <div className="font-bold text-white flex items-center gap-1.5">
                           <span>{p.caseNo}</span>
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
@@ -555,14 +555,14 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4 text-right">
+                      <td className="py-2.5 px-3 text-right">
                         <div className="font-bold text-emerald-400 font-mono text-sm">
                           Rp {p.amount.toLocaleString('id-ID')}
                         </div>
                         <div className="text-[10px] text-slate-500 font-mono">{p.paymentMethod}</div>
                       </td>
 
-                      <td className="py-3.5 px-4 space-y-0.5">
+                      <td className="py-2.5 px-3 space-y-0.5">
                         <div className="font-bold text-indigo-300 font-mono">
                           Rp {companyAmount.toLocaleString('id-ID')}
                           {p.companyFeePercent ? (
@@ -574,7 +574,7 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4 space-y-0.5">
+                      <td className="py-2.5 px-3 space-y-0.5">
                         {isMitra ? (
                           <>
                             <div className="flex items-center gap-1 text-white font-semibold">
@@ -596,15 +596,15 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
                         )}
                       </td>
 
-                      <td className="py-3.5 px-4 text-center">
+                      <td className="py-2.5 px-3 text-center">
                         {isMitra && partnerAmount > 0 ? (
                           isTransferred ? (
-                            <span className="inline-flex items-center gap-1 bg-emerald-950/80 text-emerald-300 text-[10px] px-2.5 py-1 rounded-full border border-emerald-800 font-semibold">
+                            <span className="inline-flex items-center gap-1 bg-emerald-950/80 text-emerald-300 text-[10px] px-2 py-1 rounded-full border border-emerald-800 font-semibold">
                               <CheckCircle className="w-3 h-3 text-emerald-400" />
                               <span>Ditransfer</span>
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 bg-amber-950/80 text-amber-300 text-[10px] px-2.5 py-1 rounded-full border border-amber-800 font-semibold animate-pulse">
+                            <span className="inline-flex items-center gap-1 bg-amber-950/80 text-amber-300 text-[10px] px-2 py-1 rounded-full border border-amber-800 font-semibold animate-pulse">
                               <Clock className="w-3 h-3 text-amber-400" />
                               <span>Belum Transfer</span>
                             </span>
@@ -616,13 +616,13 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
                         )}
                       </td>
 
-                      <td className="py-3.5 px-4 text-center">
+                      <td className="py-2.5 px-3 text-center">
                         <div className="flex items-center justify-center gap-1.5">
                           {/* Transfer Partner Button */}
                           {isMitra && partnerAmount > 0 && (
                             <button
                               onClick={() => setSelectedPaymentForTransfer(p)}
-                              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border transition cursor-pointer shadow-sm ${
+                              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border transition cursor-pointer shadow-sm ${
                                 isTransferred
                                   ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
                                   : 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500 shadow-emerald-950/50'
@@ -639,7 +639,7 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
                             className="p-1.5 text-slate-400 hover:text-emerald-400 rounded-lg hover:bg-slate-800 transition"
                             title="Cetak Kuitansi Resmi"
                           >
-                            <FileText className="w-4 h-4" />
+                            <FileText className="w-3.5 h-3.5" />
                           </button>
 
                           {canEdit && (
@@ -649,14 +649,14 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
                                 className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
                                 title="Edit Pembayaran"
                               >
-                                <Edit2 className="w-4 h-4" />
+                                <Edit2 className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 onClick={() => handleDeleteClick(p.id)}
                                 className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition"
                                 title="Hapus Pembayaran"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </>
                           )}
@@ -703,16 +703,16 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
 
       {/* Modal: Record Debtor Payment with Automated Tier Fee */}
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-3 overflow-y-auto">
           <form
             onSubmit={handleRecordPayment}
-            className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xl p-5 sm:p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto my-auto"
+            className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xl p-3.5 sm:p-4 space-y-2.5 shadow-2xl max-h-[90vh] overflow-y-auto my-auto"
           >
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
               <div className="flex items-center gap-2">
                 <div className="p-2 bg-emerald-950/80 border border-emerald-800 rounded-lg text-emerald-400">
-                  <DollarSign className="w-5 h-5" />
+                  <DollarSign className="w-4 h-4" />
                 </div>
                 <div>
                   <h3 className="font-bold text-white text-base">
@@ -731,13 +731,13 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
                 }}
                 className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Case Selector */}
             <div className="relative z-[60]">
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-300 mb-0.5">
                 Pilih Kasus / Perkara Debitur <span className="text-rose-400">*</span>
               </label>
               <SearchableSelect
@@ -758,7 +758,7 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
 
             {/* Debtor & Personnel Badge Banner */}
             {selectedCase && (
-              <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 grid grid-cols-2 gap-2 text-xs">
+              <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 grid grid-cols-2 gap-2 text-xs">
                 <div>
                   <span className="text-slate-500 text-[10px] block uppercase font-bold">Klien & Status Tunggakan</span>
                   <span className="font-bold text-white">{selectedCase.clientName}</span>
@@ -779,9 +779,9 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
             )}
 
             {/* Payment Amount & Method */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-300 mb-0.5">
                   Nominal Diterima Dari Debitur (Rp) <span className="text-rose-400">*</span>
                 </label>
                 <div className="relative">
@@ -796,7 +796,7 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Metode Pembayaran</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-0.5">Metode Pembayaran</label>
                 <SearchableSelect 
                   value={paymentMethod}
                   onChange={(val) => setPaymentMethod(val as any)}
@@ -810,10 +810,10 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
             </div>
 
             {/* Automated Tiering Calculation Breakdown Box */}
-            <div className="bg-gradient-to-br from-indigo-950/40 via-slate-950 to-slate-900 border border-indigo-900/60 rounded-xl p-4 space-y-3.5 shadow-inner">
-              <div className="flex items-center justify-between border-b border-indigo-900/50 pb-2">
+            <div className="bg-gradient-to-br from-indigo-950/40 via-slate-950 to-slate-900 border border-indigo-900/60 rounded-xl p-3 space-y-3.5 shadow-inner">
+              <div className="flex items-center justify-between border-b border-indigo-900/50 pb-1.5">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-indigo-400" />
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
                   <h4 className="text-xs font-bold text-indigo-200">Kalkulasi Otomatis Fee & Bagi Hasil</h4>
                 </div>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-950 border border-indigo-800 text-indigo-300 font-mono font-bold">
@@ -821,10 +821,10 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                 {/* Gross Fee */}
                 <div>
-                  <label className="block text-[10px] text-slate-400 mb-1 font-semibold">
+                  <label className="block text-[10px] text-slate-400 mb-0.5 font-semibold">
                     Gross Success Fee ({tierCalcResult.tierPercent}%):
                   </label>
                   <div className="relative">
@@ -840,7 +840,7 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
 
                 {/* Company Split % */}
                 <div>
-                  <label className="block text-[10px] text-slate-400 mb-1 font-semibold flex items-center justify-between">
+                  <label className="block text-[10px] text-slate-400 mb-0.5 font-semibold flex items-center justify-between">
                     <span>Fee Perusahaan (%):</span>
                     <span className="text-indigo-300 text-[9px]">Dapat Diatur</span>
                   </label>
@@ -860,10 +860,10 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
 
                 {/* Company Revenue Nominal */}
                 <div>
-                  <label className="block text-[10px] text-slate-400 mb-1 font-semibold">
+                  <label className="block text-[10px] text-slate-400 mb-0.5 font-semibold">
                     Pendapatan Perusahaan:
                   </label>
-                  <div className="bg-emerald-950/60 border border-emerald-800/80 rounded-lg px-3 py-1.5 text-emerald-400 font-mono font-bold text-xs">
+                  <div className="bg-emerald-950/60 border border-emerald-800/80 rounded-lg px-2.5 py-1.5 text-emerald-400 font-mono font-bold text-xs">
                     Rp {finalFeeTotals.company.toLocaleString('id-ID')}
                   </div>
                   <span className="text-[9px] text-emerald-500 mt-0.5 block">Otomatis masuk ke Jurnal Pendapatan</span>
@@ -872,10 +872,10 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
 
               {/* Mitra DC Commission Sub-block */}
               {tierCalcResult.isMitraDC ? (
-                <div className="bg-amber-950/40 border border-amber-900/60 rounded-xl p-3 space-y-2">
+                <div className="bg-amber-950/40 border border-amber-900/60 rounded-xl p-2.5 space-y-1.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <UserCheck className="w-4 h-4 text-amber-400" />
+                      <UserCheck className="w-3.5 h-3.5 text-amber-400" />
                       <span className="text-xs font-bold text-amber-300">
                         Hak Komisi Mitra DC ({tierCalcResult.partnerCommissionPercent}%):
                       </span>
@@ -890,15 +890,15 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
                   </p>
                 </div>
               ) : (
-                <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-slate-400 text-[11px] flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-slate-400 shrink-0" />
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-2 text-slate-400 text-[11px] flex items-center gap-2">
+                  <ShieldCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   <span>
                     Penanganan oleh Karyawan Internal. 100% Gross Fee Rp {finalFeeTotals.gross.toLocaleString('id-ID')} dicatat sebagai Pendapatan Perusahaan tanpa potongan komisi mitra luar.
                   </span>
                 </div>
               )}
 
-              <div className="border-t border-indigo-900/50 pt-3 space-y-2">
+              <div className="border-t border-indigo-900/50 pt-2 space-y-1.5">
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="text-xs font-bold text-slate-200">Biaya Tambahan Manual</h4>
@@ -909,9 +909,9 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
                     onClick={() =>
                       setManualSplits((items) => [...items, { name: '', amount: 0, allocation: 'COMPANY' }])
                     }
-                    className="inline-flex items-center gap-1 rounded-lg border border-indigo-700 bg-indigo-950/70 px-2.5 py-1.5 text-[11px] font-semibold text-indigo-200 hover:bg-indigo-900"
+                    className="inline-flex items-center gap-1 rounded-lg border border-indigo-700 bg-indigo-950/70 px-2 py-1.5 text-[11px] font-semibold text-indigo-200 hover:bg-indigo-900"
                   >
-                    <Plus className="h-3.5 w-3.5" /> Tambah Biaya
+                    <Plus className="h-3 w-3" /> Tambah Biaya
                   </button>
                 </div>
                 {manualSplits.map((item, index) => (
@@ -953,7 +953,7 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
                       className="rounded-lg p-1.5 text-slate-500 hover:bg-red-950/50 hover:text-red-300"
                       title="Hapus biaya"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 ))}
@@ -968,9 +968,9 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
             </div>
 
             {/* Classification & Closing */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-300 mb-0.5">
                   Klasifikasi Status Kasus
                 </label>
                 <SearchableSelect 
@@ -986,7 +986,7 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-300 mb-0.5">
                   Bukti Transfer / Dokumen (URL Drive)
                 </label>
                 <input
@@ -994,28 +994,28 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
                   value={proofDriveUrl}
                   onChange={(e) => setProofDriveUrl(e.target.value)}
                   placeholder="https://drive.google.com/file/d/..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none font-mono"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:border-indigo-500 focus:outline-none font-mono"
                 />
               </div>
             </div>
 
             {/* Form Actions */}
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => {
                   setShowModal(false);
                   resetForm();
                 }}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700 transition cursor-pointer"
+                className="px-3 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700 transition cursor-pointer"
               >
                 Batal
               </button>
               <button
                 type="submit"
-                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-lg shadow-emerald-950/50 transition cursor-pointer flex items-center gap-1.5"
+                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-lg shadow-emerald-950/50 transition cursor-pointer flex items-center gap-1.5"
               >
-                <CheckCircle className="w-4 h-4" />
+                <CheckCircle className="w-3.5 h-3.5" />
                 <span>{isEditing ? 'Simpan Perubahan' : 'Konfirmasi & Bukukan Pendapatan'}</span>
               </button>
             </div>

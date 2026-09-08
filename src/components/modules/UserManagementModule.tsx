@@ -142,11 +142,11 @@ export const UserManagementModule: React.FC<UserManagementModuleProps> = ({ stor
   };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-2.5">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <ShieldCheck className="w-5 h-5 text-indigo-400" />
+          <div className="flex items-center gap-2 mb-0.5">
+            <ShieldCheck className="w-4 h-4 text-indigo-400" />
             <h2 className="text-xl font-bold text-white">System User Accounts & Strict Role Security</h2>
           </div>
           <p className="text-xs text-slate-400">
@@ -157,19 +157,19 @@ export const UserManagementModule: React.FC<UserManagementModuleProps> = ({ stor
         {canEdit && (
           <button
             onClick={handleOpenAdd}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-md transition"
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow-md transition"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             <span>Tambah User Account</span>
           </button>
         )}
       </div>
 
-      <div className="p-4 bg-amber-950/40 border border-amber-800/80 rounded-xl text-xs text-amber-200 flex items-start gap-3">
-        <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+      <div className="p-3 bg-amber-950/40 border border-amber-800/80 rounded-xl text-xs text-amber-200 flex items-start gap-2">
+        <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
         <div className="space-y-1">
           <div className="font-bold text-amber-300">Mandatory Security Architecture Constraint:</div>
-          <p className="leading-relaxed">
+          <p className="leading-normal">
             Only 4 roles have login access: <span className="font-semibold text-white">SUPER_ADMIN_OPS</span> (Control Tower),{' '}
             <span className="font-semibold text-white">APPROVER_EXECUTIVE</span> (Direktur Utama),{' '}
             <span className="font-semibold text-white">VIEWER_COMMISSIONER</span> (Komisaris), and{' '}
@@ -183,32 +183,32 @@ export const UserManagementModule: React.FC<UserManagementModuleProps> = ({ stor
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-950 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
               <tr>
-                <th className="py-3 px-4">Username</th>
-                <th className="py-3 px-4">Full Name</th>
-                <th className="py-3 px-4">Email</th>
-                <th className="py-3 px-4">Departemen</th>
-                <th className="py-3 px-4">System Role</th>
-                <th className="py-3 px-4 text-center">Status</th>
-                {canEdit && <th className="py-3 px-4 text-center">Aksi</th>}
+                <th className="py-2 px-3">Username</th>
+                <th className="py-2 px-3">Full Name</th>
+                <th className="py-2 px-3">Email</th>
+                <th className="py-2 px-3">Departemen</th>
+                <th className="py-2 px-3">System Role</th>
+                <th className="py-2 px-3 text-center">Status</th>
+                {canEdit && <th className="py-2 px-3 text-center">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
               {store.users.length === 0 ? (
                 <tr>
-                  <td colSpan={canEdit ? 7 : 6} className="py-8 text-center text-slate-500 text-xs">
+                  <td colSpan={canEdit ? 7 : 6} className="py-6 text-center text-slate-500 text-xs">
                     Belum ada akun pengguna tersimpan.
                   </td>
                 </tr>
               ) : (
                 store.users.map((u) => (
                   <tr key={u.id} className="hover:bg-slate-800/40 transition">
-                    <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">{u.username}</td>
-                    <td className="py-3.5 px-4 font-bold text-white">{u.name}</td>
-                    <td className="py-3.5 px-4 text-slate-400">{u.email}</td>
-                    <td className="py-3.5 px-4 text-slate-300">{u.department || 'Control Tower Operations'}</td>
-                    <td className="py-3.5 px-4">
+                    <td className="py-2.5 px-3 font-mono font-bold text-indigo-300">{u.username}</td>
+                    <td className="py-2.5 px-3 font-bold text-white">{u.name}</td>
+                    <td className="py-2.5 px-3 text-slate-400">{u.email}</td>
+                    <td className="py-2.5 px-3 text-slate-300">{u.department || 'Control Tower Operations'}</td>
+                    <td className="py-2.5 px-3">
                       <span
-                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${
+                        className={`text-[10px] font-bold px-2 py-1 rounded-full border ${
                           u.role === 'SUPER_ADMIN_OPS'
                             ? 'bg-indigo-950 text-indigo-300 border-indigo-800'
                             : u.role === 'APPROVER_EXECUTIVE'
@@ -219,9 +219,9 @@ export const UserManagementModule: React.FC<UserManagementModuleProps> = ({ stor
                         {u.role}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 text-center">
+                    <td className="py-2.5 px-3 text-center">
                       <span
-                        className={`text-[10px] px-2.5 py-1 rounded-full border font-semibold ${
+                        className={`text-[10px] px-2 py-1 rounded-full border font-semibold ${
                           u.status === 'ACTIVE'
                             ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
                             : 'bg-rose-950 text-rose-300 border-rose-800'
@@ -231,14 +231,14 @@ export const UserManagementModule: React.FC<UserManagementModuleProps> = ({ stor
                       </span>
                     </td>
                     {canEdit && (
-                      <td className="py-3.5 px-4 text-center">
+                      <td className="py-2.5 px-3 text-center">
                         <div className="flex items-center justify-center gap-1.5">
                           <button
                             onClick={() => handleOpenEdit(u)}
                             title="Edit User"
-                            className="flex items-center gap-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-800 px-2.5 py-1 rounded text-[11px] font-semibold transition"
+                            className="flex items-center gap-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-800 px-2 py-1 rounded text-[11px] font-semibold transition"
                           >
-                            <Pencil className="w-3.5 h-3.5" />
+                            <Pencil className="w-3 h-3" />
                             <span>Edit</span>
                           </button>
                           {u.id !== currentUser.id && (
@@ -247,7 +247,7 @@ export const UserManagementModule: React.FC<UserManagementModuleProps> = ({ stor
                               title="Hapus User"
                               className="flex items-center gap-1 bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 px-2 py-1 rounded text-[11px] font-semibold transition"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 className="w-3 h-3" />
                             </button>
                           )}
                         </div>
@@ -262,9 +262,9 @@ export const UserManagementModule: React.FC<UserManagementModuleProps> = ({ stor
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <form onSubmit={handleSaveUser} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3">
+          <form onSubmit={handleSaveUser} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-4 space-y-2.5 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
               <h3 className="font-bold text-white text-base">
                 {editingUser ? 'Edit User Account & Access' : 'Create Authorized System User'}
               </h3>
@@ -281,54 +281,54 @@ export const UserManagementModule: React.FC<UserManagementModuleProps> = ({ stor
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Username</label>
+              <label className="block text-xs text-slate-400 mb-0.5">Username</label>
               <input
                 type="text"
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-indigo-500"
               />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Full Name</label>
+              <label className="block text-xs text-slate-400 mb-0.5">Full Name</label>
               <input
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-indigo-500"
               />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Email</label>
+              <label className="block text-xs text-slate-400 mb-0.5">Email</label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-indigo-500"
               />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Department</label>
+              <label className="block text-xs text-slate-400 mb-0.5">Department</label>
               <input
                 type="text"
                 value={department}
                 onChange={(e) => setDepartment(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-indigo-500"
               />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Select System Role</label>
+              <label className="block text-xs text-slate-400 mb-0.5">Select System Role</label>
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value as UserRole)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-indigo-500"
               >
                 <option value="SUPER_ADMIN_OPS">SUPER_ADMIN_OPS (Control Tower)</option>
                 <option value="APPROVER_EXECUTIVE">APPROVER_EXECUTIVE (Direktur Utama)</option>
@@ -338,31 +338,31 @@ export const UserManagementModule: React.FC<UserManagementModuleProps> = ({ stor
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Status Akun</label>
+              <label className="block text-xs text-slate-400 mb-0.5">Status Akun</label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as 'ACTIVE' | 'SUSPENDED')}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-indigo-500"
               >
                 <option value="ACTIVE">ACTIVE (Aktif)</option>
                 <option value="SUSPENDED">SUSPENDED (Ditangguhkan)</option>
               </select>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+            <div className="flex justify-end gap-2 pt-1.5 border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => {
                   setShowModal(false);
                   resetForm();
                 }}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700 font-semibold transition"
+                className="px-3 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700 font-semibold transition"
               >
                 Batal
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500 shadow-md transition"
+                className="px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500 shadow-md transition"
               >
                 {editingUser ? 'Simpan Perubahan' : 'Create Account'}
               </button>
