@@ -12,6 +12,8 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "validate:creds": "node scripts/validate-google-creds.mjs",
+    "test:drive": "node --test scripts/test-drive-error-handling.mjs",
+    "test:drive:api": "node --test scripts/test-drive-api-errors.mjs",
     "db:columns": "node scripts/generate-supabase-columns.mjs",
     "db:validate": "node scripts/generate-supabase-columns.mjs && node scripts/validate-supabase-schema.mjs",
     "db:validate:data": "node scripts/validate-arms-data.mjs",

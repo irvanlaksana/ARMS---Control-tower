@@ -36,6 +36,9 @@ import {
 } from 'lucide-react';
 import {
   ensureDrivePath,
+  uploadBase64ToDrive,
+  formatDriveError,
+  type DriveStatusInfo,
   isPlaceholderDriveUrl,
   isRealDriveFolder,
   slugify,
@@ -68,13 +71,17 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [creatingFolderKey, setCreatingFolderKey] = useState<string | null>(null);
-  const [folderActionMsg, setFolderActionMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const [driveStatus, setDriveStatus] = useState<{ configured: boolean; serviceAccountEmail?: string; error?: string } | null>(null);
+  const [folderActionMsg, setFolderActionMsg] = useState<
+    { ok: boolean; text: string; hint?: string | null; code?: string; retryable?: boolean } | null
+  >(null);
+  const [driveStatus, setDriveStatus] = useState<DriveStatusInfo | null>(null);
+  const [driveProbe, setDriveProbe] = useState<DriveStatusInfo | null>(null);
+  const [probingDrive, setProbingDrive] = useState(false);
 
   useEffect(() => {
     checkDriveStatus()
       .then((res) => setDriveStatus(res))
-      .catch((err) => setDriveStatus({ configured: false, error: err?.message }));
+      .catch((err) => setDriveStatus({ configured: false, error: formatDriveError(err) }));
   }, []);
 
   // Expanded tree states
@@ -163,6 +170,42 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
     `DEBITUR_${slugify(debtorCase.debtorName)}`,
   ];
 
+  /** Uji koneksi end-to-end: token SA → Drive API → akses tulis folder master. */
+  const handleProbeDrive = async () => {
+    setProbingDrive(true);
+    try {
+      const res = await checkDriveStatus({ probeFolderId: rootDriveId });
+      setDriveStatus(res);
+      setDriveProbe(res);
+      if (!res.configured) {
+        setFolderActionMsg({
+          ok: false,
+          text: 'Service account Google Drive belum terpasang di server, sehingga folder tidak dapat dibuat.',
+          hint: res.error || 'Isi GOOGLE_SERVICE_ACCOUNT_JSON pada Environment Variables deployment, lalu redeploy.',
+          code: 'not_configured',
+        });
+      } else if (res.ready === false) {
+        const failed = (res.checks || []).find((c) => !c.ok);
+        setFolderActionMsg({
+          ok: false,
+          text: `Uji Drive gagal pada langkah "${failed?.step || '-'}": ${failed?.message || 'periksa daftar pemeriksaan.'}`,
+          hint: failed?.hint || null,
+          code: failed?.code,
+          retryable: true,
+        });
+      } else {
+        setFolderActionMsg({
+          ok: true,
+          text: 'Koneksi Google Drive sehat — service account & folder master dapat diakses. Silakan jalankan pembuatan folder.',
+        });
+      }
+    } catch (err: any) {
+      setFolderActionMsg({ ok: false, text: formatDriveError(err, 'Uji koneksi Google Drive gagal.'), retryable: true });
+    } finally {
+      setProbingDrive(false);
+    }
+  };
+
   const handleEnsureFolder = async (kind: 'PERSONNEL' | 'CLIENT' | 'CLIENT_SKP' | 'DEBTOR', id: string) => {
     const key = `${kind}-${id}`;
     if (creatingFolderKey) return;
@@ -224,7 +267,15 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
         setFolderActionMsg({ ok: true, text: `Folder GDrive debitur ${debtorCase.debtorName} berhasil dibuat/diperbaiki.` });
       }
     } catch (err: any) {
-      setFolderActionMsg({ ok: false, text: `Gagal membuat folder: ${err.message || String(err)}. Periksa kredensial service account & folder master.` });
+      // DriveApiError membawa pesan + hint spesifik (bukan lagi SyntaxError "Unexpected token 'A'")
+      setFolderActionMsg({
+        ok: false,
+        text: `Gagal membuat folder: ${err?.message || String(err)}`,
+        hint: err?.hint || 'Periksa kredensial service account & folder master (Pengaturan → Folder Master GDrive).',
+        code: err?.code,
+        retryable: Boolean(err?.retryable),
+      });
+      if (err?.detail) console.error('[drive] detail:', err.code, err.detail);
     } finally {
       setCreatingFolderKey(null);
     }
@@ -415,6 +466,8 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
     if (!uploadTarget) return;
 
     let finalUrl = uploadedUrl.trim();
+    // Placeholder saat memilih berkas tidak boleh ikut tersimpan bila unggahan gagal.
+    if (finalUrl === 'Uploading...' || finalUrl.toLowerCase() === 'uploading…') finalUrl = '';
     let finalFileId: string | undefined;
 
     // If there's a base64 payload, upload to server Drive endpoint (service account)
@@ -473,19 +526,19 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
 
         const folderIdToUse = determineFolderId();
 
-        const resp = await fetch('/api/drive/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fileName, mimeType: mime, base64: uploadedBase64, folderId: folderIdToUse }),
-        });
-
-        const json = await resp.json();
-        if (!json || !json.success) {
-          console.error('Drive upload failed', json);
-          alert('Gagal mengunggah ke Google Drive: ' + (json?.error || 'Unknown'));
+        // Lewat helper yang sudah tahan balasan non-JSON / timeout (lihat src/lib/drive.ts),
+        // sehingga kegagalan Drive tidak lagi muncul sebagai "is not valid JSON".
+        const result = await uploadBase64ToDrive(uploadedBase64, fileName, mime, folderIdToUse);
+        if (!result.success || !result.fileId) {
+          console.error('Drive upload failed', result.errorCode, result.error, result);
+          alert(
+            'Gagal mengunggah ke Google Drive: ' +
+              (result.error || 'Server Drive belum siap.') +
+              (result.quotaLimited ? ' (Service account memerlukan Shared Drive untuk menyimpan berkas fisik.)' : ''),
+          );
         } else {
-          finalUrl = json.webViewLink || `https://drive.google.com/file/d/${json.fileId}/view?usp=sharing`;
-          finalFileId = json.fileId;
+          finalUrl = result.webViewLink || `https://drive.google.com/file/d/${result.fileId}/view?usp=sharing`;
+          finalFileId = result.fileId;
         }
         }
       } catch (err) {
@@ -796,11 +849,29 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
         <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 text-xs space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${driveStatus?.configured ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  driveStatus?.configured && driveStatus?.ready === false ? 'bg-rose-400' : driveStatus?.configured ? 'bg-emerald-400' : 'bg-amber-400'
+                }`}
+              />
               <span className="font-semibold text-slate-200">
-                {driveStatus?.configured ? 'Google Drive Service Account Terhubung' : 'Google Drive Belum Dikonfigurasi'}
+                {driveStatus?.configured
+                  ? driveStatus?.ready === false
+                    ? 'Service account terhubung, tapi ada pemeriksaan Drive yang gagal'
+                    : 'Google Drive Service Account Terhubung'
+                  : 'Google Drive Belum Dikonfigurasi'}
               </span>
             </div>
+            <button
+              type="button"
+              onClick={handleProbeDrive}
+              disabled={probingDrive}
+              title="Jalankan pemeriksaan: kredensial service account → Drive API → akses tulis folder master"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] font-semibold transition disabled:opacity-60"
+            >
+              <RefreshCw className={`w-3 h-3 ${probingDrive ? 'animate-spin' : ''}`} />
+              <span>{probingDrive ? 'Menguji…' : 'Uji Koneksi & Folder Master'}</span>
+            </button>
             {driveStatus?.serviceAccountEmail && (
               <div className="flex items-center gap-1.5 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800">
                 <span className="text-[11px] text-slate-400 font-mono select-all">
@@ -817,6 +888,37 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
               </div>
             )}
           </div>
+          {!!driveProbe?.checks?.length && (
+            <div className="text-[11px] space-y-1 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/60">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-bold text-slate-200">Hasil uji koneksi Google Drive</span>
+                <span
+                  className={`px-1.5 py-0.5 rounded font-bold text-[10px] ${
+                    driveProbe.ready ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-amber-950 text-amber-300 border border-amber-800'
+                  }`}
+                >
+                  {driveProbe.ready ? 'SIAP' : 'PERLU PERBAIKAN'}
+                </span>
+              </div>
+              {driveProbe.checks.map((c, i) => (
+                <div key={`${c.step}-${i}`} className="flex items-start gap-1.5">
+                  <span className={`mt-1 w-1.5 h-1.5 rounded-full shrink-0 ${c.ok ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+                  <div className="min-w-0">
+                    <span className="font-semibold text-slate-300">{c.step}:</span>{' '}
+                    <span className="text-slate-400 break-words">{c.message}</span>
+                    {!c.ok && c.hint && <p className="text-indigo-300/90 break-words">→ {c.hint}</p>}
+                  </div>
+                </div>
+              ))}
+              {driveProbe.error && (
+                <p className="text-rose-300 break-words">Server status: {driveProbe.error}</p>
+              )}
+              <p className="text-slate-500 break-all">
+                Folder master diuji: <span className="font-mono text-slate-400">{getRootDriveId(store.settings) || ROOT_GDRIVE_ID}</span>
+                {driveProbe.projectId ? ` · Project: ${driveProbe.projectId}` : ''}
+              </p>
+            </div>
+          )}
           <div className="text-[11px] text-slate-400 leading-relaxed bg-slate-900/50 p-2.5 rounded-lg border border-slate-800/60">
             <p className="text-slate-300 font-medium mb-1 flex items-center gap-1.5">
               <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
@@ -893,9 +995,44 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
       </div>
 
       {folderActionMsg && (
-        <div className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center gap-2 ${folderActionMsg.ok ? 'bg-emerald-950/80 text-emerald-200 border-emerald-700' : 'bg-rose-950/80 text-rose-200 border-rose-700'}`}>
-          {folderActionMsg.ok ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <AlertCircle className="w-3.5 h-3.5 text-rose-400" />}
-          <span>{folderActionMsg.text}</span>
+        <div
+          className={`p-2.5 rounded-xl border text-xs font-semibold flex items-start gap-2 ${
+            folderActionMsg.ok ? 'bg-emerald-950/80 text-emerald-200 border-emerald-700' : 'bg-rose-950/80 text-rose-200 border-rose-700'
+          }`}
+        >
+          <span className="mt-0.5 shrink-0">
+            {folderActionMsg.ok ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <AlertCircle className="w-3.5 h-3.5 text-rose-400" />}
+          </span>
+          <div className="space-y-1 min-w-0">
+            <p className="break-words leading-relaxed">{folderActionMsg.text}</p>
+            {folderActionMsg.hint && (
+              <p className={`break-words font-normal text-[11px] leading-relaxed ${folderActionMsg.ok ? 'text-emerald-300/80' : 'text-rose-200/85'}`}>
+                {folderActionMsg.hint}
+              </p>
+            )}
+            {!folderActionMsg.ok && (
+              <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                {folderActionMsg.retryable && (
+                  <span className="text-[10px] font-normal text-amber-300/90">
+                    Sifatnya sementara — boleh dicoba lagi.
+                  </span>
+                )}
+                {folderActionMsg.code && (
+                  <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-rose-900/60 text-rose-200 border border-rose-800">
+                    kode: {folderActionMsg.code}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={handleProbeDrive}
+                  disabled={probingDrive}
+                  className="text-[11px] px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition disabled:opacity-60"
+                >
+                  {probingDrive ? 'Memeriksa…' : 'Uji Penyebab Otomatis'}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

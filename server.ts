@@ -3,9 +3,13 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
-import { google } from "googleapis";
-import { Readable } from 'stream';
-import { authFor, isGoogleAuthAvailable, getServiceAccountEmail } from "./api/lib/googleAuth.ts";
+import {
+  createDriveFolder as createDriveFolderCore,
+  ensureDrivePathCore,
+  probeDriveAccess,
+  respondDriveError,
+  uploadDriveBuffer,
+} from "./api/lib/driveCore.ts";
 
 async function startServer() {
   const app = express();
@@ -218,229 +222,101 @@ async function startServer() {
     }
   });
 
-  // API Route: Google Drive Status
-  app.get('/api/drive/status', (_req, res) => {
-    const configured = isGoogleAuthAvailable();
-    const serviceAccountEmail = configured ? getServiceAccountEmail() : null;
-    res.json({
-      status: 'ok',
-      service: 'Google Drive Storage',
-      configured,
-      serviceAccountEmail,
-      instructions: configured
-        ? 'Google Drive Service Account aktif.'
-        : 'Google Drive belum dikonfigurasi. Tambahkan GOOGLE_SERVICE_ACCOUNT_JSON di Vercel atau .env.',
-    });
+  // ==========================================================================
+  // Google Drive — logika INTI dibagi dengan Vercel Functions lewat
+  // api/lib/driveCore.ts supaya perilaku lokal/VPS identik dengan production.
+  // Semua kegagalan dibalas JSON (bukan HTML/teks 500) agar frontend tidak lagi
+  // menampilkan "Unexpected token 'A', \"A server e\"... is not valid JSON".
+  // ==========================================================================
+
+  // API Route: Google Drive Status (+ ?probe=1&folderId=<ID> utk uji folder master)
+  app.get('/api/drive/status', async (req, res) => {
+    try {
+      const probe = ['1', 'true', 'yes'].includes(String((req.query as any)?.probe ?? '').toLowerCase());
+      const folderId = String((req.query as any)?.folderId || (req.query as any)?.rootId || '');
+      const result = await probeDriveAccess(probe ? folderId : null);
+      res.json({
+        status: 'ok',
+        service: 'Google Drive Storage',
+        probed: probe,
+        ...result,
+        instructions:
+          result.instructions ||
+          (result.configured
+            ? 'Google Drive Service Account aktif dan siap menyimpan folder/berkas.'
+            : 'Google Drive belum dikonfigurasi. Tambahkan GOOGLE_SERVICE_ACCOUNT_JSON di Vercel atau .env.'),
+      });
+    } catch (err: any) {
+      res.json({
+        status: 'error',
+        service: 'Google Drive Storage',
+        configured: false,
+        error: err?.message || 'Gagal memeriksa status Google Drive.',
+      });
+    }
   });
 
-  // API Route: Upload file to Google Drive (Service Account)
-  // Expects JSON body: { fileName, mimeType, base64, folderId (optional) }
+  // API Route: Upload file ke Google Drive — body: { fileName, mimeType, base64, folderId? }
   app.post('/api/drive/upload', async (req, res) => {
     try {
       const { fileName, mimeType, base64, folderId } = req.body || {};
       if (!fileName || !base64) {
-        return res.status(400).json({ success: false, error: 'Missing fileName or base64 payload' });
-      }
-
-      if (!isGoogleAuthAvailable()) {
-        return res.status(200).json({
+        return res.json({
           success: false,
-          configured: false,
-          error: 'Google Drive Service Account belum dikonfigurasi. Tambahkan GOOGLE_SERVICE_ACCOUNT_JSON di Vercel atau .env.',
+          errorCode: 'bad_request',
+          error: 'Body permintaan tidak memuat "fileName" atau "base64".',
+          hint: 'Unggah ulang berkasnya; batas ukuran JSON body server adalah 25 MB.',
+          retryable: false,
         });
       }
-
-      const auth = authFor(['https://www.googleapis.com/auth/drive.file']);
-      const drive = google.drive({ version: 'v3', auth });
-
-      // Strip data URL prefix if present
-      const dataUrlMatch = String(base64).match(/^data:(.+);base64,(.*)$/);
-      const rawBase64 = dataUrlMatch ? dataUrlMatch[2] : base64;
-      const buffer = Buffer.from(rawBase64, 'base64');
-
-      const media = {
-        mimeType: mimeType || 'application/octet-stream',
-        body: Readable.from(buffer),
-      } as any;
-
-      const fileMetadata: any = { name: fileName };
-      if (folderId) fileMetadata.parents = [folderId];
-
-      const created = await drive.files.create({
-        supportsAllDrives: true,
-        requestBody: fileMetadata,
-        media,
-        fields: 'id, name, webViewLink, webContentLink',
-      });
-
-      const fileId = created.data.id;
-      const webViewLink = created.data.webViewLink || `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
-      const directViewUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
-
-      try {
-        await drive.permissions.create({
-          supportsAllDrives: true,
-          fileId: fileId as string,
-          requestBody: { role: 'reader', type: 'anyone' },
-        });
-      } catch {
-        // ignore permission warning
-      }
-
-      res.json({ success: true, configured: true, fileId, webViewLink, directViewUrl });
+      const uploaded = await uploadDriveBuffer({ fileName, base64, mimeType, folderId });
+      return res.json({ success: true, configured: true, ...uploaded });
     } catch (err: any) {
-      console.error('Drive Upload Error:', err?.message || err);
-      const rawError = String(err?.message || err);
-      let userFriendlyError = rawError;
-
-      if (rawError.includes('Service Accounts do not have storage quota')) {
-        userFriendlyError = 'Google Drive Service Account memerlukan Google Workspace Shared Drive (Drive Bersama) untuk unggah berkas fisik. Foto tetap tersimpan di database lokal/cloud.';
-      }
-
-      res.status(200).json({
-        success: false,
-        configured: true,
-        quotaLimited: rawError.includes('Service Accounts do not have storage quota'),
-        error: userFriendlyError,
-      });
+      return respondDriveError(res, err);
     }
   });
 
-  // API Route: Create a folder (or subfolder) in Google Drive
-  // Expects JSON body: { name, parentId (optional) }
+  // API Route: Buat folder/subfolder — body: { name, parentId? }
   app.post('/api/drive/create-folder', async (req, res) => {
     try {
       const { name, parentId } = req.body || {};
       if (!name || !String(name).trim()) {
-        return res.status(400).json({ success: false, error: 'Missing folder name' });
-      }
-
-      if (!isGoogleAuthAvailable()) {
-        return res.status(200).json({
+        return res.json({
           success: false,
-          configured: false,
-          error: 'Google Drive Service Account belum dikonfigurasi. Tambahkan GOOGLE_SERVICE_ACCOUNT_JSON di Vercel atau .env.',
+          errorCode: 'bad_request',
+          error: 'Nama folder kosong.',
+          hint: 'Kirim body JSON { "name": "NAMA_FOLDER", "parentId": "ID_FOLDER_OPSIONAL" }.',
+          retryable: false,
         });
       }
-
-      const auth = authFor(['https://www.googleapis.com/auth/drive.file']);
-      const drive = google.drive({ version: 'v3', auth });
-
-      const fileMetadata: any = {
-        name: String(name).trim(),
-        mimeType: 'application/vnd.google-apps.folder',
-      };
-      if (parentId) fileMetadata.parents = [parentId];
-
-      const created = await drive.files.create({
-        supportsAllDrives: true,
-        requestBody: fileMetadata,
-        fields: 'id, webViewLink, name',
-      });
-
-      const folderId = created.data.id as string;
-      res.json({
-        success: true,
-        configured: true,
-        folderId,
-        name: created.data.name || String(name).trim(),
-        webViewLink: `https://drive.google.com/drive/folders/${folderId}?usp=sharing`,
-      });
+      const folder = await createDriveFolderCore(name, parentId, { reuseExisting: true });
+      return res.json({ success: true, configured: true, ...folder, webViewLink: folder.webViewLink });
     } catch (err: any) {
-      console.error('Drive Create Folder Error:', err?.message || err);
-      res.status(500).json({ success: false, error: err?.message || 'Failed creating Google Drive folder' });
+      return respondDriveError(res, err);
     }
   });
 
-  // API Route: Ensure a nested folder structure exists in Google Drive.
-  // Expects JSON body: { path: string[], rootId (optional) }
-  // Finds existing folders by name under each parent, else creates them.
+  // API Route: Pastikan struktur folder bertingkat ada — body: { path: string[], rootId? }
   app.post('/api/drive/ensure-path', async (req, res) => {
     try {
-      const { path, rootId } = req.body || {};
-      if (!Array.isArray(path) || path.filter(Boolean).length === 0) {
-        return res.status(400).json({ success: false, error: 'Missing path (array of folder names)' });
-      }
-
-      if (!isGoogleAuthAvailable()) {
-        return res.status(200).json({
+      const { path, rootId, segments, parentId } = req.body || {};
+      const list = Array.isArray(path) ? path : Array.isArray(segments) ? segments : null;
+      if (!list || list.filter(Boolean).length === 0) {
+        return res.json({
           success: false,
-          configured: false,
-          error: 'Google Drive Service Account belum dikonfigurasi. Tambahkan GOOGLE_SERVICE_ACCOUNT_JSON di Vercel atau .env.',
+          errorCode: 'bad_request',
+          error: 'Parameter "path" wajib berupa array nama folder (min. 1).',
+          hint: 'Contoh: { "path": ["PT_MJ_INDONESIA","DATABASE_KARYAWAN","BUDI SANTOSO"], "rootId": "ID_FOLDER_MASTER" }.',
+          retryable: false,
         });
       }
-
-      const auth = authFor(['https://www.googleapis.com/auth/drive.file']);
-      const drive = google.drive({ version: 'v3', auth });
-
-      let currentParentId: string | undefined = rootId || undefined;
-      const created: Array<{ name: string; folderId: string; webViewLink: string }> = [];
-      let lastFolderId = currentParentId || '';
-      let lastWebViewLink = currentParentId ? `https://drive.google.com/drive/folders/${currentParentId}?usp=sharing` : '';
-
-      for (const rawName of path) {
-        const name = String(rawName).trim();
-        if (!name) continue;
-
-        // Cari folder dengan nama sama di parent yang sama (drive.file scope)
-        let existingId: string | undefined;
-        if (currentParentId) {
-          const query = `name = '${name.replace(/'/g, "\\'")}' and '${currentParentId}' in parents and trashed = false and mimeType = 'application/vnd.google-apps.folder'`;
-          try {
-            const list = await drive.files.list({
-              supportsAllDrives: true,
-              includeItemsFromAllDrives: true,
-              q: query,
-              fields: 'files(id, name)',
-              pageSize: 1,
-            });
-            existingId = list.data.files?.[0]?.id;
-          } catch (searchErr) {
-            // Jika API tidak mendukung query, lanjut buat folder baru
-            console.warn('Drive folder search failed, will create:', String(searchErr));
-          }
-        }
-
-        let folderId = existingId;
-        if (!folderId) {
-          const fileMetadata: any = {
-            name,
-            mimeType: 'application/vnd.google-apps.folder',
-          };
-          if (currentParentId) fileMetadata.parents = [currentParentId];
-          const createdFile = await drive.files.create({
-            supportsAllDrives: true,
-            requestBody: fileMetadata,
-            fields: 'id, webViewLink, name',
-          });
-          folderId = createdFile.data.id as string;
-          created.push({
-            name,
-            folderId,
-            webViewLink: `https://drive.google.com/drive/folders/${folderId}?usp=sharing`,
-          });
-        }
-
-        currentParentId = folderId;
-        lastFolderId = folderId;
-        lastWebViewLink = `https://drive.google.com/drive/folders/${folderId}?usp=sharing`;
-      }
-
-      if (!lastFolderId) {
-        return res.status(400).json({ success: false, error: 'No folder could be created. Check root folder permission.' });
-      }
-
-      res.json({
-        success: true,
-        folderId: lastFolderId,
-        webViewLink: lastWebViewLink,
-        created,
-      });
+      const result = await ensureDrivePathCore(list, rootId ?? parentId);
+      return res.json({ success: true, configured: true, ...result });
     } catch (err: any) {
-      console.error('Drive Ensure Path Error:', err?.message || err);
-      res.status(500).json({ success: false, error: err?.message || 'Failed creating Google Drive folder structure' });
+      return respondDriveError(res, err);
     }
   });
+
 
   // API Route: Create GitHub Issue in generate-surat-tugas to sync SK / Debtor & Personnel data
   app.post('/api/surat/create-issue', async (req, res) => {
@@ -514,6 +390,39 @@ ${JSON.stringify(personnel, null, 2)}
       console.error('Open generator Error:', err?.message || err);
       res.status(500).json({ success: false, error: err?.message || 'Failed creating generator link' });
     }
+  });
+
+  // Endpoint /api/* yang tidak dikenal: balas JSON (bukan HTML index.html / "Cannot POST ...")
+  // supaya frontend selalu dapat pesan yang bisa dibaca.
+  app.use('/api', (_req, res) => {
+    res.status(404).json({
+      success: false,
+      errorCode: 'endpoint_missing',
+      error: 'Endpoint API tidak ditemukan pada server ini.',
+      hint: 'Pastikan server (tsx server.ts / npm start) versi terbaru yang berjalan — fungsi Drive ada di api/lib/driveCore.ts.',
+    });
+  });
+
+  // Perbaiki error express (body JSON rusak / melebihi 25mb) menjadi JSON, bukan HTML.
+  app.use((err: any, _req: any, res: any, _next: any) => {
+    const tooLarge = err?.type === 'entity.too.large' || err?.status === 413 || err?.code === 'EFBIG';
+    const malformed = err?.type === 'entity.parse.failed' || err?.statusCode === 400;
+    const status = tooLarge ? 413 : malformed ? 400 : 500;
+    if (res.headersSent) return;
+    console.error('Server error:', err?.message || err);
+    res.status(status).json({
+      success: false,
+      errorCode: tooLarge ? 'payload_too_large' : malformed ? 'bad_request' : 'internal',
+      error: tooLarge
+        ? 'Ukuran berkas melebihi batas 25 MB server.'
+        : malformed
+          ? 'Body permintaan bukan JSON valid.'
+          : String(err?.message || 'Terjadi kesalahan pada server.'),
+      hint: tooLarge
+        ? 'Kompres berkas (maks ±4,5 MB untuk foto) lalu unggah ulang.'
+        : 'Ulangi penyimpanan; bila berulang lihat log terminal server.',
+      retryable: false,
+    });
   });
 
   // Serve Vite in development / production static build

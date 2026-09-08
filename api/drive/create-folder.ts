@@ -1,79 +1,50 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { google } from 'googleapis';
-import { authFor, isGoogleAuthAvailable } from '../lib/googleAuth';
+import { createDriveFolder, driveJson, readJsonBody, respondDriveError } from '../lib/driveCore';
 
+/**
+ * POST /api/drive/create-folder  { name, parentId? }
+ *
+ * Catatan penting: kegagalan TIDAK dibalas dengan HTTP 500. Vercel menimpa body 500
+ * dari fungsi yang crash/timeout dengan teks "A server error occurred.", dan
+ * `resp.json()` di browser berubah menjadi
+ *   SyntaxError: Unexpected token 'A', "A server e"... is not valid JSON
+ * yang menutupi penyebab sebenarnya (kuota, scope, folder master salah ID).
+ * Karena itu response selalu JSON HTTP 200 dengan `success: false` + errorCode + hint.
+ */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
+  if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return driveJson(res, { success: false, errorCode: 'bad_request', error: 'Method not allowed' }, 405);
   }
 
   try {
-    const { name, parentId } = req.body || {};
-    if (!name || !String(name).trim()) {
-      return res.status(400).json({ success: false, error: 'Missing folder name' });
-    }
-
-    if (!isGoogleAuthAvailable()) {
-      return res.status(200).json({
+    const body = await readJsonBody(req);
+    const name = String(body?.name ?? '').trim();
+    if (!name) {
+      return driveJson(res, {
         success: false,
-        configured: false,
-        error: 'Google Drive Service Account belum dikonfigurasi. Tambahkan GOOGLE_SERVICE_ACCOUNT_JSON di Vercel.',
+        errorCode: 'bad_request',
+        error: 'Nama folder kosong.',
+        hint: 'Kirim body JSON { "name": "NAMA_FOLDER", "parentId": "ID_FOLDER_OPSIONAL" }.',
+        retryable: false,
       });
     }
 
-    const auth = authFor(['https://www.googleapis.com/auth/drive.file']);
-    const drive = google.drive({ version: 'v3', auth });
-
-    const fileMetadata: any = {
-      name: String(name).trim(),
-      mimeType: 'application/vnd.google-apps.folder',
-    };
-    if (parentId) {
-      fileMetadata.parents = [parentId];
-    }
-
-    const created = await drive.files.create({
-      supportsAllDrives: true,
-      requestBody: fileMetadata,
-      fields: 'id, webViewLink, name',
-    });
-
-    const folderId = created.data.id as string;
-    const webViewLink = `https://drive.google.com/drive/folders/${folderId}?usp=sharing`;
-
-    try {
-      await drive.permissions.create({
-        supportsAllDrives: true,
-        fileId: folderId,
-        requestBody: {
-          role: 'reader',
-          type: 'anyone',
-        },
-      });
-    } catch (permErr: any) {
-      console.warn('Set Drive folder permission note:', permErr?.message || permErr);
-    }
-
-    return res.json({
+    const folder = await createDriveFolder(name, body?.parentId, { reuseExisting: true });
+    return driveJson(res, {
       success: true,
       configured: true,
-      folderId,
-      name: created.data.name || String(name).trim(),
-      webViewLink,
+      folderId: folder.folderId,
+      name: folder.name,
+      webViewLink: folder.webViewLink,
+      reused: folder.reused,
     });
   } catch (err: any) {
-    console.error('Google Drive Create Folder Error:', err);
-    return res.status(500).json({
-      success: false,
-      error: err?.message || 'Gagal membuat folder di Google Drive',
-    });
+    return respondDriveError(res, err);
   }
 }

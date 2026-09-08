@@ -10,6 +10,11 @@
  *   node scripts/validate-google-creds.mjs <SPREADSHEET_ID>
  *     → seperti di atas + verifikasi akses ke spreadsheet tsb (uji Sheets API).
  *
+ *   node scripts/validate-google-creds.mjs <SPREADSHEET_ID> <FOLDER_ID_MASTER>
+ *     → + uji akses TULIS folder master Google Drive (penyebab paling sering error
+ *       "Gagal membuat folder": folder master salah ID, belum di-share, atau
+ *       Drive API belum diaktifkan pada project service account).
+ *
  * Exit code:
  *   0 = kredensial valid (token didapat; spreadsheet dapat diakses jika diuji)
  *   1 = kredensial / akses bermasalah (pesan error dicetak)
@@ -61,6 +66,7 @@ function resolveCredentials() {
 }
 
 const spreadsheetId = process.argv[2];
+const driveFolderId = process.argv[3];
 
 try {
   const { source, creds } = resolveCredentials();
@@ -83,13 +89,22 @@ try {
   console.log(`✔ project_id     : ${creds.project_id}`);
   console.log(`✔ client_email   : ${creds.client_email}`);
 
+  // Scope sama dengan yang dipakai server (lihat driveScopes() di api/lib/googleAuth.ts):
+  // drive.file saja TIDAK cukup untuk folder master yang dibuat manual lalu di-share.
+  const scopes = (process.env.GOOGLE_DRIVE_SCOPES || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
   const auth = new google.auth.GoogleAuth({
-    scopes: [
-      "https://www.googleapis.com/auth/spreadsheets",
-      "https://www.googleapis.com/auth/drive.file",
-    ],
+    scopes: scopes.length
+      ? scopes
+      : [
+          "https://www.googleapis.com/auth/spreadsheets",
+          "https://www.googleapis.com/auth/drive",
+        ],
     credentials: creds,
   });
+  console.log(`  Scope diuji   : ${auth.options.scopes.join(", ")}`);
 
   const client = await auth.getClient();
   await client.authorize(); // memicu pertukaran JWT -> access token
@@ -104,6 +119,45 @@ try {
   } else {
     console.log("\nTip: uji akses ke spreadsheet spesifik:");
     console.log("  node scripts/validate-google-creds.mjs <SPREADSHEET_ID>");
+  }
+
+  if (driveFolderId) {
+    const drive = google.drive({ version: "v3", auth });
+    try {
+      const meta = await drive.files.get({
+        fileId: driveFolderId,
+        supportsAllDrives: true,
+        fields: "id, name, mimeType, driveId, capabilities",
+      });
+      const isFolder = meta.data.mimeType === "application/vnd.google-apps.folder";
+      if (!isFolder) {
+        throw new Error(`ID "${driveFolderId}" menunjuk ke ${meta.data.mimeType}, bukan folder. Pakai ID folder master.`);
+      }
+      const canAdd = meta.data.capabilities?.canAddChildren;
+      console.log(`✔ Folder master dapat dibaca: "${meta.data.name}"${meta.data.driveId ? ` (Shared Drive ${meta.data.driveId})` : " (Drive pribadi)"} (ID identik = ${meta.data.id === driveFolderId ? "ya" : "TIDAK"})`);
+      if (canAdd === false) {
+        throw new Error('Service account hanya boleh MEMBACA folder master (canAddChildren=false) — pembuatan folder akan 403. Naikkan akses jadi Editor / Content manager.');
+      }
+      console.log("✔ canAddChildren aktif — sistem boleh membuat folder & berkas di dalamnya.");
+      if (!meta.data.driveId) {
+        console.warn("⚠ Folder berada di Drive pribadi: membuat folder OK, tapi unggah berkas fisik oleh service account"
+          + ' biasanya ditolak Google ("Service Accounts do not have storage quota").'
+          + " Untuk unggah berkas, pindahkan folder master ke Shared Drive.");
+      }
+    } catch (err) {
+      const msg = String(err?.message || err);
+      const hint = /not found/i.test(msg)
+        ? "ID folder salah/terhapus, atau folder belum di-share ke email service account di atas."
+        : /permission/i.test(msg)
+          ? "Share folder master ke email service account sebagai Editor (My Drive) atau Manager/Content manager (Shared Drive)."
+          : /has not been used|accessNotConfigured/i.test(msg)
+            ? "Aktifkan Google Drive API di project service account: Console → APIs & Services → Library → \"Google Drive API\"."
+            : msg;
+      throw new Error(`Uji folder master Google Drive gagal: ${hint}`);
+    }
+  } else {
+    console.log("\nTip: uji juga akses folder master Google Drive (penyebab umum 'Gagal membuat folder'):");
+    console.log("  node scripts/validate-google-creds.mjs <SPREADSHEET_ID> <FOLDER_ID_MASTER>");
   }
 
   process.exit(0);

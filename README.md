@@ -104,6 +104,15 @@ Email ini akan dipakai untuk *share* spreadsheet dan folder Drive.
    ```
    Contoh: `1BxPvATwEy_0dw8lKROK-PLZVu8Bkp2AS`
 
+> **Penting:** folder master **harus di-share ke email service account** (bukan email Anda)
+> dan ID yang dipakai adalah ID asli milik akun Anda — ID contoh di dokumen ini
+> (`1BxPvATw...`) bukan folder Anda sehingga selalu menghasilkan `404 File not found`.
+> Aplikasi memakai scope Drive penuh (`https://www.googleapis.com/auth/drive`); bila
+> organisasi Anda memaksa scope `drive.file`, folder master juga **harus dibuat oleh aplikasi**
+> (lihat 5.4). Setelah menyimpan ID, klik **Uji Koneksi & Folder Master** pada tab
+> *Direktori Google Drive* untuk memverifikasi token → Drive API → hak tulis folder
+> sebelum menekan tombol buat folder.
+
 > Di aplikasi, folder root dipakai sebagai dasar pembuatan struktur:
 > ```
 > PT_MJ_INDONESIA/
@@ -166,6 +175,13 @@ node scripts/validate-google-creds.mjs
 
 # Sekaligus uji akses ke spreadsheet database Anda:
 node scripts/validate-google-creds.mjs <SPREADSHEET_ID>
+
+# Sekaligus uji akses TULIS folder master Google Drive (penyebab paling sering "Gagal membuat folder"):
+node scripts/validate-google-creds.mjs <SPREADSHEET_ID> <FOLDER_ID_MASTER>
+
+# Uji regresi penanganan error endpoint Drive (tanpa perlu kredensial/internet):
+npm run test:drive        # sisi browser  (src/lib/drive.ts)
+npm run test:drive:api    # sisi server   (api/lib/googleAuth.ts + api/lib/driveCore.ts)
 ```
 Skrip akan mencetak pesan spesifik bila file tidak ditemukan, JSON rusak, `private_key` tidak valid, atau spreadsheet tidak di-share — bukan lagi error ADC samar `Could not load the default credentials`.
 
@@ -185,6 +201,20 @@ export GOOGLE_SERVICE_ACCOUNT_JSON="$(cat service-account.json)"
 ```
 
 ---
+
+### 5.4. Scope OAuth, kuota, dan timeout (kenapa "Gagal membuat folder" bisa terjadi)
+| Hal | Default repo ini | Catatan |
+|---|---|---|
+| Scope Drive | `https://www.googleapis.com/auth/drive` | `drive.file` hanya boleh menyentuh berkas yang **dibuat aplikasi ini**. Folder master hasil share manual **tidak** terlihat oleh `drive.file` → `404`/`403`. Kunci ke `drive.file` hanya bila seluruh struktur dibuat dari aplikasi. |
+| Override scope | env `GOOGLE_DRIVE_SCOPES` | mis. `GOOGLE_DRIVE_SCOPES="https://www.googleapis.com/auth/drive.file"` |
+| Storage berkas fisik | perlu **Shared Drive** | Kebijakan Google: service account tanpa kuota My Drive. Sistem otomatis jatuh ke fallback (berkas disimpan di database) bila ini terjadi. |
+| `maxDuration` fungsi | 60 detik (`vercel.json`) | Pembuatan folder besar/serentak bisa melewati batas → balasan hosting bukan JSON. Buat folder per bagian (karyawan → klien → debitur). |
+| Akses keluar | `https://www.googleapis.com` wajib | Bila proxy/firewall VPS memblokir, error dibaca `network` (bukan lagi `Unexpected token 'A'...`). |
+
+Semua endpoint Drive **selalu membalas JSON** `{ success:false, errorCode, error, hint }`
+dengan HTTP 200 (lihat `api/lib/driveCore.ts`). HTTP 500 sengaja dihindari karena Vercel
+mengganti body-nya dengan teks polos `A server error occurred.` sehingga browser gagal
+`JSON.parse` dan memunculkan `Unexpected token 'A', "A server e"... is not valid JSON`.
 
 ## 6. Konfigurasi di Aplikasi ARMS
 
@@ -222,6 +252,8 @@ export GOOGLE_SERVICE_ACCOUNT_JSON="$(cat service-account.json)"
 4. Klik **Buat Folder SKP** untuk folder `FOLDER_SKP` per klien.
 5. Untuk **Debitur**: klik **Buat Folder** → `FOLDER_SKP/DEBITUR_<NAMA>`; atau gunakan **+ Tambah Debitur Baru** (modal **"Tambah Debitur & Buat Folder GDrive Otomatis"**) — folder dibuat otomatis saat menekan **Simpan Debitur & Buat Folder GDrive**.
 6. Setelah folder dibuat, tombol **Buka/Salin** aktif dan folder muncul di GDrive dengan link `drive.google.com/drive/folders/<ID>`.
+7. Kartu status Service Account punya tombol **Uji Koneksi & Folder Master** (`GET /api/drive/status?probe=1&folderId=...`) yang memeriksa berurutan: kredensial terbaca → access token service account → Google Drive API aktif → folder master bisa dibaca & boleh ditambah isi (`canAddChildren`). Jalankan tombol ini **sebelum** menebak-nebak penyebab gagal; hasilnya berupa daftar pemeriksaan + saran per langkah. Pembuatan folder bersifat idempoten (folder lama dipakai ulang, tidak diduplikasi), jadi aman diulang setelah perbaikan.
+8. Bila pembuatan folder gagal, banner merah menampilkan pesan + **kode error** (`not_configured`, `bad_credentials`, `parent_not_found`, `forbidden`, `api_disabled`, `rate_limited`, `sa_storage_quota`, `server_error`, `timeout`, `network`, `endpoint_missing`) dan langkah perbaikannya — bukan lagi `Unexpected token 'A', "A server e"... is not valid JSON`.
 
 > Folder hasil pembuatan **asli** (bukan simulasi `&path=`), terdeteksi via `isRealDriveFolder` (ID 25+ karakter base64url).
 
@@ -238,6 +270,7 @@ export GOOGLE_SERVICE_ACCOUNT_JSON="$(cat service-account.json)"
 | POST | `/api/drive/create-folder` | Buat folder | `{ name, parentId }` |
 | POST | `/api/drive/ensure-path` | Pastikan path folder | `{ path, rootId }` |
 | POST | `/api/drive/upload` | Upload file | `{ fileName, mimeType, base64, folderId }` |
+| GET | `/api/drive/status` | Cek kredensial & (opsional) akses folder master | `?probe=1&folderId=<ID>` → `checks[]`, `ready`, `folder`, `sharedDrive` |
 
 ---
 
@@ -253,6 +286,13 @@ export GOOGLE_SERVICE_ACCOUNT_JSON="$(cat service-account.json)"
 | `403 insufficient permissions` | Service account belum di-share ke spreadsheet/folder | Share spreadsheet & folder root dengan email service account sebagai **Editor** |
 | `Spreadsheet not found` / `404` | Spreadsheet ID salah atau tidak di-share | Salin ID dari URL; pastikan share Editor |
 | `The caller does not have permission` pada Drive | Folder master belum di-share | Share folder root (dan folder induk) ke service account |
+| `Gagal membuat folder: Unexpected token 'A', "A server e"... is not valid JSON` | Fungsi server crash/timeout/endpoint tidak ada → Vercel membalas teks `A server error occurred.` (bukan JSON) | **Sudah ditangani** (client mem-parse non-JSON + endpoint selalu balas JSON). Jika masih muncul: deployment belum ter-update atau Build gagal — cek Vercel → Deployments → Build Output & Functions Log, pastikan `api/drive/create-folder.ts` & `api/drive/ensure-path.ts` ikut ter-deploy |
+| `Folder induk (folder master) tidak ditemukan` (`parent_not_found`) | ID folder master salah/terhapus, masih memakai ID contoh README, atau `parentId` bukan ID Drive | Salin ID dari `https://drive.google.com/drive/folders/<ID>`, tempel di Pengaturan, klik **Uji Koneksi & Folder Master** |
+| `Service account tidak punya akses tulis ke folder tersebut` (`forbidden`) | Share hanya *Viewer*, atau folder dibuat manual padahal scope dikunci ke `drive.file` | Naikkan share jadi Editor / Content manager; hapus `GOOGLE_DRIVE_SCOPES` agar kembali ke scope `drive` (lihat 5.4) |
+| `Balasan server ... bukan JSON (HTTP 500)` (`server_error`) | Fungsi server error sebelum mengirim balasan (deps `googleapis` tidak terpasang, env rusak, timeout) | `vercel ls`/`npm run build`; lihat Functions Log; jalankan `npm run validate:creds` |
+| `Waktu tunggu /api/drive/ensure-path habis` (`timeout`) | Terlalu banyak folder dibuat serentak / maxDuration 60 detik terlewati | Buat folder bertahap (1 tombol per bagian), lalu ulangi yang gagal — prosesnya idempoten (folder lama dipakai ulang) |
+| `429 rate limit` (`rate_limited`) | Kuota API project habis atau klik beruntun | Tunggu 30–60 detik; naikkan kuota di Console → IAM & Admin → Quotas |
+| `Akses folder master ditolak deployment protection` (`forbidden`, HTTP 401) | Vercel Deployment Protection mengunci `/api/*` | Matikan protection untuk path API atau login Vercel di browser |
 | Folder tampil "Belum dibuat" padahal sudah | Link lama memakai `&path=` / ID buatan (`GDRIVE-CLI-...`) | Klik **Buat Folder / Perbaiki Folder** untuk membuat folder asli |
 | `fetch failed (unable to verify the first certificate)` pada `/api/surat/create-issue` | Koneksi TLS server ke `api.github.com` diblokir | Pastikan server bisa akses internet; cek proxy/trusted CA |
 | Push sukses tapi "0 dokumen" | Spreadsheet ID kosong / belum disimpan | Isi ID, klik **Simpan**, lalu **Push Data Otomatis** |
@@ -261,6 +301,7 @@ export GOOGLE_SERVICE_ACCOUNT_JSON="$(cat service-account.json)"
 ### Cek cepat konfigurasi
 ```bash
 curl http://localhost:3000/api/health
+curl "http://localhost:3000/api/drive/status?probe=1&folderId=<FOLDER_ID_MASTER>"
 # lalu uji:
 curl -X POST http://localhost:3000/api/sheets/setup \
   -H 'Content-Type: application/json' \
