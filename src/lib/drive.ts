@@ -111,6 +111,63 @@ export function slugify(name: string): string {
     .replace(/^_+|_+$/g, '');
 }
 
+/** Jenis berkas KYC personel yang dipetakan ke subfolder GDrive. */
+export type PersonnelDocKind = 'KTP' | 'SPPI';
+
+/** Nama subfolder resmi di dalam folder tiap karyawan / mitra DC. */
+export const PERSONNEL_DOC_FOLDER: Record<PersonnelDocKind, string> = {
+  KTP: '01_KTP',
+  SPPI: '02_SPPI',
+};
+
+/**
+ * Pemetaan GDrive Database Karyawan & Mitra DC:
+ *   PT_MJ_INDONESIA / DATABASE_KARYAWAN / <NAMA> /
+ *     ├── 01_KTP   → foto KTP
+ *     └── 02_SPPI  → berkas SPPI (opsional)
+ */
+export function personnelFolderSegments(fullName: string): string[] {
+  return ['PT_MJ_INDONESIA', 'DATABASE_KARYAWAN', slugify(fullName) || 'TANPA_NAMA'];
+}
+
+export function personnelDocFolderSegments(fullName: string, docKind: PersonnelDocKind): string[] {
+  return [...personnelFolderSegments(fullName), PERSONNEL_DOC_FOLDER[docKind]];
+}
+
+export function personnelDocPathLabel(fullName: string, docKind: PersonnelDocKind): string {
+  return personnelDocFolderSegments(fullName, docKind).join(' / ');
+}
+
+export function personnelDocFileName(fullName: string, docKind: PersonnelDocKind, ext = 'jpg'): string {
+  const cleanExt = String(ext || 'jpg').replace(/^\./, '').toLowerCase().replace('jpeg', 'jpg');
+  const stamp = Date.now().toString().slice(-8);
+  return `${docKind}_${slugify(fullName) || 'PERSONEL'}_${stamp}.${cleanExt}`;
+}
+
+/** Pastikan folder personel + subfolder KTP/SPPI ada, lalu unggah berkas. */
+export async function uploadPersonnelDocument(
+  base64: string,
+  fullName: string,
+  docKind: PersonnelDocKind,
+  rootId?: string | null,
+): Promise<DriveUploadResult & { folderId?: string }> {
+  const match = String(base64 || '').match(/^data:(.+);base64,(.*)$/);
+  const mime = match ? match[1] : 'image/jpeg';
+  const ext = (mime.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
+  const fileName = personnelDocFileName(fullName, docKind, ext);
+
+  let folderId: string | undefined;
+  try {
+    const path = await ensureDrivePath(personnelDocFolderSegments(fullName, docKind), rootId);
+    folderId = path.folderId;
+  } catch (err) {
+    console.warn('Gagal memastikan folder dokumen personel di Google Drive:', err);
+  }
+
+  const result = await uploadBase64ToDrive(base64, fileName, mime, folderId);
+  return { ...result, folderId };
+}
+
 /** Helper convert File object to Base64 data URL */
 export function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {

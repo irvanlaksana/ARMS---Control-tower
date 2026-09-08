@@ -56,6 +56,30 @@ export function parseSqlTables(sqlText) {
     flush();
     tables[table] = cols;
   }
+
+  // Terapkan ALTER TABLE ... ADD COLUMN agar migrasi lanjutan ikut ter-generate.
+  const alterRe = /ALTER TABLE(?:\s+IF EXISTS)?\s+public\.(\w+)\s+([\s\S]*?);/gi;
+  let am;
+  while ((am = alterRe.exec(sqlText))) {
+    const table = am[1];
+    const body = am[2];
+    if (!tables[table]) tables[table] = [];
+    const addRe = /ADD COLUMN(?:\s+IF NOT EXISTS)?\s+"?([a-z_][a-z0-9_]*)"?\s+([^,]+)/gi;
+    let addm;
+    while ((addm = addRe.exec(body))) {
+      const name = addm[1].toLowerCase();
+      if (tables[table].some((c) => c.name === name)) continue;
+      const rest = addm[2];
+      tables[table].push({
+        name,
+        notNull: /\bNOT NULL\b/i.test(rest) || /\bPRIMARY KEY\b/i.test(rest),
+        hasDefault: /\bDEFAULT\b/i.test(rest),
+        fk: null,
+        raw: `ADD COLUMN ${name} ${rest.replace(/\s+/g, ' ').trim()}`,
+      });
+    }
+  }
+
   return tables;
 }
 

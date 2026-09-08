@@ -15,16 +15,20 @@ import {
   ExternalLink,
   HardDrive,
   Search,
-  Eye,
   X,
   CloudUpload,
   CheckCircle2,
-  ShieldAlert,
-  CreditCard,
-  QrCode
+  FileSignature,
+  Loader2
 } from 'lucide-react';
 import { EmployeeIdCardModal } from './EmployeeIdCardModal';
 import DriveFilePreview from '../common/DriveFilePreview';
+import {
+  extractFolderId,
+  getRootDriveId,
+  personnelDocPathLabel,
+  uploadPersonnelDocument,
+} from '../../lib/drive';
 
 interface PersonnelModuleProps {
   store: ARMSStore;
@@ -62,36 +66,19 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
   const [uploadedBase64, setUploadedBase64] = useState<string>('');
   const [isUploadingPhoto, setIsUploadingPhoto] = useState<boolean>(false);
 
-  // helper: upload base64 to server Drive endpoint
-  const extractFolderIdFromUrl = (u?: string) => {
-    if (!u) return undefined;
-    const m = u.match(/drive\.google\.com\/drive\/folders\/([a-zA-Z0-9_-]+)/);
-    if (m) return m[1];
-    const m2 = u.match(/folders\/([a-zA-Z0-9_-]+)/);
-    if (m2) return m2[1];
-    return undefined;
-  };
+  // SPPI (opsional) Photo states
+  const [sppiPhotoUrl, setSppiPhotoUrl] = useState<string>('');
+  const [sppiDriveFileId, setSppiDriveFileId] = useState<string>('');
+  const [sppiDriveFolderUrl, setSppiDriveFolderUrl] = useState<string>('');
+  const [uploadedSppiBase64, setUploadedSppiBase64] = useState<string>('');
 
-  const uploadBase64ToDrive = async (base64: string, targetName?: string, folderId?: string) => {
-    try {
-      const match = base64.match(/^data:(.+);base64,(.*)$/);
-      const mime = match ? match[1] : 'image/jpeg';
-      const ext = mime.split('/')?.[1] || 'jpg';
-      const fileName = `${(targetName || fullName || 'ktp').replace(/[^a-z0-9\-]/gi, '_')}-${Date.now().toString().slice(-6)}.${ext}`;
-      const resp = await fetch('/api/drive/upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName, mimeType: mime, base64, folderId }),
-      });
-      const json = await resp.json();
-      if (json && json.success) return json;
-      console.error('Drive upload failed', json);
-      return null;
-    } catch (err) {
-      console.error('Drive upload error', err);
-      return null;
-    }
-  };
+  const rootDriveId = getRootDriveId(store.settings);
+
+  const driveFileViewUrl = (fileId?: string, webViewLink?: string) =>
+    webViewLink || (fileId ? `https://drive.google.com/file/d/${fileId}/view?usp=sharing` : '');
+
+  const isPreviewableImage = (url?: string) =>
+    !!url && (url.startsWith('data:image') || /\.(png|jpe?g|gif|webp|bmp|svg)(\?.*)?$/i.test(url));
 
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS' || currentUser.role === 'APPROVER_EXECUTIVE';
 
@@ -102,15 +89,19 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
     // If passed a data URL, upload immediately to server Drive endpoint
     if (typeof newPhotoUrl === 'string' && newPhotoUrl.startsWith('data:')) {
       setIsUploadingPhoto(true);
-      // determine folderId from personnel record or fallback to store settings
       const person = (store.personnel || []).find((x) => x.id === personnelId);
-      const folderId = person?.gDriveFolderId || extractFolderIdFromUrl(person?.gDriveFolderUrl) || store.settings?.googleDriveFolderId;
-      const json = await uploadBase64ToDrive(newPhotoUrl, person?.fullName || fullName || 'ktp', folderId);
+      const json = await uploadPersonnelDocument(
+        newPhotoUrl,
+        person?.fullName || fullName || 'ktp',
+        'KTP',
+        rootDriveId,
+      );
       setIsUploadingPhoto(false);
       if (json && json.success) {
+        const viewUrl = driveFileViewUrl(json.fileId, json.webViewLink);
         const updatedPersonnel = (store.personnel || []).map((p) =>
           p.id === personnelId
-            ? { ...p, ktpPhotoUrl: json.webViewLink || `https://drive.google.com/file/d/${json.fileId}/view?usp=sharing`, ktpDriveFileId: json.fileId }
+            ? { ...p, ktpPhotoUrl: viewUrl, ktpDriveFileId: json.fileId, ktpDriveFolderUrl: viewUrl }
             : p
         );
         const audit = createAuditEntry(
@@ -170,6 +161,11 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
     setKtpPhotoUrl('');
     setKtpDriveFileId('');
     setKtpDriveFolderUrl('');
+    setUploadedBase64('');
+    setSppiPhotoUrl('');
+    setSppiDriveFileId('');
+    setSppiDriveFolderUrl('');
+    setUploadedSppiBase64('');
   };
 
   const handleOpenAdd = () => {
@@ -195,20 +191,34 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
     setKtpPhotoUrl(personnel.ktpPhotoUrl || '');
     setKtpDriveFileId(personnel.ktpDriveFileId || '');
     setKtpDriveFolderUrl(personnel.ktpDriveFolderUrl || '');
+    setUploadedBase64('');
+    setSppiPhotoUrl(personnel.sppiPhotoUrl || '');
+    setSppiDriveFileId(personnel.sppiDriveFileId || '');
+    setSppiDriveFolderUrl(personnel.sppiDriveFolderUrl || '');
+    setUploadedSppiBase64('');
     setShowModal(true);
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDocFileUpload = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    kind: 'KTP' | 'SPPI',
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result as string;
-      setKtpPhotoUrl(result); // preview
-      setUploadedBase64(result);
+      if (kind === 'SPPI') {
+        setSppiPhotoUrl(result);
+        setUploadedSppiBase64(result);
+      } else {
+        setKtpPhotoUrl(result);
+        setUploadedBase64(result);
+      }
     };
     reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   const handleDeletePersonnel = (p: Personnel) => {
@@ -234,30 +244,54 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
   const handleSavePersonnel = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // If there's a staged base64 image or ktpPhotoUrl is still a data URL, upload it first
+    let finalKtpFileId = ktpDriveFileId || extractFolderId(ktpPhotoUrl) || '';
+    let finalKtpUrl = ktpDriveFolderUrl || ktpPhotoUrl;
+    let finalSppiFileId = sppiDriveFileId || extractFolderId(sppiPhotoUrl) || '';
+    let finalSppiUrl = sppiDriveFolderUrl || sppiPhotoUrl;
+
+    const ktpData = uploadedBase64 || (ktpPhotoUrl && ktpPhotoUrl.startsWith('data:') ? ktpPhotoUrl : '');
+    const sppiData = uploadedSppiBase64 || (sppiPhotoUrl && sppiPhotoUrl.startsWith('data:') ? sppiPhotoUrl : '');
+
     try {
-      if (uploadedBase64 || (ktpPhotoUrl && ktpPhotoUrl.startsWith('data:'))) {
-        setIsUploadingPhoto(true);
-        const base64ToUpload = uploadedBase64 || ktpPhotoUrl;
-        // determine folder for this personnel
-        const folderId = editingPersonnel?.gDriveFolderId || extractFolderIdFromUrl(editingPersonnel?.gDriveFolderUrl) || store.settings?.googleDriveFolderId;
-        const json = await uploadBase64ToDrive(base64ToUpload, fullName || 'ktp', folderId);
-        setIsUploadingPhoto(false);
-        if (json && json.success) {
-          setKtpDriveFileId(json.fileId);
-          setKtpDriveFolderUrl(json.webViewLink || `https://drive.google.com/file/d/${json.fileId}/view?usp=sharing`);
-          setKtpPhotoUrl(json.webViewLink || `https://drive.google.com/file/d/${json.fileId}/view?usp=sharing`);
-          // clear staged base64
-          setUploadedBase64('');
+      if (ktpData || sppiData) setIsUploadingPhoto(true);
+
+      if (ktpData) {
+        const json = await uploadPersonnelDocument(ktpData, fullName || 'PERSONEL', 'KTP', rootDriveId);
+        if (json?.success) {
+          finalKtpFileId = json.fileId || finalKtpFileId;
+          finalKtpUrl = driveFileViewUrl(json.fileId, json.webViewLink) || finalKtpUrl;
+        } else if (json?.fallbackBase64) {
+          finalKtpUrl = json.webViewLink || ktpData;
         }
+        setKtpDriveFileId(finalKtpFileId);
+        setKtpDriveFolderUrl(finalKtpUrl);
+        setKtpPhotoUrl(finalKtpUrl);
+        setUploadedBase64('');
+      }
+
+      if (sppiData) {
+        const json = await uploadPersonnelDocument(sppiData, fullName || 'PERSONEL', 'SPPI', rootDriveId);
+        if (json?.success) {
+          finalSppiFileId = json.fileId || finalSppiFileId;
+          finalSppiUrl = driveFileViewUrl(json.fileId, json.webViewLink) || finalSppiUrl;
+        } else if (json?.fallbackBase64) {
+          finalSppiUrl = json.webViewLink || sppiData;
+        }
+        setSppiDriveFileId(finalSppiFileId);
+        setSppiDriveFolderUrl(finalSppiUrl);
+        setSppiPhotoUrl(finalSppiUrl);
+        setUploadedSppiBase64('');
       }
     } catch (err) {
-      console.error('Failed uploading KTP before save', err);
+      console.error('Failed uploading KTP/SPPI before save', err);
+    } finally {
       setIsUploadingPhoto(false);
     }
 
-    const finalDriveFileId = ktpDriveFileId || (ktpPhotoUrl && ktpPhotoUrl.includes('/d/') ? ktpPhotoUrl.split('/d/')[1].split('/')[0] : ktpDriveFileId);
-    const finalDriveUrl = ktpDriveFolderUrl || ktpPhotoUrl;
+    const driveNotes = [
+      finalKtpUrl ? 'KTP' : null,
+      finalSppiUrl ? 'SPPI' : null,
+    ].filter(Boolean).join(' & ') || 'tanpa berkas';
 
     if (editingPersonnel) {
       const updatedPersonnel: Personnel = {
@@ -275,9 +309,12 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
         emergencyContact,
         position,
         status,
-        ktpPhotoUrl: finalDriveUrl,
-        ktpDriveFileId: finalDriveFileId,
-        ktpDriveFolderUrl: finalDriveUrl,
+        ktpPhotoUrl: finalKtpUrl,
+        ktpDriveFileId: finalKtpFileId,
+        ktpDriveFolderUrl: finalKtpUrl,
+        sppiPhotoUrl: finalSppiUrl || undefined,
+        sppiDriveFileId: finalSppiFileId || undefined,
+        sppiDriveFolderUrl: finalSppiUrl || undefined,
       };
 
       const updatedList = (store.personnel || []).map((p) =>
@@ -290,7 +327,7 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
         'UPDATE',
         'Personnel',
         editingPersonnel.id,
-        `Update data ${fullName} (${type}) dengan foto KTP Google Drive`
+        `Update data ${fullName} (${type}) dengan berkas ${driveNotes} Google Drive`
       );
 
       onUpdateStore({
@@ -314,9 +351,12 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
         emergencyContact,
         position,
         status,
-        ktpPhotoUrl: finalDriveUrl,
-        ktpDriveFileId: finalDriveFileId,
-        ktpDriveFolderUrl: finalDriveUrl,
+        ktpPhotoUrl: finalKtpUrl,
+        ktpDriveFileId: finalKtpFileId,
+        ktpDriveFolderUrl: finalKtpUrl,
+        sppiPhotoUrl: finalSppiUrl || undefined,
+        sppiDriveFileId: finalSppiFileId || undefined,
+        sppiDriveFolderUrl: finalSppiUrl || undefined,
         createdAt: new Date().toISOString(),
       };
 
@@ -326,7 +366,7 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
         'CREATE',
         'Personnel',
         newPersonnel.id,
-        `Tambah Karyawan/Mitra ${fullName} (${type}) dengan foto KTP Google Drive`
+        `Tambah Karyawan/Mitra ${fullName} (${type}) dengan berkas ${driveNotes} Google Drive`
       );
 
       onUpdateStore({
@@ -371,7 +411,7 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
             <h2 className="text-xl font-bold text-white">Database Karyawan & Mitra DC</h2>
           </div>
           <p className="text-xs text-slate-400">
-            Penyimpanan terpusat Folder Database Karyawan, Mitra DC (Freelance), dan berkas KYC (Foto KTP terhubung ke Google Drive).
+            Penyimpanan terpusat Folder Database Karyawan, Mitra DC (Freelance), dan berkas KYC (Foto KTP & SPPI terhubung ke Google Drive).
           </p>
         </div>
         {canEdit && (
@@ -650,13 +690,13 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
           const p = previewKtpModal;
           if (p.ktpPhotoUrl && p.ktpPhotoUrl.startsWith('data:')) {
             setIsUploadingPhoto(true);
-            const folderId = p.gDriveFolderId || extractFolderIdFromUrl(p.gDriveFolderUrl) || store.settings?.googleDriveFolderId;
-            const json = await uploadBase64ToDrive(p.ktpPhotoUrl, p.fullName, folderId);
+            const json = await uploadPersonnelDocument(p.ktpPhotoUrl, p.fullName, 'KTP', rootDriveId);
             setIsUploadingPhoto(false);
             if (json && json.success) {
+              const viewUrl = driveFileViewUrl(json.fileId, json.webViewLink);
               const updatedPersonnel = (store.personnel || []).map((pp) =>
                 pp.id === p.id
-                  ? { ...pp, ktpPhotoUrl: json.webViewLink || `https://drive.google.com/file/d/${json.fileId}/view?usp=sharing`, ktpDriveFileId: json.fileId }
+                  ? { ...pp, ktpPhotoUrl: viewUrl, ktpDriveFileId: json.fileId, ktpDriveFolderUrl: viewUrl }
                   : pp
               );
               const audit = createAuditEntry(currentUser.username, currentUser.role, 'UPDATE', 'Personnel', p.id, `Upload KTP via preview: ${p.id}`);
@@ -712,7 +752,7 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={handleFileUpload}
+                      onChange={(e) => handleDocFileUpload(e, 'KTP')}
                       className="hidden"
                     />
                   </label>
@@ -721,13 +761,26 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
                 <div className="flex flex-col items-center justify-center">
                   {ktpPhotoUrl ? (
                     <div className="relative w-full h-24 rounded-lg overflow-hidden border border-emerald-600 bg-slate-900 group">
-                      <img src={ktpPhotoUrl} alt="Preview KTP" className="w-full h-full object-cover" />
+                      {isPreviewableImage(ktpPhotoUrl) ? (
+                        <img src={ktpPhotoUrl} alt="Preview KTP" className="w-full h-full object-cover" />
+                      ) : (
+                        <a
+                          href={ktpPhotoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full h-full flex flex-col items-center justify-center text-emerald-300 text-[10px] gap-1"
+                        >
+                          <CheckCircle2 className="w-5 h-5" />
+                          <span>Berkas KTP terhubung</span>
+                        </a>
+                      )}
                       <button
                         type="button"
                         onClick={() => {
                           setKtpPhotoUrl('');
                           setKtpDriveFileId('');
                           setKtpDriveFolderUrl('');
+                          setUploadedBase64('');
                         }}
                         className="absolute top-1 right-1 bg-rose-600 text-white p-1 rounded-full opacity-80 hover:opacity-100 transition"
                         title="Hapus Foto KTP"
@@ -744,12 +797,111 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
                 </div>
               </div>
 
+              <div className="text-[10px] font-mono text-indigo-300 bg-indigo-950/40 p-2 rounded border border-indigo-800/50 flex items-start gap-1.5">
+                <Folder className="w-3 h-3 text-indigo-400 shrink-0 mt-0.5" />
+                <span>Pemetaan GDrive: {personnelDocPathLabel(fullName || editingPersonnel?.fullName || 'NAMA_PERSONEL', 'KTP')}</span>
+              </div>
+
               {ktpDriveFileId && (
                 <div className="text-[11px] font-mono text-emerald-400 bg-emerald-950/40 p-2 rounded border border-emerald-800/60 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
                     <span>Sinkron Google Drive ID: {ktpDriveFileId}</span>
                   </div>
+                </div>
+              )}
+            </div>
+
+            {/* SPPI Photo Upload Area (optional) */}
+            <div className="bg-slate-950 p-3 border border-amber-900/50 rounded-xl space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                  <FileSignature className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Upload SPPI (Opsional)</span>
+                </label>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-900 border border-slate-700 text-slate-400 font-semibold">
+                  Tidak wajib
+                </span>
+              </div>
+              <p className="text-[10px] text-slate-400 leading-normal">
+                Surat Pernyataan Pemeriksaan Identitas. File gambar akan disimpan ke Google Drive pada subfolder <code className="text-amber-300 font-mono">02_SPPI</code>.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 items-center">
+                <div className="md:col-span-2">
+                  <label className="border-2 border-dashed border-slate-700 hover:border-amber-500 bg-slate-900 rounded-xl p-3 flex flex-col items-center justify-center cursor-pointer transition text-center group">
+                    <Upload className="w-5 h-5 text-slate-400 group-hover:text-amber-400 mb-1.5 transition" />
+                    <span className="text-xs font-semibold text-slate-200">Klik atau tarik file SPPI ke sini</span>
+                    <span className="text-[10px] text-slate-500 mt-0.5">Format: JPG, PNG, WEBP — otomatis tersimpan ke GDrive</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleDocFileUpload(e, 'SPPI')}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                <div className="flex flex-col items-center justify-center">
+                  {sppiPhotoUrl ? (
+                    <div className="relative w-full h-24 rounded-lg overflow-hidden border border-amber-600 bg-slate-900 group">
+                      {isPreviewableImage(sppiPhotoUrl) ? (
+                        <img src={sppiPhotoUrl} alt="Preview SPPI" className="w-full h-full object-cover" />
+                      ) : (
+                        <a
+                          href={sppiPhotoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full h-full flex flex-col items-center justify-center text-amber-300 text-[10px] gap-1"
+                        >
+                          <FileSignature className="w-5 h-5" />
+                          <span>Berkas SPPI terhubung</span>
+                        </a>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSppiPhotoUrl('');
+                          setSppiDriveFileId('');
+                          setSppiDriveFolderUrl('');
+                          setUploadedSppiBase64('');
+                        }}
+                        className="absolute top-1 right-1 bg-rose-600 text-white p-1 rounded-full opacity-80 hover:opacity-100 transition"
+                        title="Hapus Berkas SPPI"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-full h-24 rounded-lg border border-dashed border-slate-800 bg-slate-900 flex flex-col items-center justify-center text-slate-600">
+                      <FileSignature className="w-5 h-5 mb-0.5" />
+                      <span className="text-[10px]">Preview SPPI</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="text-[10px] font-mono text-amber-300 bg-amber-950/30 p-2 rounded border border-amber-800/50 flex items-start gap-1.5">
+                <Folder className="w-3 h-3 text-amber-400 shrink-0 mt-0.5" />
+                <span>Pemetaan GDrive: {personnelDocPathLabel(fullName || editingPersonnel?.fullName || 'NAMA_PERSONEL', 'SPPI')}</span>
+              </div>
+
+              {sppiDriveFileId && (
+                <div className="text-[11px] font-mono text-emerald-400 bg-emerald-950/40 p-2 rounded border border-emerald-800/60 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                    <span>Sinkron Google Drive ID: {sppiDriveFileId}</span>
+                  </div>
+                  {sppiPhotoUrl && !sppiPhotoUrl.startsWith('data:') && (
+                    <a
+                      href={sppiPhotoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-amber-300 hover:underline flex items-center gap-1"
+                    >
+                      Buka <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
                 </div>
               )}
             </div>
@@ -909,9 +1061,15 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
               </button>
               <button
                 type="submit"
-                className="px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500 shadow-md transition"
+                disabled={isUploadingPhoto}
+                className="px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500 shadow-md transition disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
               >
-                {editingPersonnel ? 'Simpan Perubahan' : 'Simpan Data KYC & Foto KTP'}
+                {isUploadingPhoto && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                {isUploadingPhoto
+                  ? 'Mengunggah ke Google Drive...'
+                  : editingPersonnel
+                    ? 'Simpan Perubahan'
+                    : 'Simpan Data KYC, KTP & SPPI'}
               </button>
             </div>
           </form>

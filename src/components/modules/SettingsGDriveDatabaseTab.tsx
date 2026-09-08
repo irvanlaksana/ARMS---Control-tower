@@ -34,7 +34,18 @@ import {
   RefreshCw,
   FolderCheck
 } from 'lucide-react';
-import { ensureDrivePath, createDriveFolder, isPlaceholderDriveUrl, isRealDriveFolder, slugify, folderUrlFromId, getRootDriveId } from '../../lib/drive';
+import {
+  ensureDrivePath,
+  isPlaceholderDriveUrl,
+  isRealDriveFolder,
+  slugify,
+  folderUrlFromId,
+  getRootDriveId,
+  personnelFolderSegments,
+  personnelDocFolderSegments,
+  personnelDocPathLabel,
+  uploadPersonnelDocument,
+} from '../../lib/drive';
 import { LetterPreviewModal, LetterPreviewData } from '../common/LetterPreviewModal';
 import { EmployeeIdCardModal } from './EmployeeIdCardModal';
 import { AddressFields } from '../common/AddressFields';
@@ -88,7 +99,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
 
   // Quick Upload / File Link Modal State
   const [uploadTarget, setUploadTarget] = useState<{
-    type: 'PERSONNEL_KTP' | 'CLIENT_PROPOSAL' | 'CLIENT_MOU' | 'DEBTOR_SKP' | 'DEBTOR_SPH';
+    type: 'PERSONNEL_KTP' | 'PERSONNEL_SPPI' | 'CLIENT_PROPOSAL' | 'CLIENT_MOU' | 'DEBTOR_SKP' | 'DEBTOR_SPH';
     id: string;
     title: string;
     targetName: string;
@@ -154,12 +165,16 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
         const p = personnelList.find((x) => x.id === id);
         if (!p) throw new Error('Personel tidak ditemukan');
         const result = await ensureDrivePath(personnelPathSegments(p), rootDriveId);
+        await Promise.all([
+          ensureDrivePath(personnelDocFolderSegments(p.fullName, 'KTP'), rootDriveId).catch(() => null),
+          ensureDrivePath(personnelDocFolderSegments(p.fullName, 'SPPI'), rootDriveId).catch(() => null),
+        ]);
         const updatedPersonnel = personnelList.map((x) =>
           x.id === id
             ? { ...x, gDriveFolderUrl: result.webViewLink, gDriveFolderId: result.folderId }
             : x,
         );
-        const audit = createAuditEntry(currentUser.username, currentUser.role, 'UPDATE', 'Personnel_GDrive', id, `Buat folder GDrive karyawan: ${p.fullName}`);
+        const audit = createAuditEntry(currentUser.username, currentUser.role, 'UPDATE', 'Personnel_GDrive', id, `Buat folder GDrive karyawan + subfolder 01_KTP & 02_SPPI: ${p.fullName}`);
         onUpdateStore({ ...store, personnel: updatedPersonnel, auditLogs: [audit, ...store.auditLogs] });
         setFolderActionMsg({ ok: true, text: `Folder GDrive ${p.fullName} berhasil dibuat/diperbaiki.` });
       } else if (kind === 'CLIENT') {
@@ -244,7 +259,9 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
             gDriveFolderUrl: editFolderUrl.trim() || undefined,
             gDriveFolderId: editFolderId.trim() || undefined,
             ktpDriveFolderUrl: editDocUrl.trim() || p.ktpDriveFolderUrl,
-            ktpDriveFileId: editFolderId.trim() || p.ktpDriveFileId,
+            ktpDriveFileId: p.ktpDriveFileId,
+            sppiDriveFolderUrl: editSphUrl.trim() || p.sppiDriveFolderUrl,
+            sppiPhotoUrl: editSphUrl.trim() || p.sppiPhotoUrl,
           };
         }
         return p;
@@ -395,6 +412,21 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
     // If there's a base64 payload, upload to server Drive endpoint (service account)
     if (uploadedBase64) {
       try {
+        if (uploadTarget.type === 'PERSONNEL_KTP' || uploadTarget.type === 'PERSONNEL_SPPI') {
+          const docKind = uploadTarget.type === 'PERSONNEL_SPPI' ? 'SPPI' : 'KTP';
+          const json = await uploadPersonnelDocument(
+            uploadedBase64,
+            uploadTarget.targetName || 'PERSONEL',
+            docKind,
+            rootDriveId,
+          );
+          if (!json?.success && !json?.fallbackBase64) {
+            alert('Gagal mengunggah ke Google Drive: ' + (json?.error || 'Unknown'));
+          } else {
+            finalUrl = json.webViewLink || (json.fileId ? `https://drive.google.com/file/d/${json.fileId}/view?usp=sharing` : finalUrl);
+            finalFileId = json.fileId;
+          }
+        } else {
         // extract mime and base64
         const match = uploadedBase64.match(/^data:(.+);base64,(.*)$/);
         const mime = match ? match[1] : 'image/jpeg';
@@ -413,7 +445,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
             return undefined;
           };
 
-          if (uploadTarget.type === 'PERSONNEL_KTP') {
+          if (uploadTarget.type === 'PERSONNEL_KTP' || uploadTarget.type === 'PERSONNEL_SPPI') {
             const p = (store.personnel || []).find((x) => x.id === uploadTarget.id);
             return p?.gDriveFolderId || extractFolderId(p?.gDriveFolderUrl) || store.settings?.googleDriveFolderId;
           }
@@ -447,6 +479,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
           finalUrl = json.webViewLink || `https://drive.google.com/file/d/${json.fileId}/view?usp=sharing`;
           finalFileId = json.fileId;
         }
+        }
       } catch (err) {
         console.error('Upload error', err);
         alert('Gagal mengunggah berkas ke server. Periksa koneksi atau konfigurasi server.');
@@ -461,6 +494,19 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
             ktpDriveFolderUrl: finalUrl || p.ktpDriveFolderUrl,
             ktpPhotoUrl: finalUrl || p.ktpPhotoUrl,
             ktpDriveFileId: finalFileId || p.ktpDriveFileId,
+          };
+        }
+        return p;
+      });
+      onUpdateStore({ ...store, personnel: updatedPersonnel });
+    } else if (uploadTarget.type === 'PERSONNEL_SPPI') {
+      const updatedPersonnel = (store.personnel || []).map((p) => {
+        if (p.id === uploadTarget.id) {
+          return {
+            ...p,
+            sppiDriveFolderUrl: finalUrl || p.sppiDriveFolderUrl,
+            sppiPhotoUrl: finalUrl || p.sppiPhotoUrl,
+            sppiDriveFileId: finalFileId || p.sppiDriveFileId,
           };
         }
         return p;
@@ -723,7 +769,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                 1. KARYAWAN
               </span>
               <span className="text-slate-300 font-mono text-[11px] break-all">
-                📁 PT MJ INDONESIA &gt; 📁 DATABASE KARYAWAN &gt; 📁 [NAMA TIAP KARYAWAN]
+                📁 PT MJ INDONESIA &gt; 📁 DATABASE KARYAWAN &gt; 📁 [NAMA] &gt; 📁 01_KTP / 📁 02_SPPI
               </span>
             </div>
 
@@ -814,7 +860,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                   Database Karyawan PT MJ Indonesia
                 </h3>
                 <p className="text-xs text-slate-400 font-mono">
-                  Struktur: PT MJ INDONESIA &gt; DATABASE KARYAWAN &gt; [NAMA TIAP KARYAWAN]
+                  Struktur: PT MJ INDONESIA &gt; DATABASE KARYAWAN &gt; [NAMA] &gt; 01_KTP / 02_SPPI
                 </p>
               </div>
             </div>
@@ -835,7 +881,8 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                   ? p.gDriveFolderUrl || folderUrlFromId(p.gDriveFolderId)
                   : '';
                 const folderPlaceholderText = `Folder belum dibuat — klik "Buat Folder GDrive"`;
-                const ktpDocUrl = p.ktpDriveFolderUrl || '';
+                const ktpDocUrl = p.ktpDriveFolderUrl || p.ktpPhotoUrl || '';
+                const sppiDocUrl = p.sppiDriveFolderUrl || p.sppiPhotoUrl || '';
 
                 return (
                   <div
@@ -935,7 +982,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                       <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 text-[11px]">
                         <span className="text-slate-400 flex items-center gap-1">
                           <ImageIcon className="w-3 h-3 text-amber-400" />
-                          <span>Berkas KTP &amp; KYC:</span>
+                          <span>Berkas KTP (01_KTP):</span>
                         </span>
                         {ktpDocUrl ? (
                           <div className="flex items-center gap-1.5">
@@ -953,6 +1000,30 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                           </div>
                         ) : (
                           <span className="text-slate-500 text-[10px]">Belum ditautkan</span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-400 flex items-center gap-1">
+                          <FileSignature className="w-3 h-3 text-amber-400" />
+                          <span>Berkas SPPI (02_SPPI):</span>
+                        </span>
+                        {sppiDocUrl ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-emerald-400 font-semibold text-[10px] flex items-center gap-0.5">
+                              <CheckCircle2 className="w-3 h-3" /> Terhubung
+                            </span>
+                            <a
+                              href={sppiDocUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-amber-300 hover:underline text-[10px] flex items-center gap-0.5"
+                            >
+                              Lihat File <ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                          </div>
+                        ) : (
+                          <span className="text-slate-500 text-[10px]">Opsional — belum diunggah</span>
                         )}
                       </div>
                     </div>
@@ -1002,7 +1073,8 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                                 currentFolderUrl: p.gDriveFolderUrl || folderUrl,
                                 currentFolderId: p.gDriveFolderId || p.ktpDriveFileId,
                                 currentDocUrl: p.ktpDriveFolderUrl || '',
-                                extraNote: `Struktur: PT MJ INDONESIA > DATABASE KARYAWAN > ${slugify(p.fullName)}`,
+                                currentSphUrl: p.sppiDriveFolderUrl || '',
+                                extraNote: `Struktur: PT MJ INDONESIA > DATABASE KARYAWAN > ${slugify(p.fullName)} > 01_KTP / 02_SPPI`,
                               })
                             }
                             className="flex items-center gap-1 px-2.5 py-1.5 bg-indigo-950 hover:bg-indigo-900 border border-indigo-800 text-indigo-300 text-xs font-semibold rounded-lg transition"
@@ -1025,7 +1097,23 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                             className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 text-emerald-300 text-xs font-semibold rounded-lg transition"
                           >
                             <Upload className="w-3 h-3 text-emerald-400" />
-                            <span>Upload / Tautkan</span>
+                            <span>Upload KTP</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openUploadModal({
+                                type: 'PERSONNEL_SPPI',
+                                id: p.id,
+                                title: `Upload Berkas SPPI (Opsional) - ${p.fullName}`,
+                                targetName: p.fullName,
+                                currentUrl: p.sppiDriveFolderUrl,
+                              })
+                            }
+                            className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-950 hover:bg-amber-900 border border-amber-800 text-amber-300 text-xs font-semibold rounded-lg transition"
+                          >
+                            <FileSignature className="w-3 h-3 text-amber-400" />
+                            <span>Upload SPPI</span>
                           </button>
                         </>
                       )}
@@ -1767,6 +1855,21 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                 />
               </div>
 
+              {editLinkTarget.type === 'PERSONNEL' && (
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-0.5">
+                    Tautan Berkas SPPI (Opsional):
+                  </label>
+                  <input
+                    type="text"
+                    value={editSphUrl}
+                    onChange={(e) => setEditSphUrl(e.target.value)}
+                    placeholder="https://drive.google.com/file/d/.../view"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-white font-mono text-xs focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+              )}
+
               {editLinkTarget.type === 'DEBTOR' && (
                 <div>
                   <label className="block font-semibold text-slate-300 mb-0.5">
@@ -2090,7 +2193,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
 
             <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-[11px] space-y-1 font-mono text-slate-300">
               <div>
-                <span className="text-slate-500">Struktur Path:</span> 📁 PT MJ INDONESIA / DATABASE KARYAWAN / {slugify(previewKtpPersonnel.fullName)} /
+                <span className="text-slate-500">Struktur Path:</span> 📁 {personnelDocPathLabel(previewKtpPersonnel.fullName, 'KTP')} /
               </div>
               <div>
                 <span className="text-slate-500">Link GDrive:</span>{' '}

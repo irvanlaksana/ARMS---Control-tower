@@ -276,9 +276,9 @@ export const DocumentsModule: React.FC<DocumentsModuleProps> = ({
       }
     });
 
-    // 8. Berkas Database Karyawan & KYC
+    // 8. Berkas Database Karyawan & KYC (KTP + SPPI)
     (store.personnel || []).forEach((p) => {
-      if (p.ktpDriveFolderUrl || p.gDriveFolderUrl) {
+      if (p.ktpDriveFolderUrl || p.ktpPhotoUrl || p.gDriveFolderUrl) {
         items.push({
           id: `per-${p.id}`,
           sourceModule: 'DOCUMENT',
@@ -290,7 +290,25 @@ export const DocumentsModule: React.FC<DocumentsModuleProps> = ({
           issuedDate: p.createdAt?.slice(0, 10) || '2026-01-10',
           driveFolderId: p.gDriveFolderId || 'FLD-05',
           driveFolderUrl: p.gDriveFolderUrl || ROOT_GDRIVE_URL,
-          driveDocumentUrl: p.ktpDriveFolderUrl || p.gDriveFolderUrl,
+          driveDocumentUrl: p.ktpDriveFolderUrl || p.ktpPhotoUrl || p.gDriveFolderUrl,
+          status: p.status,
+          rawObj: p,
+        });
+      }
+
+      if (p.sppiDriveFolderUrl || p.sppiPhotoUrl) {
+        items.push({
+          id: `per-sppi-${p.id}`,
+          sourceModule: 'DOCUMENT',
+          docNo: `SPPI-${(p.nikKtp || p.id).slice(-6)}`,
+          title: `Berkas SPPI: ${p.fullName}`,
+          category: 'FIELD_OPS',
+          categoryLabel: 'Database Karyawan — SPPI',
+          subjectName: `${p.fullName} (${p.position || p.type})`,
+          issuedDate: p.createdAt?.slice(0, 10) || '2026-01-10',
+          driveFolderId: p.gDriveFolderId || 'FLD-05',
+          driveFolderUrl: p.gDriveFolderUrl || ROOT_GDRIVE_URL,
+          driveDocumentUrl: p.sppiDriveFolderUrl || p.sppiPhotoUrl,
           status: p.status,
           rawObj: p,
         });

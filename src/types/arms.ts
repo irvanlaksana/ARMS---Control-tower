@@ -73,6 +73,9 @@ export interface Personnel {
   ktpPhotoUrl?: string; // Base64 Data URL or direct link
   ktpDriveFileId?: string; // Google Drive file ID
   ktpDriveFolderUrl?: string; // Google Drive direct file/folder link
+  sppiPhotoUrl?: string; // Base64 Data URL or Google Drive link (opsional)
+  sppiDriveFileId?: string; // Google Drive file ID berkas SPPI
+  sppiDriveFolderUrl?: string; // Google Drive link berkas/folder SPPI
   gDriveFolderUrl?: string; // Google Drive folder link for this employee
   gDriveFolderId?: string;
   status: 'ACTIVE' | 'INACTIVE';
