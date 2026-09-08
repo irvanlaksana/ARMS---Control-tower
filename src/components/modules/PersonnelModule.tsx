@@ -24,7 +24,9 @@ import {
 import { EmployeeIdCardModal } from './EmployeeIdCardModal';
 import DriveFilePreview from '../common/DriveFilePreview';
 import {
+  drivePreviewUrl,
   extractFolderId,
+  fileToCompressedDataUrl,
   getRootDriveId,
   personnelDocPathLabel,
   uploadPersonnelDocument,
@@ -71,14 +73,27 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
   const [sppiDriveFileId, setSppiDriveFileId] = useState<string>('');
   const [sppiDriveFolderUrl, setSppiDriveFolderUrl] = useState<string>('');
   const [uploadedSppiBase64, setUploadedSppiBase64] = useState<string>('');
+  const [uploadError, setUploadError] = useState<string>('');
+  const [uploadingKind, setUploadingKind] = useState<'KTP' | 'SPPI' | null>(null);
 
   const rootDriveId = getRootDriveId(store.settings);
 
-  const driveFileViewUrl = (fileId?: string, webViewLink?: string) =>
-    webViewLink || (fileId ? `https://drive.google.com/file/d/${fileId}/view?usp=sharing` : '');
+  const driveFileViewUrl = (fileId?: string, webViewLink?: string, directViewUrl?: string) =>
+    drivePreviewUrl(fileId, webViewLink, directViewUrl)
+    || webViewLink
+    || (fileId ? `https://drive.google.com/file/d/${fileId}/view?usp=sharing` : '');
 
   const isPreviewableImage = (url?: string) =>
-    !!url && (url.startsWith('data:image') || /\.(png|jpe?g|gif|webp|bmp|svg)(\?.*)?$/i.test(url));
+    !!url && (
+      url.startsWith('data:image')
+      || url.includes('drive.google.com/thumbnail')
+      || url.includes('drive.google.com/uc?')
+      || url.includes('lh3.googleusercontent.com')
+      || /\.(png|jpe?g|gif|webp|bmp|svg)(\?.*)?$/i.test(url)
+    );
+
+  const personNameForDrive = () =>
+    (fullName || editingPersonnel?.fullName || 'PERSONEL').trim() || 'PERSONEL';
 
   const canEdit = currentUser.role === 'SUPER_ADMIN_OPS' || currentUser.role === 'APPROVER_EXECUTIVE';
 
@@ -166,6 +181,8 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
     setSppiDriveFileId('');
     setSppiDriveFolderUrl('');
     setUploadedSppiBase64('');
+    setUploadError('');
+    setUploadingKind(null);
   };
 
   const handleOpenAdd = () => {
@@ -188,15 +205,78 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
     setEmergencyContact(personnel.emergencyContact);
     setPosition(personnel.position || '');
     setStatus(personnel.status || 'ACTIVE');
-    setKtpPhotoUrl(personnel.ktpPhotoUrl || '');
+    setKtpPhotoUrl(
+      drivePreviewUrl(personnel.ktpDriveFileId, personnel.ktpPhotoUrl) || personnel.ktpPhotoUrl || '',
+    );
     setKtpDriveFileId(personnel.ktpDriveFileId || '');
     setKtpDriveFolderUrl(personnel.ktpDriveFolderUrl || '');
     setUploadedBase64('');
-    setSppiPhotoUrl(personnel.sppiPhotoUrl || '');
+    setSppiPhotoUrl(
+      drivePreviewUrl(personnel.sppiDriveFileId, personnel.sppiPhotoUrl) || personnel.sppiPhotoUrl || '',
+    );
     setSppiDriveFileId(personnel.sppiDriveFileId || '');
     setSppiDriveFolderUrl(personnel.sppiDriveFolderUrl || '');
     setUploadedSppiBase64('');
+    setUploadError('');
     setShowModal(true);
+  };
+
+  const processDocFile = async (file: File, kind: 'KTP' | 'SPPI') => {
+    const isImage = file.type.startsWith('image/') || /\.(jpe?g|png|webp|gif|bmp|heic|heif)$/i.test(file.name);
+    if (!isImage) {
+      setUploadError('Pilih file gambar (JPG, PNG, WEBP).');
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      setUploadError('Ukuran file maksimal 20 MB.');
+      return;
+    }
+
+    setUploadError('');
+    setUploadingKind(kind);
+    setIsUploadingPhoto(true);
+
+    try {
+      const dataUrl = await fileToCompressedDataUrl(file);
+      if (kind === 'SPPI') {
+        setSppiPhotoUrl(dataUrl);
+        setUploadedSppiBase64(dataUrl);
+      } else {
+        setKtpPhotoUrl(dataUrl);
+        setUploadedBase64(dataUrl);
+      }
+
+      const json = await uploadPersonnelDocument(dataUrl, personNameForDrive(), kind, rootDriveId);
+      const preview = driveFileViewUrl(json.fileId, json.webViewLink, json.directViewUrl) || dataUrl;
+
+      if (json?.success && json.fileId) {
+        if (kind === 'SPPI') {
+          setSppiPhotoUrl(preview);
+          setSppiDriveFileId(json.fileId);
+          setSppiDriveFolderUrl(json.webViewLink || preview);
+          setUploadedSppiBase64('');
+        } else {
+          setKtpPhotoUrl(preview);
+          setKtpDriveFileId(json.fileId);
+          setKtpDriveFolderUrl(json.webViewLink || preview);
+          setUploadedBase64('');
+        }
+      } else if (json?.fallbackBase64) {
+        setUploadError(
+          json.error
+            ? `Google Drive belum tersambung (${json.error}). Foto tetap dipratinjau dan akan disimpan saat Anda menekan Simpan.`
+            : 'Google Drive belum tersambung. Foto tetap dipratinjau dan akan disimpan saat Anda menekan Simpan.',
+        );
+      } else {
+        setUploadError(json?.error || 'Gagal mengunggah foto ke Google Drive.');
+      }
+    } catch (err: any) {
+      console.error('Gagal memproses unggahan KTP/SPPI', err);
+      setUploadError(err?.message || 'Gagal membaca atau mengunggah foto.');
+    } finally {
+      setIsUploadingPhoto(false);
+      setUploadingKind(null);
+    }
   };
 
   const handleDocFileUpload = (
@@ -204,21 +284,9 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
     kind: 'KTP' | 'SPPI',
   ) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      if (kind === 'SPPI') {
-        setSppiPhotoUrl(result);
-        setUploadedSppiBase64(result);
-      } else {
-        setKtpPhotoUrl(result);
-        setUploadedBase64(result);
-      }
-    };
-    reader.readAsDataURL(file);
     e.target.value = '';
+    if (!file) return;
+    void processDocFile(file, kind);
   };
 
   const handleDeletePersonnel = (p: Personnel) => {
@@ -259,7 +327,7 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
         const json = await uploadPersonnelDocument(ktpData, fullName || 'PERSONEL', 'KTP', rootDriveId);
         if (json?.success) {
           finalKtpFileId = json.fileId || finalKtpFileId;
-          finalKtpUrl = driveFileViewUrl(json.fileId, json.webViewLink) || finalKtpUrl;
+          finalKtpUrl = driveFileViewUrl(json.fileId, json.webViewLink, json.directViewUrl) || finalKtpUrl;
         } else if (json?.fallbackBase64) {
           finalKtpUrl = json.webViewLink || ktpData;
         }
@@ -273,7 +341,7 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
         const json = await uploadPersonnelDocument(sppiData, fullName || 'PERSONEL', 'SPPI', rootDriveId);
         if (json?.success) {
           finalSppiFileId = json.fileId || finalSppiFileId;
-          finalSppiUrl = driveFileViewUrl(json.fileId, json.webViewLink) || finalSppiUrl;
+          finalSppiUrl = driveFileViewUrl(json.fileId, json.webViewLink, json.directViewUrl) || finalSppiUrl;
         } else if (json?.fallbackBase64) {
           finalSppiUrl = json.webViewLink || sppiData;
         }
@@ -693,7 +761,7 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
             const json = await uploadPersonnelDocument(p.ktpPhotoUrl, p.fullName, 'KTP', rootDriveId);
             setIsUploadingPhoto(false);
             if (json && json.success) {
-              const viewUrl = driveFileViewUrl(json.fileId, json.webViewLink);
+              const viewUrl = driveFileViewUrl(json.fileId, json.webViewLink, json.directViewUrl);
               const updatedPersonnel = (store.personnel || []).map((pp) =>
                 pp.id === p.id
                   ? { ...pp, ktpPhotoUrl: viewUrl, ktpDriveFileId: json.fileId, ktpDriveFolderUrl: viewUrl }
@@ -743,19 +811,32 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
                 <span className="text-[10px] text-slate-400">Format: JPG, PNG, WEBP</span>
               </div>
 
+              {uploadError && uploadingKind !== 'SPPI' && (
+                <div className="text-[11px] text-amber-200 bg-amber-950/50 border border-amber-800/70 rounded-lg p-2">
+                  {uploadError}
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 items-center">
                 <div className="md:col-span-2">
-                  <label className="border-2 border-dashed border-slate-700 hover:border-indigo-500 bg-slate-900 rounded-xl p-3 flex flex-col items-center justify-center cursor-pointer transition text-center group">
-                    <Upload className="w-5 h-5 text-slate-400 group-hover:text-indigo-400 mb-1.5 transition" />
-                    <span className="text-xs font-semibold text-slate-200">Klik atau tarik file KTP ke sini</span>
-                    <span className="text-[10px] text-slate-500 mt-0.5">Otomatis tersinkron dengan Folder Google Drive</span>
+                  <div className={`relative border-2 border-dashed rounded-xl p-3 flex flex-col items-center justify-center text-center transition ${uploadingKind === 'KTP' ? 'border-indigo-500 bg-indigo-950/30' : 'border-slate-700 hover:border-indigo-500 bg-slate-900'}`}>
+                    {uploadingKind === 'KTP' ? (
+                      <Loader2 className="w-5 h-5 text-indigo-400 mb-1.5 animate-spin" />
+                    ) : (
+                      <Upload className="w-5 h-5 text-slate-400 mb-1.5" />
+                    )}
+                    <span className="text-xs font-semibold text-slate-200">
+                      {uploadingKind === 'KTP' ? 'Mengunggah foto KTP...' : 'Klik atau tarik file KTP ke sini'}
+                    </span>
+                    <span className="text-[10px] text-slate-500 mt-0.5">Unggah langsung ke Google Drive (JPG, PNG, WEBP)</span>
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,image/heic,image/heif,image/*"
+                      disabled={isUploadingPhoto}
                       onChange={(e) => handleDocFileUpload(e, 'KTP')}
-                      className="hidden"
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-wait"
                     />
-                  </label>
+                  </div>
                 </div>
 
                 <div className="flex flex-col items-center justify-center">
@@ -845,8 +926,12 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
                 <div className="flex flex-col items-center justify-center">
                   {sppiPhotoUrl ? (
                     <div className="relative w-full h-24 rounded-lg overflow-hidden border border-amber-600 bg-slate-900 group">
-                      {isPreviewableImage(sppiPhotoUrl) ? (
-                        <img src={sppiPhotoUrl} alt="Preview SPPI" className="w-full h-full object-cover" />
+                      {isPreviewableImage(sppiPhotoUrl) || sppiDriveFileId ? (
+                        <img
+                          src={isPreviewableImage(sppiPhotoUrl) ? sppiPhotoUrl : drivePreviewUrl(sppiDriveFileId, sppiPhotoUrl)}
+                          alt="Preview SPPI"
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
                         <a
                           href={sppiPhotoUrl}

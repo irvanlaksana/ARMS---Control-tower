@@ -178,6 +178,60 @@ export function fileToBase64(file: File): Promise<string> {
   });
 }
 
+/** URL yang bisa dipakai sebagai src <img> untuk berkas Google Drive. */
+export function drivePreviewUrl(fileId?: string, webViewLink?: string, directViewUrl?: string): string {
+  if (directViewUrl) return directViewUrl;
+  if (fileId) return `https://drive.google.com/thumbnail?id=${fileId}&sz=w800`;
+  if (webViewLink) {
+    const id = extractFolderId(webViewLink);
+    if (id) return `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
+    return webViewLink;
+  }
+  return '';
+}
+
+/**
+ * Baca file gambar jadi data URL, kompres bila terlalu besar
+ * (foto HP sering >5MB dan gagal POST ke /api/drive/upload).
+ */
+export async function fileToCompressedDataUrl(
+  file: File,
+  maxDim = 2000,
+  quality = 0.82,
+): Promise<string> {
+  const raw = await fileToBase64(file);
+  if (!file.type.startsWith('image/') || /svg|gif/i.test(file.type)) return raw;
+
+  return await new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const longest = Math.max(img.width || 1, img.height || 1);
+      const scale = Math.min(1, maxDim / longest);
+      const needsResize = scale < 1 || file.size > 1_400_000;
+      if (!needsResize) {
+        resolve(raw);
+        return;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(raw);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      try {
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      } catch {
+        resolve(raw);
+      }
+    };
+    img.onerror = () => resolve(raw);
+    img.src = raw;
+  });
+}
+
 export interface DriveUploadResult {
   success: boolean;
   fileId?: string;
@@ -239,14 +293,25 @@ export async function uploadBase64ToDrive(
       }),
     });
 
-    const json = await resp.json();
+    const rawText = await resp.text();
+    let json: any = {};
+    try {
+      json = rawText ? JSON.parse(rawText) : {};
+    } catch {
+      return {
+        success: false,
+        fallbackBase64: true,
+        webViewLink: base64,
+        error: `Server unggahan tidak merespons JSON (HTTP ${resp.status}).`,
+      };
+    }
     if (json.success && (json.webViewLink || json.fileId)) {
       return {
         success: true,
         fileId: json.fileId,
         fileName: json.fileName || fileName,
         webViewLink: json.webViewLink,
-        directViewUrl: json.directViewUrl,
+        directViewUrl: json.directViewUrl || (json.fileId ? `https://drive.google.com/thumbnail?id=${json.fileId}&sz=w800` : undefined),
       };
     }
 
