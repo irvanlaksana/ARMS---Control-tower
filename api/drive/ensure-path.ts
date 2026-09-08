@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { google } from 'googleapis';
-import { authFor, isGoogleAuthAvailable } from '../lib/googleAuth';
+import { authFor, isGoogleAuthAvailable } from '../lib/googleAuth.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');

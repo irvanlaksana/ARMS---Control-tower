@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { google } from 'googleapis';
 import { Readable } from 'node:stream';
-import { authFor, isGoogleAuthAvailable } from '../lib/googleAuth';
+import { authFor, isGoogleAuthAvailable } from '../lib/googleAuth.js';
 
 export const config = {
   api: {
