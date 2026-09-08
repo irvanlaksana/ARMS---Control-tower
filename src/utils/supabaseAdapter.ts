@@ -1,16 +1,80 @@
 /**
  * Supabase Data Adapter
- * Converts objects between ARMS TypeScript (camelCase) and Supabase PostgreSQL (snake_case)
- * Handles type sanitization (empty strings to null for numbers and dates).
+ * ---------------------------------------------------------------------------
+ * Menjembatani objek ARMS (TypeScript, camelCase) dengan tabel Supabase
+ * PostgreSQL (snake_case), termasuk sanitasi tipe data.
+ *
+ * Tiga sumber error yang dicegah di sini:
+ *  1. "Could not find the 'xxx' column of 'yyy' in the schema cache"
+ *     -> penamaan hasil konversi camelCase->snake_case tidak sama dengan kolom
+ *        asli di Postgres (mis. gDriveFolderUrl -> g_drive_folder_url padahal
+ *        kolomnya bernama gdrive_folder_url). Ditangani oleh
+ *        CAMEL_TO_SNAKE_OVERRIDES + filter kolom SUPABASE_TABLE_COLUMNS.
+ *  2. "null value in column ... violates not-null constraint"
+ *     -> field undefined/'' dikirim sebagai null eksplisit ke kolom NOT NULL
+ *        yang punya DEFAULT (created_at, updated_at, timestamp, status, dll).
+ *        Postgres hanya memakai DEFAULT bila key TIDAK dikirim, sehingga key
+ *        seperti itu kini dihapus dari payload.
+ *  3. "violates foreign key constraint"
+ *     -> ditangani di supabaseService (pembersihan FK menggantung + urutan push).
  */
 
-function camelToSnake(str: string): string {
-  return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+import {
+  SUPABASE_TABLE_COLUMNS,
+  SUPABASE_DEFAULTED_NOT_NULL,
+} from './supabaseSchemaColumns';
+
+/**
+ * Penamaan khusus yang TIDAK bisa dihasilkan oleh aturan konversi otomatis.
+ * key = nama field TypeScript, value = nama kolom Postgres yang sebenarnya.
+ */
+export const CAMEL_TO_SNAKE_OVERRIDES: Record<string, string> = {
+  gDriveFolderUrl: 'gdrive_folder_url',
+  gDriveFolderId: 'gdrive_folder_id',
+  gDriveFolderName: 'gdrive_folder_name',
+};
+
+/** Kebalikan dari CAMEL_TO_SNAKE_OVERRIDES, untuk konversi hasil SELECT. */
+export const SNAKE_TO_CAMEL_OVERRIDES: Record<string, string> = Object.entries(
+  CAMEL_TO_SNAKE_OVERRIDES
+).reduce<Record<string, string>>((acc, [camel, snake]) => {
+  acc[snake] = camel;
+  return acc;
+}, {});
+
+/**
+ * camelCase -> snake_case dengan penanganan akronim.
+ * principalDebtOS -> principal_debt_os   (bukan principal_debt_o_s)
+ * policeNoVIN     -> police_no_vin       (bukan police_no_v_i_n)
+ */
+export function camelToSnake(str: string): string {
+  if (CAMEL_TO_SNAKE_OVERRIDES[str]) return CAMEL_TO_SNAKE_OVERRIDES[str];
+  return str
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2')
+    .toLowerCase();
 }
 
-function snakeToCamel(str: string): string {
-  return str.replace(/_([a-z0-9])/g, (_, letter) => letter.toUpperCase());
+/**
+ * snake_case -> camelCase, konsisten dengan camelToSnake di atas.
+ * principal_debt_os -> principalDebtOS
+ * police_no_vin     -> policeNoVIN
+ * gdrive_folder_url -> gDriveFolderUrl
+ */
+export function snakeToCamel(str: string): string {
+  if (SNAKE_TO_CAMEL_OVERRIDES[str]) return SNAKE_TO_CAMEL_OVERRIDES[str];
+  const camel = str.replace(/_([a-z0-9])/g, (_, letter: string) => letter.toUpperCase());
+  return REVERSE_ACRONYM_FIELDS[camel] || camel;
 }
+
+/**
+ * Field TS yang mengandung akronim kapital. Hasil snakeToCamel default
+ * ("principalDebtOs") harus dikembalikan ke bentuk aslinya.
+ */
+const REVERSE_ACRONYM_FIELDS: Record<string, string> = {
+  principalDebtOs: 'principalDebtOS',
+  policeNoVin: 'policeNoVIN',
+};
 
 // Columns that are NUMERIC / INTEGER in PostgreSQL
 const NUMERIC_COLUMNS = new Set([
@@ -116,6 +180,9 @@ const JSON_COLUMNS = new Set([
 /**
  * Convert a JavaScript object with camelCase keys to snake_case for PostgreSQL
  * Cleans empty strings and converts types appropriately.
+ *
+ * Catatan: fungsi ini TIDAK tahu tabel tujuan, jadi tidak memfilter kolom.
+ * Untuk payload upsert gunakan `toSupabaseRow(table, obj)`.
  */
 export function toSnakeCaseRecord(obj: any): any {
   if (obj === null || obj === undefined || typeof obj !== 'object') {
@@ -127,47 +194,88 @@ export function toSnakeCaseRecord(obj: any): any {
   const newObj: Record<string, any> = {};
   for (const key of Object.keys(obj)) {
     const snakeKey = camelToSnake(key);
-    let val = obj[key];
-
-    // Handle undefined
-    if (val === undefined) {
-      val = null;
-    }
-
-    // Convert empty strings in numeric/date columns to null
-    if (NUMERIC_COLUMNS.has(snakeKey)) {
-      if (val === '' || val === null || val === undefined) {
-        val = null;
-      } else if (typeof val === 'string') {
-        const parsed = Number(val.replace(/[^\d.-]/g, ''));
-        val = isNaN(parsed) ? null : parsed;
-      }
-    } else if (DATE_COLUMNS.has(snakeKey)) {
-      if (val === '' || val === null || val === undefined) {
-        val = null;
-      } else if (typeof val === 'string' && val.trim() === '') {
-        val = null;
-      }
-    } else if (BOOLEAN_COLUMNS.has(snakeKey)) {
-      if (typeof val === 'string') {
-        val = val.toLowerCase() === 'true';
-      } else if (val === null || val === undefined) {
-        val = false;
-      }
-    } else if (JSON_COLUMNS.has(snakeKey)) {
-      if (typeof val === 'string') {
-        try {
-          val = JSON.parse(val);
-        } catch {
-          val = [];
-        }
-      }
-      if (!val) val = [];
-    }
-
-    newObj[snakeKey] = val;
+    newObj[snakeKey] = sanitizeValue(snakeKey, obj[key]);
   }
   return newObj;
+}
+
+/** Sanitasi satu nilai sesuai tipe kolom Postgres-nya. */
+function sanitizeValue(snakeKey: string, input: any): any {
+  let val = input;
+
+  if (val === undefined) val = null;
+
+  if (NUMERIC_COLUMNS.has(snakeKey)) {
+    if (val === '' || val === null) {
+      val = null;
+    } else if (typeof val === 'string') {
+      const parsed = Number(val.replace(/[^\d.-]/g, ''));
+      val = isNaN(parsed) ? null : parsed;
+    }
+  } else if (DATE_COLUMNS.has(snakeKey)) {
+    if (val === null || (typeof val === 'string' && val.trim() === '')) {
+      val = null;
+    }
+  } else if (BOOLEAN_COLUMNS.has(snakeKey)) {
+    if (typeof val === 'string') {
+      val = val.toLowerCase() === 'true';
+    } else if (val === null) {
+      val = false;
+    }
+  } else if (JSON_COLUMNS.has(snakeKey)) {
+    if (typeof val === 'string') {
+      try {
+        val = JSON.parse(val);
+      } catch {
+        val = [];
+      }
+    }
+    if (!val) val = [];
+  }
+
+  return val;
+}
+
+/** Hasil konversi satu record menjadi payload siap-upsert. */
+export interface SupabaseRowResult {
+  /** Payload yang sudah difilter sesuai kolom nyata di Postgres. */
+  row: Record<string, any>;
+  /** Key yang dibuang karena tidak punya kolom padanan di tabel tujuan. */
+  droppedKeys: string[];
+}
+
+/**
+ * Konversi record ARMS menjadi payload Supabase untuk tabel tertentu.
+ *
+ * - Key tanpa kolom padanan dibuang (bukan bikin push seluruh tabel gagal).
+ * - Kolom NOT NULL yang punya DEFAULT tidak pernah dikirimi null eksplisit.
+ */
+export function toSupabaseRow(tableName: string, obj: any): SupabaseRowResult {
+  const columns = SUPABASE_TABLE_COLUMNS[tableName];
+  const defaulted = new Set(SUPABASE_DEFAULTED_NOT_NULL[tableName] || []);
+  const allowed = columns ? new Set(columns) : null;
+
+  const row: Record<string, any> = {};
+  const droppedKeys: string[] = [];
+
+  for (const key of Object.keys(obj || {})) {
+    const snakeKey = camelToSnake(key);
+
+    if (allowed && !allowed.has(snakeKey)) {
+      droppedKeys.push(`${key} -> ${snakeKey}`);
+      continue;
+    }
+
+    const val = sanitizeValue(snakeKey, obj[key]);
+
+    // Jangan kirim null ke kolom NOT NULL yang punya DEFAULT: biarkan Postgres
+    // yang mengisi (created_at, updated_at, timestamp, status, counter, dll).
+    if (val === null && defaulted.has(snakeKey)) continue;
+
+    row[snakeKey] = val;
+  }
+
+  return { row, droppedKeys };
 }
 
 /**
@@ -182,8 +290,7 @@ export function toCamelCaseRecord<T = any>(obj: any): T {
   }
   const newObj: Record<string, any> = {};
   for (const key of Object.keys(obj)) {
-    const camelKey = snakeToCamel(key);
-    newObj[camelKey] = obj[key];
+    newObj[snakeToCamel(key)] = obj[key];
   }
   return newObj as T;
 }
@@ -259,3 +366,11 @@ export const STORE_TO_SUPABASE_TABLE: Record<string, string> = {
   auditLogs: 'audit_logs',
   settings: 'settings',
 };
+
+/** Kebalikan STORE_TO_SUPABASE_TABLE: nama tabel -> key koleksi di ARMSStore. */
+export const SUPABASE_TABLE_TO_STORE: Record<string, string> = Object.entries(
+  STORE_TO_SUPABASE_TABLE
+).reduce<Record<string, string>>((acc, [collection, table]) => {
+  acc[table] = collection;
+  return acc;
+}, {});
