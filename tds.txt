@@ -1,0 +1,102 @@
+src/components/modules/UserManagementModule.tsx: {u.username}
+src/components/modules/UserManagementModule.tsx: {u.name}
+src/components/modules/UserManagementModule.tsx: {u.email}
+src/components/modules/SettlementModule.tsx: {s.settlementNo}
+src/components/modules/SettlementModule.tsx: {s.clientName}
+src/components/modules/SettlementModule.tsx: Rp {s.totalCollected.toLocaleString('id-ID')}
+src/components/modules/SettlementModule.tsx: - Rp {s.agencyFeeAmount.toLocaleString('id-ID')}
+src/components/modules/SettlementModule.tsx: Rp {s.netRemittedToClient.toLocaleString('id-ID')}
+src/components/modules/SettlementModule.tsx: {s.settlementDate}
+src/components/modules/SKModule.tsx: {s.skNumber}
+src/components/modules/SKModule.tsx: {s.personnelName}
+src/components/modules/SKModule.tsx: {s.issuedDate}
+src/components/modules/SKModule.tsx: {s.expiryDate}
+src/components/modules/SKModule.tsx: {settings.companyName || 'Direktur Perusahaan'}
+src/components/modules/SKModule.tsx: {settings.companyAddress || '-'}
+src/components/modules/SKModule.tsx: {selectedPersonnel.fullName}
+src/components/modules/SKModule.tsx: {selectedPersonnel.nikKtp}
+src/components/modules/SKModule.tsx: {selectedPersonnel.birthPlaceDate}
+src/components/modules/SKModule.tsx: {selectedPersonnel.address}
+src/components/modules/SKModule.tsx: {selectedPersonnel.position || selectedPersonnel.type.replace('_', ' ')}
+src/components/modules/SKModule.tsx: {selectedCase.debtorName}
+src/components/modules/SKModule.tsx: {selectedCase.caseNo}
+src/components/modules/SKModule.tsx: {selectedCase.assetSummary}
+src/components/modules/PersonnelModule.tsx: {p.nikKtp}
+src/components/modules/PaymentsModule.tsx: {p.paymentNo}
+src/components/modules/PaymentsModule.tsx: {p.paymentType}
+src/components/modules/PaymentsModule.tsx: Rp {p.amount.toLocaleString('id-ID')}
+src/components/modules/PaymentsModule.tsx: {p.allocationSummary}
+src/components/modules/LeadsModule.tsx: {l.leadCode}
+src/components/modules/LeadsModule.tsx: {l.companyName}
+src/components/modules/LeadsModule.tsx: {l.contactPerson}
+src/components/modules/LeadsModule.tsx: {l.phone}
+src/components/modules/LeadsModule.tsx: Rp {l.estimatedVolume.toLocaleString('id-ID')}
+src/components/modules/FinancePnLModule.tsx: {l.entryNo}
+src/components/modules/FinancePnLModule.tsx: {l.date}
+src/components/modules/FinancePnLModule.tsx: Rp {l.amount.toLocaleString('id-ID')}
+src/components/modules/FeeConfigModule.tsx: {f.clientName}
+src/components/modules/FeeConfigModule.tsx: {f.serviceName}
+src/components/modules/FeeConfigModule.tsx: {f.percentageValue ? `${f.percentageValue}%` : '-'}
+src/components/modules/FeeConfigModule.tsx: {f.fixedAmount ? `Rp ${f.fixedAmount.toLocaleString('id-ID')}` : '-'}
+src/components/modules/FeeConfigModule.tsx: {f.effectiveDate}
+src/components/modules/ExpensesModule.tsx: {e.expenseNo}
+src/components/modules/ExpensesModule.tsx: Rp {e.amount.toLocaleString('id-ID')}
+src/components/modules/ExpensesModule.tsx: {e.description}
+src/components/modules/ExpensesModule.tsx: {e.requestedBy}
+src/components/modules/DashboardModule.tsx: {cli.clientCode}
+src/components/modules/DashboardModule.tsx: {cli.companyName}
+src/components/modules/DashboardModule.tsx: {cli.contactPerson}
+src/components/modules/DashboardModule.tsx: {cli.activeCasesCount}
+src/components/modules/DanaTalanganModule.tsx: {t.fundingNo}
+src/components/modules/DanaTalanganModule.tsx: Rp {t.requestedAmount.toLocaleString('id-ID')}
+src/components/modules/DanaTalanganModule.tsx: {t.funderSource}
+src/components/modules/DanaTalanganModule.tsx: {t.feeOrInterestRatePercent}%
+src/components/modules/DanaTalanganModule.tsx: {t.repayTargetDate || '-'}
+src/components/modules/CustomersModule.tsx: {c.customerCode}
+src/components/modules/CustomersModule.tsx: {c.fullName}
+src/components/modules/CustomersModule.tsx: {c.nikKtp}
+src/components/modules/CustomersModule.tsx: {c.phone}
+src/components/modules/CustomersModule.tsx: {c.addressCurrent}
+src/components/modules/CustomersModule.tsx: {c.workplace}
+src/components/modules/CustomersModule.tsx: {c.riskNotes}
+src/components/modules/ContractsModule.tsx: {c.contractNo}
+src/components/modules/ContractsModule.tsx: {c.clientName}
+src/components/modules/ContractsModule.tsx: {c.startDate} to {c.endDate}
+src/components/modules/CommLogModule.tsx: {new Date(log.logDate).toLocaleString('id-ID')}
+src/components/modules/CommLogModule.tsx: {log.caseNo}
+src/components/modules/CommLogModule.tsx: {log.summary}
+src/components/modules/CommLogModule.tsx: {log.followUpAction}
+src/components/modules/CollectionModule.tsx: {act.collectionDate}
+src/components/modules/CollectionModule.tsx: {act.personnelName}
+src/components/modules/CollectionModule.tsx: Rp {act.amountCollected.toLocaleString('id-ID')}
+src/components/modules/CollectionModule.tsx: {act.receiptNo}
+src/components/modules/ClientsModule.tsx: {cli.clientCode}
+src/components/modules/ClientsModule.tsx: {cli.companyName}
+src/components/modules/ClientsModule.tsx: {cli.contactPerson}
+src/components/modules/ClientsModule.tsx: {cli.activeCasesCount}
+src/components/modules/CasesModule.tsx: {c.clientName}
+src/components/modules/CasesModule.tsx: {c.assetSummary}
+src/components/modules/CasesModule.tsx: Rp {c.principalDebtOS.toLocaleString('id-ID')}
+src/components/modules/CasesModule.tsx: {c.currentPersonnelName || 'Unassigned'}
+src/components/modules/AuditLogModule.tsx: {new Date(log.timestamp).toLocaleString('id-ID')}
+src/components/modules/AuditLogModule.tsx: {log.moduleName}
+src/components/modules/AuditLogModule.tsx: {log.targetId}
+src/components/modules/AuditLogModule.tsx: {log.details}
+src/components/modules/AuditLogModule.tsx: {log.ipAddress || '127.0.0.1'}
+src/components/modules/AssignmentModule.tsx: {a.assignmentNo}
+src/components/modules/AssignmentModule.tsx: {a.personnelName}
+src/components/modules/AssignmentModule.tsx: {a.assignedDate}
+src/components/modules/AssignmentModule.tsx: {a.targetDate} ({a.slaDays} days SLA)
+src/components/modules/AssignmentModule.tsx: {a.instructions}
+src/components/modules/AssetsModule.tsx: {a.assetCode}
+src/components/modules/AssetsModule.tsx: {a.brandModel}
+src/components/modules/AssetsModule.tsx: {a.policeNoVIN}
+src/components/modules/AssetsModule.tsx: Rp {a.estimatedMarketValue.toLocaleString('id-ID')}
+src/components/modules/AssetsModule.tsx: {a.warehouseLocation || 'In Field'}
+src/components/modules/AssetRecoveryModule.tsx: {r.recoveryNo}
+src/components/modules/AssetRecoveryModule.tsx: {r.assetDescription}
+src/components/modules/AssetRecoveryModule.tsx: {r.recoveryDate}
+src/components/modules/AssetRecoveryModule.tsx: {r.warehouseLocation}
+src/components/modules/ApprovalCenterModule.tsx: {app.requestNo}
+src/components/modules/ApprovalCenterModule.tsx: {app.requestedBy}
+src/components/modules/ApprovalCenterModule.tsx: {app.amountOrValue ? `Rp ${app.amountOrValue.toLocaleString('id-ID')}` : '-'}

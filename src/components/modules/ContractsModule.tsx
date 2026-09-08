@@ -1,0 +1,404 @@
+import { Pagination, usePagination } from '../common/Pagination';
+import React, { useState, useMemo } from 'react';
+import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
+import { User, Contract, ApprovalRequest } from '../../types/arms';
+import { FileSpreadsheet, Plus, ExternalLink, Edit2, Trash2, Search } from 'lucide-react';
+
+interface ContractsModuleProps {
+  store: ARMSStore;
+  currentUser: User;
+  onUpdateStore: (newStore: ARMSStore) => void;
+}
+
+export const ContractsModule: React.FC<ContractsModuleProps> = ({ store, currentUser, onUpdateStore }) => {
+  const [showModal, setShowModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [clientId, setClientId] = useState(store.clients[0]?.id || '');
+  const [title, setTitle] = useState('');
+  const [feeStructureSummary, setFeeStructureSummary] = useState('');
+  const [driveDocumentUrl, setDriveDocumentUrl] = useState('');
+  const [draftContent, setDraftContent] = useState('');
+
+  React.useEffect(() => {
+    setDraftContent(`MEMORANDUM OF UNDERSTANDING (MoU) JASA PENAGIHAN\n\nPada hari ini, disepakati perjanjian kerjasama penagihan antara:\n1. KLIEN (Multi Finance)\n2. MJ AGENCY RECOVERY\n\nBahwa KLIEN menyerahkan kuasa penagihan portofolio macet (DPD 90+) kepada MJ AGENCY dengan struktur biaya:\n${feeStructureSummary || '[Isi struktur biaya]'}\n\nDemikian MoU ini dibuat untuk dilaksanakan dengan penuh tanggung jawab.\n\nTtd,\n\n( KLIEN )          ( MJ AGENCY )`);
+  }, [feeStructureSummary]);
+
+  const canEdit = currentUser.role === 'SUPER_ADMIN_OPS';
+
+  const handleOpenModal = (contract?: Contract) => {
+    if (contract) {
+      setIsEditing(true);
+      setEditId(contract.id);
+      setClientId(contract.clientId);
+      setTitle(contract.title);
+      setFeeStructureSummary(contract.feeStructureSummary || '');
+      setDriveDocumentUrl(contract.driveDocumentUrl || '');
+    } else {
+      setIsEditing(false);
+      setEditId(null);
+      setClientId(store.clients[0]?.id || '');
+      setTitle('');
+      setFeeStructureSummary('');
+      setDriveDocumentUrl('');
+    }
+    setShowModal(true);
+  };
+
+  const handleDeleteContract = (id: string, title: string) => {
+    if (!window.confirm(`Are you sure you want to delete contract "${title}"?`)) return;
+
+    const audit = createAuditEntry(
+      currentUser.username,
+      currentUser.role,
+      'DELETE',
+      'Contracts',
+      id,
+      `Deleted contract ${title}`
+    );
+
+    onUpdateStore({
+      ...store,
+      contracts: store.contracts.filter(c => c.id !== id),
+      auditLogs: [audit, ...store.auditLogs],
+    });
+  };
+
+  const handleSaveContract = (e: React.FormEvent) => {
+    e.preventDefault();
+    const client = store.clients.find((c) => c.id === clientId);
+
+    if (isEditing && editId) {
+      const updatedContracts = store.contracts.map(c => {
+        if (c.id === editId) {
+          return {
+            ...c,
+            clientId,
+            clientName: client?.companyName || 'Client',
+            title,
+            feeStructureSummary,
+            driveDocumentUrl,
+          };
+        }
+        return c;
+      });
+
+      const audit = createAuditEntry(
+        currentUser.username,
+        currentUser.role,
+        'UPDATE',
+        'Contracts',
+        editId,
+        `Updated contract ${title}`
+      );
+
+      onUpdateStore({
+        ...store,
+        contracts: updatedContracts,
+        auditLogs: [audit, ...store.auditLogs],
+      });
+    } else {
+      const contractNo = `MOU/ARMS-${client?.clientCode || 'CLI'}/2026/${Math.floor(100 + Math.random() * 900)}`;
+
+      const newContract: Contract = {
+        id: `CTR-${Date.now()}`,
+        contractNo,
+        clientId,
+        clientName: client?.companyName || 'Client',
+        title,
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: '2026-12-31',
+        feeStructureSummary,
+        status: 'PENDING_EXECUTIVE_APPROVAL',
+        driveDocumentUrl,
+        createdAt: new Date().toISOString(),
+      };
+
+      const approvalReq: ApprovalRequest = {
+        id: `APP-CTR-${Date.now()}`,
+        requestNo: `REQ-CTR-${Math.floor(100 + Math.random() * 900)}`,
+        module: 'CONTRACT',
+        targetId: newContract.id,
+        targetReference: contractNo,
+        title: `Approval MoU Contract ${client?.companyName}`,
+        requestedBy: currentUser.name,
+        description: title,
+        status: 'PENDING',
+        createdAt: new Date().toISOString(),
+      };
+
+      const audit = createAuditEntry(currentUser.username, currentUser.role, 'CREATE', 'Contracts', newContract.id, `Created MoU ${contractNo} (Pending Executive Approval)`);
+
+      onUpdateStore({
+        ...store,
+        contracts: [newContract, ...store.contracts],
+        approvals: [approvalReq, ...store.approvals],
+        auditLogs: [audit, ...store.auditLogs],
+      });
+    }
+
+    setShowModal(false);
+  };
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'EXPIRED' | 'TERMINATED'>('ALL');
+
+  const filteredContracts = useMemo(() => {
+    return (store.contracts || []).filter((c) => {
+      const term = searchTerm.toLowerCase().trim();
+      const matchesSearch =
+        !term ||
+        c.contractNo.toLowerCase().includes(term) ||
+        c.clientName.toLowerCase().includes(term) ||
+        c.title.toLowerCase().includes(term) ||
+        c.feeStructureSummary.toLowerCase().includes(term);
+
+      if (!matchesSearch) return false;
+      if (statusFilter !== 'ALL' && c.status !== statusFilter) return false;
+      return true;
+    });
+  }, [store.contracts, searchTerm, statusFilter]);
+
+  const contractPagination = usePagination<Contract>(filteredContracts, 10);
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2 mb-0.5">
+            <FileSpreadsheet className="w-4 h-4 text-indigo-400" />
+            <h2 className="text-xl font-bold text-white">Contracts & Master MoU Agreements</h2>
+          </div>
+          <p className="text-xs text-slate-400">Formal B2B Master Recovery Agreements with Multifinance Institutions</p>
+        </div>
+
+        {canEdit && (
+          <button
+            onClick={() => handleOpenModal()}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow-md transition"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Draft New Contract / MoU</span>
+          </button>
+        )}
+      </div>
+
+      {/* Search & Filter */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 p-1 rounded-lg overflow-x-auto">
+          {(['ALL', 'ACTIVE', 'EXPIRED', 'TERMINATED'] as const).map((st) => (
+            <button
+              key={st}
+              onClick={() => {
+                setStatusFilter(st);
+                contractPagination.setPage(1);
+              }}
+              className={`px-2.5 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition ${
+                statusFilter === st
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+              }`}
+            >
+              {st === 'ALL' && 'Semua Kontrak'}
+              {st === 'ACTIVE' && 'Aktif'}
+              {st === 'EXPIRED' && 'Expired'}
+              {st === 'TERMINATED' && 'Terminated'}
+            </button>
+          ))}
+        </div>
+
+        <div className="relative flex-1 sm:max-w-xs">
+          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Cari no kontrak, klien, judul..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              contractPagination.setPage(1);
+            }}
+            className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+          />
+        </div>
+      </div>
+
+      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs text-slate-300">
+            <thead className="bg-slate-950 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
+              <tr>
+                <th className="py-2 px-3">Contract No</th>
+                <th className="py-2 px-3">Multifinance Client</th>
+                <th className="py-2 px-3">Title & Fee Structure</th>
+                <th className="py-2 px-3">Validity Period</th>
+                <th className="py-2 px-3 text-center">Drive Document</th>
+                <th className="py-2 px-3 text-center">Status</th>
+                {canEdit && <th className="py-2 px-3 text-center">Aksi</th>}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800">
+              {contractPagination.pageItems.length === 0 ? (
+                <tr>
+                  <td colSpan={canEdit ? 7 : 6} className="py-12 text-center text-slate-500 text-xs">
+                    {store.contracts.length === 0
+                      ? 'Belum ada data kontrak / MoU master.'
+                      : 'Tidak ada kontrak yang sesuai dengan filter atau pencarian.'}
+                  </td>
+                </tr>
+              ) : (
+                contractPagination.pageItems.map((c) => (
+                <tr key={c.id} className="hover:bg-slate-800/40 transition">
+                  <td className="py-2.5 px-3 font-mono font-bold text-indigo-300">{c.contractNo}</td>
+                  <td className="py-2.5 px-3 font-bold text-white">{c.clientName}</td>
+                  <td className="py-2.5 px-3 space-y-0.5 max-w-[280px]">
+                    <div className="font-semibold text-slate-100">{c.title}</div>
+                    <div className="text-[10px] text-emerald-400">{c.feeStructureSummary}</div>
+                  </td>
+                  <td className="py-2.5 px-3 text-slate-400">
+                    {c.startDate} to {c.endDate}
+                  </td>
+                  <td className="py-2.5 px-3 text-center">
+                    {c.driveDocumentUrl ? (
+                      <a
+                        href={c.driveDocumentUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-400 hover:text-indigo-300 inline-flex items-center gap-1 text-[11px]"
+                      >
+                        <span>View Document</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    ) : (
+                      <span className="text-slate-600">-</span>
+                    )}
+                  </td>
+                  <td className="py-2.5 px-3 text-center">
+                    <span className="bg-indigo-950 text-indigo-300 text-[10px] px-2 py-1 rounded-full border border-indigo-800 font-semibold">
+                      {(c.status || '').replace(/_/g, ' ')}
+                    </span>
+                  </td>
+                  {canEdit && (
+                    <td className="py-2.5 px-3 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => handleOpenModal(c)}
+                          className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-indigo-400 transition"
+                          title="Edit Contract"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteContract(c.id, c.title)}
+                          className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-red-400 transition"
+                          title="Delete Contract"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        <Pagination
+          page={contractPagination.page}
+          totalPages={contractPagination.totalPages}
+          totalItems={contractPagination.totalItems}
+          pageSize={contractPagination.pageSize}
+          onPageChange={contractPagination.setPage}
+          onPageSizeChange={contractPagination.setPageSize}
+        />
+      </div>
+
+      {showModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-3 overflow-y-auto">
+          <form onSubmit={handleSaveContract} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-lg p-3.5 sm:p-4 space-y-2.5 shadow-2xl max-h-[85vh] overflow-y-auto my-auto">
+            <h3 className="font-bold text-white text-base">
+              {isEditing ? 'Edit MoU Master Contract' : 'Draft MoU Master Contract'}
+            </h3>
+
+            <div>
+              <label className="block text-xs text-slate-400 mb-0.5">Select Multifinance Client</label>
+              <select
+                value={clientId}
+                onChange={(e) => setClientId(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
+              >
+                {store.clients.map((cli) => (
+                  <option key={cli.id} value={cli.id}>
+                    {cli.companyName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-400 mb-0.5">Contract Title</label>
+              <input
+                type="text"
+                required
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. Master Recovery Agreement Portofolio Macet DPD 90+"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-400 mb-0.5">Fee Structure Summary</label>
+              <input
+                type="text"
+                required
+                value={feeStructureSummary}
+                onChange={(e) => setFeeStructureSummary(e.target.value)}
+                placeholder="e.g. Success fee 15% + Rp 2.500.000 per unit recovered"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-400 mb-0.5">Google Drive Document Link (Upload draft to GDrive and paste link here)</label>
+              <input
+                type="text"
+                value={driveDocumentUrl}
+                onChange={(e) => setDriveDocumentUrl(e.target.value)}
+                placeholder="https://drive.google.com/file/d/..."
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
+              />
+            </div>
+            
+            <div className="bg-slate-800/50 p-2.5 rounded-lg border border-slate-700 mt-3">
+               <h4 className="text-xs font-bold text-amber-400 mb-1.5">Draft MoU Template (Copy & Paste to GDocs)</h4>
+               <textarea
+                  rows={6}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-[10px] text-slate-300 font-mono"
+                  value={draftContent}
+                  onChange={(e) => setDraftContent(e.target.value)}
+               />
+               <p className="text-[10px] text-slate-400 mt-0.5 italic">*Copy teks ini, buat di Google Docs, lalu paste link-nya di atas.</p>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-1.5">
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="px-3 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500"
+              >
+                {isEditing ? 'Save Changes' : 'Submit for Executive Approval'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+};

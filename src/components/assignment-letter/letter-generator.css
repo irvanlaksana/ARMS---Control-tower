@@ -1,0 +1,312 @@
+/* Dimuat bersama index.css di aplikasi ARMS (Tailwind sudah diimpor di sana),
+   jadi blok root/body global dari aplikasi generator asli dilepas agar tidak
+   menimpa tema gelap ARMS Control Tower. */
+
+:root {
+  color-scheme: dark;
+}
+
+/* ====== DOCUMENT (F4 / FOLIO SHEET — 215 x 330 mm) ====== */
+:root {
+  --paper-w: 215mm;
+  --paper-h: 330mm;
+}
+
+.sheet {
+  width: var(--paper-w);
+  min-height: var(--paper-h);
+  background: #fff;
+  color: #000;
+  font-family: "Times New Roman", "Liberation Serif", Times, serif;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+}
+
+.sheet-bast {
+  padding: 11mm 9mm 9mm 9mm;
+  font-size: 9.4pt;
+  line-height: 1.24;
+}
+
+.sheet-penyerahan {
+  padding: 26mm 25mm 22mm 25mm;
+  font-size: 11.5pt;
+  line-height: 1.34;
+}
+
+.sheet-tugas {
+  padding: 15mm 20mm 18mm 20mm;
+  font-size: 11pt;
+  line-height: 1.36;
+}
+
+.sheet-tugas p,
+.sheet-tugas li,
+.sheet-tugas td {
+  font-size: 11pt;
+}
+
+.doc-table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.doc-table td,
+.doc-table th {
+  border: 1px solid #000;
+  padding: 1px 3px;
+  vertical-align: middle;
+  font-weight: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.tick {
+  font-family: "DejaVu Sans", "Segoe UI Symbol", Arial, sans-serif;
+  font-size: 8.5pt;
+  line-height: 1;
+}
+
+.u-line {
+  border-bottom: 1px solid #000;
+  display: inline-block;
+  min-width: 40mm;
+}
+
+.zoom-stage {
+  position: relative;
+}
+
+.zoom-wrap {
+  transform-origin: top left;
+  width: max-content;
+}
+
+.page-card {
+  display: block;
+}
+
+.generator-data-dropdown.is-open {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Match the dark slate application shell while keeping the paper preview white. */
+.generator-form .bg-white {
+  background-color: #0f172a !important;
+}
+
+.generator-form .bg-slate-50 {
+  background-color: #020617 !important;
+}
+
+.generator-form .bg-slate-100 {
+  background-color: #1e293b !important;
+}
+
+.generator-form .border-slate-100,
+.generator-form .border-slate-200 {
+  border-color: #334155 !important;
+}
+
+.generator-form .text-slate-800,
+.generator-form .text-slate-700,
+.generator-form .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+.generator-form .text-slate-500,
+.generator-form .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+.generator-form .hover\:bg-slate-50:hover {
+  background-color: #1e293b !important;
+}
+
+.generator-form .hover\:bg-slate-100:hover {
+  background-color: #334155 !important;
+}
+
+@media (max-width: 767px) {
+  .generator-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.65rem;
+    padding: 0.75rem;
+  }
+
+  .generator-toolbar h2 {
+    font-size: 0.8rem;
+  }
+
+  .generator-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .generator-actions button {
+    min-height: 2.35rem;
+    padding: 0.45rem 0.55rem;
+    font-size: 0.68rem;
+  }
+
+  .generator-actions button:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .generator-form {
+    width: 100%;
+    max-height: 43vh;
+    border-right: 0;
+    border-bottom: 1px solid #cbd5e1;
+    padding: 0.65rem;
+  }
+
+  .generator-preview {
+    min-height: 0;
+  }
+
+  .generator-preview > .no-print {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding: 0.5rem;
+  }
+
+  .generator-preview > .no-print > div:first-child {
+    flex-shrink: 0;
+  }
+
+  .generator-preview .print-scroll {
+    padding: 1rem 0.5rem;
+  }
+
+  .generator-data-dropdown {
+    position: fixed;
+    left: 0.75rem;
+    right: 0.75rem;
+    top: 4.25rem;
+    width: auto;
+    margin-top: 0.5rem;
+  }
+
+  .generator-body {
+    flex-direction: column;
+    overflow: auto;
+  }
+}
+
+/* thin scrollbars in the app shell */
+.thin-scroll::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 99px;
+}
+.thin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ====== PRINT ====== */
+/* Semua selector di-scope ke .arms-generator agar tidak memengaruhi
+   pencetakan modul lain di aplikasi ARMS (modal preview, laporan, dll.). */
+@media print {
+  @page {
+    size: 215mm 330mm; /* F4 / Folio */
+    margin: 0;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .arms-generator,
+  .arms-generator .generator-body,
+  .arms-generator .generator-preview {
+    display: block !important;
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .arms-generator .no-print {
+    display: none !important;
+  }
+
+  .arms-generator .print-root,
+  .arms-generator .print-scroll {
+    display: block !important;
+    position: static !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+    height: auto !important;
+    max-height: none !important;
+    width: auto !important;
+  }
+
+  .arms-generator main,
+  .arms-generator aside {
+    display: block !important;
+    background: #fff !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .arms-generator .zoom-stage,
+  .arms-generator .zoom-wrap,
+  .arms-generator .page-list,
+  .arms-generator .page-card,
+  .arms-generator .page-shadow {
+    transform: none !important;
+    zoom: 1 !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    display: block !important;
+    box-shadow: none !important;
+    outline: none !important;
+    border: none !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+    --tw-ring-offset-shadow: 0 0 #0000 !important;
+  }
+
+  .arms-generator .page-card {
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .arms-generator .page-card:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .arms-generator .sheet {
+    box-shadow: none !important;
+    margin: 0 !important;
+    outline: none !important;
+    border: none !important;
+    width: var(--paper-w) !important;
+    height: var(--paper-h) !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
