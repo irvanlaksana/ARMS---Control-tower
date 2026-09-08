@@ -362,12 +362,12 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
   const personnelPagination = usePagination<Personnel>(filteredPersonnel, 10);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header Banner */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-2.5 shadow-lg">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Users className="w-5 h-5 text-indigo-400" />
+          <div className="flex items-center gap-2 mb-0.5">
+            <Users className="w-4 h-4 text-indigo-400" />
             <h2 className="text-xl font-bold text-white">Database Karyawan & Mitra DC</h2>
           </div>
           <p className="text-xs text-slate-400">
@@ -377,19 +377,19 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
         {canEdit && (
           <button
             onClick={handleOpenAdd}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-md transition shrink-0"
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow-md transition shrink-0"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             <span>Tambah Karyawan / Mitra Baru</span>
           </button>
         )}
       </div>
 
       {/* Google Drive Status Banner */}
-      <div className="bg-gradient-to-r from-blue-950/60 via-slate-900 to-indigo-950/60 border border-blue-800/60 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md">
-        <div className="flex items-start sm:items-center gap-3">
-          <div className="p-2.5 bg-blue-900/50 rounded-lg border border-blue-700/50 text-blue-300 shrink-0">
-            <HardDrive className="w-6 h-6" />
+      <div className="bg-gradient-to-r from-blue-950/60 via-slate-900 to-indigo-950/60 border border-blue-800/60 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-md">
+        <div className="flex items-start sm:items-center gap-2">
+          <div className="p-2 bg-blue-900/50 rounded-lg border border-blue-700/50 text-blue-300 shrink-0">
+            <HardDrive className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -408,86 +408,86 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
           href={defaultDriveFolderLink}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-lg transition shrink-0"
+          className="flex items-center justify-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3 py-2 rounded-lg transition shrink-0"
         >
-          <ExternalLink className="w-3.5 h-3.5 text-blue-400" />
+          <ExternalLink className="w-3 h-3 text-blue-400" />
           <span>Buka Folder Google Drive</span>
         </a>
       </div>
 
       {/* Folder Navigation Tabs */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
         <button
           onClick={() => setActiveFolder('ALL')}
-          className={`p-4 rounded-xl border text-left transition flex items-center justify-between ${
+          className={`p-3 rounded-xl border text-left transition flex items-center justify-between ${
             activeFolder === 'ALL'
               ? 'bg-indigo-950/80 border-indigo-600 text-white shadow-lg shadow-indigo-950/50'
               : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
           }`}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <div className={`p-2 rounded-lg ${activeFolder === 'ALL' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
-              <Folder className="w-5 h-5" />
+              <Folder className="w-4 h-4" />
             </div>
             <div>
               <div className="font-bold text-sm">Semua Database</div>
               <div className="text-[11px] opacity-80">Folder Gabungan</div>
             </div>
           </div>
-          <span className="text-lg font-black bg-slate-950/60 px-3 py-1 rounded-lg border border-slate-800 text-indigo-300">
+          <span className="text-lg font-black bg-slate-950/60 px-2.5 py-1 rounded-lg border border-slate-800 text-indigo-300">
             {personnelList.length}
           </span>
         </button>
 
         <button
           onClick={() => setActiveFolder('KARYAWAN')}
-          className={`p-4 rounded-xl border text-left transition flex items-center justify-between ${
+          className={`p-3 rounded-xl border text-left transition flex items-center justify-between ${
             activeFolder === 'KARYAWAN'
               ? 'bg-blue-950/80 border-blue-600 text-white shadow-lg shadow-blue-950/50'
               : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
           }`}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <div className={`p-2 rounded-lg ${activeFolder === 'KARYAWAN' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
-              <Folder className="w-5 h-5" />
+              <Folder className="w-4 h-4" />
             </div>
             <div>
               <div className="font-bold text-sm">Folder Karyawan Internal</div>
               <div className="text-[11px] opacity-80">SPV, Staf, & Desk Officer</div>
             </div>
           </div>
-          <span className="text-lg font-black bg-slate-950/60 px-3 py-1 rounded-lg border border-slate-800 text-blue-300">
+          <span className="text-lg font-black bg-slate-950/60 px-2.5 py-1 rounded-lg border border-slate-800 text-blue-300">
             {karyawanList.length}
           </span>
         </button>
 
         <button
           onClick={() => setActiveFolder('MITRA_DC')}
-          className={`p-4 rounded-xl border text-left transition flex items-center justify-between ${
+          className={`p-3 rounded-xl border text-left transition flex items-center justify-between ${
             activeFolder === 'MITRA_DC'
               ? 'bg-amber-950/80 border-amber-600 text-white shadow-lg shadow-amber-950/50'
               : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
           }`}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <div className={`p-2 rounded-lg ${activeFolder === 'MITRA_DC' ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
-              <Folder className="w-5 h-5" />
+              <Folder className="w-4 h-4" />
             </div>
             <div>
               <div className="font-bold text-sm">Folder Mitra DC (Freelance)</div>
               <div className="text-[11px] opacity-80">Eksekutor Lapangan & Desk DC</div>
             </div>
           </div>
-          <span className="text-lg font-black bg-slate-950/60 px-3 py-1 rounded-lg border border-slate-800 text-amber-300">
+          <span className="text-lg font-black bg-slate-950/60 px-2.5 py-1 rounded-lg border border-slate-800 text-amber-300">
             {mitraList.length}
           </span>
         </button>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-col sm:flex-row items-center justify-between gap-2.5">
         <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
@@ -516,46 +516,46 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
           <table className="w-full text-left text-[11px] text-slate-300">
             <thead className="bg-slate-950 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
               <tr>
-                <th className="py-2 px-2.5">Nama Lengkap</th>
-                <th className="py-2 px-2.5">TTL & Alamat</th>
-                <th className="py-2 px-2.5">Kontak</th>
-                {canEdit && <th className="py-2 px-2.5 text-center">Aksi</th>}
+                <th className="py-2 px-2">Nama Lengkap</th>
+                <th className="py-2 px-2">TTL & Alamat</th>
+                <th className="py-2 px-2">Kontak</th>
+                {canEdit && <th className="py-2 px-2 text-center">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
               {filteredPersonnel.length === 0 ? (
                 <tr>
                   <td colSpan={canEdit ? 4 : 3} className="py-12 text-center text-slate-500 text-xs">
-                    <Folder className="w-8 h-8 text-slate-600 mx-auto mb-2 opacity-50" />
+                    <Folder className="w-6 h-6 text-slate-600 mx-auto mb-1.5 opacity-50" />
                     Belum ada data pada folder {activeFolder === 'ALL' ? 'Database' : activeFolder}. Klik "Tambah Karyawan / Mitra Baru" untuk memasukkan data.
                   </td>
                 </tr>
               ) : (
                 personnelPagination.pageItems.map((p) => (
                   <tr key={p.id} className="hover:bg-slate-800/40 transition">
-                    <td className="py-2.5 px-2.5">
+                    <td className="py-2 px-2">
                       <div className="font-bold text-white">{p.fullName}</div>
                     </td>
 
-                    <td className="py-2.5 px-2.5 space-y-0.5">
+                    <td className="py-2 px-2 space-y-0.5">
                       <div className="text-slate-200">{p.birthPlaceDate}</div>
                       <div className="text-[10px] text-slate-400 max-w-[180px] truncate">{p.address}</div>
                     </td>
 
-                    <td className="py-2.5 px-2.5 space-y-0.5">
+                    <td className="py-2 px-2 space-y-0.5">
                       <div className="text-emerald-400 font-semibold">{p.phoneNumber}</div>
                       <div className="text-[10px] text-slate-400">{p.email || '-'}</div>
                     </td>
 
                     {canEdit && (
-                      <td className="py-2.5 px-2.5 text-center">
+                      <td className="py-2 px-2 text-center">
                         <div className="flex items-center justify-center gap-1.5">
                           <button
                             onClick={() => handleOpenEdit(p)}
                             title="Edit Data"
-                            className="flex items-center gap-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-800 px-2.5 py-1 rounded text-[11px] font-semibold transition"
+                            className="flex items-center gap-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-800 px-2 py-1 rounded text-[11px] font-semibold transition"
                           >
-                            <Pencil className="w-3.5 h-3.5" />
+                            <Pencil className="w-3 h-3" />
                             <span>Edit</span>
                           </button>
                           <button
@@ -563,7 +563,7 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
                             title="Hapus Data"
                             className="flex items-center gap-1 bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 px-2 py-1 rounded text-[11px] font-semibold transition"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-3 h-3" />
                           </button>
                         </div>
                       </td>
@@ -576,20 +576,20 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
         </div>
 
         {/* Mobile Card View */}
-        <div className="lg:hidden p-4 space-y-4">
+        <div className="lg:hidden p-3 space-y-2.5">
           {filteredPersonnel.length === 0 ? (
-            <div className="py-8 text-center text-slate-500 text-xs bg-slate-900/50 rounded-lg border border-slate-800">
-              <Folder className="w-8 h-8 text-slate-600 mx-auto mb-2 opacity-50" />
+            <div className="py-6 text-center text-slate-500 text-xs bg-slate-900/50 rounded-lg border border-slate-800">
+              <Folder className="w-6 h-6 text-slate-600 mx-auto mb-1.5 opacity-50" />
               Belum ada data pada folder {activeFolder === 'ALL' ? 'Database' : activeFolder}. Klik "Tambah Karyawan / Mitra Baru" untuk memasukkan data.
             </div>
           ) : (
             personnelPagination.pageItems.map((p) => (
-              <div key={p.id} className="bg-slate-950 border border-slate-800 rounded-lg p-4 space-y-3 shadow-sm">
+              <div key={p.id} className="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-2 shadow-sm">
                 <div>
                   <h4 className="font-bold text-white text-sm">{p.fullName}</h4>
                 </div>
                   
-                <div className="grid grid-cols-1 gap-3 text-xs bg-slate-900/50 p-2.5 rounded border border-slate-800">
+                <div className="grid grid-cols-1 gap-2 text-xs bg-slate-900/50 p-2 rounded border border-slate-800">
                   <div className="space-y-1">
                     <span className="block text-[10px] text-slate-500 uppercase tracking-wider">TTL & Alamat</span>
                     <span className="text-slate-200 block">{p.birthPlaceDate}</span>
@@ -602,20 +602,20 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 pt-2 border-t border-slate-800/60 mt-2">
+                <div className="flex items-center gap-2 pt-1.5 border-t border-slate-800/60 mt-1.5">
                   {canEdit && (
                     <>
                       <button
                         onClick={() => handleOpenEdit(p)}
-                        className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-indigo-400 rounded-lg transition"
+                        className="px-2.5 py-2 bg-slate-800 hover:bg-slate-700 text-indigo-400 rounded-lg transition"
                       >
-                        <Pencil className="w-3.5 h-3.5" />
+                        <Pencil className="w-3 h-3" />
                       </button>
                       <button
                         onClick={() => handleDeletePersonnel(p)}
-                        className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-red-400 rounded-lg transition"
+                        className="px-2.5 py-2 bg-slate-800 hover:bg-slate-700 text-red-400 rounded-lg transition"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-3 h-3" />
                       </button>
                     </>
                   )}
@@ -669,14 +669,14 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
 
       {/* Add / Edit Personnel Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-3 overflow-y-auto">
           <form
             onSubmit={handleSavePersonnel}
-            className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-2xl p-5 sm:p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto my-auto"
+            className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-2xl p-3.5 sm:p-4 space-y-2.5 shadow-2xl max-h-[85vh] overflow-y-auto my-auto"
           >
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
               <div className="flex items-center gap-2">
-                <UserCheck className="w-5 h-5 text-indigo-400" />
+                <UserCheck className="w-4 h-4 text-indigo-400" />
                 <h3 className="font-bold text-white text-base">
                   {editingPersonnel ? 'Edit Data Karyawan / Mitra DC' : 'Registrasi Karyawan / Mitra DC Baru'}
                 </h3>
@@ -694,21 +694,21 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
             </div>
 
             {/* KTP Photo Upload Area */}
-            <div className="bg-slate-950 p-4 border border-slate-800 rounded-xl space-y-3">
+            <div className="bg-slate-950 p-3 border border-slate-800 rounded-xl space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
-                  <CloudUpload className="w-4 h-4 text-indigo-400" />
+                  <CloudUpload className="w-3.5 h-3.5 text-indigo-400" />
                   <span>Upload Foto KTP (Google Drive Cloud Storage)</span>
                 </label>
                 <span className="text-[10px] text-slate-400">Format: JPG, PNG, WEBP</span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 items-center">
                 <div className="md:col-span-2">
-                  <label className="border-2 border-dashed border-slate-700 hover:border-indigo-500 bg-slate-900 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition text-center group">
-                    <Upload className="w-6 h-6 text-slate-400 group-hover:text-indigo-400 mb-2 transition" />
+                  <label className="border-2 border-dashed border-slate-700 hover:border-indigo-500 bg-slate-900 rounded-xl p-3 flex flex-col items-center justify-center cursor-pointer transition text-center group">
+                    <Upload className="w-5 h-5 text-slate-400 group-hover:text-indigo-400 mb-1.5 transition" />
                     <span className="text-xs font-semibold text-slate-200">Klik atau tarik file KTP ke sini</span>
-                    <span className="text-[10px] text-slate-500 mt-1">Otomatis tersinkron dengan Folder Google Drive</span>
+                    <span className="text-[10px] text-slate-500 mt-0.5">Otomatis tersinkron dengan Folder Google Drive</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -737,7 +737,7 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
                     </div>
                   ) : (
                     <div className="w-full h-24 rounded-lg border border-slate-800 bg-slate-900 flex flex-col items-center justify-center text-slate-600">
-                      <ImageIcon className="w-6 h-6 mb-1" />
+                      <ImageIcon className="w-5 h-5 mb-0.5" />
                       <span className="text-[10px]">Preview KTP</span>
                     </div>
                   )}
@@ -747,20 +747,20 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
               {ktpDriveFileId && (
                 <div className="text-[11px] font-mono text-emerald-400 bg-emerald-950/40 p-2 rounded border border-emerald-800/60 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
                     <span>Sinkron Google Drive ID: {ktpDriveFileId}</span>
                   </div>
                 </div>
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Folder Kategori</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Folder Kategori</label>
                 <select
                   value={type}
                   onChange={(e) => setType(e.target.value as PersonnelType)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-indigo-500"
                 >
                   <option value="KARYAWAN">FOLDER KARYAWAN INTERNAL (SPV, Staf, dll)</option>
                   <option value="MITRA_DC">FOLDER MITRA DC / FREELANCE</option>
@@ -768,148 +768,148 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
               </div>
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Nama Lengkap Sesuai KTP</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Nama Lengkap Sesuai KTP</label>
                 <input
                   type="text"
                   required
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">NIK KTP (16 Digit)</label>
+                <label className="block text-xs text-slate-400 mb-0.5">NIK KTP (16 Digit)</label>
                 <input
                   type="text"
                   required
                   value={nikKtp}
                   onChange={(e) => setNikKtp(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Tempat, Tanggal Lahir</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Tempat, Tanggal Lahir</label>
                 <input
                   type="text"
                   required
                   value={birthPlaceDate}
                   onChange={(e) => setBirthPlaceDate(e.target.value)}
                   placeholder="e.g. Jakarta, 17 Agustus 1990"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               <AddressFields value={address} onChange={setAddress} label="Alamat Lengkap Sesuai KTP" required />
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Nomor WhatsApp / HP</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Nomor WhatsApp / HP</label>
                 <input
                   type="text"
                   required
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Email</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Email</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Kontak Darurat</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Kontak Darurat</label>
                 <input
                   type="text"
                   value={emergencyContact}
                   onChange={(e) => setEmergencyContact(e.target.value)}
                   placeholder="e.g. 0812xxx (Istri/Suami)"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Posisi / Jabatan</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Posisi / Jabatan</label>
                 <input
                   type="text"
                   value={position}
                   onChange={(e) => setPosition(e.target.value)}
                   placeholder="e.g. Supervisor Lapangan / Desk Collector"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Status Keaktifan</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Status Keaktifan</label>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value as 'ACTIVE' | 'INACTIVE')}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-indigo-500"
                 >
                   <option value="ACTIVE">ACTIVE (Aktif)</option>
                   <option value="INACTIVE">INACTIVE (Non-Aktif)</option>
                 </select>
               </div>
 
-              <div className="md:col-span-2 border-t border-slate-800 pt-3 mt-1">
-                <h4 className="text-xs font-semibold text-white mb-3">Informasi Rekening Bank Payroll / Insentif</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-2 border-t border-slate-800 pt-2 mt-0.5">
+                <h4 className="text-xs font-semibold text-white mb-2">Informasi Rekening Bank Payroll / Insentif</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Nama Bank</label>
+                    <label className="block text-xs text-slate-400 mb-0.5">Nama Bank</label>
                     <input
                       type="text"
                       required
                       value={bankName}
                       onChange={(e) => setBankName(e.target.value)}
                       placeholder="e.g. BCA / Mandiri"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-indigo-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Nomor Rekening</label>
+                    <label className="block text-xs text-slate-400 mb-0.5">Nomor Rekening</label>
                     <input
                       type="text"
                       required
                       value={accountNumber}
                       onChange={(e) => setAccountNumber(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-indigo-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Nama Pemilik Rekening</label>
+                    <label className="block text-xs text-slate-400 mb-0.5">Nama Pemilik Rekening</label>
                     <input
                       type="text"
                       required
                       value={accountName}
                       onChange={(e) => setAccountName(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-indigo-500"
                     />
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-4 border-t border-slate-800">
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => {
                   setShowModal(false);
                   resetForm();
                 }}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700 font-semibold transition"
+                className="px-3 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700 font-semibold transition"
               >
                 Batal
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500 shadow-md transition"
+                className="px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500 shadow-md transition"
               >
                 {editingPersonnel ? 'Simpan Perubahan' : 'Simpan Data KYC & Foto KTP'}
               </button>

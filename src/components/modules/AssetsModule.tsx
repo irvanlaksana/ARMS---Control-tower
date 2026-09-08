@@ -173,16 +173,16 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ store, currentUser, 
   const assetPagination = usePagination<Asset>(filteredAssets, 10);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Tabs & Search */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
         <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 p-1 rounded-lg overflow-x-auto">
           <button
             onClick={() => {
               setClientFilter('ALL');
               assetPagination.setPage(1);
             }}
-            className={`px-4 py-1.5 text-xs font-bold rounded-md transition whitespace-nowrap ${
+            className={`px-3 py-1.5 text-xs font-bold rounded-md transition whitespace-nowrap ${
               clientFilter === 'ALL'
                 ? 'bg-indigo-600 text-white shadow'
                 : 'text-slate-400 hover:text-slate-200'
@@ -195,7 +195,7 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ store, currentUser, 
               setClientFilter('MULTIFINANCE');
               assetPagination.setPage(1);
             }}
-            className={`px-4 py-1.5 text-xs font-bold rounded-md transition whitespace-nowrap ${
+            className={`px-3 py-1.5 text-xs font-bold rounded-md transition whitespace-nowrap ${
               clientFilter === 'MULTIFINANCE'
                 ? 'bg-indigo-600 text-white shadow'
                 : 'text-slate-400 hover:text-slate-200'
@@ -208,7 +208,7 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ store, currentUser, 
               setClientFilter('PERORANGAN');
               assetPagination.setPage(1);
             }}
-            className={`px-4 py-1.5 text-xs font-bold rounded-md transition whitespace-nowrap ${
+            className={`px-3 py-1.5 text-xs font-bold rounded-md transition whitespace-nowrap ${
               clientFilter === 'PERORANGAN'
                 ? 'bg-indigo-600 text-white shadow'
                 : 'text-slate-400 hover:text-slate-200'
@@ -219,7 +219,7 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ store, currentUser, 
         </div>
 
         <div className="relative flex-1 sm:max-w-xs">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Cari nopol/vin, model, debitur..."
@@ -233,10 +233,10 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ store, currentUser, 
         </div>
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Car className="w-5 h-5 text-indigo-400" />
+          <div className="flex items-center gap-2 mb-0.5">
+            <Car className="w-4 h-4 text-indigo-400" />
             <h2 className="text-xl font-bold text-white">Collateral Assets & Warehouse Inventory</h2>
           </div>
           <p className="text-xs text-slate-400">Recovered Vehicle & Heavy Equipment Inventory Tracking</p>
@@ -245,9 +245,9 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ store, currentUser, 
         {canEdit && (
           <button
             onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-md transition"
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow-md transition"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             <span>Register Asset</span>
           </button>
         )}
@@ -258,14 +258,14 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ store, currentUser, 
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-950 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
               <tr>
-                <th className="py-3 px-4">Asset Code</th>
-                <th className="py-3 px-4">Case & Debtor</th>
-                <th className="py-3 px-4">Brand / Model</th>
-                <th className="py-3 px-4">Police No / VIN</th>
-                <th className="py-3 px-4 text-right">Est. Market Value</th>
-                <th className="py-3 px-4">Warehouse Location</th>
-                <th className="py-3 px-4 text-center">Physical Status</th>
-                {canEdit && <th className="py-3 px-4 text-right">Actions</th>}
+                <th className="py-2 px-3">Asset Code</th>
+                <th className="py-2 px-3">Case & Debtor</th>
+                <th className="py-2 px-3">Brand / Model</th>
+                <th className="py-2 px-3">Police No / VIN</th>
+                <th className="py-2 px-3 text-right">Est. Market Value</th>
+                <th className="py-2 px-3">Warehouse Location</th>
+                <th className="py-2 px-3 text-center">Physical Status</th>
+                {canEdit && <th className="py-2 px-3 text-right">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
@@ -282,8 +282,8 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ store, currentUser, 
 
                   return (
                     <tr key={a.id} className="hover:bg-slate-800/40 transition">
-                      <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">{a.assetCode}</td>
-                      <td className="py-3.5 px-4 space-y-0.5">
+                      <td className="py-2.5 px-3 font-mono font-bold text-indigo-300">{a.assetCode}</td>
+                      <td className="py-2.5 px-3 space-y-0.5">
                         <div className="font-bold text-white">{a.caseNo}</div>
                         <div className="text-[11px] text-slate-400">
                           {isClosed ? (
@@ -295,33 +295,33 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ store, currentUser, 
                           )}
                         </div>
                       </td>
-                      <td className="py-3.5 px-4 font-semibold text-slate-100">{a.brandModel}</td>
-                      <td className="py-3.5 px-4 font-mono text-emerald-400">{a.policeNoVIN}</td>
-                      <td className="py-3.5 px-4 text-right font-bold text-emerald-400">
+                      <td className="py-2.5 px-3 font-semibold text-slate-100">{a.brandModel}</td>
+                      <td className="py-2.5 px-3 font-mono text-emerald-400">{a.policeNoVIN}</td>
+                      <td className="py-2.5 px-3 text-right font-bold text-emerald-400">
                         Rp {(a.estimatedMarketValue || 0).toLocaleString('id-ID')}
                       </td>
-                      <td className="py-3.5 px-4 text-slate-300">{a.warehouseLocation || 'In Field'}</td>
-                      <td className="py-3.5 px-4 text-center">
-                        <span className="bg-emerald-950 text-emerald-300 text-[10px] px-2.5 py-1 rounded-full border border-emerald-800 font-semibold">
+                      <td className="py-2.5 px-3 text-slate-300">{a.warehouseLocation || 'In Field'}</td>
+                      <td className="py-2.5 px-3 text-center">
+                        <span className="bg-emerald-950 text-emerald-300 text-[10px] px-2 py-1 rounded-full border border-emerald-800 font-semibold">
                           {(a.physicalStatus || '').replace(/_/g, ' ')}
                         </span>
                       </td>
                       {canEdit && (
-                        <td className="py-3.5 px-4 text-right">
+                        <td className="py-2.5 px-3 text-right">
                           <div className="flex items-center justify-end gap-1.5">
                             <button
                               onClick={() => handleOpenModal(a)}
                               className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded transition"
                               title="Edit Aset"
                             >
-                              <Edit2 className="w-3.5 h-3.5" />
+                              <Edit2 className="w-3 h-3" />
                             </button>
                             <button
                               onClick={() => setDeleteTarget(a)}
                               className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition"
                               title="Hapus Aset"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 className="w-3 h-3" />
                             </button>
                           </div>
                         </td>
@@ -344,16 +344,16 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ store, currentUser, 
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <form onSubmit={handleSaveAsset} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3">
+          <form onSubmit={handleSaveAsset} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-4 space-y-2.5 shadow-2xl">
             <h3 className="font-bold text-white text-base">
               {isEditing ? 'Edit Agunan & Inventory Aset' : 'Register Recovered Asset'}
             </h3>
 
             <div className="relative z-[60]">
-              <label className="block text-xs text-slate-400 mb-1">Pilih Berkas Kasus</label>
+              <label className="block text-xs text-slate-400 mb-0.5">Pilih Berkas Kasus</label>
               {(store.cases || []).length === 0 ? (
-                <div className="p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-400">
+                <div className="p-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-400">
                   (Belum ada data kasus perkara terdaftar)
                 </div>
               ) : (
@@ -375,46 +375,46 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ store, currentUser, 
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Brand & Model</label>
+              <label className="block text-xs text-slate-400 mb-0.5">Brand & Model</label>
               <input
                 type="text"
                 required
                 value={brandModel}
                 onChange={(e) => setBrandModel(e.target.value)}
                 placeholder="e.g. Mitsubishi Fuso Canter HD 2021"
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
               />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Police No / VIN</label>
+              <label className="block text-xs text-slate-400 mb-0.5">Police No / VIN</label>
               <input
                 type="text"
                 required
                 value={policeNoVIN}
                 onChange={(e) => setPoliceNoVIN(e.target.value)}
                 placeholder="e.g. B 9412 UXR"
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white font-mono"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Estimasi Nilai Pasar (Rp)</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Estimasi Nilai Pasar (Rp)</label>
                 <AmountInput
                   required
                   value={estimatedValue}
                   onChange={setEstimatedValue}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Status Fisik Aset</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Status Fisik Aset</label>
                 <select
                   value={physicalStatus}
                   onChange={(e) => setPhysicalStatus(e.target.value as any)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                 >
                   <option value="RECOVERED_WAREHOUSE">RECOVERED WAREHOUSE</option>
                   <option value="IN_TRANSIT">IN TRANSIT</option>
@@ -425,26 +425,26 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ store, currentUser, 
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Warehouse Location</label>
+              <label className="block text-xs text-slate-400 mb-0.5">Warehouse Location</label>
               <input
                 type="text"
                 value={warehouseLocation}
                 onChange={(e) => setWarehouseLocation(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
               />
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-2 pt-1.5">
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
+                className="px-3 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500"
+                className="px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500"
               >
                 {isEditing ? 'Simpan Perubahan' : 'Save Asset'}
               </button>
@@ -454,11 +454,11 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ store, currentUser, 
       )}
       {/* Delete Asset Confirmation Modal */}
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-rose-800/60 rounded-xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center gap-3 text-rose-400">
-              <div className="p-2.5 rounded-full bg-rose-950/80 border border-rose-800">
-                <AlertCircle className="w-6 h-6 text-rose-400" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-rose-800/60 rounded-xl max-w-md w-full p-4 shadow-2xl space-y-2.5">
+            <div className="flex items-center gap-2 text-rose-400">
+              <div className="p-2 rounded-full bg-rose-950/80 border border-rose-800">
+                <AlertCircle className="w-5 h-5 text-rose-400" />
               </div>
               <div>
                 <h3 className="font-bold text-white text-base">Hapus Data Aset / Agunan</h3>
@@ -466,7 +466,7 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ store, currentUser, 
               </div>
             </div>
 
-            <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-1.5 text-xs text-slate-300">
+            <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1.5 text-xs text-slate-300">
               <div className="flex justify-between">
                 <span className="text-slate-500">Kode Aset:</span>
                 <span className="font-mono font-bold text-white">{deleteTarget.assetCode}</span>
@@ -485,18 +485,18 @@ export const AssetsModule: React.FC<AssetsModuleProps> = ({ store, currentUser, 
               Apakah Anda yakin ingin menghapus data agunan ini dari daftar inventaris gudang? Penghapusan akan dicatat pada log audit sistem.
             </p>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-2 pt-1.5">
               <button
                 type="button"
                 onClick={() => setDeleteTarget(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg"
+                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg"
               >
                 Batal
               </button>
               <button
                 type="button"
                 onClick={confirmDeleteAsset}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg shadow"
+                className="px-3 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg shadow"
               >
                 Ya, Hapus Data
               </button>

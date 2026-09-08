@@ -162,11 +162,11 @@ export const ContractsModule: React.FC<ContractsModuleProps> = ({ store, current
   const contractPagination = usePagination<Contract>(filteredContracts, 10);
 
   return (
-    <div className="space-y-6">
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex items-center justify-between">
+    <div className="space-y-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <FileSpreadsheet className="w-5 h-5 text-indigo-400" />
+          <div className="flex items-center gap-2 mb-0.5">
+            <FileSpreadsheet className="w-4 h-4 text-indigo-400" />
             <h2 className="text-xl font-bold text-white">Contracts & Master MoU Agreements</h2>
           </div>
           <p className="text-xs text-slate-400">Formal B2B Master Recovery Agreements with Multifinance Institutions</p>
@@ -175,16 +175,16 @@ export const ContractsModule: React.FC<ContractsModuleProps> = ({ store, current
         {canEdit && (
           <button
             onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-md transition"
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow-md transition"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             <span>Draft New Contract / MoU</span>
           </button>
         )}
       </div>
 
       {/* Search & Filter */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 p-1 rounded-lg overflow-x-auto">
           {(['ALL', 'ACTIVE', 'EXPIRED', 'TERMINATED'] as const).map((st) => (
             <button
@@ -193,7 +193,7 @@ export const ContractsModule: React.FC<ContractsModuleProps> = ({ store, current
                 setStatusFilter(st);
                 contractPagination.setPage(1);
               }}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition ${
+              className={`px-2.5 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition ${
                 statusFilter === st
                   ? 'bg-indigo-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
@@ -208,7 +208,7 @@ export const ContractsModule: React.FC<ContractsModuleProps> = ({ store, current
         </div>
 
         <div className="relative flex-1 sm:max-w-xs">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Cari no kontrak, klien, judul..."
@@ -227,13 +227,13 @@ export const ContractsModule: React.FC<ContractsModuleProps> = ({ store, current
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-950 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
               <tr>
-                <th className="py-3 px-4">Contract No</th>
-                <th className="py-3 px-4">Multifinance Client</th>
-                <th className="py-3 px-4">Title & Fee Structure</th>
-                <th className="py-3 px-4">Validity Period</th>
-                <th className="py-3 px-4 text-center">Drive Document</th>
-                <th className="py-3 px-4 text-center">Status</th>
-                {canEdit && <th className="py-3 px-4 text-center">Aksi</th>}
+                <th className="py-2 px-3">Contract No</th>
+                <th className="py-2 px-3">Multifinance Client</th>
+                <th className="py-2 px-3">Title & Fee Structure</th>
+                <th className="py-2 px-3">Validity Period</th>
+                <th className="py-2 px-3 text-center">Drive Document</th>
+                <th className="py-2 px-3 text-center">Status</th>
+                {canEdit && <th className="py-2 px-3 text-center">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
@@ -248,16 +248,16 @@ export const ContractsModule: React.FC<ContractsModuleProps> = ({ store, current
               ) : (
                 contractPagination.pageItems.map((c) => (
                 <tr key={c.id} className="hover:bg-slate-800/40 transition">
-                  <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">{c.contractNo}</td>
-                  <td className="py-3.5 px-4 font-bold text-white">{c.clientName}</td>
-                  <td className="py-3.5 px-4 space-y-0.5 max-w-[280px]">
+                  <td className="py-2.5 px-3 font-mono font-bold text-indigo-300">{c.contractNo}</td>
+                  <td className="py-2.5 px-3 font-bold text-white">{c.clientName}</td>
+                  <td className="py-2.5 px-3 space-y-0.5 max-w-[280px]">
                     <div className="font-semibold text-slate-100">{c.title}</div>
                     <div className="text-[10px] text-emerald-400">{c.feeStructureSummary}</div>
                   </td>
-                  <td className="py-3.5 px-4 text-slate-400">
+                  <td className="py-2.5 px-3 text-slate-400">
                     {c.startDate} to {c.endDate}
                   </td>
-                  <td className="py-3.5 px-4 text-center">
+                  <td className="py-2.5 px-3 text-center">
                     {c.driveDocumentUrl ? (
                       <a
                         href={c.driveDocumentUrl}
@@ -272,27 +272,27 @@ export const ContractsModule: React.FC<ContractsModuleProps> = ({ store, current
                       <span className="text-slate-600">-</span>
                     )}
                   </td>
-                  <td className="py-3.5 px-4 text-center">
-                    <span className="bg-indigo-950 text-indigo-300 text-[10px] px-2.5 py-1 rounded-full border border-indigo-800 font-semibold">
+                  <td className="py-2.5 px-3 text-center">
+                    <span className="bg-indigo-950 text-indigo-300 text-[10px] px-2 py-1 rounded-full border border-indigo-800 font-semibold">
                       {(c.status || '').replace(/_/g, ' ')}
                     </span>
                   </td>
                   {canEdit && (
-                    <td className="py-3.5 px-4 text-center">
+                    <td className="py-2.5 px-3 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => handleOpenModal(c)}
                           className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-indigo-400 transition"
                           title="Edit Contract"
                         >
-                          <Edit2 className="w-4 h-4" />
+                          <Edit2 className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDeleteContract(c.id, c.title)}
                           className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-red-400 transition"
                           title="Delete Contract"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
@@ -314,18 +314,18 @@ export const ContractsModule: React.FC<ContractsModuleProps> = ({ store, current
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <form onSubmit={handleSaveContract} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-lg p-5 sm:p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto my-auto">
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-3 overflow-y-auto">
+          <form onSubmit={handleSaveContract} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-lg p-3.5 sm:p-4 space-y-2.5 shadow-2xl max-h-[85vh] overflow-y-auto my-auto">
             <h3 className="font-bold text-white text-base">
               {isEditing ? 'Edit MoU Master Contract' : 'Draft MoU Master Contract'}
             </h3>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Select Multifinance Client</label>
+              <label className="block text-xs text-slate-400 mb-0.5">Select Multifinance Client</label>
               <select
                 value={clientId}
                 onChange={(e) => setClientId(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
               >
                 {store.clients.map((cli) => (
                   <option key={cli.id} value={cli.id}>
@@ -336,62 +336,62 @@ export const ContractsModule: React.FC<ContractsModuleProps> = ({ store, current
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Contract Title</label>
+              <label className="block text-xs text-slate-400 mb-0.5">Contract Title</label>
               <input
                 type="text"
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Master Recovery Agreement Portofolio Macet DPD 90+"
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
               />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Fee Structure Summary</label>
+              <label className="block text-xs text-slate-400 mb-0.5">Fee Structure Summary</label>
               <input
                 type="text"
                 required
                 value={feeStructureSummary}
                 onChange={(e) => setFeeStructureSummary(e.target.value)}
                 placeholder="e.g. Success fee 15% + Rp 2.500.000 per unit recovered"
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
               />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Google Drive Document Link (Upload draft to GDrive and paste link here)</label>
+              <label className="block text-xs text-slate-400 mb-0.5">Google Drive Document Link (Upload draft to GDrive and paste link here)</label>
               <input
                 type="text"
                 value={driveDocumentUrl}
                 onChange={(e) => setDriveDocumentUrl(e.target.value)}
                 placeholder="https://drive.google.com/file/d/..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
               />
             </div>
             
-            <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700 mt-4">
-               <h4 className="text-xs font-bold text-amber-400 mb-2">Draft MoU Template (Copy & Paste to GDocs)</h4>
+            <div className="bg-slate-800/50 p-2.5 rounded-lg border border-slate-700 mt-3">
+               <h4 className="text-xs font-bold text-amber-400 mb-1.5">Draft MoU Template (Copy & Paste to GDocs)</h4>
                <textarea
                   rows={6}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-[10px] text-slate-300 font-mono"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-[10px] text-slate-300 font-mono"
                   value={draftContent}
                   onChange={(e) => setDraftContent(e.target.value)}
                />
-               <p className="text-[10px] text-slate-400 mt-1 italic">*Copy teks ini, buat di Google Docs, lalu paste link-nya di atas.</p>
+               <p className="text-[10px] text-slate-400 mt-0.5 italic">*Copy teks ini, buat di Google Docs, lalu paste link-nya di atas.</p>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-2 pt-1.5">
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
+                className="px-3 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500"
+                className="px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500"
               >
                 {isEditing ? 'Save Changes' : 'Submit for Executive Approval'}
               </button>

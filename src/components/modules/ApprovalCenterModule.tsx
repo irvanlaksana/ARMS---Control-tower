@@ -264,12 +264,12 @@ export const ApprovalCenterModule: React.FC<ApprovalCenterModuleProps> = ({
   const approvalPagination = usePagination<ApprovalRequest>(filteredApprovals, 10);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Module Header */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-2.5 shadow-lg">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <CheckSquare className="w-5 h-5 text-amber-400" />
+          <div className="flex items-center gap-2 mb-0.5">
+            <CheckSquare className="w-4 h-4 text-amber-400" />
             <h2 className="text-xl font-bold text-white">Approval Center (Konfirmasi Manual)</h2>
           </div>
           <p className="text-xs text-slate-400">
@@ -281,15 +281,15 @@ export const ApprovalCenterModule: React.FC<ApprovalCenterModuleProps> = ({
           {canApprove && (
             <button
               onClick={() => handleOpenCreateModal()}
-              className="bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 shadow transition"
+              className="bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold px-2.5 py-2 rounded-lg flex items-center gap-1.5 shadow transition"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5" />
               <span>+ Buat Permohonan Approval</span>
             </button>
           )}
 
           <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
             <input
               type="text"
               value={searchTerm}
@@ -308,7 +308,7 @@ export const ApprovalCenterModule: React.FC<ApprovalCenterModuleProps> = ({
               setFilterStatus(e.target.value);
               approvalPagination.setPage(1);
             }}
-            className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none"
+            className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-2 text-xs text-slate-200 focus:outline-none"
           >
             <option value="ALL">Semua Status</option>
             <option value="PENDING">Pending Approval</option>
@@ -322,7 +322,7 @@ export const ApprovalCenterModule: React.FC<ApprovalCenterModuleProps> = ({
               setFilterModule(e.target.value);
               approvalPagination.setPage(1);
             }}
-            className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none"
+            className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-2 text-xs text-slate-200 focus:outline-none"
           >
             <option value="ALL">Semua Modul</option>
             <option value="CONTRACT">Contract / MoU</option>
@@ -336,7 +336,7 @@ export const ApprovalCenterModule: React.FC<ApprovalCenterModuleProps> = ({
 
       {/* Approvals Table */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
-        <div className="p-4 border-b border-slate-800 bg-slate-950/50 flex items-center justify-between">
+        <div className="p-3 border-b border-slate-800 bg-slate-950/50 flex items-center justify-between">
           <h3 className="font-bold text-white text-xs uppercase tracking-wider">
             Approval Requests Queue ({approvalPagination.totalItems})
           </h3>
@@ -346,19 +346,19 @@ export const ApprovalCenterModule: React.FC<ApprovalCenterModuleProps> = ({
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-950 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
               <tr>
-                <th className="py-3 px-4">Request No</th>
-                <th className="py-3 px-4">Module</th>
-                <th className="py-3 px-4">Title & Details</th>
-                <th className="py-3 px-4">Requested By</th>
-                <th className="py-3 px-4 text-right">Amount / Value</th>
-                <th className="py-3 px-4 text-center">Status</th>
-                <th className="py-3 px-4 text-right">Action</th>
+                <th className="py-2 px-3">Request No</th>
+                <th className="py-2 px-3">Module</th>
+                <th className="py-2 px-3">Title & Details</th>
+                <th className="py-2 px-3">Requested By</th>
+                <th className="py-2 px-3 text-right">Amount / Value</th>
+                <th className="py-2 px-3 text-center">Status</th>
+                <th className="py-2 px-3 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
               {approvalPagination.pageItems.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-10 text-center text-slate-500 text-xs">
+                  <td colSpan={7} className="py-8 text-center text-slate-500 text-xs">
                     {store.approvals.length === 0
                       ? 'Tidak ada antrean approval request saat ini.'
                       : 'Tidak ada antrean approval request yang sesuai filter atau pencarian saat ini.'}
@@ -367,50 +367,50 @@ export const ApprovalCenterModule: React.FC<ApprovalCenterModuleProps> = ({
               ) : (
                 approvalPagination.pageItems.map((app) => (
                   <tr key={app.id} className="hover:bg-slate-800/40 transition">
-                    <td className="py-3.5 px-4 font-mono font-semibold text-amber-300">{app.requestNo}</td>
-                    <td className="py-3.5 px-4">
+                    <td className="py-2.5 px-3 font-mono font-semibold text-amber-300">{app.requestNo}</td>
+                    <td className="py-2.5 px-3">
                       <span className="bg-slate-800 text-slate-200 text-[10px] px-2 py-0.5 rounded border border-slate-700 font-medium">
                         {app.module}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 space-y-0.5 max-w-[280px]">
+                    <td className="py-2.5 px-3 space-y-0.5 max-w-[280px]">
                       <div className="font-bold text-white">{app.title}</div>
-                      <div className="text-[11px] text-slate-400 leading-relaxed">{app.description}</div>
+                      <div className="text-[11px] text-slate-400 leading-normal">{app.description}</div>
                       {app.targetReference && (
                         <div className="text-[10px] text-slate-500 font-mono">Ref: {app.targetReference}</div>
                       )}
                     </td>
-                    <td className="py-3.5 px-4 text-slate-300">{app.requestedBy}</td>
-                    <td className="py-3.5 px-4 text-right font-bold text-emerald-400 font-mono">
+                    <td className="py-2.5 px-3 text-slate-300">{app.requestedBy}</td>
+                    <td className="py-2.5 px-3 text-right font-bold text-emerald-400 font-mono">
                       {app.amountOrValue ? `Rp ${app.amountOrValue.toLocaleString('id-ID')}` : '-'}
                     </td>
-                    <td className="py-3.5 px-4 text-center">
+                    <td className="py-2.5 px-3 text-center">
                       {app.status === 'PENDING' && (
-                        <span className="bg-amber-950/80 text-amber-300 text-[10px] px-2.5 py-1 rounded-full border border-amber-800 font-semibold inline-flex items-center gap-1">
+                        <span className="bg-amber-950/80 text-amber-300 text-[10px] px-2 py-1 rounded-full border border-amber-800 font-semibold inline-flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           Pending
                         </span>
                       )}
                       {app.status === 'APPROVED' && (
-                        <span className="bg-emerald-950/80 text-emerald-300 text-[10px] px-2.5 py-1 rounded-full border border-emerald-800 font-semibold inline-flex items-center gap-1">
+                        <span className="bg-emerald-950/80 text-emerald-300 text-[10px] px-2 py-1 rounded-full border border-emerald-800 font-semibold inline-flex items-center gap-1">
                           <CheckCircle className="w-3 h-3" />
                           Approved
                         </span>
                       )}
                       {app.status === 'REJECTED' && (
-                        <span className="bg-rose-950/80 text-rose-300 text-[10px] px-2.5 py-1 rounded-full border border-rose-800 font-semibold inline-flex items-center gap-1">
+                        <span className="bg-rose-950/80 text-rose-300 text-[10px] px-2 py-1 rounded-full border border-rose-800 font-semibold inline-flex items-center gap-1">
                           <XCircle className="w-3 h-3" />
                           Rejected
                         </span>
                       )}
                     </td>
-                    <td className="py-3.5 px-4 text-right">
+                    <td className="py-2.5 px-3 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         {app.status === 'PENDING' && canApprove && (
                           <>
                             <button
                               onClick={() => handleAction(app, 'APPROVED')}
-                              className="bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold px-2.5 py-1 rounded-md transition shadow"
+                              className="bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold px-2 py-1 rounded-md transition shadow"
                             >
                               Approve
                             </button>
@@ -427,7 +427,7 @@ export const ApprovalCenterModule: React.FC<ApprovalCenterModuleProps> = ({
                         <button
                           onClick={() => openWhatsAppTemplate(app)}
                           title="Kirim Template WhatsApp"
-                          className="bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-semibold px-2.5 py-1 rounded-md transition shadow"
+                          className="bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-semibold px-2 py-1 rounded-md transition shadow"
                         >
                           WA
                         </button>
@@ -438,14 +438,14 @@ export const ApprovalCenterModule: React.FC<ApprovalCenterModuleProps> = ({
                               className="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition"
                               title="Edit Request"
                             >
-                              <Edit2 className="w-3.5 h-3.5" />
+                              <Edit2 className="w-3 h-3" />
                             </button>
                             <button
                               onClick={() => handleDeleteRequest(app)}
                               className="p-1 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition"
                               title="Hapus Request"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 className="w-3 h-3" />
                             </button>
                           </>
                         )}
@@ -469,12 +469,12 @@ export const ApprovalCenterModule: React.FC<ApprovalCenterModuleProps> = ({
 
       {/* Create / Edit Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3">
           <form
             onSubmit={handleSaveApprovalRequest}
-            className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-6 space-y-4 shadow-2xl"
+            className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-4 space-y-2.5 shadow-2xl"
           >
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
               <h3 className="font-bold text-white text-base">
                 {isEditing ? 'Edit Permohonan Approval' : 'Buat Permohonan Approval Baru'}
               </h3>
@@ -483,16 +483,16 @@ export const ApprovalCenterModule: React.FC<ApprovalCenterModuleProps> = ({
                 onClick={() => setShowCreateModal(false)}
                 className="text-slate-400 hover:text-white"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Modul Terkait</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-0.5">Modul Terkait</label>
               <select
                 value={reqModule}
                 onChange={(e) => setReqModule(e.target.value as any)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
               >
                 <option value="CONTRACT">Contract / MoU</option>
                 <option value="SK">Surat Kuasa (SK)</option>
@@ -504,48 +504,48 @@ export const ApprovalCenterModule: React.FC<ApprovalCenterModuleProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Judul Permohonan</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-0.5">Judul Permohonan</label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Persetujuan Pencairan Dana Talangan Unit Avanza"
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Nominal / Nilai (Rp)</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-0.5">Nominal / Nilai (Rp)</label>
               <AmountInput
                 value={amountOrValue}
                 onChange={setAmountOrValue}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white font-mono"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Keterangan & Rincian</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-0.5">Keterangan & Rincian</label>
               <textarea
                 rows={3}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Jelaskan dasar permohonan approval..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => setShowCreateModal(false)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
+                className="px-3 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
               >
                 Batal
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold rounded-lg"
+                className="px-3 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold rounded-lg"
               >
                 {isEditing ? 'Simpan Perubahan' : 'Submit Approval Request'}
               </button>
@@ -556,8 +556,8 @@ export const ApprovalCenterModule: React.FC<ApprovalCenterModuleProps> = ({
 
       {/* Rejection Modal */}
       {selectedRequest && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-4 space-y-2.5 shadow-2xl">
             <h3 className="font-bold text-white text-base">Reject Request {selectedRequest.requestNo}</h3>
             <p className="text-xs text-slate-400">Please state the formal reason for rejection:</p>
 
@@ -566,19 +566,19 @@ export const ApprovalCenterModule: React.FC<ApprovalCenterModuleProps> = ({
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               placeholder="e.g. Budget ceiling exceeded / Requires additional supporting documentation"
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-rose-500"
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-rose-500"
             />
 
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setSelectedRequest(null)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
+                className="px-3 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleAction(selectedRequest, 'REJECTED')}
-                className="px-4 py-2 bg-rose-600 text-white text-xs font-semibold rounded-lg hover:bg-rose-500"
+                className="px-3 py-2 bg-rose-600 text-white text-xs font-semibold rounded-lg hover:bg-rose-500"
               >
                 Confirm Rejection
               </button>

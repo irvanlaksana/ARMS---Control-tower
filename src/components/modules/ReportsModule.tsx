@@ -376,14 +376,14 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header Banner */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl relative overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div className="space-y-1">
             <div className="flex items-center gap-2.5">
               <div className="p-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-400">
-                <BarChart3 className="w-6 h-6" />
+                <BarChart3 className="w-5 h-5" />
               </div>
               <h2 className="text-xl font-bold text-white tracking-tight">
                 Laporan Eksekutif & Rekapitulasi Terpadu (Direct Export)
@@ -395,17 +395,17 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
           </div>
 
           {/* Quick Stats Summary Pill */}
-          <div className="flex flex-wrap items-center gap-3 bg-slate-950/80 border border-slate-800 p-3 rounded-xl">
+          <div className="flex flex-wrap items-center gap-2 bg-slate-950/80 border border-slate-800 p-2.5 rounded-xl">
             <div>
               <span className="text-[10px] text-slate-500 block uppercase font-mono">Total Piutang OS</span>
               <span className="text-sm font-bold text-amber-300 font-mono">{formatRupiahNumber(totalOSAll)}</span>
             </div>
-            <div className="h-8 w-px bg-slate-800" />
+            <div className="h-6 w-px bg-slate-800" />
             <div>
               <span className="text-[10px] text-slate-500 block uppercase font-mono">Fee Perusahaan</span>
               <span className="text-sm font-bold text-emerald-400 font-mono">{formatRupiahNumber(totalCompanyFeeAll)}</span>
             </div>
-            <div className="h-8 w-px bg-slate-800" />
+            <div className="h-6 w-px bg-slate-800" />
             <div>
               <span className="text-[10px] text-slate-500 block uppercase font-mono">Fee Mitra</span>
               <span className="text-sm font-bold text-amber-300 font-mono">{formatRupiahNumber(totalPartnerFeeAll)}</span>
@@ -415,9 +415,9 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
 
         {/* Success Alert Banner on Direct Download */}
         {exportedSuccess && (
-          <div className="mt-4 p-3 bg-emerald-950/80 border border-emerald-500/50 rounded-xl text-xs text-emerald-200 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="mt-3 p-2.5 bg-emerald-950/80 border border-emerald-500/50 rounded-xl text-xs text-emerald-200 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-200">
             <div className="flex items-center gap-2 font-medium">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
               <span>{exportedSuccess}</span>
             </div>
             <span className="text-[11px] text-emerald-400/80 font-mono">File CSV terunduh secara instan</span>
@@ -426,179 +426,179 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
       </div>
 
       {/* Grid of 6 Export Cards for Quick Direct Download */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
         {/* Card 1: Kinerja Recovery per Klien */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3 hover:border-slate-700 transition shadow-lg flex flex-col justify-between">
-          <div className="space-y-2">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2 hover:border-slate-700 transition shadow-lg flex flex-col justify-between">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <div className="p-2 bg-indigo-500/10 text-indigo-400 rounded-lg">
-                <Building2 className="w-4 h-4" />
+                <Building2 className="w-3.5 h-3.5" />
               </div>
               <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono">
                 {clientPerformanceData.length} Klien Terdaftar
               </span>
             </div>
             <h3 className="font-bold text-white text-sm">Rekapitulasi Kinerja Klien</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-400 leading-normal">
               Tingkat keberhasilan pemulihan piutang (*Recovery Rate*), total perkara aktif vs selesai, dan DPD bucket per multifinance.
             </p>
           </div>
           <button
             type="button"
             onClick={handleExportClientPerformance}
-            className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg text-xs font-semibold transition shadow-md"
+            className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-2 rounded-lg text-xs font-semibold transition shadow-md"
           >
-            <Download className="w-3.5 h-3.5" />
+            <Download className="w-3 h-3" />
             <span>Export CSV Kinerja Klien</span>
           </button>
         </div>
 
         {/* Card 2: Laporan Laba Rugi Finansial */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3 hover:border-slate-700 transition shadow-lg flex flex-col justify-between">
-          <div className="space-y-2">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2 hover:border-slate-700 transition shadow-lg flex flex-col justify-between">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg">
-                <PieChart className="w-4 h-4" />
+                <PieChart className="w-3.5 h-3.5" />
               </div>
               <span className="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800/80 px-2 py-0.5 rounded font-mono">
                 Est. Laba: {formatRupiahNumber(netProfitEstimated)}
               </span>
             </div>
             <h3 className="font-bold text-white text-sm">Laporan Keuangan & Laba Rugi</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-400 leading-normal">
               Rincian komprehensif penerimaan Agency Fee, penyaluran bagian kreditur, serta seluruh pengeluaran operasional.
             </p>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-300">
               <div className="bg-slate-950/80 border border-slate-800 rounded-lg p-2">
                 <div className="text-slate-500">Fee Perusahaan</div>
-                <div className="mt-1 font-bold text-emerald-300 font-mono">{formatRupiahNumber(totalCompanyFeeAll)}</div>
+                <div className="mt-0.5 font-bold text-emerald-300 font-mono">{formatRupiahNumber(totalCompanyFeeAll)}</div>
               </div>
               <div className="bg-slate-950/80 border border-slate-800 rounded-lg p-2">
                 <div className="text-slate-500">Fee Mitra</div>
-                <div className="mt-1 font-bold text-amber-300 font-mono">{formatRupiahNumber(totalPartnerFeeAll)}</div>
+                <div className="mt-0.5 font-bold text-amber-300 font-mono">{formatRupiahNumber(totalPartnerFeeAll)}</div>
               </div>
             </div>
             <button
               type="button"
               onClick={handleExportFinancialPL}
-              className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg text-xs font-semibold transition shadow-md"
+              className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-2 rounded-lg text-xs font-semibold transition shadow-md"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-3 h-3" />
               <span>Export CSV Laba Rugi (P&L)</span>
             </button>
             <button
               type="button"
               onClick={handleExportStandardAccountingReport}
-              className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-100 px-3 py-2 rounded-lg text-xs font-semibold transition shadow-md"
+              className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-100 px-2.5 py-2 rounded-lg text-xs font-semibold transition shadow-md"
             >
-              <FileText className="w-3.5 h-3.5" />
+              <FileText className="w-3 h-3" />
               <span>Laporan Akuntansi Standar</span>
             </button>
           </div>
         </div>
 
         {/* Card 3: Portofolio Debitur & Kasus */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3 hover:border-slate-700 transition shadow-lg flex flex-col justify-between">
-          <div className="space-y-2">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2 hover:border-slate-700 transition shadow-lg flex flex-col justify-between">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <div className="p-2 bg-amber-500/10 text-amber-400 rounded-lg">
-                <Users className="w-4 h-4" />
+                <Users className="w-3.5 h-3.5" />
               </div>
               <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono">
                 {(store.cases || []).length} Perkara
               </span>
             </div>
             <h3 className="font-bold text-white text-sm">Rekap Portofolio Debitur</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-400 leading-normal">
               Daftar komprehensif seluruh debitur, nomor kontrak, NIK, penugasan field partner, status perkara, dan link arsip Drive.
             </p>
           </div>
           <button
             type="button"
             onClick={handleExportDebtorCases}
-            className="w-full flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold px-3 py-2 rounded-lg text-xs transition shadow-md"
+            className="w-full flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold px-2.5 py-2 rounded-lg text-xs transition shadow-md"
           >
-            <Download className="w-3.5 h-3.5" />
+            <Download className="w-3 h-3" />
             <span>Export CSV Debitur & Kasus</span>
           </button>
         </div>
 
         {/* Card 4: Remittance Settlement Klien */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3 hover:border-slate-700 transition shadow-lg flex flex-col justify-between">
-          <div className="space-y-2">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2 hover:border-slate-700 transition shadow-lg flex flex-col justify-between">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <div className="p-2 bg-cyan-500/10 text-cyan-400 rounded-lg">
-                <DollarSign className="w-4 h-4" />
+                <DollarSign className="w-3.5 h-3.5" />
               </div>
               <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono">
                 {(store.settlements || []).length} Rekor Settlement
               </span>
             </div>
             <h3 className="font-bold text-white text-sm">Rekap Settlement Remittance</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-400 leading-normal">
               Histori penyetoran dana hasil penagihan debitur kembali ke rekening institusi multifinance/klien setelah pemotongan fee.
             </p>
           </div>
           <button
             type="button"
             onClick={handleExportSettlements}
-            className="w-full flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-2 rounded-lg text-xs font-semibold transition shadow-md"
+            className="w-full flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white px-2.5 py-2 rounded-lg text-xs font-semibold transition shadow-md"
           >
-            <Download className="w-3.5 h-3.5" />
+            <Download className="w-3 h-3" />
             <span>Export CSV Settlement Klien</span>
           </button>
         </div>
 
         {/* Card 5: Dana Talangan & Bridging */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3 hover:border-slate-700 transition shadow-lg flex flex-col justify-between">
-          <div className="space-y-2">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2 hover:border-slate-700 transition shadow-lg flex flex-col justify-between">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <div className="p-2 bg-purple-500/10 text-purple-400 rounded-lg">
-                <Wallet className="w-4 h-4" />
+                <Wallet className="w-3.5 h-3.5" />
               </div>
               <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono">
                 {(store.danaTalangan || []).length} Proposal Talangan
               </span>
             </div>
             <h3 className="font-bold text-white text-sm">Rekap Dana Talangan & Return</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-400 leading-normal">
               Pelacakan fasilitas bridging modal kerja penagihan, persentase return imbal hasil, dan jadwal pelunasan kembali.
             </p>
           </div>
           <button
             type="button"
             onClick={handleExportDanaTalangan}
-            className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded-lg text-xs font-semibold transition shadow-md"
+            className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-500 text-white px-2.5 py-2 rounded-lg text-xs font-semibold transition shadow-md"
           >
-            <Download className="w-3.5 h-3.5" />
+            <Download className="w-3 h-3" />
             <span>Export CSV Dana Talangan</span>
           </button>
         </div>
 
         {/* Card 6: Audit Trail & Compliance */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3 hover:border-slate-700 transition shadow-lg flex flex-col justify-between">
-          <div className="space-y-2">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2 hover:border-slate-700 transition shadow-lg flex flex-col justify-between">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <div className="p-2 bg-slate-700/50 text-slate-300 rounded-lg">
-                <ShieldCheck className="w-4 h-4" />
+                <ShieldCheck className="w-3.5 h-3.5" />
               </div>
               <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono">
                 {(store.auditLogs || []).length} Log Audit
               </span>
             </div>
             <h3 className="font-bold text-white text-sm">Log Kepatuhan Audit Trail</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-400 leading-normal">
               Catatan kepatuhan sistem forensik terhadap seluruh aksi pembuatan, perubahan data, approval transaksi, dan export.
             </p>
           </div>
           <button
             type="button"
             onClick={handleExportAuditTrail}
-            className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-750 px-3 py-2 rounded-lg text-xs font-semibold transition shadow-md"
+            className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-750 px-2.5 py-2 rounded-lg text-xs font-semibold transition shadow-md"
           >
-            <Download className="w-3.5 h-3.5" />
+            <Download className="w-3 h-3" />
             <span>Export CSV Audit Trail</span>
           </button>
         </div>
@@ -607,83 +607,83 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
       {/* Interactive Table Preview & Navigation Tabs */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
         {/* Navigation Bar */}
-        <div className="p-4 bg-slate-950/80 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
+        <div className="p-3 bg-slate-950/80 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
             <button
               type="button"
               onClick={() => setActiveTab('RECOVERY_CLIENT')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 shrink-0 ${
+              className={`px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 shrink-0 ${
                 activeTab === 'RECOVERY_CLIENT'
                   ? 'bg-indigo-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-white hover:bg-slate-850'
               }`}
             >
-              <Building2 className="w-3.5 h-3.5" />
+              <Building2 className="w-3 h-3" />
               <span>Kinerja Multifinance / Klien</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('FINANCIAL_PL')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 shrink-0 ${
+              className={`px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 shrink-0 ${
                 activeTab === 'FINANCIAL_PL'
                   ? 'bg-emerald-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-white hover:bg-slate-850'
               }`}
             >
-              <PieChart className="w-3.5 h-3.5" />
+              <PieChart className="w-3 h-3" />
               <span>Keuangan & Laba Rugi</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('DEBTOR_PORTFOLIO')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 shrink-0 ${
+              className={`px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 shrink-0 ${
                 activeTab === 'DEBTOR_PORTFOLIO'
                   ? 'bg-amber-600 text-slate-950 font-bold shadow-md'
                   : 'text-slate-400 hover:text-white hover:bg-slate-850'
               }`}
             >
-              <Users className="w-3.5 h-3.5" />
+              <Users className="w-3 h-3" />
               <span>Portofolio Debitur & Kasus</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('SETTLEMENTS')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 shrink-0 ${
+              className={`px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 shrink-0 ${
                 activeTab === 'SETTLEMENTS'
                   ? 'bg-cyan-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-white hover:bg-slate-850'
               }`}
             >
-              <DollarSign className="w-3.5 h-3.5" />
+              <DollarSign className="w-3 h-3" />
               <span>Remittance Settlement</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('DANA_TALANGAN')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 shrink-0 ${
+              className={`px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 shrink-0 ${
                 activeTab === 'DANA_TALANGAN'
                   ? 'bg-purple-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-white hover:bg-slate-850'
               }`}
             >
-              <Wallet className="w-3.5 h-3.5" />
+              <Wallet className="w-3 h-3" />
               <span>Dana Talangan</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('AUDIT_TRAIL')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 shrink-0 ${
+              className={`px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 shrink-0 ${
                 activeTab === 'AUDIT_TRAIL'
                   ? 'bg-slate-700 text-white shadow-md'
                   : 'text-slate-400 hover:text-white hover:bg-slate-850'
               }`}
             >
-              <ShieldCheck className="w-3.5 h-3.5" />
+              <ShieldCheck className="w-3 h-3" />
               <span>Audit Trail</span>
             </button>
           </div>
@@ -694,9 +694,9 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
               <button
                 type="button"
                 onClick={handleExportClientPerformance}
-                className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition shadow"
+                className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold transition shadow"
               >
-                <Download className="w-3.5 h-3.5" />
+                <Download className="w-3 h-3" />
                 <span>Unduh Tabel Ini (CSV)</span>
               </button>
             )}
@@ -705,9 +705,9 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
               <button
                 type="button"
                 onClick={handleExportFinancialPL}
-                className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition shadow"
+                className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold transition shadow"
               >
-                <Download className="w-3.5 h-3.5" />
+                <Download className="w-3 h-3" />
                 <span>Unduh Laporan Keuangan (CSV)</span>
               </button>
             )}
@@ -717,7 +717,7 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
                 <select
                   value={selectedClientId}
                   onChange={(e) => setSelectedClientId(e.target.value)}
-                  className="bg-slate-900 border border-slate-750 text-xs text-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none"
+                  className="bg-slate-900 border border-slate-750 text-xs text-slate-200 rounded-lg px-2 py-1.5 focus:outline-none"
                 >
                   <option value="ALL">Semua Klien Multifinance</option>
                   {(store.clients || []).map((c) => (
@@ -729,9 +729,9 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
                 <button
                   type="button"
                   onClick={handleExportDebtorCases}
-                  className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs transition shadow"
+                  className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold px-2.5 py-1.5 rounded-lg text-xs transition shadow"
                 >
-                  <Download className="w-3.5 h-3.5" />
+                  <Download className="w-3 h-3" />
                   <span>Unduh Debitur (CSV)</span>
                 </button>
               </div>
@@ -741,9 +741,9 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
               <button
                 type="button"
                 onClick={handleExportSettlements}
-                className="flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition shadow"
+                className="flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold transition shadow"
               >
-                <Download className="w-3.5 h-3.5" />
+                <Download className="w-3 h-3" />
                 <span>Unduh Settlement (CSV)</span>
               </button>
             )}
@@ -752,9 +752,9 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
               <button
                 type="button"
                 onClick={handleExportDanaTalangan}
-                className="flex items-center gap-1.5 bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition shadow"
+                className="flex items-center gap-1.5 bg-purple-600 hover:bg-purple-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold transition shadow"
               >
-                <Download className="w-3.5 h-3.5" />
+                <Download className="w-3 h-3" />
                 <span>Unduh Dana Talangan (CSV)</span>
               </button>
             )}
@@ -763,9 +763,9 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
               <button
                 type="button"
                 onClick={handleExportAuditTrail}
-                className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold transition shadow"
+                className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition shadow"
               >
-                <Download className="w-3.5 h-3.5" />
+                <Download className="w-3 h-3" />
                 <span>Unduh Log Audit (CSV)</span>
               </button>
             )}
@@ -778,25 +778,25 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-950/60 border-b border-slate-800 text-slate-400 uppercase font-mono text-[11px]">
-                  <th className="p-3.5">Klien / Lembaga</th>
-                  <th className="p-3.5">Tipe Klien</th>
-                  <th className="p-3.5 text-center">Total Perkara</th>
-                  <th className="p-3.5 text-center">Aktif / Selesai</th>
-                  <th className="p-3.5 text-right">Total OS Pokok</th>
-                  <th className="p-3.5 text-right">Tertagih (Collected)</th>
-                  <th className="p-3.5 text-right">Fee Agency PT MJ</th>
-                  <th className="p-3.5 text-center">Recovery Rate</th>
-                  <th className="p-3.5 text-center">Avg DPD</th>
+                  <th className="p-3">Klien / Lembaga</th>
+                  <th className="p-3">Tipe Klien</th>
+                  <th className="p-3 text-center">Total Perkara</th>
+                  <th className="p-3 text-center">Aktif / Selesai</th>
+                  <th className="p-3 text-right">Total OS Pokok</th>
+                  <th className="p-3 text-right">Tertagih (Collected)</th>
+                  <th className="p-3 text-right">Fee Agency PT MJ</th>
+                  <th className="p-3 text-center">Recovery Rate</th>
+                  <th className="p-3 text-center">Avg DPD</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 text-slate-300">
                 {clientPerformanceData.map((d) => (
                   <tr key={d.clientId} className="hover:bg-slate-850/50 transition">
-                    <td className="p-3.5">
+                    <td className="p-3">
                       <div className="font-bold text-white text-xs">{d.clientName}</div>
                       <div className="text-[10px] text-slate-500 font-mono">Kode: {d.clientCode} | {d.industry}</div>
                     </td>
-                    <td className="p-3.5">
+                    <td className="p-3">
                       <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
                         d.clientType === 'PERORANGAN'
                           ? 'bg-amber-950/60 text-amber-300 border-amber-800/60'
@@ -805,24 +805,24 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
                         {d.clientType}
                       </span>
                     </td>
-                    <td className="p-3.5 text-center font-bold text-white font-mono">
+                    <td className="p-3 text-center font-bold text-white font-mono">
                       {d.totalCases}
                     </td>
-                    <td className="p-3.5 text-center">
+                    <td className="p-3 text-center">
                       <span className="text-amber-400 font-mono">{d.activeCases} on-prog</span>
                       <span className="text-slate-600 mx-1">/</span>
                       <span className="text-emerald-400 font-mono font-bold">{d.resolvedCases} done</span>
                     </td>
-                    <td className="p-3.5 text-right font-mono text-slate-300">
+                    <td className="p-3 text-right font-mono text-slate-300">
                       {formatRupiahNumber(d.totalPrincipalOS)}
                     </td>
-                    <td className="p-3.5 text-right font-mono font-bold text-emerald-400">
+                    <td className="p-3 text-right font-mono font-bold text-emerald-400">
                       {formatRupiahNumber(d.totalCollected)}
                     </td>
-                    <td className="p-3.5 text-right font-mono font-bold text-indigo-300">
+                    <td className="p-3 text-right font-mono font-bold text-indigo-300">
                       {formatRupiahNumber(d.totalAgencyFeeEarned)}
                     </td>
-                    <td className="p-3.5 text-center">
+                    <td className="p-3 text-center">
                       <div className="flex items-center justify-center gap-1.5">
                         <div className="w-16 bg-slate-800 rounded-full h-2 overflow-hidden">
                           <div
@@ -833,7 +833,7 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
                         <span className="font-mono font-bold text-[11px] text-emerald-400">{d.recoveryRate}%</span>
                       </div>
                     </td>
-                    <td className="p-3.5 text-center font-mono text-amber-400 font-semibold">
+                    <td className="p-3 text-center font-mono text-amber-400 font-semibold">
                       {d.avgDpd} Hari
                     </td>
                   </tr>
@@ -845,22 +845,22 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
 
         {/* TAB 2: FINANCIAL P&L STATEMENT */}
         {activeTab === 'FINANCIAL_PL' && (
-          <div className="p-5 space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-slate-950 p-4 rounded-xl border border-emerald-900/40">
+          <div className="p-3.5 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div className="bg-slate-950 p-3 rounded-xl border border-emerald-900/40">
                 <span className="text-[11px] text-emerald-400 font-bold block uppercase tracking-wider">Total Agency Revenue Inflow</span>
-                <span className="text-xl font-extrabold text-emerald-300 font-mono mt-1 block">{formatRupiahNumber(totalAgencyFeeAll)}</span>
-                <span className="text-[10px] text-slate-500 mt-1 block">Dari {(store.payments || []).length} transaksi pelunasan terverifikasi</span>
+                <span className="text-xl font-extrabold text-emerald-300 font-mono mt-0.5 block">{formatRupiahNumber(totalAgencyFeeAll)}</span>
+                <span className="text-[10px] text-slate-500 mt-0.5 block">Dari {(store.payments || []).length} transaksi pelunasan terverifikasi</span>
               </div>
-              <div className="bg-slate-950 p-4 rounded-xl border border-red-900/40">
+              <div className="bg-slate-950 p-3 rounded-xl border border-red-900/40">
                 <span className="text-[11px] text-red-400 font-bold block uppercase tracking-wider">Total Beban Operasional & Derek</span>
-                <span className="text-xl font-extrabold text-red-400 font-mono mt-1 block">{formatRupiahNumber(totalExpensesAll)}</span>
-                <span className="text-[10px] text-slate-500 mt-1 block">Biaya towing, storage pool, akomodasi lapangan</span>
+                <span className="text-xl font-extrabold text-red-400 font-mono mt-0.5 block">{formatRupiahNumber(totalExpensesAll)}</span>
+                <span className="text-[10px] text-slate-500 mt-0.5 block">Biaya towing, storage pool, akomodasi lapangan</span>
               </div>
-              <div className="bg-slate-950 p-4 rounded-xl border border-indigo-900/40">
+              <div className="bg-slate-950 p-3 rounded-xl border border-indigo-900/40">
                 <span className="text-[11px] text-indigo-400 font-bold block uppercase tracking-wider">Estimasi Laba Bersih Operasional</span>
-                <span className="text-xl font-extrabold text-white font-mono mt-1 block">{formatRupiahNumber(netProfitEstimated)}</span>
-                <span className="text-[10px] text-emerald-400 mt-1 block">Margin Efisiensi: {totalAgencyFeeAll > 0 ? Math.round((netProfitEstimated / totalAgencyFeeAll) * 100) : 0}%</span>
+                <span className="text-xl font-extrabold text-white font-mono mt-0.5 block">{formatRupiahNumber(netProfitEstimated)}</span>
+                <span className="text-[10px] text-emerald-400 mt-0.5 block">Margin Efisiensi: {totalAgencyFeeAll > 0 ? Math.round((netProfitEstimated / totalAgencyFeeAll) * 100) : 0}%</span>
               </div>
             </div>
 
@@ -868,32 +868,32 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-slate-950 border-b border-slate-800 text-slate-400 uppercase font-mono text-[10px]">
-                    <th className="p-3">Tanggal</th>
-                    <th className="p-3">No. Bukti / Receipt</th>
-                    <th className="p-3">Klien & Debitur</th>
-                    <th className="p-3">Kategori</th>
-                    <th className="p-3 text-right">Total Transaksi</th>
-                    <th className="p-3 text-right">Fee Agency PT MJ</th>
-                    <th className="p-3 text-right">Disetor ke Klien</th>
+                    <th className="p-2.5">Tanggal</th>
+                    <th className="p-2.5">No. Bukti / Receipt</th>
+                    <th className="p-2.5">Klien & Debitur</th>
+                    <th className="p-2.5">Kategori</th>
+                    <th className="p-2.5 text-right">Total Transaksi</th>
+                    <th className="p-2.5 text-right">Fee Agency PT MJ</th>
+                    <th className="p-2.5 text-right">Disetor ke Klien</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
                   {(store.payments || []).map((p) => (
                     <tr key={p.id} className="hover:bg-slate-850/40">
-                      <td className="p-3 text-slate-400 font-mono">{p.paymentDate}</td>
-                      <td className="p-3 font-mono text-indigo-300 font-bold">{p.receiptNo}</td>
-                      <td className="p-3">
+                      <td className="p-2.5 text-slate-400 font-mono">{p.paymentDate}</td>
+                      <td className="p-2.5 font-mono text-indigo-300 font-bold">{p.receiptNo}</td>
+                      <td className="p-2.5">
                         <div className="text-white font-semibold">{p.debtorName}</div>
                         <div className="text-[10px] text-slate-500">{p.clientName}</div>
                       </td>
-                      <td className="p-3">
+                      <td className="p-2.5">
                         <span className="px-2 py-0.5 bg-emerald-950 text-emerald-300 border border-emerald-800/60 rounded text-[10px]">
                           Pelunasan ({p.method})
                         </span>
                       </td>
-                      <td className="p-3 text-right font-mono font-semibold text-white">{formatRupiahNumber(p.amount)}</td>
-                      <td className="p-3 text-right font-mono font-bold text-emerald-400">{formatRupiahNumber(p.feePortion)}</td>
-                      <td className="p-3 text-right font-mono text-cyan-300">{formatRupiahNumber(p.amount - p.feePortion)}</td>
+                      <td className="p-2.5 text-right font-mono font-semibold text-white">{formatRupiahNumber(p.amount)}</td>
+                      <td className="p-2.5 text-right font-mono font-bold text-emerald-400">{formatRupiahNumber(p.feePortion)}</td>
+                      <td className="p-2.5 text-right font-mono text-cyan-300">{formatRupiahNumber(p.amount - p.feePortion)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -908,45 +908,45 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-950/60 border-b border-slate-800 text-slate-400 uppercase font-mono text-[11px]">
-                  <th className="p-3.5">No. Perkara</th>
-                  <th className="p-3.5">Klien Pemberi Kuasa</th>
-                  <th className="p-3.5">Nama Debitur & NIK</th>
-                  <th className="p-3.5">No. Kontrak</th>
-                  <th className="p-3.5 text-right">OS Pokok Piutang</th>
-                  <th className="p-3.5 text-center">DPD (Hari)</th>
-                  <th className="p-3.5">Field Partner (PIC)</th>
-                  <th className="p-3.5">Status</th>
+                  <th className="p-3">No. Perkara</th>
+                  <th className="p-3">Klien Pemberi Kuasa</th>
+                  <th className="p-3">Nama Debitur & NIK</th>
+                  <th className="p-3">No. Kontrak</th>
+                  <th className="p-3 text-right">OS Pokok Piutang</th>
+                  <th className="p-3 text-center">DPD (Hari)</th>
+                  <th className="p-3">Field Partner (PIC)</th>
+                  <th className="p-3">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 text-slate-300">
                 {filteredCases.map((c) => (
                   <tr key={c.id} className="hover:bg-slate-850/50 transition">
-                    <td className="p-3.5 font-mono font-bold text-indigo-300">
+                    <td className="p-3 font-mono font-bold text-indigo-300">
                       {c.caseNo}
                     </td>
-                    <td className="p-3.5">
+                    <td className="p-3">
                       <div className="text-white font-medium">{c.clientName}</div>
                       <span className="text-[10px] text-slate-500 uppercase">{c.clientType || 'MULTIFINANCE'}</span>
                     </td>
-                    <td className="p-3.5">
+                    <td className="p-3">
                       <div className="font-bold text-white">{c.debtorName}</div>
                       <div className="text-[10px] text-slate-400 font-mono">NIK: {c.debtorNik || '-'}</div>
                     </td>
-                    <td className="p-3.5 font-mono text-slate-300">
+                    <td className="p-3 font-mono text-slate-300">
                       {c.multifinanceContractNo || '-'}
                     </td>
-                    <td className="p-3.5 text-right font-mono font-bold text-amber-300">
+                    <td className="p-3 text-right font-mono font-bold text-amber-300">
                       {formatRupiahNumber(c.principalDebtOS)}
                     </td>
-                    <td className="p-3.5 text-center">
+                    <td className="p-3 text-center">
                       <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-950 text-amber-300 border border-amber-800/60">
                         {c.overdueDays} DPD
                       </span>
                     </td>
-                    <td className="p-3.5">
+                    <td className="p-3">
                       <span className="text-slate-300">{c.currentPersonnelName || '-'}</span>
                     </td>
-                    <td className="p-3.5">
+                    <td className="p-3">
                       <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
                         c.status === 'SETTLED' || c.status === 'CLOSED'
                           ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
@@ -970,25 +970,25 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-950/60 border-b border-slate-800 text-slate-400 uppercase font-mono text-[11px]">
-                  <th className="p-3.5">No. Settlement</th>
-                  <th className="p-3.5">Tanggal</th>
-                  <th className="p-3.5">Klien Multifinance</th>
-                  <th className="p-3.5 text-right">Total Terkumpul</th>
-                  <th className="p-3.5 text-right">Potongan Fee Agency</th>
-                  <th className="p-3.5 text-right">Net Remittance Klien</th>
-                  <th className="p-3.5 text-center">Status</th>
+                  <th className="p-3">No. Settlement</th>
+                  <th className="p-3">Tanggal</th>
+                  <th className="p-3">Klien Multifinance</th>
+                  <th className="p-3 text-right">Total Terkumpul</th>
+                  <th className="p-3 text-right">Potongan Fee Agency</th>
+                  <th className="p-3 text-right">Net Remittance Klien</th>
+                  <th className="p-3 text-center">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 text-slate-300">
                 {(store.settlements || []).map((s) => (
                   <tr key={s.id} className="hover:bg-slate-850/50">
-                    <td className="p-3.5 font-mono font-bold text-cyan-300">{s.settlementNo}</td>
-                    <td className="p-3.5 text-slate-400 font-mono">{s.settlementDate}</td>
-                    <td className="p-3.5 font-bold text-white">{s.clientName}</td>
-                    <td className="p-3.5 text-right font-mono text-white">{formatRupiahNumber(s.totalCollected)}</td>
-                    <td className="p-3.5 text-right font-mono font-bold text-emerald-400">{formatRupiahNumber(s.agencyFeeDeducted)}</td>
-                    <td className="p-3.5 text-right font-mono font-bold text-cyan-400">{formatRupiahNumber(s.netRemittanceToClient)}</td>
-                    <td className="p-3.5 text-center">
+                    <td className="p-3 font-mono font-bold text-cyan-300">{s.settlementNo}</td>
+                    <td className="p-3 text-slate-400 font-mono">{s.settlementDate}</td>
+                    <td className="p-3 font-bold text-white">{s.clientName}</td>
+                    <td className="p-3 text-right font-mono text-white">{formatRupiahNumber(s.totalCollected)}</td>
+                    <td className="p-3 text-right font-mono font-bold text-emerald-400">{formatRupiahNumber(s.agencyFeeDeducted)}</td>
+                    <td className="p-3 text-right font-mono font-bold text-cyan-400">{formatRupiahNumber(s.netRemittanceToClient)}</td>
+                    <td className="p-3 text-center">
                       <span className="px-2 py-0.5 bg-emerald-950 text-emerald-300 border border-emerald-800 rounded text-[10px] font-semibold">
                         {s.status}
                       </span>
@@ -1006,30 +1006,30 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-950/60 border-b border-slate-800 text-slate-400 uppercase font-mono text-[11px]">
-                  <th className="p-3.5">No. Proposal</th>
-                  <th className="p-3.5">Klien & Debitur</th>
-                  <th className="p-3.5">Keperluan</th>
-                  <th className="p-3.5 text-right">Modal Ditalangi</th>
-                  <th className="p-3.5 text-center">Return %</th>
-                  <th className="p-3.5 text-right">Imbal Hasil Fee</th>
-                  <th className="p-3.5">Target Pelunasan</th>
-                  <th className="p-3.5 text-center">Status</th>
+                  <th className="p-3">No. Proposal</th>
+                  <th className="p-3">Klien & Debitur</th>
+                  <th className="p-3">Keperluan</th>
+                  <th className="p-3 text-right">Modal Ditalangi</th>
+                  <th className="p-3 text-center">Return %</th>
+                  <th className="p-3 text-right">Imbal Hasil Fee</th>
+                  <th className="p-3">Target Pelunasan</th>
+                  <th className="p-3 text-center">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 text-slate-300">
                 {(store.danaTalangan || []).map((d) => (
                   <tr key={d.id} className="hover:bg-slate-850/50">
-                    <td className="p-3.5 font-mono font-bold text-purple-300">{d.proposalNo}</td>
-                    <td className="p-3.5">
+                    <td className="p-3 font-mono font-bold text-purple-300">{d.proposalNo}</td>
+                    <td className="p-3">
                       <div className="font-bold text-white">{d.debtorName}</div>
                       <div className="text-[10px] text-slate-500">{d.clientName} (Perkara: {d.caseNo})</div>
                     </td>
-                    <td className="p-3.5 text-slate-300 max-w-xs truncate">{d.purpose}</td>
-                    <td className="p-3.5 text-right font-mono font-bold text-white">{formatRupiahNumber(d.amountRequired)}</td>
-                    <td className="p-3.5 text-center font-mono font-bold text-purple-300">{d.returnFeePercent}%</td>
-                    <td className="p-3.5 text-right font-mono font-bold text-emerald-400">{formatRupiahNumber(d.returnFeeAmount)}</td>
-                    <td className="p-3.5 font-mono text-slate-400">{d.targetRepaymentDate}</td>
-                    <td className="p-3.5 text-center">
+                    <td className="p-3 text-slate-300 max-w-xs truncate">{d.purpose}</td>
+                    <td className="p-3 text-right font-mono font-bold text-white">{formatRupiahNumber(d.amountRequired)}</td>
+                    <td className="p-3 text-center font-mono font-bold text-purple-300">{d.returnFeePercent}%</td>
+                    <td className="p-3 text-right font-mono font-bold text-emerald-400">{formatRupiahNumber(d.returnFeeAmount)}</td>
+                    <td className="p-3 font-mono text-slate-400">{d.targetRepaymentDate}</td>
+                    <td className="p-3 text-center">
                       <span className="px-2 py-0.5 bg-purple-950 text-purple-300 border border-purple-800 rounded text-[10px] font-semibold">
                         {d.status}
                       </span>
@@ -1047,23 +1047,23 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-950/60 border-b border-slate-800 text-slate-400 uppercase font-mono text-[11px]">
-                  <th className="p-3.5">Waktu</th>
-                  <th className="p-3.5">User & Role</th>
-                  <th className="p-3.5">Aksi</th>
-                  <th className="p-3.5">Modul</th>
-                  <th className="p-3.5">Target</th>
-                  <th className="p-3.5">Rincian Catatan</th>
+                  <th className="p-3">Waktu</th>
+                  <th className="p-3">User & Role</th>
+                  <th className="p-3">Aksi</th>
+                  <th className="p-3">Modul</th>
+                  <th className="p-3">Target</th>
+                  <th className="p-3">Rincian Catatan</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 text-slate-300">
                 {(store.auditLogs || []).slice(0, 30).map((l) => (
                   <tr key={l.id} className="hover:bg-slate-850/50">
-                    <td className="p-3.5 font-mono text-slate-400 text-[10px]">{l.timestamp}</td>
-                    <td className="p-3.5">
+                    <td className="p-3 font-mono text-slate-400 text-[10px]">{l.timestamp}</td>
+                    <td className="p-3">
                       <div className="font-bold text-white">{l.username}</div>
                       <div className="text-[10px] text-slate-500 font-mono">{l.role}</div>
                     </td>
-                    <td className="p-3.5">
+                    <td className="p-3">
                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
                         l.action === 'CREATE' ? 'bg-emerald-950 text-emerald-300 border-emerald-800' :
                         l.action === 'UPDATE' ? 'bg-blue-950 text-blue-300 border-blue-800' :
@@ -1074,9 +1074,9 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
                         {l.action}
                       </span>
                     </td>
-                    <td className="p-3.5 font-medium text-slate-300">{l.module}</td>
-                    <td className="p-3.5 font-mono text-[11px] text-slate-400">{l.targetId}</td>
-                    <td className="p-3.5 text-slate-300 max-w-md truncate">{l.details}</td>
+                    <td className="p-3 font-medium text-slate-300">{l.module}</td>
+                    <td className="p-3 font-mono text-[11px] text-slate-400">{l.targetId}</td>
+                    <td className="p-3 text-slate-300 max-w-md truncate">{l.details}</td>
                   </tr>
                 ))}
               </tbody>

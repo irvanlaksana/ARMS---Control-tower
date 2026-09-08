@@ -190,8 +190,8 @@ export default function App() {
         />
 
         {/* Dynamic Content Panel */}
-        <main className="min-w-0 flex-1 overflow-y-auto p-2 sm:p-4 lg:p-6 pb-24 lg:pb-6 bg-slate-950">
-          <div className="max-w-7xl mx-auto min-w-0 space-y-3 sm:space-y-4">{renderModule()}</div>
+        <main className="min-w-0 flex-1 overflow-y-auto p-2 sm:p-3 lg:p-4 pb-24 lg:pb-4 bg-slate-950">
+          <div className="max-w-7xl mx-auto min-w-0 space-y-2 sm:space-y-3">{renderModule()}</div>
         </main>
       </div>
 

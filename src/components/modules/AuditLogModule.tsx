@@ -24,11 +24,11 @@ export const AuditLogModule: React.FC<AuditLogModuleProps> = ({ store }) => {
   });
 
   return (
-    <div className="space-y-6">
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-2.5">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <ShieldCheck className="w-5 h-5 text-indigo-400" />
+          <div className="flex items-center gap-2 mb-0.5">
+            <ShieldCheck className="w-4 h-4 text-indigo-400" />
             <h2 className="text-xl font-bold text-white">Immutable Security & System Audit Trail</h2>
           </div>
           <p className="text-xs text-slate-400">
@@ -40,7 +40,7 @@ export const AuditLogModule: React.FC<AuditLogModuleProps> = ({ store }) => {
           <select
             value={filterAction}
             onChange={(e) => setFilterAction(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none"
+            className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-2 text-xs text-slate-200 focus:outline-none"
           >
             <option value="ALL">All Actions</option>
             <option value="CREATE">CREATE</option>
@@ -56,13 +56,13 @@ export const AuditLogModule: React.FC<AuditLogModuleProps> = ({ store }) => {
       </div>
 
       <div className="relative">
-        <Search className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+        <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-3" />
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Filter audit logs by username, module, or details..."
-          className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+          className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
         />
       </div>
 
@@ -71,28 +71,28 @@ export const AuditLogModule: React.FC<AuditLogModuleProps> = ({ store }) => {
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-950 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
               <tr>
-                <th className="py-3 px-4">Timestamp</th>
-                <th className="py-3 px-4">User & Role</th>
-                <th className="py-3 px-4">Action</th>
-                <th className="py-3 px-4">Module Name</th>
-                <th className="py-3 px-4">Target ID</th>
-                <th className="py-3 px-4">Audit Details</th>
-                <th className="py-3 px-4 text-right">IP Address</th>
+                <th className="py-2 px-3">Timestamp</th>
+                <th className="py-2 px-3">User & Role</th>
+                <th className="py-2 px-3">Action</th>
+                <th className="py-2 px-3">Module Name</th>
+                <th className="py-2 px-3">Target ID</th>
+                <th className="py-2 px-3">Audit Details</th>
+                <th className="py-2 px-3 text-right">IP Address</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
               {filteredLogs.map((log) => (
                 <tr key={log.id} className="hover:bg-slate-800/40 transition">
-                  <td className="py-3.5 px-4 font-mono text-slate-400">
+                  <td className="py-2.5 px-3 font-mono text-slate-400">
                     {new Date(log.timestamp).toLocaleString('id-ID')}
                   </td>
-                  <td className="py-3.5 px-4 space-y-0.5">
+                  <td className="py-2.5 px-3 space-y-0.5">
                     <div className="font-bold text-white">{log.username}</div>
                     <div className="text-[10px] text-slate-400">{log.userRole}</div>
                   </td>
-                  <td className="py-3.5 px-4">
+                  <td className="py-2.5 px-3">
                     <span
-                      className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${
+                      className={`text-[10px] font-bold px-2 py-1 rounded-full border ${
                         log.action === 'APPROVE'
                           ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
                           : log.action === 'REJECT' || log.action === 'FINANCIAL_REVERSAL'
@@ -105,10 +105,10 @@ export const AuditLogModule: React.FC<AuditLogModuleProps> = ({ store }) => {
                       {log.action}
                     </span>
                   </td>
-                  <td className="py-3.5 px-4 font-medium text-slate-300">{log.moduleName}</td>
-                  <td className="py-3.5 px-4 font-mono text-amber-300">{log.targetId}</td>
-                  <td className="py-3.5 px-4 text-slate-200 max-w-[300px] leading-relaxed">{log.details}</td>
-                  <td className="py-3.5 px-4 text-right font-mono text-slate-500">{log.ipAddress || '127.0.0.1'}</td>
+                  <td className="py-2.5 px-3 font-medium text-slate-300">{log.moduleName}</td>
+                  <td className="py-2.5 px-3 font-mono text-amber-300">{log.targetId}</td>
+                  <td className="py-2.5 px-3 text-slate-200 max-w-[300px] leading-normal">{log.details}</td>
+                  <td className="py-2.5 px-3 text-right font-mono text-slate-500">{log.ipAddress || '127.0.0.1'}</td>
                 </tr>
               ))}
             </tbody>

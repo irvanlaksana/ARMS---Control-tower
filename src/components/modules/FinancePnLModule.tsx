@@ -227,12 +227,12 @@ export const FinancePnLModule: React.FC<FinancePnLModuleProps> = ({
   const netProfit = totalRevenue - totalExpenses;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-2.5 shadow-lg">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <PieChart className="w-5 h-5 text-indigo-400" />
+          <div className="flex items-center gap-2 mb-0.5">
+            <PieChart className="w-4 h-4 text-indigo-400" />
             <h2 className="text-xl font-bold text-white">Finance & Profit/Loss Ledger</h2>
           </div>
           <p className="text-xs text-slate-400">
@@ -244,15 +244,15 @@ export const FinancePnLModule: React.FC<FinancePnLModuleProps> = ({
           {canEdit && (
             <button
               onClick={() => handleOpenEntryModal()}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 shadow transition"
+              className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-2.5 py-2 rounded-lg flex items-center gap-1.5 shadow transition"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5" />
               <span>+ Post Manual Journal Entry</span>
             </button>
           )}
 
           <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
             <input
               type="text"
               value={searchTerm}
@@ -271,7 +271,7 @@ export const FinancePnLModule: React.FC<FinancePnLModuleProps> = ({
               setFilterAccount(e.target.value);
               pnlPagination.setPage(1);
             }}
-            className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none"
+            className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-2 text-xs text-slate-200 focus:outline-none"
           >
             <option value="ALL">All Accounts</option>
             <option value="CASH">CASH Account</option>
@@ -284,22 +284,22 @@ export const FinancePnLModule: React.FC<FinancePnLModuleProps> = ({
       </div>
 
       {/* Financial Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-1 shadow">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-1 shadow">
           <div className="text-xs text-slate-400 font-medium">Total Recognized Revenue Fees</div>
           <div className="text-2xl font-bold text-emerald-400">
             Rp {totalRevenue.toLocaleString('id-ID')}
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-1 shadow">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-1 shadow">
           <div className="text-xs text-slate-400 font-medium">Total Operating Expenses</div>
           <div className="text-2xl font-bold text-rose-400">
             Rp {totalExpenses.toLocaleString('id-ID')}
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-1 shadow">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-1 shadow">
           <div className="text-xs text-slate-400 font-medium">Net Operating Profit / Loss</div>
           <div className="text-2xl font-bold text-indigo-400">
             Rp {netProfit.toLocaleString('id-ID')}
@@ -309,7 +309,7 @@ export const FinancePnLModule: React.FC<FinancePnLModuleProps> = ({
 
       {/* Ledger Table */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
-        <div className="p-4 border-b border-slate-800 bg-slate-950/50 flex items-center justify-between">
+        <div className="p-3 border-b border-slate-800 bg-slate-950/50 flex items-center justify-between">
           <h3 className="font-bold text-white text-xs uppercase tracking-wider">
             General Ledger Entries ({filteredLedger.length})
           </h3>
@@ -322,20 +322,20 @@ export const FinancePnLModule: React.FC<FinancePnLModuleProps> = ({
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-950 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
               <tr>
-                <th className="py-3 px-4">Entry No</th>
-                <th className="py-3 px-4">Date</th>
-                <th className="py-3 px-4">Account</th>
-                <th className="py-3 px-4">Type</th>
-                <th className="py-3 px-4 text-right">Amount (Rp)</th>
-                <th className="py-3 px-4">Reference & Description</th>
-                <th className="py-3 px-4 text-center">Status</th>
-                <th className="py-3 px-4 text-right">Action</th>
+                <th className="py-2 px-3">Entry No</th>
+                <th className="py-2 px-3">Date</th>
+                <th className="py-2 px-3">Account</th>
+                <th className="py-2 px-3">Type</th>
+                <th className="py-2 px-3 text-right">Amount (Rp)</th>
+                <th className="py-2 px-3">Reference & Description</th>
+                <th className="py-2 px-3 text-center">Status</th>
+                <th className="py-2 px-3 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
               {pnlPagination.pageItems.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-10 text-center text-slate-500 text-xs">
+                  <td colSpan={8} className="py-8 text-center text-slate-500 text-xs">
                     {store.ledger.length === 0
                       ? 'Belum ada data transaksi buku besar (General Ledger). Transaksi dari modul Pembayaran, Biaya, dan Jurnal Manual akan otomatis muncul di sini.'
                       : 'Tidak ada entri jurnal yang sesuai filter atau pencarian.'}
@@ -344,26 +344,26 @@ export const FinancePnLModule: React.FC<FinancePnLModuleProps> = ({
               ) : (
                 pnlPagination.pageItems.map((l) => (
                   <tr key={l.id} className={`hover:bg-slate-800/40 transition ${l.isReversed ? 'opacity-60 bg-slate-950/30' : ''}`}>
-                    <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">{l.entryNo}</td>
-                    <td className="py-3.5 px-4 text-slate-400">{l.date}</td>
-                    <td className="py-3.5 px-4">
+                    <td className="py-2.5 px-3 font-mono font-bold text-indigo-300">{l.entryNo}</td>
+                    <td className="py-2.5 px-3 text-slate-400">{l.date}</td>
+                    <td className="py-2.5 px-3">
                       <span className="bg-slate-800 text-slate-200 text-[10px] px-2 py-0.5 rounded border border-slate-700">
                         {l.account}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4">
+                    <td className="py-2.5 px-3">
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${l.type === 'DEBIT' ? 'bg-emerald-950 text-emerald-300' : 'bg-blue-950 text-blue-300'}`}>
                         {l.type}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 text-right font-bold text-white font-mono">
+                    <td className="py-2.5 px-3 text-right font-bold text-white font-mono">
                       Rp {l.amount.toLocaleString('id-ID')}
                     </td>
-                    <td className="py-3.5 px-4 space-y-0.5 max-w-[260px]">
+                    <td className="py-2.5 px-3 space-y-0.5 max-w-[260px]">
                       <div className="font-semibold text-slate-200">{l.description}</div>
                       <div className="text-[10px] text-slate-500 font-mono">Ref: {l.referenceModule} ({l.referenceId})</div>
                     </td>
-                    <td className="py-3.5 px-4 text-center">
+                    <td className="py-2.5 px-3 text-center">
                       {l.isReversed ? (
                         <span className="bg-rose-950 text-rose-300 text-[10px] px-2 py-0.5 rounded border border-rose-800 font-semibold">
                           REVERSED
@@ -374,7 +374,7 @@ export const FinancePnLModule: React.FC<FinancePnLModuleProps> = ({
                         </span>
                       )}
                     </td>
-                    <td className="py-3.5 px-4 text-right">
+                    <td className="py-2.5 px-3 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         {!l.isReversed && canEdit && (
                           <button
@@ -392,14 +392,14 @@ export const FinancePnLModule: React.FC<FinancePnLModuleProps> = ({
                               className="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition"
                               title="Edit Entry"
                             >
-                              <Edit2 className="w-3.5 h-3.5" />
+                              <Edit2 className="w-3 h-3" />
                             </button>
                             <button
                               onClick={() => handleDeleteEntry(l)}
                               className="p-1 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition"
                               title="Delete Entry"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 className="w-3 h-3" />
                             </button>
                           </>
                         )}
@@ -423,12 +423,12 @@ export const FinancePnLModule: React.FC<FinancePnLModuleProps> = ({
 
       {/* Manual Journal Entry Modal */}
       {showEntryModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3">
           <form
             onSubmit={handleSaveEntry}
-            className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-6 space-y-4 shadow-2xl"
+            className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-4 space-y-2.5 shadow-2xl"
           >
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
               <h3 className="font-bold text-white text-base">
                 {isEditing ? 'Edit Entri Jurnal' : 'Post Manual Journal Entry'}
               </h3>
@@ -437,17 +437,17 @@ export const FinancePnLModule: React.FC<FinancePnLModuleProps> = ({
                 onClick={() => setShowEntryModal(false)}
                 className="text-slate-400 hover:text-white"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Account</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-0.5">Account</label>
                 <select
                   value={account}
                   onChange={(e) => setAccount(e.target.value as any)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                 >
                   <option value="CASH">CASH Account</option>
                   <option value="RECEIVABLE">RECEIVABLE</option>
@@ -458,11 +458,11 @@ export const FinancePnLModule: React.FC<FinancePnLModuleProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Entry Type</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-0.5">Entry Type</label>
                 <select
                   value={entryType}
                   onChange={(e) => setEntryType(e.target.value as any)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-bold"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white font-bold"
                 >
                   <option value="DEBIT">DEBIT</option>
                   <option value="CREDIT">CREDIT</option>
@@ -471,7 +471,7 @@ export const FinancePnLModule: React.FC<FinancePnLModuleProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Nominal (Rp)</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-0.5">Nominal (Rp)</label>
               <input
                 type="text"
                 inputMode="numeric"
@@ -479,18 +479,18 @@ export const FinancePnLModule: React.FC<FinancePnLModuleProps> = ({
                 step="1000"
                 value={amount}
                 onChange={(e) => setAmount(Number(e.target.value.replace(/\D/g, '')) || 0)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono font-bold"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white font-mono font-bold"
                 required
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Reference Module</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-0.5">Reference Module</label>
                 <select
                   value={referenceModule}
                   onChange={(e) => setReferenceModule(e.target.value as any)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                 >
                   <option value="ADJUSTMENT">ADJUSTMENT</option>
                   <option value="PAYMENT">PAYMENT</option>
@@ -501,40 +501,40 @@ export const FinancePnLModule: React.FC<FinancePnLModuleProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Reference ID / No</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-0.5">Reference ID / No</label>
                 <input
                   type="text"
                   value={referenceId}
                   onChange={(e) => setReferenceId(e.target.value)}
                   placeholder="e.g. ADJ-001"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Keterangan Jurnal</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-0.5">Keterangan Jurnal</label>
               <textarea
                 rows={3}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="e.g. Setoran modal awal / Penyesuaian biaya operasional..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                 required
               />
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => setShowEntryModal(false)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
+                className="px-3 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
               >
                 Batal
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg"
+                className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg"
               >
                 {isEditing ? 'Simpan Perubahan' : 'Post Entry'}
               </button>
@@ -545,34 +545,34 @@ export const FinancePnLModule: React.FC<FinancePnLModuleProps> = ({
 
       {/* Reversal Modal */}
       {showReversalModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-4 space-y-2.5 shadow-2xl">
             <h3 className="font-bold text-white text-base">Reverse Ledger Entry {showReversalModal.entryNo}</h3>
             <p className="text-xs text-slate-400">
               Amount to reverse: <span className="font-bold text-white">Rp {showReversalModal.amount.toLocaleString('id-ID')}</span>
             </p>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Formal Reason for Reversal</label>
+              <label className="block text-xs text-slate-400 mb-0.5">Formal Reason for Reversal</label>
               <textarea
                 rows={3}
                 value={reversalReason}
                 onChange={(e) => setReversalReason(e.target.value)}
                 placeholder="e.g. Correction of duplicate posting / Incorrect allocation"
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-white"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
               />
             </div>
 
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowReversalModal(null)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
+                className="px-3 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleReversal(showReversalModal)}
-                className="px-4 py-2 bg-rose-600 text-white text-xs font-semibold rounded-lg hover:bg-rose-500"
+                className="px-3 py-2 bg-rose-600 text-white text-xs font-semibold rounded-lg hover:bg-rose-500"
               >
                 Execute Reversal & Audit Entry
               </button>

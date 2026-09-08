@@ -673,24 +673,24 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header Banner & Breadcrumbs Structure */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 sm:p-4 shadow-xl space-y-2.5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5">
           <div className="flex items-start gap-3.5">
-            <div className="p-3 bg-gradient-to-br from-indigo-600 to-blue-700 text-white rounded-2xl shadow-lg shrink-0">
-              <HardDrive className="w-6 h-6" />
+            <div className="p-2.5 bg-gradient-to-br from-indigo-600 to-blue-700 text-white rounded-2xl shadow-lg shrink-0">
+              <HardDrive className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-lg sm:text-xl font-bold text-white">
                   Direktori Google Drive & Database Terpadu
                 </h2>
-                <span className="px-2.5 py-0.5 bg-indigo-950 text-indigo-300 border border-indigo-700 text-[10px] font-bold rounded-full">
+                <span className="px-2 py-0.5 bg-indigo-950 text-indigo-300 border border-indigo-700 text-[10px] font-bold rounded-full">
                   MULTI-TIER FOLDER
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+              <p className="text-xs text-slate-400 mt-0.5 leading-normal">
                 Kelola pratinjau, tautkan file, dan perbarui link Google Drive untuk setiap Karyawan/Mitra PT MJ serta Debitur masing-masing Klien Multifinance.
               </p>
             </div>
@@ -701,24 +701,24 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
               href={rootDriveUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg transition"
+              className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg transition"
             >
-              <FolderOpen className="w-4 h-4" />
+              <FolderOpen className="w-3.5 h-3.5" />
               <span>Buka GDrive Master</span>
-              <ExternalLink className="w-3.5 h-3.5" />
+              <ExternalLink className="w-3 h-3" />
             </a>
           </div>
         </div>
 
         {/* Structure Navigation Pills */}
-        <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-xs space-y-2">
+        <div className="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 text-xs space-y-1.5">
           <div className="text-[11px] font-bold text-indigo-400 flex items-center gap-1.5">
-            <Folder className="w-3.5 h-3.5 text-indigo-400" />
+            <Folder className="w-3 h-3 text-indigo-400" />
             <span>Struktur Folder Resmi Sistem PT Mitrajasa Satria Indonesia:</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px]">
-            <div className="p-2.5 bg-slate-900 rounded-lg border border-slate-800 flex items-start gap-2">
+            <div className="p-2 bg-slate-900 rounded-lg border border-slate-800 flex items-start gap-2">
               <span className="px-2 py-0.5 bg-blue-950 text-blue-300 rounded font-mono font-bold text-[10px] shrink-0">
                 1. KARYAWAN
               </span>
@@ -727,7 +727,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
               </span>
             </div>
 
-            <div className="p-2.5 bg-slate-900 rounded-lg border border-slate-800 flex items-start gap-2">
+            <div className="p-2 bg-slate-900 rounded-lg border border-slate-800 flex items-start gap-2">
               <span className="px-2 py-0.5 bg-emerald-950 text-emerald-300 rounded font-mono font-bold text-[10px] shrink-0">
                 2. KLIEN &amp; DEBITUR
               </span>
@@ -739,50 +739,50 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
         </div>
 
         {/* Filters & Search Toolbar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-1.5">
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
               type="button"
               onClick={() => setActiveSection('ALL')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                 activeSection === 'ALL'
                   ? 'bg-indigo-600 text-white shadow-md'
                   : 'bg-slate-800 text-slate-400 hover:text-white'
               }`}
             >
-              <Folder className="w-3.5 h-3.5" />
+              <Folder className="w-3 h-3" />
               <span>Semua Database</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveSection('KARYAWAN')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                 activeSection === 'KARYAWAN'
                   ? 'bg-blue-600 text-white shadow-md'
                   : 'bg-slate-800 text-slate-400 hover:text-white'
               }`}
             >
-              <Users className="w-3.5 h-3.5" />
+              <Users className="w-3 h-3" />
               <span>1. Database Karyawan ({personnelList.length})</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveSection('MULTIFINANCE')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                 activeSection === 'MULTIFINANCE'
                   ? 'bg-emerald-600 text-white shadow-md'
                   : 'bg-slate-800 text-slate-400 hover:text-white'
               }`}
             >
-              <Building2 className="w-3.5 h-3.5" />
+              <Building2 className="w-3 h-3" />
               <span>2. Database Klien &amp; Debitur ({clientsList.length})</span>
             </button>
           </div>
 
           <div className="relative w-full sm:w-64">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
             <input
               type="text"
               placeholder="Cari Karyawan / Multifinance / Debitur..."
@@ -795,19 +795,19 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
       </div>
 
       {folderActionMsg && (
-        <div className={`p-3 rounded-xl border text-xs font-semibold flex items-center gap-2 ${folderActionMsg.ok ? 'bg-emerald-950/80 text-emerald-200 border-emerald-700' : 'bg-rose-950/80 text-rose-200 border-rose-700'}`}>
-          {folderActionMsg.ok ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <AlertCircle className="w-4 h-4 text-rose-400" />}
+        <div className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center gap-2 ${folderActionMsg.ok ? 'bg-emerald-950/80 text-emerald-200 border-emerald-700' : 'bg-rose-950/80 text-rose-200 border-rose-700'}`}>
+          {folderActionMsg.ok ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <AlertCircle className="w-3.5 h-3.5 text-rose-400" />}
           <span>{folderActionMsg.text}</span>
         </div>
       )}
 
       {/* SECTION 1: DATABASE KARYAWAN PT MJ INDONESIA */}
       {(activeSection === 'ALL' || activeSection === 'KARYAWAN') && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-blue-600/10 border border-blue-500/20 text-blue-400 rounded-xl">
-                <Users className="w-5 h-5" />
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 sm:p-4 shadow-xl space-y-2.5">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-blue-600/10 border border-blue-500/20 text-blue-400 rounded-xl">
+                <Users className="w-4 h-4" />
               </div>
               <div>
                 <h3 className="font-bold text-white text-base">
@@ -818,17 +818,17 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                 </p>
               </div>
             </div>
-            <span className="text-xs font-semibold px-3 py-1 bg-blue-950 text-blue-300 border border-blue-800 rounded-full">
+            <span className="text-xs font-semibold px-2.5 py-1 bg-blue-950 text-blue-300 border border-blue-800 rounded-full">
               {filteredPersonnel.length} Personel Terdaftar
             </span>
           </div>
 
           {filteredPersonnel.length === 0 ? (
-            <div className="text-center py-8 text-slate-500 text-xs">
+            <div className="text-center py-6 text-slate-500 text-xs">
               Tidak ada data karyawan yang sesuai dengan pencarian.
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
               {filteredPersonnel.map((p) => {
                 const hasRealFolder = isRealFolder(p.gDriveFolderUrl, p.gDriveFolderId);
                 const folderUrl = hasRealFolder
@@ -840,11 +840,11 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                 return (
                   <div
                     key={p.id}
-                    className="bg-slate-950/80 border border-slate-800 hover:border-slate-700 rounded-xl p-4 space-y-3 shadow-md transition"
+                    className="bg-slate-950/80 border border-slate-800 hover:border-slate-700 rounded-xl p-3 space-y-2 shadow-md transition"
                   >
                     {/* Header Item */}
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
                         {p.ktpPhotoUrl ? (
                           <button
                             type="button"
@@ -856,7 +856,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                           </button>
                         ) : (
                           <div className="w-12 h-12 rounded-xl border border-dashed border-slate-700 bg-slate-900 flex items-center justify-center text-slate-500 shrink-0">
-                            <Users className="w-5 h-5" />
+                            <Users className="w-4 h-4" />
                           </div>
                         )}
                         <div>
@@ -883,10 +883,10 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                     </div>
 
                     {/* Google Drive Link Box */}
-                    <div className="bg-slate-900/90 border border-slate-800 rounded-lg p-3 space-y-2 text-xs">
+                    <div className="bg-slate-900/90 border border-slate-800 rounded-lg p-2.5 space-y-1.5 text-xs">
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] text-slate-400 font-semibold flex items-center gap-1.5">
-                          <Folder className="w-3.5 h-3.5 text-blue-400" />
+                          <Folder className="w-3 h-3 text-blue-400" />
                           <span>Folder GDrive Karyawan:</span>
                         </span>
                         <span className="text-[10px] text-indigo-400 font-mono">
@@ -899,7 +899,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                           type="text"
                           readOnly
                           value={folderUrl || folderPlaceholderText}
-                          className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-300 font-mono truncate select-all focus:outline-none"
+                          className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-[11px] text-slate-300 font-mono truncate select-all focus:outline-none"
                         />
                         <button
                           type="button"
@@ -909,9 +909,9 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                           title="Salin Link Folder"
                         >
                           {copiedId === `FLD-${p.id}` ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            <Check className="w-3 h-3 text-emerald-400" />
                           ) : (
-                            <Copy className="w-3.5 h-3.5" />
+                            <Copy className="w-3 h-3" />
                           )}
                         </button>
                         {folderUrl ? (
@@ -922,7 +922,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                             className="p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition"
                             title="Buka Folder di Google Drive"
                           >
-                            <ExternalLink className="w-3.5 h-3.5" />
+                            <ExternalLink className="w-3 h-3" />
                           </a>
                         ) : (
                           <span className="px-2 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-[10px] text-slate-500">
@@ -962,18 +962,18 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                       <button
                         type="button"
                         onClick={() => setPreviewKtpPersonnel(p)}
-                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg transition"
+                        className="flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg transition"
                       >
-                        <Eye className="w-3.5 h-3.5 text-blue-400" />
+                        <Eye className="w-3 h-3 text-blue-400" />
                         <span>Preview KTP</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setIdCardPersonnel(p)}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-red-950 to-red-900 hover:from-red-900 hover:to-red-800 border border-red-700/80 text-red-200 text-xs font-bold rounded-lg transition"
+                        className="flex items-center gap-1 px-2.5 py-1.5 bg-gradient-to-r from-red-950 to-red-900 hover:from-red-900 hover:to-red-800 border border-red-700/80 text-red-200 text-xs font-bold rounded-lg transition"
                       >
-                        <CreditCard className="w-3.5 h-3.5 text-red-400" />
+                        <CreditCard className="w-3 h-3 text-red-400" />
                         <span>ID Card</span>
                       </button>
 
@@ -983,12 +983,12 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                             type="button"
                             disabled={!!creatingFolderKey}
                             onClick={() => handleEnsureFolder('PERSONNEL', p.id)}
-                            className="flex items-center gap-1 px-3 py-1.5 bg-blue-950 hover:bg-blue-900 border border-blue-800 text-blue-300 text-xs font-semibold rounded-lg transition disabled:opacity-50"
+                            className="flex items-center gap-1 px-2.5 py-1.5 bg-blue-950 hover:bg-blue-900 border border-blue-800 text-blue-300 text-xs font-semibold rounded-lg transition disabled:opacity-50"
                           >
                             {creatingFolderKey === `PERSONNEL-${p.id}` ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              <Loader2 className="w-3 h-3 animate-spin" />
                             ) : (
-                              <FolderCheck className="w-3.5 h-3.5 text-blue-400" />
+                              <FolderCheck className="w-3 h-3 text-blue-400" />
                             )}
                             {hasRealFolder ? 'Perbaiki Folder' : 'Buat Folder GDrive'}
                           </button>
@@ -1005,9 +1005,9 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                                 extraNote: `Struktur: PT MJ INDONESIA > DATABASE KARYAWAN > ${slugify(p.fullName)}`,
                               })
                             }
-                            className="flex items-center gap-1 px-3 py-1.5 bg-indigo-950 hover:bg-indigo-900 border border-indigo-800 text-indigo-300 text-xs font-semibold rounded-lg transition"
+                            className="flex items-center gap-1 px-2.5 py-1.5 bg-indigo-950 hover:bg-indigo-900 border border-indigo-800 text-indigo-300 text-xs font-semibold rounded-lg transition"
                           >
-                            <Edit2 className="w-3.5 h-3.5 text-indigo-400" />
+                            <Edit2 className="w-3 h-3 text-indigo-400" />
                             <span>Edit Link</span>
                           </button>
 
@@ -1022,9 +1022,9 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                                 currentUrl: p.ktpDriveFolderUrl,
                               })
                             }
-                            className="flex items-center gap-1 px-3 py-1.5 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 text-emerald-300 text-xs font-semibold rounded-lg transition"
+                            className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 text-emerald-300 text-xs font-semibold rounded-lg transition"
                           >
-                            <Upload className="w-3.5 h-3.5 text-emerald-400" />
+                            <Upload className="w-3 h-3 text-emerald-400" />
                             <span>Upload / Tautkan</span>
                           </button>
                         </>
@@ -1040,11 +1040,11 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
 
       {/* SECTION 2: DATABASE KLIEN &amp; DEBITUR PT MJ INDONESIA */}
       {(activeSection === 'ALL' || activeSection === 'MULTIFINANCE') && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-emerald-600/10 border border-emerald-500/20 text-emerald-400 rounded-xl">
-                <Building2 className="w-5 h-5" />
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 sm:p-4 shadow-xl space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-2">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-emerald-600/10 border border-emerald-500/20 text-emerald-400 rounded-xl">
+                <Building2 className="w-4 h-4" />
               </div>
               <div>
                 <h3 className="font-bold text-white text-base">
@@ -1055,17 +1055,17 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                 </p>
               </div>
             </div>
-            <span className="text-xs font-semibold px-3 py-1 bg-emerald-950 text-emerald-300 border border-emerald-800 rounded-full">
+            <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-950 text-emerald-300 border border-emerald-800 rounded-full">
               {filteredClients.length} Klien Multifinance Terdaftar
             </span>
           </div>
 
           {filteredClients.length === 0 ? (
-            <div className="text-center py-8 text-slate-500 text-xs">
+            <div className="text-center py-6 text-slate-500 text-xs">
               Tidak ada data Multifinance yang sesuai dengan pencarian.
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-2.5">
               {filteredClients.map((client) => {
                 const isExpanded = !!expandedClients[client.id];
                 const clientDebtors = casesList.filter((cs) => cs.clientId === client.id);
@@ -1088,8 +1088,8 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                     className="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-lg transition"
                   >
                     {/* Multifinance Header Row */}
-                    <div className="p-4 sm:p-5 bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="flex items-start gap-3 min-w-0">
+                    <div className="p-3 sm:p-3.5 bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-2.5">
+                      <div className="flex items-start gap-2 min-w-0">
                         <button
                           type="button"
                           onClick={() => toggleClientExpand(client.id)}
@@ -1097,9 +1097,9 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                           title="Buka / Tutup Folder Multifinance"
                         >
                           {isExpanded ? (
-                            <ChevronDown className="w-4 h-4 text-emerald-400" />
+                            <ChevronDown className="w-3.5 h-3.5 text-emerald-400" />
                           ) : (
-                            <ChevronRight className="w-4 h-4" />
+                            <ChevronRight className="w-3.5 h-3.5" />
                           )}
                         </button>
 
@@ -1108,7 +1108,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                             <h4 className="font-bold text-white text-base truncate">
                               {client.companyName}
                             </h4>
-                            <span className="px-2.5 py-0.5 bg-emerald-950 text-emerald-300 border border-emerald-800 text-[10px] font-mono font-bold rounded-full">
+                            <span className="px-2 py-0.5 bg-emerald-950 text-emerald-300 border border-emerald-800 text-[10px] font-mono font-bold rounded-full">
                               {client.clientCode}
                             </span>
                             <span className="px-2 py-0.5 bg-indigo-950 text-indigo-300 border border-indigo-800 text-[10px] font-semibold rounded-full">
@@ -1127,16 +1127,16 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                             href={clientFolderUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg transition"
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg transition"
                             title="Buka Folder Multifinance di Google Drive"
                           >
-                            <FolderOpen className="w-3.5 h-3.5 text-emerald-400" />
+                            <FolderOpen className="w-3 h-3 text-emerald-400" />
                             <span>Folder Multifinance</span>
                             <ExternalLink className="w-3 h-3" />
                           </a>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-950 border border-dashed border-slate-700 text-slate-400 text-xs font-semibold rounded-lg">
-                            <Folder className="w-3.5 h-3.5 text-amber-400" />
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-950 border border-dashed border-slate-700 text-slate-400 text-xs font-semibold rounded-lg">
+                            <Folder className="w-3 h-3 text-amber-400" />
                             Folder belum dibuat
                           </span>
                         )}
@@ -1145,12 +1145,12 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                             type="button"
                             disabled={!!creatingFolderKey}
                             onClick={() => handleEnsureFolder('CLIENT', client.id)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 text-emerald-300 text-xs font-semibold rounded-lg transition disabled:opacity-50"
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 text-emerald-300 text-xs font-semibold rounded-lg transition disabled:opacity-50"
                           >
                             {creatingFolderKey === `CLIENT-${client.id}` ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              <Loader2 className="w-3 h-3 animate-spin" />
                             ) : (
-                              <FolderCheck className="w-3.5 h-3.5 text-emerald-400" />
+                              <FolderCheck className="w-3 h-3 text-emerald-400" />
                             )}
                             {hasRealClientFolder ? 'Perbaiki Folder' : 'Buat Folder'}
                           </button>
@@ -1160,9 +1160,9 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                           <button
                             type="button"
                             onClick={() => setAddDebtorClientId(client.id)}
-                            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-md transition"
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-md transition"
                           >
-                            <Plus className="w-3.5 h-3.5" />
+                            <Plus className="w-3 h-3" />
                             <span>+ Tambah Debitur Baru</span>
                           </button>
                         )}
@@ -1171,14 +1171,14 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
 
                     {/* Multifinance Sub-Folders & Debtors Content */}
                     {isExpanded && (
-                      <div className="p-4 sm:p-5 space-y-5">
+                      <div className="p-3 sm:p-3.5 space-y-3">
                         {/* Sub-Folders: 1. PROPOSAL & 2. MOU */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                           {/* Folder Proposal */}
-                          <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3">
+                          <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 space-y-2">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                <FileText className="w-4 h-4 text-indigo-400" />
+                                <FileText className="w-3.5 h-3.5 text-indigo-400" />
                                 <span className="font-bold text-white text-xs">
                                   📁 FOLDER PROPOSAL KERJASAMA
                                 </span>
@@ -1201,14 +1201,14 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                               </div>
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-800">
+                            <div className="flex flex-wrap items-center gap-2 pt-1.5 border-t border-slate-800">
                               {proposalUrl ? (
                                 <>
                                   <a
                                     href={proposalUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center gap-1 px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition"
+                                    className="flex items-center gap-1 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition"
                                   >
                                     <ExternalLink className="w-3 h-3" />
                                     <span>Buka Proposal</span>
@@ -1220,9 +1220,9 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                                     title="Salin Link Proposal"
                                   >
                                     {copiedId === `PROP-${client.id}` ? (
-                                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                      <Check className="w-3 h-3 text-emerald-400" />
                                     ) : (
-                                      <Copy className="w-3.5 h-3.5" />
+                                      <Copy className="w-3 h-3" />
                                     )}
                                   </button>
                                 </>
@@ -1273,10 +1273,10 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                           </div>
 
                           {/* Folder MoU & PKS */}
-                          <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3">
+                          <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 space-y-2">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                <FileSignature className="w-4 h-4 text-emerald-400" />
+                                <FileSignature className="w-3.5 h-3.5 text-emerald-400" />
                                 <span className="font-bold text-white text-xs">
                                   📁 FOLDER MOU &amp; PKS RESMI
                                 </span>
@@ -1299,14 +1299,14 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                               </div>
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-800">
+                            <div className="flex flex-wrap items-center gap-2 pt-1.5 border-t border-slate-800">
                               {mouUrl ? (
                                 <>
                                   <a
                                     href={mouUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center gap-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition"
+                                    className="flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition"
                                   >
                                     <ExternalLink className="w-3 h-3" />
                                     <span>Buka MoU</span>
@@ -1318,9 +1318,9 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                                     title="Salin Link MoU"
                                   >
                                     {copiedId === `MOU-${client.id}` ? (
-                                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                      <Check className="w-3 h-3 text-emerald-400" />
                                     ) : (
-                                      <Copy className="w-3.5 h-3.5" />
+                                      <Copy className="w-3 h-3" />
                                     )}
                                   </button>
                                 </>
@@ -1372,11 +1372,11 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                         </div>
 
                         {/* Sub-Folder: 3. FOLDER SKP & DAFTAR DEBITUR */}
-                        <div className="space-y-3">
-                          <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="space-y-2">
+                          <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <div className="flex items-center gap-2.5">
                               <div className="p-2 bg-amber-600/10 border border-amber-500/20 text-amber-400 rounded-lg">
-                                <Folder className="w-4 h-4" />
+                                <Folder className="w-3.5 h-3.5" />
                               </div>
                               <div>
                                 <h5 className="font-bold text-white text-xs sm:text-sm">
@@ -1394,15 +1394,15 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                                   href={skpFolderUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="flex items-center gap-1 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-semibold rounded-lg transition"
+                                  className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-semibold rounded-lg transition"
                                 >
-                                  <FolderOpen className="w-3.5 h-3.5" />
+                                  <FolderOpen className="w-3 h-3" />
                                   <span>Buka Folder SKP GDrive</span>
                                   <ExternalLink className="w-3 h-3" />
                                 </a>
                               ) : (
-                                <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-950 border border-dashed border-slate-700 text-amber-300/80 text-xs font-semibold rounded-lg">
-                                  <Folder className="w-3.5 h-3.5 text-amber-400" />
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-950 border border-dashed border-slate-700 text-amber-300/80 text-xs font-semibold rounded-lg">
+                                  <Folder className="w-3 h-3 text-amber-400" />
                                   Folder SKP belum dibuat
                                 </span>
                               )}
@@ -1411,12 +1411,12 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                                   type="button"
                                   disabled={!!creatingFolderKey}
                                   onClick={() => handleEnsureFolder('CLIENT_SKP', client.id)}
-                                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-950 hover:bg-amber-900 border border-amber-800 text-amber-300 text-xs font-semibold rounded-lg transition disabled:opacity-50"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-950 hover:bg-amber-900 border border-amber-800 text-amber-300 text-xs font-semibold rounded-lg transition disabled:opacity-50"
                                 >
                                   {creatingFolderKey === `CLIENT_SKP-${client.id}` ? (
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    <Loader2 className="w-3 h-3 animate-spin" />
                                   ) : (
-                                    <FolderCheck className="w-3.5 h-3.5 text-amber-400" />
+                                    <FolderCheck className="w-3 h-3 text-amber-400" />
                                   )}
                                   Buat Folder SKP
                                 </button>
@@ -1426,7 +1426,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
 
                           {/* List of Debtors under this Multifinance */}
                           {clientDebtors.length === 0 ? (
-                            <div className="p-6 rounded-xl border border-dashed border-slate-800 text-center space-y-2">
+                            <div className="p-4 rounded-xl border border-dashed border-slate-800 text-center space-y-1.5">
                               <p className="text-xs text-slate-400">
                                 Belum ada data debitur yang terdaftar di bawah {client.companyName}.
                               </p>
@@ -1434,9 +1434,9 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                                 <button
                                   type="button"
                                   onClick={() => setAddDebtorClientId(client.id)}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition"
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition"
                                 >
-                                  <Plus className="w-3.5 h-3.5" />
+                                  <Plus className="w-3 h-3" />
                                   <span>+ Tambah Debitur Pertama</span>
                                 </button>
                               )}
@@ -1456,13 +1456,13 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                                 return (
                                   <div
                                     key={debtorCase.id}
-                                    className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3 shadow-md hover:border-slate-700 transition"
+                                    className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 space-y-2 shadow-md hover:border-slate-700 transition"
                                   >
                                     {/* Debitur Name & Vehicle */}
                                     <div className="flex items-start justify-between gap-2">
                                       <div className="flex items-start gap-2.5">
                                         <div className="p-2 bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 rounded-lg shrink-0 mt-0.5">
-                                          <Car className="w-4 h-4" />
+                                          <Car className="w-3.5 h-3.5" />
                                         </div>
                                         <div>
                                           <h6 className="font-bold text-white text-xs sm:text-sm">
@@ -1488,7 +1488,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                                     </div>
 
                                     {/* Debitur GDrive Folder Row */}
-                                    <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 space-y-2 text-xs">
+                                    <div className="bg-slate-950 p-2 rounded-lg border border-slate-800 space-y-1.5 text-xs">
                                       <div className="flex items-center justify-between">
                                         <span className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
                                           <Folder className="w-3 h-3 text-amber-400" />
@@ -1605,9 +1605,9 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                                             folderUrl: debtorFolder,
                                           });
                                         }}
-                                        className="flex-1 flex items-center justify-center gap-1 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg transition"
+                                        className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg transition"
                                       >
-                                        <Eye className="w-3.5 h-3.5 text-indigo-400" />
+                                        <Eye className="w-3 h-3 text-indigo-400" />
                                         <span>Preview SKP</span>
                                       </button>
 
@@ -1617,12 +1617,12 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                                             type="button"
                                             disabled={!!creatingFolderKey}
                                             onClick={() => handleEnsureFolder('DEBTOR', debtorCase.id)}
-                                            className="px-2.5 py-1.5 bg-amber-950 hover:bg-amber-900 border border-amber-800 text-amber-300 text-xs font-semibold rounded-lg transition flex items-center gap-1 disabled:opacity-50"
+                                            className="px-2 py-1.5 bg-amber-950 hover:bg-amber-900 border border-amber-800 text-amber-300 text-xs font-semibold rounded-lg transition flex items-center gap-1 disabled:opacity-50"
                                           >
                                             {creatingFolderKey === `DEBTOR-${debtorCase.id}` ? (
-                                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                              <Loader2 className="w-3 h-3 animate-spin" />
                                             ) : (
-                                              <FolderCheck className="w-3.5 h-3.5 text-amber-400" />
+                                              <FolderCheck className="w-3 h-3 text-amber-400" />
                                             )}
                                             {hasRealDebtorFolder ? 'Perbaiki Folder' : 'Buat Folder'}
                                           </button>
@@ -1640,9 +1640,9 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                                                 extraNote: `Struktur: MULTIFINANCE > ${slugClient} > FOLDER_SKP > DEBITUR_${slugDebtor}`,
                                               })
                                             }
-                                            className="px-2.5 py-1.5 bg-indigo-950 hover:bg-indigo-900 border border-indigo-800 text-indigo-300 text-xs font-semibold rounded-lg transition flex items-center gap-1"
+                                            className="px-2 py-1.5 bg-indigo-950 hover:bg-indigo-900 border border-indigo-800 text-indigo-300 text-xs font-semibold rounded-lg transition flex items-center gap-1"
                                           >
-                                            <Edit2 className="w-3.5 h-3.5" />
+                                            <Edit2 className="w-3 h-3" />
                                             <span>Edit Link</span>
                                           </button>
 
@@ -1657,9 +1657,9 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                                                 currentUrl: debtorCase.skpDriveDocumentUrl,
                                               })
                                             }
-                                            className="px-2.5 py-1.5 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 text-emerald-300 text-xs font-semibold rounded-lg transition flex items-center gap-1"
+                                            className="px-2 py-1.5 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 text-emerald-300 text-xs font-semibold rounded-lg transition flex items-center gap-1"
                                           >
-                                            <Upload className="w-3.5 h-3.5" />
+                                            <Upload className="w-3 h-3" />
                                             <span>Tautkan SKP</span>
                                           </button>
                                         </>
@@ -1683,16 +1683,16 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
 
       {/* MODAL 1: EDIT LINK MODAL (Compact, Viewport-Constrained) */}
       {editLinkTarget && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-3 overflow-y-auto">
           <form
             onSubmit={handleSaveEditLink}
-            className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-5 sm:p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto my-auto"
+            className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-3.5 sm:p-4 space-y-2.5 shadow-2xl max-h-[85vh] overflow-y-auto my-auto"
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 rounded-xl">
-                  <Edit2 className="w-4 h-4" />
+                  <Edit2 className="w-3.5 h-3.5" />
                 </div>
                 <div>
                   <h3 className="font-bold text-white text-sm sm:text-base">
@@ -1708,21 +1708,21 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                 onClick={() => setEditLinkTarget(null)}
                 className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
 
             {/* Structure Note */}
             {editLinkTarget.extraNote && (
-              <div className="p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-[11px] font-mono text-indigo-300">
+              <div className="p-2 bg-slate-950 border border-slate-800 rounded-xl text-[11px] font-mono text-indigo-300">
                 {editLinkTarget.extraNote}
               </div>
             )}
 
             {/* Form Fields */}
-            <div className="space-y-3 text-xs">
+            <div className="space-y-2 text-xs">
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">
+                <label className="block font-semibold text-slate-300 mb-0.5">
                   URL / Tautan Folder Google Drive:
                 </label>
                 <input
@@ -1731,12 +1731,12 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                   value={editFolderUrl}
                   onChange={(e) => setEditFolderUrl(e.target.value)}
                   placeholder="https://drive.google.com/drive/folders/..."
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white font-mono text-xs focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-white font-mono text-xs focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">
+                <label className="block font-semibold text-slate-300 mb-0.5">
                   Google Drive Folder ID (Opsional):
                 </label>
                 <input
@@ -1744,12 +1744,12 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                   value={editFolderId}
                   onChange={(e) => setEditFolderId(e.target.value)}
                   placeholder="e.g. 11OxYLvKiH8P4AIP_..."
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white font-mono text-xs focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-white font-mono text-xs focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">
+                <label className="block font-semibold text-slate-300 mb-0.5">
                   {editLinkTarget.type === 'PERSONNEL'
                     ? 'Tautan Berkas Scan KTP / Dokumen KYC:'
                     : editLinkTarget.type === 'DEBTOR'
@@ -1763,13 +1763,13 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                   value={editDocUrl}
                   onChange={(e) => setEditDocUrl(e.target.value)}
                   placeholder="https://drive.google.com/file/d/.../view"
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white font-mono text-xs focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-white font-mono text-xs focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               {editLinkTarget.type === 'DEBTOR' && (
                 <div>
-                  <label className="block font-semibold text-slate-300 mb-1">
+                  <label className="block font-semibold text-slate-300 mb-0.5">
                     Tautan Berkas SPH / Surat Pengakuan Hutang &amp; KTP Debitur:
                   </label>
                   <input
@@ -1777,26 +1777,26 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                     value={editSphUrl}
                     onChange={(e) => setEditSphUrl(e.target.value)}
                     placeholder="https://drive.google.com/file/d/.../view"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white font-mono text-xs focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-white font-mono text-xs focus:outline-none focus:border-indigo-500"
                   />
                 </div>
               )}
             </div>
 
             {/* Modal Actions */}
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => setEditLinkTarget(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition"
+                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition"
               >
                 Batal
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition shadow-lg flex items-center gap-1.5"
+                className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition shadow-lg flex items-center gap-1.5"
               >
-                <Check className="w-3.5 h-3.5" />
+                <Check className="w-3 h-3" />
                 <span>Simpan Perubahan Link</span>
               </button>
             </div>
@@ -1806,15 +1806,15 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
 
       {/* MODAL 2: UPLOAD & TAUTKAN FILE MODAL (Compact, Viewport-Constrained) */}
       {uploadTarget && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-3 overflow-y-auto">
           <form
             onSubmit={handleSaveUpload}
-            className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-5 sm:p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto my-auto"
+            className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-3.5 sm:p-4 space-y-2.5 shadow-2xl max-h-[85vh] overflow-y-auto my-auto"
           >
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 bg-emerald-600/10 border border-emerald-500/20 text-emerald-400 rounded-xl">
-                  <Upload className="w-4 h-4" />
+                  <Upload className="w-3.5 h-3.5" />
                 </div>
                 <div>
                   <h3 className="font-bold text-white text-sm sm:text-base">{uploadTarget.title}</h3>
@@ -1828,14 +1828,14 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                 onClick={() => setUploadTarget(null)}
                 className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
 
             {/* Upload Area */}
-            <div className="space-y-3 text-xs">
-              <label className="border-2 border-dashed border-slate-700 hover:border-emerald-500 bg-slate-950 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition text-center group">
-                <Upload className="w-6 h-6 text-slate-400 group-hover:text-emerald-400 mb-1 transition" />
+            <div className="space-y-2 text-xs">
+              <label className="border-2 border-dashed border-slate-700 hover:border-emerald-500 bg-slate-950 rounded-xl p-3 flex flex-col items-center justify-center cursor-pointer transition text-center group">
+                <Upload className="w-5 h-5 text-slate-400 group-hover:text-emerald-400 mb-0.5 transition" />
                 <span className="font-semibold text-slate-200">Pilih berkas dari komputer/HP</span>
                 <span className="text-[10px] text-slate-500">Format: JPG, PNG, PDF</span>
                 <input
@@ -1847,9 +1847,9 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
               </label>
 
               {uploadedBase64 && (
-                <div className="p-2.5 bg-emerald-950/60 border border-emerald-800/80 rounded-xl flex items-center justify-between">
+                <div className="p-2 bg-emerald-950/60 border border-emerald-800/80 rounded-xl flex items-center justify-between">
                   <span className="text-emerald-300 font-semibold text-[11px] flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> File berhasil diproses
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400" /> File berhasil diproses
                   </span>
                   <button
                     type="button"
@@ -1865,7 +1865,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
               )}
 
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">
+                <label className="block font-semibold text-slate-300 mb-0.5">
                   Atau masukkan URL Berkas di Google Drive secara langsung:
                 </label>
                 <input
@@ -1874,24 +1874,24 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                   value={uploadedUrl}
                   onChange={(e) => setUploadedUrl(e.target.value)}
                   placeholder="https://drive.google.com/file/d/.../view?usp=sharing"
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white font-mono text-xs focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-white font-mono text-xs focus:outline-none focus:border-emerald-500"
                 />
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => setUploadTarget(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition"
+                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition"
               >
                 Batal
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition shadow-lg flex items-center gap-1.5"
+                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition shadow-lg flex items-center gap-1.5"
               >
-                <Check className="w-3.5 h-3.5" />
+                <Check className="w-3 h-3" />
                 <span>Simpan Tautan Berkas</span>
               </button>
             </div>
@@ -1901,15 +1901,15 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
 
       {/* MODAL 3: TAMBAH DEBITUR BARU (Compact, Viewport-Constrained) */}
       {addDebtorClientId && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-3 overflow-y-auto">
           <form
             onSubmit={handleAddDebtor}
-            className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xl p-5 sm:p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto my-auto"
+            className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xl p-3.5 sm:p-4 space-y-2.5 shadow-2xl max-h-[85vh] overflow-y-auto my-auto"
           >
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 bg-emerald-600/10 border border-emerald-500/20 text-emerald-400 rounded-xl">
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-3.5 h-3.5" />
                 </div>
                 <div>
                   <h3 className="font-bold text-white text-sm sm:text-base">
@@ -1925,13 +1925,13 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                 onClick={() => setAddDebtorClientId(null)}
                 className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
               <div className="sm:col-span-2">
-                <label className="block font-semibold text-slate-300 mb-1">
+                <label className="block font-semibold text-slate-300 mb-0.5">
                   Nama Lengkap Debitur <span className="text-rose-400">*</span>
                 </label>
                 <input
@@ -1940,12 +1940,12 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                   placeholder="e.g. Budi Santoso, S.Kom."
                   value={newDebtorName}
                   onChange={(e) => setNewDebtorName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-white focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">
+                <label className="block font-semibold text-slate-300 mb-0.5">
                   NIK KTP Debitur
                 </label>
                 <input
@@ -1953,12 +1953,12 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                   placeholder="16 digit NIK"
                   value={newDebtorNik}
                   onChange={(e) => setNewDebtorNik(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white font-mono focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-white font-mono focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">
+                <label className="block font-semibold text-slate-300 mb-0.5">
                   No. Kontrak / Perjanjian Lising
                 </label>
                 <input
@@ -1966,12 +1966,12 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                   placeholder="e.g. ADR-2026-99120"
                   value={newContractNo}
                   onChange={(e) => setNewContractNo(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white font-mono focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-white font-mono focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">
+                <label className="block font-semibold text-slate-300 mb-0.5">
                   Agunan / Merk Unit Kendaraan
                 </label>
                 <input
@@ -1979,12 +1979,12 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                   placeholder="e.g. Toyota Avanza 1.5 G"
                   value={newVehicle}
                   onChange={(e) => setNewVehicle(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-white focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">
+                <label className="block font-semibold text-slate-300 mb-0.5">
                   Nomor Polisi (Plat No)
                 </label>
                 <input
@@ -1992,39 +1992,39 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                   placeholder="e.g. B 1928 KLC"
                   value={newPoliceNo}
                   onChange={(e) => setNewPoliceNo(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white font-mono focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-white font-mono focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">
+                <label className="block font-semibold text-slate-300 mb-0.5">
                   Sisa Pokok Hutang (O/S) (Rp)
                 </label>
                 <input
                   type="number"
                   value={newPrincipalOS}
                   onChange={(e) => setNewPrincipalOS(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white font-mono focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-white font-mono focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">
+                <label className="block font-semibold text-slate-300 mb-0.5">
                   Hari Keterlambatan (DPD)
                 </label>
                 <input
                   type="number"
                   value={newOverdueDays}
                   onChange={(e) => setNewOverdueDays(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white font-mono focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-white font-mono focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               <AddressFields value={newAddress} onChange={setNewAddress} label="Alamat Debitur" compact />
             </div>
 
-            <div className="p-3 bg-emerald-950/40 border border-emerald-800/60 rounded-xl text-[11px] text-emerald-300 flex items-start gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+            <div className="p-2.5 bg-emerald-950/40 border border-emerald-800/60 rounded-xl text-[11px] text-emerald-300 flex items-start gap-2">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
               <span>
                 Sistem akan otomatis membuat folder asli di Google Drive: <br />
                 <code className="font-mono text-[10px] text-white">
@@ -2033,19 +2033,19 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
               </span>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => setAddDebtorClientId(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition"
+                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition"
               >
                 Batal
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition shadow-lg flex items-center gap-1.5"
+                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition shadow-lg flex items-center gap-1.5"
               >
-                <Check className="w-3.5 h-3.5" />
+                <Check className="w-3 h-3" />
                 <span>Simpan Debitur &amp; Buat Folder GDrive</span>
               </button>
             </div>
@@ -2055,11 +2055,11 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
 
       {/* MODAL 4: PREVIEW KTP LIGHTBOX (Compact, Viewport-Constrained) */}
       {previewKtpPersonnel && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-5 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto my-auto">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-2.5 sm:p-3 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-3.5 space-y-2.5 shadow-2xl max-h-[85vh] overflow-y-auto my-auto">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
               <div className="flex items-center gap-2">
-                <ImageIcon className="w-5 h-5 text-indigo-400" />
+                <ImageIcon className="w-4 h-4 text-indigo-400" />
                 <div>
                   <h3 className="font-bold text-white text-sm sm:text-base">Dokumen KTP Google Drive</h3>
                   <p className="text-xs text-slate-400">
@@ -2072,11 +2072,11 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                 onClick={() => setPreviewKtpPersonnel(null)}
                 className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            <div className="bg-slate-950 p-3 border border-slate-800 rounded-xl flex items-center justify-center min-h-[200px]">
+            <div className="bg-slate-950 p-2.5 border border-slate-800 rounded-xl flex items-center justify-center min-h-[200px]">
               {previewKtpPersonnel.ktpPhotoUrl ? (
                 <img
                   src={previewKtpPersonnel.ktpPhotoUrl}
@@ -2088,7 +2088,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
               )}
             </div>
 
-            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-[11px] space-y-1 font-mono text-slate-300">
+            <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-[11px] space-y-1 font-mono text-slate-300">
               <div>
                 <span className="text-slate-500">Struktur Path:</span> 📁 PT MJ INDONESIA / DATABASE KARYAWAN / {slugify(previewKtpPersonnel.fullName)} /
               </div>
@@ -2105,23 +2105,23 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800">
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => {
                   setIdCardPersonnel(previewKtpPersonnel);
                   setPreviewKtpPersonnel(null);
                 }}
-                className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white text-xs font-bold rounded-xl shadow-md transition"
+                className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white text-xs font-bold rounded-xl shadow-md transition"
               >
-                <CreditCard className="w-4 h-4" />
+                <CreditCard className="w-3.5 h-3.5" />
                 <span>Cetak ID Card</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setPreviewKtpPersonnel(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition"
+                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition"
               >
                 Tutup
               </button>

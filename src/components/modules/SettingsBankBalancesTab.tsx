@@ -394,21 +394,21 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header Banner */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg">
-        <div className="flex items-start gap-3">
-          <div className="p-3 bg-indigo-950/80 rounded-xl border border-indigo-800 text-indigo-400 shrink-0">
-            <Landmark className="w-6 h-6 text-indigo-400" />
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-2.5 shadow-lg">
+        <div className="flex items-start gap-2">
+          <div className="p-2.5 bg-indigo-950/80 rounded-xl border border-indigo-800 text-indigo-400 shrink-0">
+            <Landmark className="w-5 h-5 text-indigo-400" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold text-white">Saldo Rekening Bank & Modal Kerja</h2>
-              <span className="px-2.5 py-0.5 bg-indigo-900/80 text-indigo-200 border border-indigo-700 text-[10px] font-bold rounded-full">
+              <span className="px-2 py-0.5 bg-indigo-900/80 text-indigo-200 border border-indigo-700 text-[10px] font-bold rounded-full">
                 {cashAccounts.length} Rekening Aktif
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+            <p className="text-xs text-slate-400 mt-0.5 leading-normal">
               Pusat monitoring saldo riil seluruh rekening bank perusahaan, kas penampungan modal kerja, vault talangan likuiditas, dan kas kecil operasional.
             </p>
           </div>
@@ -419,17 +419,17 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
             <button
               type="button"
               onClick={handleOpenTransferModal}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition cursor-pointer"
             >
-              <ArrowRightLeft className="w-3.5 h-3.5 text-amber-400" />
+              <ArrowRightLeft className="w-3 h-3 text-amber-400" />
               <span>Mutasi Antar Bank</span>
             </button>
             <button
               type="button"
               onClick={handleOpenAddModal}
-              className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg shadow-md transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg shadow-md transition cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5" />
               <span>Tambah Rekening Bank</span>
             </button>
           </div>
@@ -438,19 +438,19 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
 
       {/* Success Notification Banner */}
       {actionSuccessMsg && (
-        <div className="p-3.5 bg-emerald-950/90 border border-emerald-700 text-emerald-200 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-lg animate-fade-in">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+        <div className="p-3 bg-emerald-950/90 border border-emerald-700 text-emerald-200 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-lg animate-fade-in">
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
           <span>{actionSuccessMsg}</span>
         </div>
       )}
 
       {/* Financial Metrics Summary Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-2 shadow-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-1.5 shadow-sm">
           <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
             <span>Total Saldo Seluruh Bank</span>
             <div className="p-2 rounded-lg bg-emerald-950/80 text-emerald-400 border border-emerald-900/50">
-              <Coins className="w-4 h-4" />
+              <Coins className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="text-2xl font-bold text-white tracking-tight font-mono">
@@ -461,11 +461,11 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-2 shadow-sm">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-1.5 shadow-sm">
           <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
             <span>Total Injeksi Modal Masuk</span>
             <div className="p-2 rounded-lg bg-indigo-950/80 text-indigo-400 border border-indigo-900/50">
-              <TrendingUp className="w-4 h-4" />
+              <TrendingUp className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="text-2xl font-bold text-white tracking-tight font-mono">
@@ -476,11 +476,11 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-2 shadow-sm">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-1.5 shadow-sm">
           <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
             <span>Total Alokasi Modal Berjalan</span>
             <div className="p-2 rounded-lg bg-amber-950/80 text-amber-400 border border-amber-900/50">
-              <Wallet className="w-4 h-4" />
+              <Wallet className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="text-2xl font-bold text-white tracking-tight font-mono">
@@ -491,11 +491,11 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-2 shadow-sm">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-1.5 shadow-sm">
           <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
             <span>Modal Kerja Siaga (Standby)</span>
             <div className="p-2 rounded-lg bg-sky-950/80 text-sky-400 border border-sky-900/50">
-              <ShieldCheck className="w-4 h-4" />
+              <ShieldCheck className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="text-2xl font-bold text-white tracking-tight font-mono">
@@ -509,20 +509,20 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
 
       {/* ATM / Digital Bank Cards Showcase */}
       <div>
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <CreditCard className="w-4 h-4 text-indigo-400" />
+            <CreditCard className="w-3.5 h-3.5 text-indigo-400" />
             <h3 className="font-bold text-white text-sm">Kartu Rekening Bank Perusahaan</h3>
           </div>
           <span className="text-xs text-slate-400">Klik ikon salin untuk copy nomor rekening</span>
         </div>
 
         {cashAccounts.length === 0 ? (
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 text-center text-slate-500 text-xs">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 text-center text-slate-500 text-xs">
             Belum ada rekening bank yang didaftarkan. Klik tombol &ldquo;Tambah Rekening Bank&rdquo; untuk memulai.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5">
             {cashAccounts.map((acc) => {
               const gradient = getBankGradient(acc.bankName);
               const isCopied = copiedId === acc.id;
@@ -530,7 +530,7 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
               return (
                 <div
                   key={acc.id}
-                  className={`bg-gradient-to-br ${gradient} border border-slate-700/60 rounded-2xl p-5 text-white shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[200px] transition transform hover:-translate-y-1`}
+                  className={`bg-gradient-to-br ${gradient} border border-slate-700/60 rounded-2xl p-3.5 text-white shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[200px] transition transform hover:-translate-y-1`}
                 >
                   {/* Background Watermark Pattern */}
                   <div className="absolute -right-6 -bottom-6 w-32 h-32 rounded-full bg-white/5 pointer-events-none" />
@@ -540,7 +540,7 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
                   <div className="flex items-start justify-between relative z-10">
                     <div>
                       <div className="flex items-center gap-2">
-                        <Landmark className="w-4 h-4 text-white/80" />
+                        <Landmark className="w-3.5 h-3.5 text-white/80" />
                         <span className="font-extrabold text-sm tracking-wide text-white uppercase">{acc.bankName}</span>
                       </div>
                       <p className="text-[11px] text-white/70 font-medium mt-0.5">{acc.accountName}</p>
@@ -550,9 +550,9 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
 
                   {/* Card Chip & Account Number */}
                   <div className="my-3 relative z-10">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <div className="w-9 h-6 rounded bg-amber-400/90 border border-amber-300 flex items-center justify-center shadow-inner">
-                        <div className="w-5 h-3 border-t border-b border-amber-600 opacity-60" />
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="w-9 h-5 rounded bg-amber-400/90 border border-amber-300 flex items-center justify-center shadow-inner">
+                        <div className="w-4 h-3 border-t border-b border-amber-600 opacity-60" />
                       </div>
                       <button
                         type="button"
@@ -570,7 +570,7 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
                   </div>
 
                   {/* Bottom Card Balance & Actions */}
-                  <div className="pt-2 border-t border-white/10 flex items-end justify-between relative z-10">
+                  <div className="pt-1.5 border-t border-white/10 flex items-end justify-between relative z-10">
                     <div>
                       <span className="text-[10px] text-white/60 uppercase font-semibold block">Saldo Rekening:</span>
                       <span className="text-xl font-extrabold font-mono text-emerald-300">
@@ -586,7 +586,7 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
                           className="p-1.5 bg-black/30 hover:bg-black/60 rounded-lg text-white/80 hover:text-amber-300 transition"
                           title="Edit / Sesuaikan Saldo"
                         >
-                          <Edit2 className="w-3.5 h-3.5" />
+                          <Edit2 className="w-3 h-3" />
                         </button>
                         <button
                           type="button"
@@ -594,7 +594,7 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
                           className="p-1.5 bg-black/30 hover:bg-rose-900/80 rounded-lg text-white/80 hover:text-rose-300 transition"
                           title="Hapus Rekening"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3 h-3" />
                         </button>
                       </div>
                     )}
@@ -607,18 +607,18 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
       </div>
 
       {/* Comprehensive Table & Management */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg space-y-4 p-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg space-y-2.5 p-3.5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
           <div>
             <h3 className="font-bold text-white text-sm flex items-center gap-2">
-              <Building className="w-4 h-4 text-indigo-400" />
+              <Building className="w-3.5 h-3.5 text-indigo-400" />
               <span>Daftar Rinci Rekening Bank & Alokasi Modal</span>
             </h3>
             <p className="text-xs text-slate-400">Tabel pengelolaan data rekening, nomor rekening, saldo, dan cabang</p>
           </div>
 
           <div className="relative w-full sm:w-64">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search className="w-3 h-3 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
             <input
               type="text"
               placeholder="Cari bank / no rek / nama..."
@@ -633,36 +633,36 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-950 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
               <tr>
-                <th className="py-3 px-4">Nama Bank & Logo</th>
-                <th className="py-3 px-4">Nama Rekening / Label</th>
-                <th className="py-3 px-4">Nomor Rekening & A.N.</th>
-                <th className="py-3 px-4">Peruntukan / Tipe</th>
-                <th className="py-3 px-4 text-right">Saldo Saat Ini</th>
-                <th className="py-3 px-4">Cabang</th>
-                {canEdit && <th className="py-3 px-4 text-right">Aksi</th>}
+                <th className="py-2 px-3">Nama Bank & Logo</th>
+                <th className="py-2 px-3">Nama Rekening / Label</th>
+                <th className="py-2 px-3">Nomor Rekening & A.N.</th>
+                <th className="py-2 px-3">Peruntukan / Tipe</th>
+                <th className="py-2 px-3 text-right">Saldo Saat Ini</th>
+                <th className="py-2 px-3">Cabang</th>
+                {canEdit && <th className="py-2 px-3 text-right">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
               {filteredAccounts.length === 0 ? (
                 <tr>
-                  <td colSpan={canEdit ? 7 : 6} className="py-8 text-center text-slate-500 text-xs">
+                  <td colSpan={canEdit ? 7 : 6} className="py-6 text-center text-slate-500 text-xs">
                     Tidak ditemukan rekening bank yang cocok dengan pencarian.
                   </td>
                 </tr>
               ) : (
                 filteredAccounts.map((acc) => (
                   <tr key={acc.id} className="hover:bg-slate-800/40 transition">
-                    <td className="py-3.5 px-4 font-bold text-white flex items-center gap-2">
+                    <td className="py-2.5 px-3 font-bold text-white flex items-center gap-2">
                       <div className="p-1.5 bg-slate-800 rounded-md text-indigo-400 border border-slate-700">
-                        <Landmark className="w-3.5 h-3.5" />
+                        <Landmark className="w-3 h-3" />
                       </div>
                       <span>{acc.bankName}</span>
                     </td>
-                    <td className="py-3.5 px-4">
+                    <td className="py-2.5 px-3">
                       <div className="font-semibold text-slate-200">{acc.accountName}</div>
                       {acc.notes && <div className="text-[10px] text-slate-500 truncate max-w-xs">{acc.notes}</div>}
                     </td>
-                    <td className="py-3.5 px-4 space-y-0.5">
+                    <td className="py-2.5 px-3 space-y-0.5">
                       <div className="font-mono font-bold text-indigo-300 flex items-center gap-1.5">
                         <span>{acc.accountNo}</span>
                         <button
@@ -676,13 +676,13 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
                       </div>
                       <div className="text-[11px] text-slate-400">A.N. {acc.accountHolder || 'PT MITRA JASA TAMA'}</div>
                     </td>
-                    <td className="py-3.5 px-4">{getTypeBadge(acc.type)}</td>
-                    <td className="py-3.5 px-4 text-right font-mono font-extrabold text-emerald-400 text-sm">
+                    <td className="py-2.5 px-3">{getTypeBadge(acc.type)}</td>
+                    <td className="py-2.5 px-3 text-right font-mono font-extrabold text-emerald-400 text-sm">
                       Rp {(acc.balance || 0).toLocaleString('id-ID')}
                     </td>
-                    <td className="py-3.5 px-4 text-slate-400 text-[11px]">{acc.branch || '-'}</td>
+                    <td className="py-2.5 px-3 text-slate-400 text-[11px]">{acc.branch || '-'}</td>
                     {canEdit && (
-                      <td className="py-3.5 px-4 text-right">
+                      <td className="py-2.5 px-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"
@@ -690,7 +690,7 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
                             className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded transition"
                             title="Edit / Sesuaikan Saldo"
                           >
-                            <Edit2 className="w-3.5 h-3.5" />
+                            <Edit2 className="w-3 h-3" />
                           </button>
                           <button
                             type="button"
@@ -698,7 +698,7 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
                             className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition"
                             title="Hapus Rekening"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-3 h-3" />
                           </button>
                         </div>
                       </td>
@@ -713,14 +713,14 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
 
       {/* Add / Edit Bank Account Modal */}
       {showAccountModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3">
           <form
             onSubmit={handleSaveAccount}
-            className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-lg p-6 space-y-4 shadow-2xl"
+            className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-lg p-4 space-y-2.5 shadow-2xl"
           >
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
               <h3 className="font-bold text-white text-base flex items-center gap-2">
-                <Landmark className="w-5 h-5 text-indigo-400" />
+                <Landmark className="w-4 h-4 text-indigo-400" />
                 <span>{isEditing ? 'Edit Rekening Bank & Saldo' : 'Tambah Rekening Bank Baru'}</span>
               </h3>
               <button
@@ -732,13 +732,13 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Nama Bank</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Nama Bank</label>
                 <select
                   value={bankName}
                   onChange={(e) => setBankName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                 >
                   {INDONESIAN_BANKS.map((b) => (
                     <option key={b.name} value={b.name}>
@@ -751,24 +751,24 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
 
               {bankName === 'OTHER' && (
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Nama Bank Kustom</label>
+                  <label className="block text-xs text-slate-400 mb-0.5">Nama Bank Kustom</label>
                   <input
                     type="text"
                     required
                     placeholder="Contoh: Bank BJB / Seabank"
                     value={customBankName}
                     onChange={(e) => setCustomBankName(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                   />
                 </div>
               )}
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Peruntukan / Tipe Rekening</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Peruntukan / Tipe Rekening</label>
                 <select
                   value={type}
                   onChange={(e) => setType(e.target.value as any)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                 >
                   <option value="MODAL_KERJA_POOL">MODAL KERJA POOL (Injeksi & Penampungan)</option>
                   <option value="OPERATIONAL">OPERASIONAL (Disbursement & Biaya)</option>
@@ -781,52 +781,52 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Nama / Label Rekening</label>
+              <label className="block text-xs text-slate-400 mb-0.5">Nama / Label Rekening</label>
               <input
                 type="text"
                 required
                 placeholder="Contoh: Rekening Utama Modal Kerja & Penampungan"
                 value={accountName}
                 onChange={(e) => setAccountName(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Nomor Rekening</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Nomor Rekening</label>
                 <input
                   type="text"
                   required
                   placeholder="137-00-998877-1"
                   value={accountNo}
                   onChange={(e) => setAccountNo(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white font-mono"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Atas Nama Rekening</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Atas Nama Rekening</label>
                 <input
                   type="text"
                   required
                   value={accountHolder}
                   onChange={(e) => setAccountHolder(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Saldo Rekening Saat Ini (IDR)</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Saldo Rekening Saat Ini (IDR)</label>
                 <input
                   type="text"
                   inputMode="numeric"
                   min="0"
                   value={balance}
                   onChange={(e) => setBalance(Number(e.target.value.replace(/\D/g, '')) || 0)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono font-bold"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white font-mono font-bold"
                 />
                 <span className="text-[10px] text-slate-400 mt-0.5 block">
                   Rp {(Number(balance) || 0).toLocaleString('id-ID')}
@@ -834,39 +834,39 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
               </div>
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Kantor Cabang (KCP/KC)</label>
+                <label className="block text-xs text-slate-400 mb-0.5">Kantor Cabang (KCP/KC)</label>
                 <input
                   type="text"
                   placeholder="Contoh: KC Jakarta Sudirman"
                   value={branch}
                   onChange={(e) => setBranch(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Catatan / Keterangan Tambahan</label>
+              <label className="block text-xs text-slate-400 mb-0.5">Catatan / Keterangan Tambahan</label>
               <textarea
                 rows={2}
                 placeholder="Catatan peruntukan rekening, akses m-banking / token..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
               />
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+            <div className="flex justify-end gap-2 pt-1.5 border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => setShowAccountModal(false)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
+                className="px-3 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
               >
                 Batal
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg shadow"
+                className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg shadow"
               >
                 {isEditing ? 'Simpan Perubahan' : 'Daftarkan Rekening'}
               </button>
@@ -877,14 +877,14 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
 
       {/* Transfer / Mutasi Antar Bank Modal */}
       {showTransferModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3">
           <form
             onSubmit={handleExecuteTransfer}
-            className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-6 space-y-4 shadow-2xl"
+            className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-4 space-y-2.5 shadow-2xl"
           >
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
               <h3 className="font-bold text-white text-base flex items-center gap-2">
-                <ArrowRightLeft className="w-5 h-5 text-amber-400" />
+                <ArrowRightLeft className="w-4 h-4 text-amber-400" />
                 <span>Mutasi / Pindah Saldo Antar Bank</span>
               </h3>
               <button
@@ -897,11 +897,11 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Rekening Asal (Sumber Dana)</label>
+              <label className="block text-xs text-slate-400 mb-0.5">Rekening Asal (Sumber Dana)</label>
               <select
                 value={transferFromId}
                 onChange={(e) => setTransferFromId(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
               >
                 {cashAccounts.map((acc) => (
                   <option key={acc.id} value={acc.id}>
@@ -912,11 +912,11 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Rekening Tujuan (Penerima)</label>
+              <label className="block text-xs text-slate-400 mb-0.5">Rekening Tujuan (Penerima)</label>
               <select
                 value={transferToId}
                 onChange={(e) => setTransferToId(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
               >
                 {cashAccounts.map((acc) => (
                   <option key={acc.id} value={acc.id}>
@@ -927,14 +927,14 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Nominal Transfer (IDR)</label>
+              <label className="block text-xs text-slate-400 mb-0.5">Nominal Transfer (IDR)</label>
               <input
                 type="number"
                 required
                 min="1000"
                 value={transferAmount}
                 onChange={(e) => setTransferAmount(Number(e.target.value))}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono font-bold"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white font-mono font-bold"
               />
               <span className="text-[10px] text-emerald-400 mt-0.5 block">
                 Rp {(Number(transferAmount) || 0).toLocaleString('id-ID')}
@@ -942,26 +942,26 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Catatan / Berita Transfer</label>
+              <label className="block text-xs text-slate-400 mb-0.5">Catatan / Berita Transfer</label>
               <input
                 type="text"
                 value={transferNotes}
                 onChange={(e) => setTransferNotes(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
               />
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+            <div className="flex justify-end gap-2 pt-1.5 border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => setShowTransferModal(false)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
+                className="px-3 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
               >
                 Batal
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-lg shadow"
+                className="px-3 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-lg shadow"
               >
                 Eksekusi Mutasi Saldo
               </button>
@@ -972,11 +972,11 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
 
       {/* Delete Confirmation Modal */}
       {accountToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-rose-800/60 rounded-xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center gap-3 text-rose-400">
-              <div className="p-2.5 rounded-full bg-rose-950/80 border border-rose-800">
-                <AlertCircle className="w-6 h-6 text-rose-400" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-rose-800/60 rounded-xl max-w-md w-full p-4 shadow-2xl space-y-2.5">
+            <div className="flex items-center gap-2 text-rose-400">
+              <div className="p-2 rounded-full bg-rose-950/80 border border-rose-800">
+                <AlertCircle className="w-5 h-5 text-rose-400" />
               </div>
               <div>
                 <h3 className="font-bold text-white text-base">Hapus Rekening Bank</h3>
@@ -984,7 +984,7 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
               </div>
             </div>
 
-            <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-1.5 text-xs text-slate-300">
+            <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1.5 text-xs text-slate-300">
               <div className="flex justify-between">
                 <span className="text-slate-500">Bank:</span>
                 <span className="font-bold text-white">{accountToDelete.bankName}</span>
@@ -1005,18 +1005,18 @@ export const SettingsBankBalancesTab: React.FC<SettingsBankBalancesTabProps> = (
               Apakah Anda yakin ingin menghapus data rekening bank ini? Riwayat penghapusan akan dicatat pada log audit sistem.
             </p>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-2 pt-1.5">
               <button
                 type="button"
                 onClick={() => setAccountToDelete(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg"
+                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg"
               >
                 Batal
               </button>
               <button
                 type="button"
                 onClick={confirmDeleteAccount}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg shadow"
+                className="px-3 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg shadow"
               >
                 Ya, Hapus Rekening
               </button>

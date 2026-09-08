@@ -270,13 +270,13 @@ export const TransferPartnerCommissionModal: React.FC<TransferPartnerCommissionM
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-3 overflow-y-auto">
       <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl animate-fade-in my-auto max-h-[92vh] flex flex-col">
         {/* Modal Header */}
-        <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950/70 border-b border-slate-800 p-5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-emerald-950/90 border border-emerald-800/80 rounded-xl text-emerald-300 shadow-inner">
-              <DollarSign className="w-6 h-6 text-emerald-400" />
+        <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950/70 border-b border-slate-800 p-3.5 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-emerald-950/90 border border-emerald-800/80 rounded-xl text-emerald-300 shadow-inner">
+              <DollarSign className="w-5 h-5 text-emerald-400" />
             </div>
             <div>
               <h3 className="font-bold text-white text-base flex items-center gap-2">
@@ -297,12 +297,12 @@ export const TransferPartnerCommissionModal: React.FC<TransferPartnerCommissionM
             onClick={onClose}
             className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {isSuccess ? (
-          <div className="p-8 text-center space-y-5">
+          <div className="p-6 text-center space-y-3">
             <div className="w-16 h-16 bg-emerald-950 border-2 border-emerald-500 rounded-full flex items-center justify-center mx-auto text-emerald-400 shadow-lg shadow-emerald-950/60">
               <CheckCircle2 className="w-10 h-10" />
             </div>
@@ -315,8 +315,8 @@ export const TransferPartnerCommissionModal: React.FC<TransferPartnerCommissionM
             </div>
 
             {/* Voucher Slip Summary */}
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 text-left max-w-md mx-auto space-y-2 text-xs font-mono">
-              <div className="flex justify-between border-b border-slate-800 pb-2">
+            <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 text-left max-w-md mx-auto space-y-1.5 text-xs font-mono">
+              <div className="flex justify-between border-b border-slate-800 pb-1.5">
                 <span className="text-slate-400">Nomor Referensi:</span>
                 <span className="text-indigo-300 font-bold">{transferRef}</span>
               </div>
@@ -332,33 +332,33 @@ export const TransferPartnerCommissionModal: React.FC<TransferPartnerCommissionM
                 <span className="text-slate-400">{isPayment ? 'Perkara / No. Pembayaran:' : 'Kasus / BAST:'}</span>
                 <span className="text-slate-200">{effectiveCaseNo} ({isPayment ? payment?.paymentNo : recovery?.recoveryNo})</span>
               </div>
-              <div className="flex justify-between border-t border-slate-800 pt-2 text-sm font-bold">
+              <div className="flex justify-between border-t border-slate-800 pt-1.5 text-sm font-bold">
                 <span className="text-emerald-400">Nominal Transfer:</span>
                 <span className="text-emerald-300">Rp {partnerAmount.toLocaleString('id-ID')}</span>
               </div>
             </div>
 
-            <div className="pt-3">
+            <div className="pt-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-lg shadow-emerald-950/50 transition cursor-pointer"
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-lg shadow-emerald-950/50 transition cursor-pointer"
               >
                 Selesai & Tutup Jendela
               </button>
             </div>
           </div>
         ) : (
-          <form onSubmit={handleConfirmTransfer} className="p-5 sm:p-6 space-y-5 overflow-y-auto flex-1">
+          <form onSubmit={handleConfirmTransfer} className="p-3.5 sm:p-4 space-y-3 overflow-y-auto flex-1">
             {errorMessage && (
-              <div className="p-3 bg-rose-950/80 border border-rose-800 rounded-xl text-rose-300 text-xs flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 shrink-0" />
+              <div className="p-2.5 bg-rose-950/80 border border-rose-800 rounded-xl text-rose-300 text-xs flex items-center gap-2">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
                 <span>{errorMessage}</span>
               </div>
             )}
 
             {/* Case & Debtor Banner */}
-            <div className="bg-slate-950/90 border border-slate-800/80 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div className="bg-slate-950/90 border border-slate-800/80 rounded-xl p-3 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
               <div>
                 <span className="text-slate-500 text-[10px] uppercase font-bold block">{isPayment ? 'No. Kasus & Payment' : 'No. Kasus & BAST'}</span>
                 <span className="font-bold text-indigo-300 font-mono">{effectiveCaseNo}</span>
@@ -386,18 +386,18 @@ export const TransferPartnerCommissionModal: React.FC<TransferPartnerCommissionM
             </div>
 
             {/* Split Fee Calculation Box */}
-            <div className="bg-gradient-to-br from-indigo-950/40 via-slate-950 to-slate-900 border border-indigo-900/60 rounded-xl p-4 space-y-4 shadow-sm">
+            <div className="bg-gradient-to-br from-indigo-950/40 via-slate-950 to-slate-900 border border-indigo-900/60 rounded-xl p-3 space-y-2.5 shadow-sm">
               <div className="flex items-center justify-between border-b border-indigo-900/50 pb-2.5">
                 <h4 className="text-xs font-bold text-indigo-200 flex items-center gap-2">
-                  <Percent className="w-4 h-4 text-indigo-400" />
+                  <Percent className="w-3.5 h-3.5 text-indigo-400" />
                   <span>Kalkulasi Bagi Hasil & Persentase Fee Perusahaan</span>
                 </h4>
                 <span className="text-[11px] text-slate-400 font-mono">Formula Otomatis ARMS</span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1 font-semibold">
+                  <label className="block text-[11px] text-slate-400 mb-0.5 font-semibold">
                     {isPayment ? 'Total Agency / Success Fee:' : 'Total Tarif / Gross Fee Penarikan:'}
                   </label>
                   <div className="relative">
@@ -410,13 +410,13 @@ export const TransferPartnerCommissionModal: React.FC<TransferPartnerCommissionM
                       className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-white font-mono font-bold focus:border-indigo-500 focus:outline-none"
                     />
                   </div>
-                  <span className="text-[10px] text-slate-500 mt-1 block">
+                  <span className="text-[10px] text-slate-500 mt-0.5 block">
                     {isPayment ? 'Gross success fee penagihan' : 'Tarif tagih ke Klien Multifinance'}
                   </span>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1 font-semibold flex items-center justify-between">
+                  <label className="block text-[11px] text-slate-400 mb-0.5 font-semibold flex items-center justify-between">
                     <span>Bagian Perusahaan (%):</span>
                     <span className="text-indigo-300 font-mono text-[10px]">Dapat Diatur</span>
                   </label>
@@ -427,21 +427,21 @@ export const TransferPartnerCommissionModal: React.FC<TransferPartnerCommissionM
                       max="100"
                       value={companyPercent}
                       onChange={(e) => handlePercentChange(Number(e.target.value))}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-indigo-300 font-mono font-bold focus:border-indigo-500 focus:outline-none"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-2 text-xs text-indigo-300 font-mono font-bold focus:border-indigo-500 focus:outline-none"
                     />
                     <span className="absolute right-3 top-2.5 text-xs text-slate-400">%</span>
                   </div>
-                  <span className="text-[10px] text-indigo-400/90 font-mono mt-1 block">
+                  <span className="text-[10px] text-indigo-400/90 font-mono mt-0.5 block">
                     = Rp {companyAmount.toLocaleString('id-ID')}
                   </span>
                 </div>
 
-                <div className="bg-emerald-950/70 border border-emerald-700/80 rounded-lg p-2.5 flex flex-col justify-between shadow-inner">
+                <div className="bg-emerald-950/70 border border-emerald-700/80 rounded-lg p-2 flex flex-col justify-between shadow-inner">
                   <div className="flex justify-between items-center text-[10px] font-bold text-emerald-300 uppercase">
                     <span>Hak Komisi Mitra DC:</span>
                     <span>({100 - companyPercent}%)</span>
                   </div>
-                  <div className="text-lg font-black text-emerald-400 font-mono mt-1">
+                  <div className="text-lg font-black text-emerald-400 font-mono mt-0.5">
                     Rp {partnerAmount.toLocaleString('id-ID')}
                   </div>
                   <span className="text-[9px] text-emerald-300/80">Nominal bersih yang ditransfer</span>
@@ -450,67 +450,67 @@ export const TransferPartnerCommissionModal: React.FC<TransferPartnerCommissionM
             </div>
 
             {/* Destination Mitra DC Bank Account */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <h4 className="text-xs font-bold text-slate-200 flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-emerald-400" />
+                <CreditCard className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Rekening Tujuan Pembayaran Mitra DC</span>
               </h4>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">Nama Bank Tujuan</label>
+                  <label className="block text-[11px] text-slate-400 mb-0.5">Nama Bank Tujuan</label>
                   <input
                     type="text"
                     required
                     value={bankName}
                     onChange={(e) => setBankName(e.target.value)}
                     placeholder="e.g. Bank BCA / Mandiri / BRI"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:border-indigo-500 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">Nomor Rekening</label>
+                  <label className="block text-[11px] text-slate-400 mb-0.5">Nomor Rekening</label>
                   <input
                     type="text"
                     required
                     value={accountNumber}
                     onChange={(e) => setAccountNumber(e.target.value)}
                     placeholder="e.g. 8830192831"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono focus:border-indigo-500 focus:outline-none"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white font-mono focus:border-indigo-500 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">Atas Nama Rekening</label>
+                  <label className="block text-[11px] text-slate-400 mb-0.5">Atas Nama Rekening</label>
                   <input
                     type="text"
                     required
                     value={accountName}
                     onChange={(e) => setAccountName(e.target.value)}
                     placeholder="Nama Pemilik Rekening"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:border-indigo-500 focus:outline-none"
                   />
                 </div>
               </div>
             </div>
 
             {/* Source Cash Account & Transfer Details */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <h4 className="text-xs font-bold text-slate-200 flex items-center gap-2">
-                <Landmark className="w-4 h-4 text-blue-400" />
+                <Landmark className="w-3.5 h-3.5 text-blue-400" />
                 <span>Sumber Kas & Rincian Pengeluaran</span>
               </h4>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">
+                  <label className="block text-[11px] text-slate-400 mb-0.5">
                     Sumber Rekening Kas Perusahaan <span className="text-red-400">*</span>
                   </label>
                   <select
                     value={selectedCashAccountId}
                     onChange={(e) => setSelectedCashAccountId(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:border-indigo-500 focus:outline-none"
                   >
                     {store.cashAccounts.map((acc) => (
                       <option key={acc.id} value={acc.id}>
@@ -519,71 +519,71 @@ export const TransferPartnerCommissionModal: React.FC<TransferPartnerCommissionM
                     ))}
                   </select>
                   {selectedCashAccount && (
-                    <span className="text-[10px] text-slate-400 mt-1 block">
+                    <span className="text-[10px] text-slate-400 mt-0.5 block">
                       Saldo Tersedia: <strong className="text-emerald-400">Rp {selectedCashAccount.balance.toLocaleString('id-ID')}</strong>
                     </span>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">Tanggal Transfer</label>
+                  <label className="block text-[11px] text-slate-400 mb-0.5">Tanggal Transfer</label>
                   <DateInput
                     required
                     value={transferDate}
                     onChange={(e) => setTransferDate(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:border-indigo-500 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">No. Referensi / Struk Transfer</label>
+                  <label className="block text-[11px] text-slate-400 mb-0.5">No. Referensi / Struk Transfer</label>
                   <input
                     type="text"
                     required
                     value={transferRef}
                     onChange={(e) => setTransferRef(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">Link Bukti Transfer (Google Drive / URL)</label>
+                  <label className="block text-[11px] text-slate-400 mb-0.5">Link Bukti Transfer (Google Drive / URL)</label>
                   <input
                     type="text"
                     value={transferProofUrl}
                     onChange={(e) => setTransferProofUrl(e.target.value)}
                     placeholder="https://drive.google.com/file/d/..."
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:border-indigo-500 focus:outline-none"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:border-indigo-500 focus:outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">Catatan Transaksi / Keterangan</label>
+                <label className="block text-[11px] text-slate-400 mb-0.5">Catatan Transaksi / Keterangan</label>
                 <input
                   type="text"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
                 />
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-between pt-4 border-t border-slate-800 gap-3">
+            <div className="flex items-center justify-between pt-3 border-t border-slate-800 gap-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg transition"
+                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg transition"
               >
                 Batal
               </button>
 
               <button
                 type="submit"
-                className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-lg shadow-emerald-950/50 transition cursor-pointer"
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-lg shadow-emerald-950/50 transition cursor-pointer"
               >
-                <Send className="w-4 h-4" />
+                <Send className="w-3.5 h-3.5" />
                 <span>Konfirmasi & Proses Transfer (Rp {partnerAmount.toLocaleString('id-ID')})</span>
               </button>
             </div>

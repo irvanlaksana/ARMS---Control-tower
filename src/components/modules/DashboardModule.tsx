@@ -137,12 +137,12 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
   }, [store.cases]);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {/* Top Welcome Banner */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 relative overflow-hidden shadow-lg">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 relative overflow-hidden shadow-lg">
         <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-indigo-950/40 to-transparent pointer-events-none" />
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 relative z-10">
+          <div className="flex items-center gap-2.5">
             {store.settings?.companyLogo && (
               <div className="w-14 h-14 rounded-xl bg-slate-950 border border-amber-500/30 p-1 flex items-center justify-center shrink-0 shadow-md">
                 <img
@@ -153,8 +153,8 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
               </div>
             )}
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs font-semibold uppercase tracking-widest text-indigo-400 bg-indigo-950/80 px-2.5 py-0.5 rounded border border-indigo-900">
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-xs font-semibold uppercase tracking-widest text-indigo-400 bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-900">
                   {(role || '').replace(/_/g, ' ')} VIEW
                 </span>
                 <span className="text-xs text-slate-500">• Control Tower Agency DC</span>
@@ -162,7 +162,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
               <h2 className="text-2xl font-bold text-white">
                 {store.settings?.companyName || 'ARMS Operations Dashboard'}
               </h2>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-xs text-slate-400 mt-0.5">
                 {store.settings?.companyAddress || 'Google Sheets Single Source of Truth • Real-time Recovery, Finance & Liquidity Tracking'}
               </p>
             </div>
@@ -171,9 +171,9 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
           {pendingApprovals.length > 0 && (role === 'SUPER_ADMIN_OPS' || role === 'APPROVER_EXECUTIVE') && (
             <button
               onClick={() => onNavigateTab('APPROVALS')}
-              className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 text-amber-300 px-4 py-2.5 rounded-lg text-xs font-semibold hover:bg-amber-500/20 transition shadow"
+              className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 text-amber-300 px-3 py-2 rounded-lg text-xs font-semibold hover:bg-amber-500/20 transition shadow"
             >
-              <AlertCircle className="w-4 h-4 text-amber-400" />
+              <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
               <span>{pendingApprovals.length} Approval Requests Pending Review</span>
             </button>
           )}
@@ -181,44 +181,44 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
       </div>
 
       {/* Financial Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-1.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
           <div className="flex items-center justify-between text-slate-400 text-[11px] font-medium">
             <span>Total Fee Perusahaan</span>
             <div className="p-2 rounded-lg bg-emerald-950/80 text-emerald-400 border border-emerald-900/50">
-              <DollarSign className="w-4 h-4" />
+              <DollarSign className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="text-xl font-bold text-white tracking-tight">
             Rp {totalRevenueFee.toLocaleString('id-ID')}
           </div>
           <div className="flex items-center gap-1 text-[10px] text-emerald-400">
-            <ArrowUpRight className="w-3.5 h-3.5" />
+            <ArrowUpRight className="w-3 h-3" />
             <span>Agency fee & success fee</span>
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-1.5">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
           <div className="flex items-center justify-between text-slate-400 text-[11px] font-medium">
             <span>Approved Expenses</span>
             <div className="p-2 rounded-lg bg-rose-950/80 text-rose-400 border border-rose-900/50">
-              <Wallet className="w-4 h-4" />
+              <Wallet className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="text-xl font-bold text-white tracking-tight">
             Rp {totalExpenses.toLocaleString('id-ID')}
           </div>
           <div className="flex items-center gap-1 text-[10px] text-slate-400">
-            <ArrowDownRight className="w-3.5 h-3.5 text-rose-400" />
+            <ArrowDownRight className="w-3 h-3 text-rose-400" />
             <span>Ops, towing & warehouse</span>
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-1.5">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
           <div className="flex items-center justify-between text-slate-400 text-[11px] font-medium">
             <span>Net Operating Profit</span>
             <div className="p-2 rounded-lg bg-indigo-950/80 text-indigo-400 border border-indigo-900/50">
-              <Briefcase className="w-4 h-4" />
+              <Briefcase className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="text-xl font-bold text-white tracking-tight">
@@ -229,11 +229,11 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-1.5">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
           <div className="flex items-center justify-between text-slate-400 text-[11px] font-medium">
             <span>Total Cash Liquidity</span>
             <div className="p-2 rounded-lg bg-amber-950/80 text-amber-400 border border-amber-900/50">
-              <Coins className="w-4 h-4" />
+              <Coins className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="text-xl font-bold text-white tracking-tight">
@@ -246,13 +246,13 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
       </div>
 
       {/* Visual Analytics with Recharts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-2.5">
         {/* Monthly Collection Performance Chart */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3 lg:col-span-2">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2 lg:col-span-2">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
             <div>
               <h3 className="font-bold text-white text-sm flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-emerald-400" />
+                <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Collection & Agency Revenue</span>
               </h3>
               <p className="text-[10px] text-slate-400">Target, realisasi, dan fee</p>
@@ -292,21 +292,21 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
         </div>
 
         {/* Recovery Success Rate & Case Breakdown */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
             <div>
               <h3 className="font-bold text-white text-sm flex items-center gap-2">
-                <PieChartIcon className="w-4 h-4 text-indigo-400" />
+                <PieChartIcon className="w-3.5 h-3.5 text-indigo-400" />
                 <span>Recovery Success</span>
               </h3>
               <p className="text-[10px] text-slate-400">Status kasus</p>
             </div>
           </div>
 
-          <div className="flex items-center justify-between bg-slate-950/80 p-3 rounded-xl border border-slate-800">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+            <div className="flex items-center gap-2">
               <div className="p-2 rounded-lg bg-emerald-950 text-emerald-400 border border-emerald-800">
-                <Target className="w-4 h-4" />
+                <Target className="w-3.5 h-3.5" />
               </div>
               <div>
                 <div className="text-[10px] text-slate-400 font-medium">Overall</div>
@@ -342,7 +342,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
             </ResponsiveContainer>
           </div>
 
-          <div className="space-y-1.5 border-t border-slate-800 pt-2">
+          <div className="space-y-1.5 border-t border-slate-800 pt-1.5">
             {caseDistributionData.slice(0, 4).map((item) => (
               <div key={item.name} className="flex items-center justify-between text-[10px]">
                 <div className="flex items-center gap-2">
@@ -357,12 +357,12 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
       </div>
 
       {/* Operational Highlights Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
         {/* Active Cases & Recovery Status */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
             <h3 className="font-bold text-white text-sm flex items-center gap-2">
-              <Briefcase className="w-4 h-4 text-indigo-400" />
+              <Briefcase className="w-3.5 h-3.5 text-indigo-400" />
               <span>Active Recovery Portfolio</span>
             </h3>
             <button
@@ -373,16 +373,16 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
             </button>
           </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 rounded-lg bg-slate-950/60 border border-slate-800">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-950/60 border border-slate-800">
               <span className="text-xs text-slate-400">Active Cases</span>
               <span className="text-sm font-bold text-white">{activeCasesCount} Cases</span>
             </div>
-            <div className="flex items-center justify-between p-3 rounded-lg bg-slate-950/60 border border-slate-800">
+            <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-950/60 border border-slate-800">
               <span className="text-xs text-slate-400">Recovered Units in Warehouse</span>
               <span className="text-sm font-bold text-emerald-400">{recoveredUnitsCount} Assets</span>
             </div>
-            <div className="flex items-center justify-between p-3 rounded-lg bg-slate-950/60 border border-slate-800">
+            <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-950/60 border border-slate-800">
               <span className="text-xs text-slate-400">Active Dana Talangan Disbursed</span>
               <span className="text-sm font-bold text-amber-400">
                 Rp {activeTalanganAmount.toLocaleString('id-ID')}
@@ -392,10 +392,10 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
         </div>
 
         {/* Pending Approvals Summary */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3 lg:col-span-2">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2 lg:col-span-2">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
             <h3 className="font-bold text-white text-sm flex items-center gap-2">
-              <CheckSquare className="w-4 h-4 text-amber-400" />
+              <CheckSquare className="w-3.5 h-3.5 text-amber-400" />
               <span>Executive Approval Queue</span>
             </h3>
             <button
@@ -407,7 +407,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
           </div>
 
           {pendingApprovals.length === 0 ? (
-            <div className="p-8 text-center text-slate-500 text-xs bg-slate-950/40 rounded-lg border border-slate-800/60">
+            <div className="p-6 text-center text-slate-500 text-xs bg-slate-950/40 rounded-lg border border-slate-800/60">
               No pending approval requests. All contracts, SKs, expenses, and settlements are up to date.
             </div>
           ) : (
@@ -415,7 +415,7 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
               {pendingApprovals.slice(0, 3).map((app) => (
                 <div
                   key={app.id}
-                  className="p-3 bg-slate-950/70 border border-slate-800 rounded-lg flex items-center justify-between gap-3 text-xs"
+                  className="p-2.5 bg-slate-950/70 border border-slate-800 rounded-lg flex items-center justify-between gap-2 text-xs"
                 >
                   <div className="space-y-0.5">
                     <div className="font-semibold text-white flex items-center gap-2">

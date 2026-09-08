@@ -146,11 +146,11 @@ export const SettlementModule: React.FC<SettlementModuleProps> = ({ store, curre
   const settlementPagination = usePagination<Settlement>(filteredSettlements, 10);
 
   return (
-    <div className="space-y-6">
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex items-center justify-between">
+    <div className="space-y-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <ShieldCheck className="w-5 h-5 text-indigo-400" />
+          <div className="flex items-center gap-2 mb-0.5">
+            <ShieldCheck className="w-4 h-4 text-indigo-400" />
             <h2 className="text-xl font-bold text-white">Remittance Settlement to Multifinance Clients</h2>
           </div>
           <p className="text-xs text-slate-400">Formal Net Remittance Statements & Bank Transfer Clearing</p>
@@ -159,16 +159,16 @@ export const SettlementModule: React.FC<SettlementModuleProps> = ({ store, curre
         {canEdit && (
           <button
             onClick={() => { resetForm(); setShowModal(true); }}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-md transition"
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow-md transition"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             <span>New Client Settlement</span>
           </button>
         )}
       </div>
 
       {/* Filter & Search */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 p-1 rounded-lg overflow-x-auto">
           {(['ALL', 'SETTLED', 'PENDING_APPROVAL', 'SUBMITTED'] as const).map((st) => (
             <button
@@ -177,7 +177,7 @@ export const SettlementModule: React.FC<SettlementModuleProps> = ({ store, curre
                 setStatusFilter(st);
                 settlementPagination.setPage(1);
               }}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition ${
+              className={`px-2.5 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition ${
                 statusFilter === st
                   ? 'bg-indigo-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
@@ -192,7 +192,7 @@ export const SettlementModule: React.FC<SettlementModuleProps> = ({ store, curre
         </div>
 
         <div className="relative flex-1 sm:max-w-xs">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Cari no settlement, klien, tanggal..."
@@ -211,20 +211,20 @@ export const SettlementModule: React.FC<SettlementModuleProps> = ({ store, curre
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-950 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
               <tr>
-                <th className="py-3 px-4">Settlement No</th>
-                <th className="py-3 px-4">Multifinance Client</th>
-                <th className="py-3 px-4 text-right">Collected Amount</th>
-                <th className="py-3 px-4 text-right">Agency Fee Cut</th>
-                <th className="py-3 px-4 text-right font-bold text-emerald-400">Net Client Remittance</th>
-                <th className="py-3 px-4">Settlement Date</th>
-                <th className="py-3 px-4 text-center">Status</th>
-                {canEdit && <th className="py-3 px-4 text-center">Actions</th>}
+                <th className="py-2 px-3">Settlement No</th>
+                <th className="py-2 px-3">Multifinance Client</th>
+                <th className="py-2 px-3 text-right">Collected Amount</th>
+                <th className="py-2 px-3 text-right">Agency Fee Cut</th>
+                <th className="py-2 px-3 text-right font-bold text-emerald-400">Net Client Remittance</th>
+                <th className="py-2 px-3">Settlement Date</th>
+                <th className="py-2 px-3 text-center">Status</th>
+                {canEdit && <th className="py-2 px-3 text-center">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
               {settlementPagination.pageItems.length === 0 ? (
                 <tr>
-                  <td colSpan={canEdit ? 8 : 7} className="py-10 text-center text-slate-500 text-xs">
+                  <td colSpan={canEdit ? 8 : 7} className="py-8 text-center text-slate-500 text-xs">
                     {store.settlements.length === 0
                       ? 'Belum ada data penyelesaian settlement remittance. Klik tombol + New Client Settlement untuk membuat settlement.'
                       : 'Tidak ada data settlement yang sesuai dengan filter atau pencarian.'}
@@ -233,31 +233,31 @@ export const SettlementModule: React.FC<SettlementModuleProps> = ({ store, curre
               ) : (
                 settlementPagination.pageItems.map((s) => (
                   <tr key={s.id} className="hover:bg-slate-800/40 transition">
-                    <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">{s.settlementNo}</td>
-                    <td className="py-3.5 px-4 font-bold text-white">{s.clientName}</td>
-                    <td className="py-3.5 px-4 text-right font-semibold text-slate-200">
+                    <td className="py-2.5 px-3 font-mono font-bold text-indigo-300">{s.settlementNo}</td>
+                    <td className="py-2.5 px-3 font-bold text-white">{s.clientName}</td>
+                    <td className="py-2.5 px-3 text-right font-semibold text-slate-200">
                       Rp {s.totalCollected.toLocaleString('id-ID')}
                     </td>
-                    <td className="py-3.5 px-4 text-right font-semibold text-rose-400">
+                    <td className="py-2.5 px-3 text-right font-semibold text-rose-400">
                       - Rp {s.agencyFeeAmount.toLocaleString('id-ID')}
                     </td>
-                    <td className="py-3.5 px-4 text-right font-bold text-emerald-400">
+                    <td className="py-2.5 px-3 text-right font-bold text-emerald-400">
                       Rp {s.netRemittedToClient.toLocaleString('id-ID')}
                     </td>
-                    <td className="py-3.5 px-4 text-slate-400">{s.settlementDate}</td>
-                    <td className="py-3.5 px-4 text-center">
-                      <span className="bg-indigo-950 text-indigo-300 text-[10px] px-2.5 py-1 rounded-full border border-indigo-800 font-semibold">
+                    <td className="py-2.5 px-3 text-slate-400">{s.settlementDate}</td>
+                    <td className="py-2.5 px-3 text-center">
+                      <span className="bg-indigo-950 text-indigo-300 text-[10px] px-2 py-1 rounded-full border border-indigo-800 font-semibold">
                         {(s.status || '').replace(/_/g, ' ')}
                       </span>
                     </td>
                     {canEdit && (
-                      <td className="py-3.5 px-4 text-center">
+                      <td className="py-2.5 px-3 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <button onClick={() => handleEditClick(s)} className="text-slate-400 hover:text-white transition">
-                            <Edit2 className="w-4 h-4" />
+                            <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button onClick={() => handleDeleteClick(s.id)} className="text-slate-400 hover:text-rose-400 transition">
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
@@ -279,16 +279,16 @@ export const SettlementModule: React.FC<SettlementModuleProps> = ({ store, curre
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <form onSubmit={handleCreateSettlement} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-5 sm:p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto my-auto">
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-3 overflow-y-auto">
+          <form onSubmit={handleCreateSettlement} className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md p-3.5 sm:p-4 space-y-2.5 shadow-2xl max-h-[85vh] overflow-y-auto my-auto">
             <h3 className="font-bold text-white text-base">{isEditing ? 'Edit Remittance Settlement' : 'Generate Remittance Settlement'}</h3>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Select Multifinance Client</label>
+              <label className="block text-xs text-slate-400 mb-0.5">Select Multifinance Client</label>
               <select
                 value={clientId}
                 onChange={(e) => setClientId(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
               >
                 {store.clients.map((cli) => (
                   <option key={cli.id} value={cli.id}>
@@ -299,43 +299,43 @@ export const SettlementModule: React.FC<SettlementModuleProps> = ({ store, curre
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Total Gross Debtor Collected (Rp)</label>
+              <label className="block text-xs text-slate-400 mb-0.5">Total Gross Debtor Collected (Rp)</label>
               <AmountInput
                 required
                 value={totalDebtorCollectedAmount}
                 onChange={setTotalDebtorCollectedAmount}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white font-mono"
               />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Agency Fee Deduction (Rp)</label>
+              <label className="block text-xs text-slate-400 mb-0.5">Agency Fee Deduction (Rp)</label>
               <AmountInput
                 required
                 value={agencyFeeDeduction}
                 onChange={setAgencyFeeDeduction}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white font-mono"
               />
             </div>
 
-            <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 text-xs font-semibold text-emerald-400 flex justify-between">
+            <div className="p-2.5 bg-slate-950 rounded-lg border border-slate-800 text-xs font-semibold text-emerald-400 flex justify-between">
               <span>Net Remittance to Client:</span>
               <span className="font-mono font-bold">
                 Rp {(totalDebtorCollectedAmount - agencyFeeDeduction).toLocaleString('id-ID')}
               </span>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-2 pt-1.5">
               <button
                 type="button"
                 onClick={() => { setShowModal(false); resetForm(); }}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
+                className="px-3 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500"
+                className="px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500"
               >
                 {isEditing ? 'Save Changes' : 'Submit for Executive Approval'}
               </button>

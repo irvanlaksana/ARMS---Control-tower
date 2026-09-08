@@ -186,12 +186,12 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
   const assignmentPagination = usePagination<Assignment>(filteredAssignments, 10);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header Banner */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-2.5 shadow-lg">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Users className="w-5 h-5 text-indigo-400" />
+          <div className="flex items-center gap-2 mb-0.5">
+            <Users className="w-4 h-4 text-indigo-400" />
             <h2 className="text-xl font-bold text-white">Partner & Field Assignments</h2>
           </div>
           <p className="text-xs text-slate-400">
@@ -202,23 +202,23 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
         {canEdit && (
           <button
             onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-md transition active:scale-95"
+            className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow-md transition active:scale-95"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             <span>Buat Penugasan Baru</span>
           </button>
         )}
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
         <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
           <button
             onClick={() => {
               setClientFilter('ALL');
               assignmentPagination.setPage(1);
             }}
-            className={`px-3 py-1.5 rounded text-xs font-medium transition ${
+            className={`px-2.5 py-1.5 rounded text-xs font-medium transition ${
               clientFilter === 'ALL' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'
             }`}
           >
@@ -229,13 +229,13 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
               setClientFilter('MULTIFINANCE');
               assignmentPagination.setPage(1);
             }}
-            className={`px-3 py-1.5 rounded text-xs font-medium transition flex items-center gap-1.5 ${
+            className={`px-2.5 py-1.5 rounded text-xs font-medium transition flex items-center gap-1.5 ${
               clientFilter === 'MULTIFINANCE'
                 ? 'bg-indigo-900/80 text-indigo-200 border border-indigo-700'
                 : 'text-slate-400 hover:text-indigo-300'
             }`}
           >
-            <Building2 className="w-3.5 h-3.5" />
+            <Building2 className="w-3 h-3" />
             <span>Multifinance</span>
           </button>
           <button
@@ -243,19 +243,19 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
               setClientFilter('PERORANGAN');
               assignmentPagination.setPage(1);
             }}
-            className={`px-3 py-1.5 rounded text-xs font-medium transition flex items-center gap-1.5 ${
+            className={`px-2.5 py-1.5 rounded text-xs font-medium transition flex items-center gap-1.5 ${
               clientFilter === 'PERORANGAN'
                 ? 'bg-amber-900/80 text-amber-200 border border-amber-700'
                 : 'text-slate-400 hover:text-amber-300'
             }`}
           >
-            <UserCheck className="w-3.5 h-3.5" />
+            <UserCheck className="w-3 h-3" />
             <span>Klien Perorangan</span>
           </button>
         </div>
 
         <div className="relative">
-          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
             type="text"
             value={searchTerm}
@@ -275,22 +275,22 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-950 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
               <tr>
-                <th className="py-3 px-4">No. Penugasan</th>
-                <th className="py-3 px-4">Kasus & Debitur</th>
-                <th className="py-3 px-4">Kategori Klien</th>
-                <th className="py-3 px-4">Mitra Lapangan</th>
-                <th className="py-3 px-4">Tgl Tugas</th>
-                <th className="py-3 px-4">Target SLA</th>
-                <th className="py-3 px-4">Instruksi Khusus</th>
-                <th className="py-3 px-4 text-center">Berkas (Drive)</th>
-                <th className="py-3 px-4 text-center">Status</th>
-                {canEdit && <th className="py-3 px-4 text-right">Aksi</th>}
+                <th className="py-2 px-3">No. Penugasan</th>
+                <th className="py-2 px-3">Kasus & Debitur</th>
+                <th className="py-2 px-3">Kategori Klien</th>
+                <th className="py-2 px-3">Mitra Lapangan</th>
+                <th className="py-2 px-3">Tgl Tugas</th>
+                <th className="py-2 px-3">Target SLA</th>
+                <th className="py-2 px-3">Instruksi Khusus</th>
+                <th className="py-2 px-3 text-center">Berkas (Drive)</th>
+                <th className="py-2 px-3 text-center">Status</th>
+                {canEdit && <th className="py-2 px-3 text-right">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
               {assignmentPagination.pageItems.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-8 text-center text-slate-500 text-xs">
+                  <td colSpan={10} className="py-6 text-center text-slate-500 text-xs">
                     {(store.assignments || []).length === 0
                       ? 'Belum ada data penugasan. Klik tombol + Buat Penugasan Baru untuk memulai.'
                       : 'Tidak ada data penugasan yang sesuai filter atau pencarian.'}
@@ -304,11 +304,11 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
 
                   return (
                     <tr key={a.id} className="hover:bg-slate-800/40 transition">
-                      <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">
+                      <td className="py-2.5 px-3 font-mono font-bold text-indigo-300">
                         {a.assignmentNo}
                       </td>
 
-                      <td className="py-3.5 px-4 space-y-1">
+                      <td className="py-2.5 px-3 space-y-1">
                         <div className="font-bold text-white flex items-center gap-1.5 flex-wrap">
                           <span>{a.caseNo}</span>
                           {hasLawyerNotice && (
@@ -320,7 +320,7 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
                         <div className="text-[11px] text-slate-300 font-medium">{a.debtorName}</div>
                       </td>
 
-                      <td className="py-3.5 px-4">
+                      <td className="py-2.5 px-3">
                         {isPer ? (
                           <span className="inline-flex items-center gap-1 bg-amber-950/80 text-amber-300 text-[10px] px-2 py-0.5 rounded border border-amber-800/80 font-medium">
                             <UserCheck className="w-3 h-3" /> Perorangan
@@ -335,26 +335,26 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4 font-medium text-slate-200">
+                      <td className="py-2.5 px-3 font-medium text-slate-200">
                         {a.personnelName}
                       </td>
 
-                      <td className="py-3.5 px-4 text-slate-400 font-mono">
+                      <td className="py-2.5 px-3 text-slate-400 font-mono">
                         {a.assignedDate}
                       </td>
 
-                      <td className="py-3.5 px-4 text-amber-400 font-medium">
+                      <td className="py-2.5 px-3 text-amber-400 font-medium">
                         {a.targetDate}
                         <div className="text-[10px] text-slate-400 font-normal">
                           {a.slaDays} hari SLA
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4 text-slate-300 max-w-[220px] truncate" title={a.instructions}>
+                      <td className="py-2.5 px-3 text-slate-300 max-w-[220px] truncate" title={a.instructions}>
                         {a.instructions}
                       </td>
 
-                      <td className="py-3.5 px-4 text-center">
+                      <td className="py-2.5 px-3 text-center">
                         {a.gDriveFolderUrl ? (
                           <a
                             href={a.gDriveFolderUrl}
@@ -370,9 +370,9 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
                         )}
                       </td>
 
-                      <td className="py-3.5 px-4 text-center">
+                      <td className="py-2.5 px-3 text-center">
                         <span
-                          className={`text-[10px] px-2.5 py-1 rounded-full font-semibold border ${
+                          className={`text-[10px] px-2 py-1 rounded-full font-semibold border ${
                             a.status === 'COMPLETED'
                               ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
                               : 'bg-indigo-950 text-indigo-300 border-indigo-800'
@@ -383,21 +383,21 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
                       </td>
 
                       {canEdit && (
-                        <td className="py-3.5 px-4 text-right">
+                        <td className="py-2.5 px-3 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <button
                               onClick={() => handleOpenModal(a)}
                               className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-indigo-400 transition"
                               title="Edit Assignment"
                             >
-                              <Edit2 className="w-4 h-4" />
+                              <Edit2 className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={() => handleDeleteAssignment(a.id, a.assignmentNo)}
                               className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-red-400 transition"
                               title="Delete Assignment"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </td>
@@ -421,14 +421,14 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
 
       {/* CREATE ASSIGNMENT MODAL WITH PERORANGAN & MULTIFINANCE SUPPORT */}
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3">
           <form
             onSubmit={handleCreateAssignment}
-            className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-lg p-6 space-y-4 shadow-2xl"
+            className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-lg p-4 space-y-2.5 shadow-2xl"
           >
-            <div className="border-b border-slate-800 pb-3">
+            <div className="border-b border-slate-800 pb-2">
               <h3 className="font-bold text-white text-base flex items-center gap-2">
-                <Users className="w-5 h-5 text-indigo-400" />
+                <Users className="w-4 h-4 text-indigo-400" />
                 {isEditing ? 'Edit Penugasan Mitra Lapangan' : 'Buat Penugasan Baru Mitra Lapangan'}
               </h3>
               <p className="text-xs text-slate-400">
@@ -437,11 +437,11 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
                 Pilih Berkas Kasus <span className="text-red-400">*</span>
               </label>
               {activeCases.length === 0 && !isEditing ? (
-                <div className="p-3 bg-amber-950/60 border border-amber-800 rounded-lg text-xs text-amber-300">
+                <div className="p-2.5 bg-amber-950/60 border border-amber-800 rounded-lg text-xs text-amber-300">
                   ⚠️ Semua kasus telah selesai/lunas. Tidak ada berkas kasus aktif baru untuk ditugaskan.
                 </div>
               ) : (
@@ -458,7 +458,7 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
                 Pilih Mitra Lapangan / DC <span className="text-red-400">*</span>
               </label>
               <SearchableSelect
@@ -474,19 +474,19 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Target SLA (Hari Kalender)</label>
+              <label className="block text-xs text-slate-400 mb-0.5">Target SLA (Hari Kalender)</label>
               <input
                 type="number"
                 min={1}
                 max={90}
                 value={slaDays}
                 onChange={(e) => setSlaDays(Number(e.target.value))}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
               />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Instruksi Khusus Penugasan Lapangan</label>
+              <label className="block text-xs text-slate-400 mb-0.5">Instruksi Khusus Penugasan Lapangan</label>
               <textarea
                 rows={3}
                 value={instructions}
@@ -496,22 +496,22 @@ export const AssignmentModule: React.FC<AssignmentModuleProps> = ({
                     ? 'Instruksi khusus penagihan piutang perorangan (kunjungan, klarifikasi SPH, negosiasi cicilan)...'
                     : 'Instruksi khusus penagihan multifinance / penarikan unit fidusia...'
                 }
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500"
               />
             </div>
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
+                className="px-3 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
               >
                 Batal
               </button>
               <button
                 type="submit"
                 disabled={activeCases.length === 0 && !isEditing}
-                className="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500 shadow-md transition disabled:opacity-50"
+                className="px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-500 shadow-md transition disabled:opacity-50"
               >
                 {isEditing ? 'Simpan Perubahan' : 'Terbitkan Penugasan'}
               </button>

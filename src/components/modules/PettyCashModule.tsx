@@ -286,12 +286,12 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
   const opnameDifference = totalPhysicalOpname - currentBalance;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Module Header */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-2.5 shadow-lg">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Wallet className="w-5 h-5 text-amber-400" />
+          <div className="flex items-center gap-2 mb-0.5">
+            <Wallet className="w-4 h-4 text-amber-400" />
             <h2 className="text-xl font-bold text-white">Petty Cash (Kas Kecil Operasional)</h2>
           </div>
           <p className="text-xs text-slate-400">
@@ -304,24 +304,24 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
             <>
               <button
                 onClick={() => handleOpenModal('CASH_IN')}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 shadow transition"
+                className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-2.5 py-2 rounded-lg flex items-center gap-1.5 shadow transition"
               >
-                <ArrowDownLeft className="w-4 h-4" />
+                <ArrowDownLeft className="w-3.5 h-3.5" />
                 <span>+ Dropping / Top Up Kas</span>
               </button>
               <button
                 onClick={() => handleOpenModal('CASH_OUT')}
-                className="bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 shadow transition"
+                className="bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold px-2.5 py-2 rounded-lg flex items-center gap-1.5 shadow transition"
               >
-                <ArrowUpRight className="w-4 h-4" />
+                <ArrowUpRight className="w-3.5 h-3.5" />
                 <span>+ Catat Pengeluaran</span>
               </button>
               <button
                 onClick={() => setShowOpnameModal(true)}
-                className="bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-900/60 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition"
+                className="bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-900/60 text-xs font-semibold px-2.5 py-2 rounded-lg flex items-center gap-1.5 transition"
                 title="Pemeriksaan Fisik Kas / Berita Acara Kas Opname"
               >
-                <Layers className="w-4 h-4" />
+                <Layers className="w-3.5 h-3.5" />
                 <span>Kas Opname</span>
               </button>
             </>
@@ -330,48 +330,48 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
         {/* Card 1: Saldo Kas Kecil */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 relative overflow-hidden shadow">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 relative overflow-hidden shadow">
           <div className="text-xs text-slate-400 font-medium">Saldo Kas Kecil (Cash on Hand)</div>
-          <div className={`text-2xl font-bold mt-1 ${currentBalance < 500000 ? 'text-amber-400' : 'text-emerald-400'}`}>
+          <div className={`text-2xl font-bold mt-0.5 ${currentBalance < 500000 ? 'text-amber-400' : 'text-emerald-400'}`}>
             Rp {currentBalance.toLocaleString('id-ID')}
           </div>
-          <div className="flex items-center gap-1 text-[11px] text-slate-500 mt-2">
+          <div className="flex items-center gap-1 text-[11px] text-slate-500 mt-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
             <span>Tersedia di brankas operasional</span>
           </div>
         </div>
 
         {/* Card 2: Total Dropping */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 shadow">
           <div className="text-xs text-slate-400 font-medium">Total Dropping (Kas Masuk)</div>
-          <div className="text-2xl font-bold text-emerald-400 mt-1">
+          <div className="text-2xl font-bold text-emerald-400 mt-0.5">
             Rp {totalCashIn.toLocaleString('id-ID')}
           </div>
-          <div className="text-[11px] text-slate-500 mt-2">
+          <div className="text-[11px] text-slate-500 mt-1.5">
             Dari Bank Mandiri / Kas Utama
           </div>
         </div>
 
         {/* Card 3: Total Pengeluaran */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 shadow">
           <div className="text-xs text-slate-400 font-medium">Total Pengeluaran Taktis</div>
-          <div className="text-2xl font-bold text-rose-400 mt-1">
+          <div className="text-2xl font-bold text-rose-400 mt-0.5">
             Rp {totalCashOut.toLocaleString('id-ID')}
           </div>
-          <div className="text-[11px] text-slate-500 mt-2">
+          <div className="text-[11px] text-slate-500 mt-1.5">
             Biaya bbm, tol, konsumsi, atk, dll.
           </div>
         </div>
 
         {/* Card 4: Plafon Imprest */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 shadow">
           <div className="text-xs text-slate-400 font-medium">Plafon Imprest System</div>
-          <div className="text-2xl font-bold text-indigo-400 mt-1">
+          <div className="text-2xl font-bold text-indigo-400 mt-0.5">
             Rp {imprestPlafon.toLocaleString('id-ID')}
           </div>
-          <div className="w-full bg-slate-800 rounded-full h-1.5 mt-3 overflow-hidden">
+          <div className="w-full bg-slate-800 rounded-full h-1.5 mt-2 overflow-hidden">
             <div
               className="bg-indigo-500 h-1.5 rounded-full"
               style={{ width: `${Math.min(100, Math.max(0, (currentBalance / imprestPlafon) * 100))}%` }}
@@ -381,8 +381,8 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-col md:flex-row items-center justify-between gap-2.5">
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
           {/* Type Filter */}
           <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg p-0.5">
             <button
@@ -390,7 +390,7 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
                 setTypeFilter('ALL');
                 pettyCashPagination.setPage(1);
               }}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition ${typeFilter === 'ALL' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+              className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition ${typeFilter === 'ALL' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'}`}
             >
               Semua
             </button>
@@ -399,7 +399,7 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
                 setTypeFilter('CASH_IN');
                 pettyCashPagination.setPage(1);
               }}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition ${typeFilter === 'CASH_IN' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'text-slate-400 hover:text-slate-200'}`}
+              className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition ${typeFilter === 'CASH_IN' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'text-slate-400 hover:text-slate-200'}`}
             >
               Kas Masuk (Top Up)
             </button>
@@ -408,7 +408,7 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
                 setTypeFilter('CASH_OUT');
                 pettyCashPagination.setPage(1);
               }}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition ${typeFilter === 'CASH_OUT' ? 'bg-rose-950 text-rose-300 border border-rose-800' : 'text-slate-400 hover:text-slate-200'}`}
+              className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition ${typeFilter === 'CASH_OUT' ? 'bg-rose-950 text-rose-300 border border-rose-800' : 'text-slate-400 hover:text-slate-200'}`}
             >
               Kas Keluar (Pengeluaran)
             </button>
@@ -421,7 +421,7 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
               setCategoryFilter(e.target.value);
               pettyCashPagination.setPage(1);
             }}
-            className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none"
+            className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none"
           >
             <option value="ALL">Semua Kategori</option>
             <option value="TOP_UP_REPLENISHMENT">Dropping / Top Up Kas</option>
@@ -437,7 +437,7 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
 
         {/* Search */}
         <div className="relative w-full md:w-64">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
+          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
           <input
             type="text"
             value={searchTerm}
@@ -453,7 +453,7 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
 
       {/* Transactions Table */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
-        <div className="p-4 border-b border-slate-800 bg-slate-950/50 flex items-center justify-between">
+        <div className="p-3 border-b border-slate-800 bg-slate-950/50 flex items-center justify-between">
           <h3 className="font-bold text-white text-xs uppercase tracking-wider">
             Buku Kas Kecil ({pettyCashPagination.totalItems} Transaksi)
           </h3>
@@ -466,21 +466,21 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-950 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
               <tr>
-                <th className="py-3 px-4">No. Transaksi & Tanggal</th>
-                <th className="py-3 px-4">Jenis & Kategori</th>
-                <th className="py-3 px-4">Keterangan / Uraian</th>
-                <th className="py-3 px-4">Penerima / Sumber</th>
-                <th className="py-3 px-4">PIC Petugas</th>
-                <th className="py-3 px-4 text-right">Nominal (Rp)</th>
-                <th className="py-3 px-4 text-center">Bukti / Slip</th>
-                <th className="py-3 px-4 text-center">Status</th>
-                {canEdit && <th className="py-3 px-4 text-right">Aksi</th>}
+                <th className="py-2 px-3">No. Transaksi & Tanggal</th>
+                <th className="py-2 px-3">Jenis & Kategori</th>
+                <th className="py-2 px-3">Keterangan / Uraian</th>
+                <th className="py-2 px-3">Penerima / Sumber</th>
+                <th className="py-2 px-3">PIC Petugas</th>
+                <th className="py-2 px-3 text-right">Nominal (Rp)</th>
+                <th className="py-2 px-3 text-center">Bukti / Slip</th>
+                <th className="py-2 px-3 text-center">Status</th>
+                {canEdit && <th className="py-2 px-3 text-right">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
               {pettyCashPagination.pageItems.length === 0 ? (
                 <tr>
-                  <td colSpan={canEdit ? 9 : 8} className="py-10 text-center text-slate-500 text-xs">
+                  <td colSpan={canEdit ? 9 : 8} className="py-8 text-center text-slate-500 text-xs">
                     {pettyCashList.length === 0
                       ? 'Belum ada data transaksi kas kecil. Klik tombol + Dropping Kas atau + Catat Pengeluaran untuk memulai.'
                       : 'Tidak ada data transaksi kas kecil yang sesuai dengan filter atau pencarian.'}
@@ -492,7 +492,7 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
                   return (
                     <tr key={item.id} className="hover:bg-slate-800/40 transition">
                       {/* No & Tanggal */}
-                      <td className="py-3.5 px-4 font-mono text-slate-400">
+                      <td className="py-2.5 px-3 font-mono text-slate-400">
                         <div className="font-bold text-white text-xs">{item.transactionNo}</div>
                         <div className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
                           <Calendar className="w-3 h-3" /> {item.transactionDate}
@@ -500,7 +500,7 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
                       </td>
 
                       {/* Jenis & Kategori */}
-                      <td className="py-3.5 px-4 space-y-1">
+                      <td className="py-2.5 px-3 space-y-1">
                         <span
                           className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded border ${
                             isCashIn
@@ -517,8 +517,8 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
                       </td>
 
                       {/* Keterangan */}
-                      <td className="py-3.5 px-4 max-w-[240px]">
-                        <div className="text-slate-200 font-medium leading-relaxed">{item.description}</div>
+                      <td className="py-2.5 px-3 max-w-[240px]">
+                        <div className="text-slate-200 font-medium leading-normal">{item.description}</div>
                         {item.caseNo && (
                           <div className="text-[10px] text-indigo-400 font-mono mt-0.5">
                             Ref Kasus: {item.caseNo}
@@ -527,26 +527,26 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
                       </td>
 
                       {/* Penerima / Sumber */}
-                      <td className="py-3.5 px-4 text-slate-300 font-medium">
+                      <td className="py-2.5 px-3 text-slate-300 font-medium">
                         {item.recipientOrSource}
                       </td>
 
                       {/* PIC */}
-                      <td className="py-3.5 px-4 text-slate-400">
+                      <td className="py-2.5 px-3 text-slate-400">
                         {item.type === 'CASH_IN'
                           ? (item.requestedByUserName || item.personnelName || '-')
                           : (item.personnelName || '-')}
                       </td>
 
                       {/* Nominal */}
-                      <td className="py-3.5 px-4 text-right font-mono font-bold text-sm">
+                      <td className="py-2.5 px-3 text-right font-mono font-bold text-sm">
                         <span className={isCashIn ? 'text-emerald-400' : 'text-rose-400'}>
                           {isCashIn ? '+' : '-'} Rp {item.amount.toLocaleString('id-ID')}
                         </span>
                       </td>
 
                       {/* Bukti & Cetak Voucher */}
-                      <td className="py-3.5 px-4 text-center">
+                      <td className="py-2.5 px-3 text-center">
                         <div className="flex items-center justify-center gap-1.5">
                           {item.proofReceiptUrl ? (
                             <a
@@ -556,7 +556,7 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
                               className="p-1 text-indigo-400 hover:text-indigo-300 bg-indigo-950/40 rounded border border-indigo-900"
                               title="Buka Bukti Nota / Kwitansi"
                             >
-                              <ExternalLink className="w-3.5 h-3.5" />
+                              <ExternalLink className="w-3 h-3" />
                             </a>
                           ) : (
                             <span className="text-slate-600 text-[10px]">-</span>
@@ -566,14 +566,14 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
                             className="p-1 text-amber-400 hover:text-amber-300 bg-amber-950/40 rounded border border-amber-900"
                             title="Cetak Voucher Kas Kecil"
                           >
-                            <Printer className="w-3.5 h-3.5" />
+                            <Printer className="w-3 h-3" />
                           </button>
                         </div>
                       </td>
 
                       {/* Status */}
-                      <td className="py-3.5 px-4 text-center">
-                        <span className="bg-emerald-950 text-emerald-300 text-[10px] px-2.5 py-1 rounded-full border border-emerald-800 font-semibold inline-flex items-center gap-1">
+                      <td className="py-2.5 px-3 text-center">
+                        <span className="bg-emerald-950 text-emerald-300 text-[10px] px-2 py-1 rounded-full border border-emerald-800 font-semibold inline-flex items-center gap-1">
                           <CheckCircle2 className="w-3 h-3" />
                           {item.status}
                         </span>
@@ -581,21 +581,21 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
 
                       {/* Aksi */}
                       {canEdit && (
-                        <td className="py-3.5 px-4 text-right">
+                        <td className="py-2.5 px-3 text-right">
                           <div className="flex items-center justify-end gap-1.5">
                             <button
                               onClick={() => handleOpenModal(item.type, item)}
                               className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition"
                               title="Edit Transaksi"
                             >
-                              <Edit2 className="w-3.5 h-3.5" />
+                              <Edit2 className="w-3 h-3" />
                             </button>
                             <button
                               onClick={() => handleDelete(item)}
                               className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition"
                               title="Hapus Transaksi"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 className="w-3 h-3" />
                             </button>
                           </div>
                         </td>
@@ -619,17 +619,17 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
 
       {/* Transaction Modal (Kas Masuk & Kas Keluar) */}
       {showTransactionModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3">
           <form
             onSubmit={handleSaveTransaction}
-            className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-lg p-6 space-y-4 shadow-2xl"
+            className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-lg p-4 space-y-2.5 shadow-2xl"
           >
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 {modalType === 'CASH_IN' ? (
-                  <ArrowDownLeft className="w-5 h-5 text-emerald-400" />
+                  <ArrowDownLeft className="w-4 h-4 text-emerald-400" />
                 ) : (
-                  <ArrowUpRight className="w-5 h-5 text-rose-400" />
+                  <ArrowUpRight className="w-4 h-4 text-rose-400" />
                 )}
                 <h3 className="font-bold text-white text-base">
                   {isEditing ? 'Edit' : 'Catat'} {modalType === 'CASH_IN' ? 'Kas Masuk (Dropping Kas)' : 'Pengeluaran Kas Kecil'}
@@ -640,29 +640,29 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
                 onClick={() => setShowTransactionModal(false)}
                 className="text-slate-400 hover:text-white"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {/* Tanggal */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Tanggal Transaksi</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-0.5">Tanggal Transaksi</label>
                 <DateInput
                   value={transactionDate}
                   onChange={(e) => setTransactionDate(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-amber-500"
                   required
                 />
               </div>
 
               {/* Nominal */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Nominal (Rp)</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-0.5">Nominal (Rp)</label>
                 <AmountInput
                   value={amount}
                   onChange={setAmount}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white font-mono font-bold focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white font-mono font-bold focus:outline-none focus:border-amber-500"
                   required
                 />
               </div>
@@ -670,7 +670,7 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
 
             {/* Kategori */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Kategori Transaksi</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-0.5">Kategori Transaksi</label>
               <select
                 value={categorySelection}
                 onChange={(e) => {
@@ -683,7 +683,7 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
                     if (modalType === 'CASH_IN') setCaseId('');
                   }
                 }}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-amber-500"
               >
                 {modalType === 'CASH_IN' ? (
                   <>
@@ -713,9 +713,9 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
             </div>
 
             {/* Sumber / Penerima */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-300 mb-0.5">
                   {modalType === 'CASH_IN' ? 'Sumber Dana' : 'Dibayarkan Kepada'}
                 </label>
                 <input
@@ -723,13 +723,13 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
                   value={recipientOrSource}
                   onChange={(e) => setRecipientOrSource(e.target.value)}
                   placeholder={modalType === 'CASH_IN' ? 'e.g. Bank Mandiri Ops / Kasir Pusat' : 'e.g. SPBU Pertamina / Rumah Makan / Toko ATK'}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-amber-500"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-300 mb-0.5">
                   {modalType === 'CASH_IN' ? 'Petugas Pengajuan' : 'PIC Petugas / Pengaju'}
                 </label>
                 <select
@@ -737,7 +737,7 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
                   onChange={(e) => modalType === 'CASH_IN'
                     ? setRequestedByUserId(e.target.value)
                     : setPersonnelId(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-amber-500"
                 >
                   <option value="">
                     {modalType === 'CASH_IN' ? '-- Pilih Pengguna --' : '-- Pilih PIC Petugas --'}
@@ -760,13 +760,13 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
             {/* Terkait Kasus (Opsional) */}
             {modalType === 'CASH_OUT' && (
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-300 mb-0.5">
                   Terkait Kasus / Debitur (Opsional)
                 </label>
                 <select
                   value={caseId}
                   onChange={(e) => setCaseId(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-amber-500"
                 >
                   <option value="">-- Umum (Tidak Terikat Kasus Spesifik) --</option>
                   {(store.cases || []).filter(c => c.status !== 'CLOSED').map((c) => (
@@ -780,20 +780,20 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
 
             {/* Keterangan */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Keterangan / Uraian Rinci</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-0.5">Keterangan / Uraian Rinci</label>
               <textarea
                 rows={2}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="e.g. Pembelian bensin 2 unit motor tim penarikan ke lokasi debitur & e-toll..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-amber-500"
                 required
               />
             </div>
 
             {/* Link Bukti Nota / Kwitansi */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-300 mb-0.5">
                 Link Bukti Struk / Nota / Google Drive (Opsional)
               </label>
               <input
@@ -801,21 +801,21 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
                 value={proofReceiptUrl}
                 onChange={(e) => setProofReceiptUrl(e.target.value)}
                 placeholder="https://drive.google.com/..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-amber-500"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => setShowTransactionModal(false)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700 transition"
+                className="px-3 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700 transition"
               >
                 Batal
               </button>
               <button
                 type="submit"
-                className={`px-4 py-2 text-white text-xs font-semibold rounded-lg shadow transition ${
+                className={`px-3 py-2 text-white text-xs font-semibold rounded-lg shadow transition ${
                   modalType === 'CASH_IN' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-rose-600 hover:bg-rose-500'
                 }`}
               >
@@ -828,11 +828,11 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
 
       {/* Kas Opname Modal */}
       {showOpnameModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-lg p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-lg p-4 space-y-2.5 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
               <div className="flex items-center gap-2">
-                <Layers className="w-5 h-5 text-amber-400" />
+                <Layers className="w-4 h-4 text-amber-400" />
                 <h3 className="font-bold text-white text-base">Berita Acara Kas Opname Fisik</h3>
               </div>
               <button
@@ -840,7 +840,7 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
                 onClick={() => setShowOpnameModal(false)}
                 className="text-slate-400 hover:text-white"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -848,9 +848,9 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
               Hitung fisik uang tunai di brankas kas kecil per lembar pecahan untuk mencocokkan dengan saldo sistem.
             </p>
 
-            <div className="space-y-2 bg-slate-950 p-4 rounded-lg border border-slate-800 font-mono text-xs">
+            <div className="space-y-1.5 bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono text-xs">
               {[100000, 50000, 20000, 10000, 5000, 2000, 1000].map((denom) => (
-                <div key={denom} className="flex items-center justify-between gap-3">
+                <div key={denom} className="flex items-center justify-between gap-2">
                   <span className="w-32 text-slate-300">Rp {denom.toLocaleString('id-ID')} :</span>
                   <div className="flex items-center gap-2">
                     <input
@@ -874,7 +874,7 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
               ))}
             </div>
 
-            <div className="bg-slate-800/60 p-4 rounded-lg space-y-2 text-xs">
+            <div className="bg-slate-800/60 p-3 rounded-lg space-y-1.5 text-xs">
               <div className="flex justify-between text-slate-300">
                 <span>Total Fisik Kas Opname:</span>
                 <span className="font-bold text-white font-mono">Rp {totalPhysicalOpname.toLocaleString('id-ID')}</span>
@@ -883,7 +883,7 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
                 <span>Saldo Tercatat di Sistem:</span>
                 <span className="font-bold text-slate-400 font-mono">Rp {currentBalance.toLocaleString('id-ID')}</span>
               </div>
-              <div className="flex justify-between border-t border-slate-700 pt-2 font-bold">
+              <div className="flex justify-between border-t border-slate-700 pt-1.5 font-bold">
                 <span>Selisih (Fisik - Sistem):</span>
                 <span className={`font-mono ${opnameDifference === 0 ? 'text-emerald-400' : opnameDifference > 0 ? 'text-blue-400' : 'text-rose-400'}`}>
                   {opnameDifference === 0 ? '0 (PAS / BALANCE)' : `Rp ${opnameDifference.toLocaleString('id-ID')}`}
@@ -892,21 +892,21 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Catatan Berita Acara Kas Opname</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-0.5">Catatan Berita Acara Kas Opname</label>
               <textarea
                 rows={2}
                 value={opnameNotes}
                 onChange={(e) => setOpnameNotes(e.target.value)}
                 placeholder="e.g. Kas opname fisik selesai dilakukan oleh kasir & disaksikan supervisor operasional..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => setShowOpnameModal(false)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
+                className="px-3 py-2 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700"
               >
                 Tutup
               </button>
@@ -915,9 +915,9 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
                 onClick={() => {
                   window.print();
                 }}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5"
+                className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5"
               >
-                <Printer className="w-4 h-4" />
+                <Printer className="w-3.5 h-3.5" />
                 <span>Cetak Berita Acara</span>
               </button>
             </div>
@@ -927,9 +927,9 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
 
       {/* Voucher Slip Modal */}
       {selectedForVoucher && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white text-slate-900 rounded-xl w-full max-w-lg p-6 space-y-4 shadow-2xl font-sans">
-            <div className="border-b-2 border-slate-900 pb-3 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3">
+          <div className="bg-white text-slate-900 rounded-xl w-full max-w-lg p-4 space-y-2.5 shadow-2xl font-sans">
+            <div className="border-b-2 border-slate-900 pb-2 flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-black tracking-tight text-slate-900 uppercase">
                   {selectedForVoucher.type === 'CASH_IN' ? 'KAS MASUK (DROPPING)' : 'PETTY CASH VOUCHER'}
@@ -944,7 +944,7 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
               </div>
             </div>
 
-            <div className="space-y-3 text-xs">
+            <div className="space-y-2 text-xs">
               <div className="grid grid-cols-3 gap-2">
                 <span className="text-slate-500 font-semibold">
                   {selectedForVoucher.type === 'CASH_IN' ? 'Diterima Dari:' : 'Dibayarkan Kepada:'}
@@ -966,7 +966,7 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
 
               <div className="grid grid-cols-3 gap-2">
                 <span className="text-slate-500 font-semibold">Untuk Keperluan:</span>
-                <span className="col-span-2 text-slate-800 leading-relaxed">{selectedForVoucher.description}</span>
+                <span className="col-span-2 text-slate-800 leading-normal">{selectedForVoucher.description}</span>
               </div>
 
               {selectedForVoucher.caseNo && (
@@ -978,41 +978,41 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
             </div>
 
             {/* Signature Area */}
-            <div className="grid grid-cols-3 gap-4 pt-6 border-t border-slate-300 text-center text-[10px]">
+            <div className="grid grid-cols-3 gap-2.5 pt-6 border-t border-slate-300 text-center text-[10px]">
               <div>
-                <div className="text-slate-500 mb-10">Dibuat Oleh (PIC/Kasir)</div>
+                <div className="text-slate-500 mb-8">Dibuat Oleh (PIC/Kasir)</div>
                 <div className="font-bold border-t border-slate-400 pt-1 text-slate-800">
                   {selectedForVoucher.createdByName || currentUser.name}
                 </div>
               </div>
               <div>
-                <div className="text-slate-500 mb-10">Penerima Uang</div>
+                <div className="text-slate-500 mb-8">Penerima Uang</div>
                 <div className="font-bold border-t border-slate-400 pt-1 text-slate-800">
                   {selectedForVoucher.recipientOrSource}
                 </div>
               </div>
               <div>
-                <div className="text-slate-500 mb-10">Menyetujui (Manager)</div>
+                <div className="text-slate-500 mb-8">Menyetujui (Manager)</div>
                 <div className="font-bold border-t border-slate-400 pt-1 text-slate-800">
                   {selectedForVoucher.approvedBy || 'Direktur Ops'}
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
               <button
                 type="button"
                 onClick={() => setSelectedForVoucher(null)}
-                className="px-4 py-2 bg-slate-200 text-slate-700 text-xs rounded hover:bg-slate-300"
+                className="px-3 py-2 bg-slate-200 text-slate-700 text-xs rounded hover:bg-slate-300"
               >
                 Tutup
               </button>
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="px-4 py-2 bg-slate-900 text-white text-xs font-semibold rounded hover:bg-slate-800 flex items-center gap-1.5"
+                className="px-3 py-2 bg-slate-900 text-white text-xs font-semibold rounded hover:bg-slate-800 flex items-center gap-1.5"
               >
-                <Printer className="w-3.5 h-3.5" />
+                <Printer className="w-3 h-3" />
                 <span>Cetak Voucher</span>
               </button>
             </div>

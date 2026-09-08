@@ -482,12 +482,12 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-xl">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <FileText className="w-5 h-5 text-indigo-400" />
+          <div className="flex items-center gap-2 mb-0.5">
+            <FileText className="w-4 h-4 text-indigo-400" />
             <h2 className="text-xl font-bold text-white">
               Surat Kuasa & Surat Tugas Penagihan
             </h2>
@@ -498,7 +498,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
           <p className="text-xs text-slate-400">
             Penerbitan surat tugas resmi, pengelolaan parameter penagihan, serta tautan arsip digital Google Drive
           </p>
-          <p className="mt-1 text-[10px] text-slate-500 flex flex-wrap items-center gap-1.5">
+          <p className="mt-0.5 text-[10px] text-slate-500 flex flex-wrap items-center gap-1.5">
             <span>Generator:</span>
             <a href={GENERATOR_REPO_URL} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">repo generate-surat-tugas</a>
             <span>·</span>
@@ -510,21 +510,21 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
         {canEdit && (
           <button
             onClick={handleOpenCreateModal}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-xs font-semibold rounded-xl transition shadow-lg shadow-indigo-600/20 active:scale-95"
+            className="inline-flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-xs font-semibold rounded-xl transition shadow-lg shadow-indigo-600/20 active:scale-95"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             <span>Buat Surat Tugas Baru</span>
           </button>
         )}
       </div>
 
       {/* Filter Tabs & Search Bar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
         {/* Client Type Filter Tabs */}
         <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 self-start">
           <button
             onClick={() => setClientTypeFilter('ALL')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
+            className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition ${
               clientTypeFilter === 'ALL'
                 ? 'bg-indigo-600 text-white shadow'
                 : 'text-slate-400 hover:text-slate-200'
@@ -535,32 +535,32 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
 
           <button
             onClick={() => setClientTypeFilter('MULTIFINANCE')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition ${
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition ${
               clientTypeFilter === 'MULTIFINANCE'
                 ? 'bg-indigo-600 text-white shadow'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Building2 className="w-3.5 h-3.5" />
+            <Building2 className="w-3 h-3" />
             <span>Multifinance ({multifinanceSKCount})</span>
           </button>
 
           <button
             onClick={() => setClientTypeFilter('PERORANGAN')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition ${
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition ${
               clientTypeFilter === 'PERORANGAN'
                 ? 'bg-amber-600 text-white shadow'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <UserIcon className="w-3.5 h-3.5 text-amber-400" />
+            <UserIcon className="w-3 h-3 text-amber-400" />
             <span className="text-amber-200 font-semibold">Perorangan ({peroranganSKCount})</span>
           </button>
         </div>
 
         {/* Search Bar */}
         <div className="relative min-w-[260px]">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search className="w-3 h-3 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
             type="text"
             placeholder="Cari nomor surat, debitur, kreditur, gdrive..."
@@ -573,7 +573,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
 
       {/* List of Issued SK */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
-        <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950/40">
+        <div className="p-3 border-b border-slate-800 flex justify-between items-center bg-slate-950/40">
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-bold text-white">Daftar Surat Tugas / Kuasa Diterbitkan</h3>
             <span className="bg-slate-800 text-slate-300 text-[10px] px-2 py-0.5 rounded font-mono">
@@ -581,7 +581,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
             </span>
           </div>
           <span className="text-xs text-slate-400 flex items-center gap-1.5">
-            <HardDrive className="w-3.5 h-3.5 text-indigo-400" />
+            <HardDrive className="w-3 h-3 text-indigo-400" />
             <span>Tersinkronisasi Link Google Drive</span>
           </span>
         </div>
@@ -590,20 +590,20 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-950 text-slate-400 font-semibold border-b border-slate-800">
               <tr>
-                <th className="p-3.5">Nomor Surat</th>
-                <th className="p-3.5">Klien / Pemberi Tugas</th>
-                <th className="p-3.5">Kasus / Debitur</th>
-                <th className="p-3.5">Penerima Tugas</th>
-                <th className="p-3.5">Tgl Terbit & Masa Berlaku</th>
-                <th className="p-3.5">Link Google Drive</th>
-                <th className="p-3.5">Status</th>
-                <th className="p-3.5 text-right">Aksi</th>
+                <th className="p-3">Nomor Surat</th>
+                <th className="p-3">Klien / Pemberi Tugas</th>
+                <th className="p-3">Kasus / Debitur</th>
+                <th className="p-3">Penerima Tugas</th>
+                <th className="p-3">Tgl Terbit & Masa Berlaku</th>
+                <th className="p-3">Link Google Drive</th>
+                <th className="p-3">Status</th>
+                <th className="p-3 text-right">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
               {filteredSKs.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-10 text-slate-500 italic">
+                  <td colSpan={8} className="text-center py-8 text-slate-500 italic">
                     Belum ada data Surat Tugas / Kuasa sesuai filter.
                   </td>
                 </tr>
@@ -617,14 +617,14 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                   return (
                     <tr key={sk.id} className="hover:bg-slate-800/40 transition">
                       {/* Nomor Surat */}
-                      <td className="p-3.5 font-mono font-medium text-white">
+                      <td className="p-3 font-mono font-medium text-white">
                         <div className="font-bold text-indigo-300">{sk.skNumber}</div>
                         <div className="text-[10px] text-slate-500 font-mono">Ref: {sk.caseNo}</div>
                       </td>
 
                       {/* Klien / Pemberi Tugas */}
-                      <td className="p-3.5">
-                        <div className="flex items-center gap-1.5 mb-1">
+                      <td className="p-3">
+                        <div className="flex items-center gap-1.5 mb-0.5">
                           {isPer ? (
                             <span className="bg-amber-950 text-amber-300 text-[9px] px-1.5 py-0.5 rounded border border-amber-800 font-bold inline-flex items-center gap-1">
                               <UserIcon className="w-2.5 h-2.5" />
@@ -643,7 +643,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                       </td>
 
                       {/* Debitur & Pokok */}
-                      <td className="p-3.5">
+                      <td className="p-3">
                         <div className="font-semibold text-slate-100">
                           {parentCase?.status === 'CLOSED' ? (
                             <span className="text-slate-400 italic inline-flex items-center gap-1 font-normal text-xs">
@@ -661,31 +661,31 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                       </td>
 
                       {/* Penerima Tugas */}
-                      <td className="p-3.5 font-medium text-slate-200">
+                      <td className="p-3 font-medium text-slate-200">
                         <div className="flex items-center gap-1.5">
-                          <UserCheck className="w-3.5 h-3.5 text-indigo-400" />
+                          <UserCheck className="w-3 h-3 text-indigo-400" />
                           <span>{sk.personnelName}</span>
                         </div>
                       </td>
 
                       {/* Tanggal */}
-                      <td className="p-3.5 text-slate-400">
+                      <td className="p-3 text-slate-400">
                         <div>Terbit: <span className="text-slate-200 font-mono">{sk.issuedDate}</span></div>
                         <div className="text-[10px] text-slate-500">Exp: <span className="font-mono">{sk.expiryDate}</span></div>
                       </td>
 
                       {/* Link Google Drive */}
-                      <td className="p-3.5">
+                      <td className="p-3">
                         {hasDriveUrl ? (
                           <div className="flex items-center gap-1.5">
                             <a
                               href={sk.driveDocumentUrl}
                               target="_blank"
                               rel="noreferrer"
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-200 border border-indigo-700/80 rounded-lg text-[11px] font-semibold transition group shadow-sm"
+                              className="inline-flex items-center gap-1.5 px-2 py-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-200 border border-indigo-700/80 rounded-lg text-[11px] font-semibold transition group shadow-sm"
                               title="Buka Dokumen di Google Drive"
                             >
-                              <ExternalLink className="w-3.5 h-3.5 text-indigo-400 group-hover:scale-110 transition-transform" />
+                              <ExternalLink className="w-3 h-3 text-indigo-400 group-hover:scale-110 transition-transform" />
                               <span>Buka GDrive</span>
                             </a>
                             <button
@@ -698,9 +698,9 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                               title="Salin Link Google Drive"
                             >
                               {copiedUrl === sk.id ? (
-                                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                <Check className="w-3 h-3 text-emerald-400" />
                               ) : (
-                                <Copy className="w-3.5 h-3.5" />
+                                <Copy className="w-3 h-3" />
                               )}
                             </button>
                           </div>
@@ -723,7 +723,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                       </td>
 
                       {/* Status */}
-                      <td className="p-3.5">
+                      <td className="p-3">
                         <span
                           className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
                             sk.status === 'ACTIVE' || sk.status === 'APPROVED'
@@ -742,7 +742,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                       </td>
 
                       {/* Aksi */}
-                      <td className="p-3.5 text-right">
+                      <td className="p-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => {
@@ -755,19 +755,19 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                               });
                               setShowPreviewModal(true);
                             }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-200 rounded border border-indigo-800 text-[11px] font-semibold transition shadow-sm"
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-200 rounded border border-indigo-800 text-[11px] font-semibold transition shadow-sm"
                             title="Pratinjau Format Surat Resmi / Cetak"
                           >
-                            <Eye className="w-3.5 h-3.5 text-indigo-400" />
+                            <Eye className="w-3 h-3 text-indigo-400" />
                             <span>Preview</span>
                           </button>
 
                           <button
                             onClick={() => handleGenerateFromRow(sk)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-950 hover:bg-emerald-900 text-emerald-200 rounded border border-emerald-800 text-[11px] font-semibold transition shadow-sm"
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-950 hover:bg-emerald-900 text-emerald-200 rounded border border-emerald-800 text-[11px] font-semibold transition shadow-sm"
                             title="Buka Generator (sumber repo generate-surat-tugas) berisi data SK ini"
                           >
-                            <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                            <FileText className="w-3 h-3 text-emerald-400" />
                             <span>Generate Surat</span>
                           </button>
 
@@ -775,10 +775,10 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                             <>
                               <button
                                 onClick={() => handleOpenForExistingSK(sk)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 text-[11px] font-medium transition"
+                                className="inline-flex items-center gap-1 px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 text-[11px] font-medium transition"
                                 title="Edit Form Surat"
                               >
-                                <Edit2 className="w-3.5 h-3.5 text-indigo-400" />
+                                <Edit2 className="w-3 h-3 text-indigo-400" />
                                 <span>Edit</span>
                               </button>
                               <button
@@ -786,7 +786,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                                 className="p-1.5 hover:bg-red-950/40 rounded text-slate-400 hover:text-red-400 transition"
                                 title="Hapus Dokumen"
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <Trash2 className="w-3 h-3" />
                               </button>
                             </>
                           )}
@@ -819,14 +819,14 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
 
       {/* CLEAN FORM MODAL (SURAT TUGAS / KUASA GENERATOR & EDITOR) */}
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-3 overflow-y-auto">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl my-auto flex flex-col max-h-[85vh]">
             
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/50">
-              <div className="flex items-center gap-3">
+            <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between bg-slate-950/50">
+              <div className="flex items-center gap-2">
                 <div className="p-2 bg-indigo-600/10 border border-indigo-500/20 rounded-xl text-indigo-400">
-                  <FileText className="w-5 h-5" />
+                  <FileText className="w-4 h-4" />
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-white">
@@ -842,19 +842,19 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                 <button
                   type="button"
                   onClick={openWebGenerator}
-                  className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white flex items-center gap-2"
+                  className="px-2.5 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white flex items-center gap-2"
                   title="Buka generator-surat-new.vercel.app dengan data dari form ini (sumber repo generate-surat-tugas)"
                 >
-                  <ExternalLink className="w-4 h-4" />
+                  <ExternalLink className="w-3.5 h-3.5" />
                   Buat di Generator
                 </button>
                 <button
                   type="button"
                   onClick={handleOpenGeneratorFromDraft}
-                  className="px-3 py-1 text-xs bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200 flex items-center gap-2"
+                  className="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200 flex items-center gap-2"
                   title="Buka Generator lokal (kode sumber repo generate-surat-tugas) terisi dari form"
                 >
-                  <FileText className="w-4 h-4 text-indigo-400" />
+                  <FileText className="w-3.5 h-3.5 text-indigo-400" />
                   Buat Surat
                 </button>
 
@@ -863,25 +863,25 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                   onClick={() => setShowModal(false)}
                   className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
             {/* Form Body */}
-            <form onSubmit={handleCreateSK} className="flex-1 overflow-y-auto p-6 space-y-6">
+            <form onSubmit={handleCreateSK} className="flex-1 overflow-y-auto p-4 space-y-4">
               
               {/* 1. SELEKSI KASUS & DEBITUR */}
-              <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 space-y-3">
-                <div className="flex items-center gap-2 border-b border-slate-800/80 pb-2">
-                  <ShieldCheck className="w-4 h-4 text-indigo-400" />
+              <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 space-y-2">
+                <div className="flex items-center gap-2 border-b border-slate-800/80 pb-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
                   <h4 className="text-xs font-bold text-white uppercase tracking-wider">
                     1. Berkas Kasus & Debitur
                   </h4>
                 </div>
 
                 <div className="relative z-[60]">
-                  <label className="block text-slate-300 mb-1 text-xs font-semibold">
+                  <label className="block text-slate-300 mb-0.5 text-xs font-semibold">
                     Pilih Berkas Kasus Aktif <span className="text-red-400">*</span>
                   </label>
                   <SearchableSelect
@@ -902,7 +902,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
 
                 {/* Info Card Selected Case */}
                 {selectedCase && (
-                  <div className={`p-3 rounded-xl border text-xs flex flex-wrap items-center justify-between gap-3 ${
+                  <div className={`p-2.5 rounded-xl border text-xs flex flex-wrap items-center justify-between gap-2 ${
                     isPerorangan ? 'bg-amber-950/20 border-amber-800/40 text-amber-200' : 'bg-indigo-950/20 border-indigo-800/40 text-indigo-200'
                   }`}>
                     <div>
@@ -924,10 +924,10 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
               </div>
 
               {/* 2. PEMBERI TUGAS / KUASA */}
-              <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+              <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 space-y-2.5">
+                <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
                   <div className="flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-indigo-400" />
+                    <Building2 className="w-3.5 h-3.5 text-indigo-400" />
                     <h4 className="text-xs font-bold text-white uppercase tracking-wider">
                       2. Identitas Pemberi Tugas / Kuasa
                     </h4>
@@ -938,9 +938,9 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                 </div>
 
                 {isPerorangan ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
                     <div>
-                      <label className="block text-slate-400 mb-1 text-[11px] font-semibold">Nama Lengkap Kreditur</label>
+                      <label className="block text-slate-400 mb-0.5 text-[11px] font-semibold">Nama Lengkap Kreditur</label>
                       <input
                         type="text"
                         value={krediturName}
@@ -950,7 +950,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-400 mb-1 text-[11px] font-semibold">NIK / No. KTP Kreditur</label>
+                      <label className="block text-slate-400 mb-0.5 text-[11px] font-semibold">NIK / No. KTP Kreditur</label>
                       <input
                         type="text"
                         value={krediturNik}
@@ -960,7 +960,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-400 mb-1 text-[11px] font-semibold">Pekerjaan</label>
+                      <label className="block text-slate-400 mb-0.5 text-[11px] font-semibold">Pekerjaan</label>
                       <input
                         type="text"
                         value={krediturJob}
@@ -971,9 +971,9 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                     <AddressFields value={krediturAddress} onChange={setKrediturAddress} label="Alamat Domisili Kreditur" compact />
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
                     <div>
-                      <label className="block text-slate-400 mb-1 text-[11px] font-semibold">Nama Perwakilan Manajemen</label>
+                      <label className="block text-slate-400 mb-0.5 text-[11px] font-semibold">Nama Perwakilan Manajemen</label>
                       <input
                         type="text"
                         value={repName}
@@ -982,7 +982,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-400 mb-1 text-[11px] font-semibold">Jabatan Perwakilan</label>
+                      <label className="block text-slate-400 mb-0.5 text-[11px] font-semibold">Jabatan Perwakilan</label>
                       <input
                         type="text"
                         value={repTitle}
@@ -991,7 +991,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-400 mb-1 text-[11px] font-semibold">Kota Domisili Penerbitan</label>
+                      <label className="block text-slate-400 mb-0.5 text-[11px] font-semibold">Kota Domisili Penerbitan</label>
                       <input
                         type="text"
                         value={city}
@@ -1004,21 +1004,21 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
               </div>
 
               {/* 3. PENERIMA TUGAS / KUASA */}
-              <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 space-y-3">
-                <div className="flex items-center gap-2 border-b border-slate-800/80 pb-2">
-                  <UserCheck className="w-4 h-4 text-indigo-400" />
+              <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 space-y-2">
+                <div className="flex items-center gap-2 border-b border-slate-800/80 pb-1.5">
+                  <UserCheck className="w-3.5 h-3.5 text-indigo-400" />
                   <h4 className="text-xs font-bold text-white uppercase tracking-wider">
                     3. Petugas Penerima Tugas (Kuasa Lapangan)
                   </h4>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
                   <div>
-                    <label className="block text-slate-300 mb-1 font-semibold">Pilih Petugas / Personel <span className="text-red-400">*</span></label>
+                    <label className="block text-slate-300 mb-0.5 font-semibold">Pilih Petugas / Personel <span className="text-red-400">*</span></label>
                     <select
                       value={personnelId}
                       onChange={(e) => setPartnerId(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-indigo-500"
                     >
                       {(store.personnel || []).map((pr) => (
                         <option key={pr.id} value={pr.id}>
@@ -1029,7 +1029,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                   </div>
 
                   {selectedPersonnel && (
-                    <div className="bg-slate-900 border border-slate-800 p-2.5 rounded-lg flex items-center justify-between">
+                    <div className="bg-slate-900 border border-slate-800 p-2 rounded-lg flex items-center justify-between">
                       <div>
                         <div className="text-[10px] text-slate-400">NIK Petugas:</div>
                         <div className="font-mono text-white font-semibold">{selectedPersonnel.nikKtp || '3302101234560001'}</div>
@@ -1044,17 +1044,17 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
               </div>
 
               {/* 4. DETAIL KONTRAK & OBJEK PENAGIHAN */}
-              <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 space-y-4">
-                <div className="flex items-center gap-2 border-b border-slate-800/80 pb-2">
-                  <Car className="w-4 h-4 text-indigo-400" />
+              <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 space-y-2.5">
+                <div className="flex items-center gap-2 border-b border-slate-800/80 pb-1.5">
+                  <Car className="w-3.5 h-3.5 text-indigo-400" />
                   <h4 className="text-xs font-bold text-white uppercase tracking-wider">
                     4. Data Kontrak, Tagihan & Objek Kendaraan
                   </h4>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs">
                   <div>
-                    <label className="block text-slate-400 mb-1 text-[11px] font-semibold">No. Kontrak / SPH</label>
+                    <label className="block text-slate-400 mb-0.5 text-[11px] font-semibold">No. Kontrak / SPH</label>
                     <input
                       type="text"
                       value={skContractNo}
@@ -1064,7 +1064,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                   </div>
 
                   <div>
-                    <label className="block text-slate-400 mb-1 text-[11px] font-semibold">Nama Debitur</label>
+                    <label className="block text-slate-400 mb-0.5 text-[11px] font-semibold">Nama Debitur</label>
                     <input
                       type="text"
                       value={skDebtorName}
@@ -1074,7 +1074,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                   </div>
 
                   <div>
-                    <label className="block text-slate-400 mb-1 text-[11px] font-semibold">Nomor Telepon Debitur</label>
+                    <label className="block text-slate-400 mb-0.5 text-[11px] font-semibold">Nomor Telepon Debitur</label>
                     <input
                       type="text"
                       value={skPhone}
@@ -1085,7 +1085,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-slate-400 mb-1 text-[11px] font-semibold">Alamat Lengkap Debitur</label>
+                    <label className="block text-slate-400 mb-0.5 text-[11px] font-semibold">Alamat Lengkap Debitur</label>
                     <input
                       type="text"
                       value={skDebtorAddress}
@@ -1095,7 +1095,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                   </div>
 
                   <div>
-                    <label className="block text-slate-400 mb-1 text-[11px] font-semibold">Tgl Jatuh Tempo</label>
+                    <label className="block text-slate-400 mb-0.5 text-[11px] font-semibold">Tgl Jatuh Tempo</label>
                     <input
                       type="text"
                       value={skDueDate}
@@ -1106,7 +1106,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                   </div>
 
                   <div>
-                    <label className="block text-slate-400 mb-1 text-[11px] font-semibold">Nominal Angsuran (Rp)</label>
+                    <label className="block text-slate-400 mb-0.5 text-[11px] font-semibold">Nominal Angsuran (Rp)</label>
                     <input
                       type="text"
                       value={skInstallment}
@@ -1117,7 +1117,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                   </div>
 
                   <div>
-                    <label className="block text-slate-400 mb-1 text-[11px] font-semibold">Denda Keterlambatan (Rp)</label>
+                    <label className="block text-slate-400 mb-0.5 text-[11px] font-semibold">Denda Keterlambatan (Rp)</label>
                     <input
                       type="text"
                       value={skPenalty}
@@ -1128,7 +1128,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                   </div>
 
                   <div>
-                    <label className="block text-slate-400 mb-1 text-[11px] font-semibold">Nominal Piutang Pokok (Rp)</label>
+                    <label className="block text-slate-400 mb-0.5 text-[11px] font-semibold">Nominal Piutang Pokok (Rp)</label>
                     <input
                       type="number"
                       value={customNominal}
@@ -1138,7 +1138,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                   </div>
 
                   <div>
-                    <label className="block text-slate-400 mb-1 text-[11px] font-semibold">Merk / Tipe Kendaraan</label>
+                    <label className="block text-slate-400 mb-0.5 text-[11px] font-semibold">Merk / Tipe Kendaraan</label>
                     <input
                       type="text"
                       value={skVehicleMerk}
@@ -1149,7 +1149,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                   </div>
 
                   <div>
-                    <label className="block text-slate-400 mb-1 text-[11px] font-semibold">Nomor Polisi (Plat)</label>
+                    <label className="block text-slate-400 mb-0.5 text-[11px] font-semibold">Nomor Polisi (Plat)</label>
                     <input
                       type="text"
                       value={skVehiclePoliceNo}
@@ -1160,7 +1160,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-slate-400 mb-1 text-[11px] font-semibold">Dasar Tagihan / Sertifikat Fidusia</label>
+                    <label className="block text-slate-400 mb-0.5 text-[11px] font-semibold">Dasar Tagihan / Sertifikat Fidusia</label>
                     <input
                       type="text"
                       value={dasarPenagihan}
@@ -1189,10 +1189,10 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
               />
 
               {/* 6. LAMPIRAN DOKUMEN / FOTO */}
-              <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+              <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 space-y-2">
+                <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
                   <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-indigo-400" />
+                    <FileText className="w-3.5 h-3.5 text-indigo-400" />
                     <h4 className="text-xs font-bold text-white uppercase tracking-wider">
                       6. Lampiran Gambar (KTP, STNK, dll)
                     </h4>
@@ -1215,12 +1215,12 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                         className="absolute inset-0 bg-black/60 text-white flex justify-center items-center opacity-0 group-hover:opacity-100 transition-opacity"
                         title="Hapus gambar"
                       >
-                        <Trash2 className="w-4 h-4 text-red-400" />
+                        <Trash2 className="w-3.5 h-3.5 text-red-400" />
                       </button>
                     </div>
                   ))}
                   <label className="w-16 h-16 rounded-lg border border-dashed border-slate-600 hover:border-indigo-400 flex flex-col items-center justify-center text-slate-500 hover:text-white cursor-pointer transition bg-slate-900/60">
-                    <Plus className="w-5 h-5 mb-0.5" />
+                    <Plus className="w-4 h-4 mb-0.5" />
                     <span className="text-[9px]">Upload</span>
                     <input type="file" multiple accept="image/*" className="hidden" onChange={handleAddAttachment} />
                   </label>
@@ -1282,10 +1282,10 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                 <button
                   type="button"
                   onClick={() => setShowClauseDetails(!showClauseDetails)}
-                  className="w-full p-3.5 bg-slate-950/60 flex items-center justify-between text-left text-xs text-slate-300 hover:bg-slate-950 transition"
+                  className="w-full p-3 bg-slate-950/60 flex items-center justify-between text-left text-xs text-slate-300 hover:bg-slate-950 transition"
                 >
                   <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-indigo-400" />
+                    <FileText className="w-3.5 h-3.5 text-indigo-400" />
                     <span className="font-semibold">Lihat / Edit Klausul Hukum Teks Lengkap</span>
                   </div>
                   <span className="text-slate-500 text-xs">
@@ -1294,7 +1294,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                 </button>
 
                 {showClauseDetails && (
-                  <div className="p-4 bg-slate-950 border-t border-slate-800 space-y-2">
+                  <div className="p-3 bg-slate-950 border-t border-slate-800 space-y-1.5">
                     <p className="text-[11px] text-slate-400">
                       Draft naskah surat tugas yang ter-generate otomatis berdasarkan isian form:
                     </p>
@@ -1302,14 +1302,14 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                       rows={10}
                       value={draftContent}
                       onChange={(e) => setDraftContent(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3.5 font-mono text-xs text-slate-200 leading-relaxed focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 font-mono text-xs text-slate-200 leading-normal focus:outline-none focus:border-indigo-500"
                     />
                   </div>
                 )}
               </div>
 
               {/* Form Action Buttons */}
-              <div className="pt-4 border-t border-slate-800 flex items-center justify-between gap-3 sticky bottom-0 bg-slate-900 py-3">
+              <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2 sticky bottom-0 bg-slate-900 py-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -1344,9 +1344,9 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                     });
                     setShowPreviewModal(true);
                   }}
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-700/60 font-semibold text-xs rounded-xl transition"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-700/60 font-semibold text-xs rounded-xl transition"
                 >
-                  <Eye className="w-4 h-4 text-indigo-400" />
+                  <Eye className="w-3.5 h-3.5 text-indigo-400" />
                   <span>Pratinjau Format Cetak</span>
                 </button>
 
@@ -1354,7 +1354,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl transition"
+                    className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl transition"
                   >
                     Batal / Tutup
                   </button>
@@ -1362,18 +1362,18 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                   <button
                     type="button"
                     onClick={openWebGenerator}
-                    className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition flex items-center gap-2"
+                    className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition flex items-center gap-2"
                     title="Buka generator-surat-new.vercel.app dengan payload dari Form Pembuatan Surat Tugas / Kuasa"
                   >
-                    <ExternalLink className="w-4 h-4" />
+                    <ExternalLink className="w-3.5 h-3.5" />
                     Buat di Generator (Web)
                   </button>
 
                   <button
                     type="submit"
-                    className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-indigo-600/20 active:scale-95 flex items-center gap-2"
+                    className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-indigo-600/20 active:scale-95 flex items-center gap-2"
                   >
-                    <CheckCircle2 className="w-4 h-4" />
+                    <CheckCircle2 className="w-3.5 h-3.5" />
                     <span>{isEditing ? 'Simpan Perubahan Surat' : 'Simpan & Terbitkan Surat Tugas'}</span>
                   </button>
                 </div>
@@ -1409,7 +1409,7 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
 
       {/* STATUS PAYLOAD GENERATOR */}
       {generatorStatus && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[70] px-4 py-2 rounded-xl bg-slate-900 border border-indigo-700 text-indigo-200 text-[11px] font-semibold shadow-2xl">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[70] px-3 py-2 rounded-xl bg-slate-900 border border-indigo-700 text-indigo-200 text-[11px] font-semibold shadow-2xl">
           {generatorStatus}
         </div>
       )}

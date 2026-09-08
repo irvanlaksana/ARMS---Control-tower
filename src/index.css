@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+/* Simpler / lighter outline icons across the app (Lucide default stroke is 2px). */
+svg.lucide {
+  stroke-width: 1.6;
+}
+
+/* Keep small operational text compact without making it unreadable. */
+main .text-xs,
+main .text-sm {
+  line-height: 1.3;
+}
+
 /* Consistent compact styling for native selects still used by simple forms. */
 select {
   appearance: none;
@@ -55,6 +66,11 @@ select option {
     font-size: 11pt !important;
     margin: 0 !important;
     padding: 0 !important;
+  }
+
+  main .text-xs,
+  main .text-sm {
+    line-height: normal !important;
   }
 
   /* Hide UI elements during print */
