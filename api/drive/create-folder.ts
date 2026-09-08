@@ -41,6 +41,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const created = await drive.files.create({
+      supportsAllDrives: true,
       requestBody: fileMetadata,
       fields: 'id, webViewLink, name',
     });
@@ -50,6 +51,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     try {
       await drive.permissions.create({
+        supportsAllDrives: true,
         fileId: folderId,
         requestBody: {
           role: 'reader',

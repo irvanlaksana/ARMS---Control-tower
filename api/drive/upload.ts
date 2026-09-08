@@ -60,6 +60,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
 
     const created = await drive.files.create({
+      supportsAllDrives: true,
       requestBody: fileMetadata,
       media,
       fields: 'id, name, webViewLink, webContentLink',
@@ -72,6 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Set permission agar file bisa dilihat lewat link (jika diizinkan oleh domain/workspace)
     try {
       await drive.permissions.create({
+        supportsAllDrives: true,
         fileId,
         requestBody: {
           role: 'reader',
@@ -92,9 +94,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (err: any) {
     console.error('Google Drive Upload Error:', err);
-    return res.status(500).json({
+    const rawError = String(err?.message || err);
+    let userFriendlyError = rawError;
+
+    if (rawError.includes('Service Accounts do not have storage quota')) {
+      userFriendlyError = 'Google Drive Service Account memerlukan Google Workspace Shared Drive (Drive Bersama) untuk unggah berkas fisik. Foto tetap tersimpan di database lokal/cloud.';
+    }
+
+    // Kembalikan HTTP 200 dengan flag success: false agar Vercel / serverless runtime
+    // tidak menghasilkan halaman HTML error 500.
+    return res.status(200).json({
       success: false,
-      error: err?.message || 'Gagal mengunggah berkas ke Google Drive',
+      configured: true,
+      quotaLimited: rawError.includes('Service Accounts do not have storage quota'),
+      error: userFriendlyError,
     });
   }
 }

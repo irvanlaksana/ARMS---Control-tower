@@ -46,6 +46,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const query = `name = '${name.replace(/'/g, "\\'")}' and '${currentParentId}' in parents and trashed = false and mimeType = 'application/vnd.google-apps.folder'`;
         try {
           const list = await drive.files.list({
+            supportsAllDrives: true,
+            includeItemsFromAllDrives: true,
             q: query,
             fields: 'files(id, name)',
             pageSize: 1,
@@ -64,6 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         };
         if (currentParentId) fileMetadata.parents = [currentParentId];
         const createdFile = await drive.files.create({
+          supportsAllDrives: true,
           requestBody: fileMetadata,
           fields: 'id, webViewLink, name',
         });
@@ -76,6 +79,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         try {
           await drive.permissions.create({
+            supportsAllDrives: true,
             fileId: folderId,
             requestBody: { role: 'reader', type: 'anyone' },
           });

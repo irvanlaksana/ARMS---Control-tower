@@ -293,16 +293,30 @@ export async function uploadBase64ToDrive(
       }),
     });
 
-    const rawText = await resp.text();
+    let rawText = '';
+    try {
+      rawText = await resp.text();
+    } catch {
+      rawText = '';
+    }
+
     let json: any = {};
     try {
       json = rawText ? JSON.parse(rawText) : {};
     } catch {
+      let cleanMsg = `Server unggahan merespons HTTP ${resp.status}.`;
+      if (resp.status === 413) {
+        cleanMsg = 'Ukuran berkas melebihi batas unggah server (maks 4.5MB).';
+      } else if (resp.status === 504 || resp.status === 408) {
+        cleanMsg = 'Waktu unggah habis (Request Timeout).';
+      } else if (resp.status === 500) {
+        cleanMsg = 'Google Drive belum siap atau akun layanan memerlukan Shared Drive.';
+      }
       return {
         success: false,
         fallbackBase64: true,
         webViewLink: base64,
-        error: `Server unggahan tidak merespons JSON (HTTP ${resp.status}).`,
+        error: cleanMsg,
       };
     }
     if (json.success && (json.webViewLink || json.fileId)) {

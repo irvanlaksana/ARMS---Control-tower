@@ -267,6 +267,7 @@ async function startServer() {
       if (folderId) fileMetadata.parents = [folderId];
 
       const created = await drive.files.create({
+        supportsAllDrives: true,
         requestBody: fileMetadata,
         media,
         fields: 'id, name, webViewLink, webContentLink',
@@ -278,6 +279,7 @@ async function startServer() {
 
       try {
         await drive.permissions.create({
+          supportsAllDrives: true,
           fileId: fileId as string,
           requestBody: { role: 'reader', type: 'anyone' },
         });
@@ -288,7 +290,19 @@ async function startServer() {
       res.json({ success: true, configured: true, fileId, webViewLink, directViewUrl });
     } catch (err: any) {
       console.error('Drive Upload Error:', err?.message || err);
-      res.status(500).json({ success: false, error: err?.message || 'Failed uploading to Google Drive' });
+      const rawError = String(err?.message || err);
+      let userFriendlyError = rawError;
+
+      if (rawError.includes('Service Accounts do not have storage quota')) {
+        userFriendlyError = 'Google Drive Service Account memerlukan Google Workspace Shared Drive (Drive Bersama) untuk unggah berkas fisik. Foto tetap tersimpan di database lokal/cloud.';
+      }
+
+      res.status(200).json({
+        success: false,
+        configured: true,
+        quotaLimited: rawError.includes('Service Accounts do not have storage quota'),
+        error: userFriendlyError,
+      });
     }
   });
 
@@ -319,6 +333,7 @@ async function startServer() {
       if (parentId) fileMetadata.parents = [parentId];
 
       const created = await drive.files.create({
+        supportsAllDrives: true,
         requestBody: fileMetadata,
         fields: 'id, webViewLink, name',
       });
@@ -373,6 +388,8 @@ async function startServer() {
           const query = `name = '${name.replace(/'/g, "\\'")}' and '${currentParentId}' in parents and trashed = false and mimeType = 'application/vnd.google-apps.folder'`;
           try {
             const list = await drive.files.list({
+              supportsAllDrives: true,
+              includeItemsFromAllDrives: true,
               q: query,
               fields: 'files(id, name)',
               pageSize: 1,
@@ -392,6 +409,7 @@ async function startServer() {
           };
           if (currentParentId) fileMetadata.parents = [currentParentId];
           const createdFile = await drive.files.create({
+            supportsAllDrives: true,
             requestBody: fileMetadata,
             fields: 'id, webViewLink, name',
           });

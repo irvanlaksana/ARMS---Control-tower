@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Client, Personnel, Case, Customer, SK, Contract } from '../../types/arms';
 import { ROOT_GDRIVE_URL, ROOT_GDRIVE_ID } from '../../data/initialData';
@@ -45,6 +45,7 @@ import {
   personnelDocFolderSegments,
   personnelDocPathLabel,
   uploadPersonnelDocument,
+  checkDriveStatus,
 } from '../../lib/drive';
 import { LetterPreviewModal, LetterPreviewData } from '../common/LetterPreviewModal';
 import { EmployeeIdCardModal } from './EmployeeIdCardModal';
@@ -68,6 +69,13 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [creatingFolderKey, setCreatingFolderKey] = useState<string | null>(null);
   const [folderActionMsg, setFolderActionMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [driveStatus, setDriveStatus] = useState<{ configured: boolean; serviceAccountEmail?: string; error?: string } | null>(null);
+
+  useEffect(() => {
+    checkDriveStatus()
+      .then((res) => setDriveStatus(res))
+      .catch((err) => setDriveStatus({ configured: false, error: err?.message }));
+  }, []);
 
   // Expanded tree states
   const [expandedClients, setExpandedClients] = useState<Record<string, boolean>>({
@@ -781,6 +789,50 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                 📁 PT MJ INDONESIA &gt; 📁 MULTIFINANCE &gt; 📁 [MULTIFINANCE] &gt; 📁 PROPOSAL / 📁 SKP &gt; 📁 [NAMA DEBITUR]
               </span>
             </div>
+          </div>
+        </div>
+
+        {/* Service Account & Quota Status Info */}
+        <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 text-xs space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${driveStatus?.configured ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+              <span className="font-semibold text-slate-200">
+                {driveStatus?.configured ? 'Google Drive Service Account Terhubung' : 'Google Drive Belum Dikonfigurasi'}
+              </span>
+            </div>
+            {driveStatus?.serviceAccountEmail && (
+              <div className="flex items-center gap-1.5 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800">
+                <span className="text-[11px] text-slate-400 font-mono select-all">
+                  {driveStatus.serviceAccountEmail}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleCopyLink(driveStatus.serviceAccountEmail || '', 'sa-email')}
+                  className="text-slate-400 hover:text-white transition p-0.5"
+                  title="Salin Email Service Account"
+                >
+                  {copiedId === 'sa-email' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="text-[11px] text-slate-400 leading-relaxed bg-slate-900/50 p-2.5 rounded-lg border border-slate-800/60">
+            <p className="text-slate-300 font-medium mb-1 flex items-center gap-1.5">
+              <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>Ketentuan Penyimpanan Google Drive &amp; Fallback Otomatis:</span>
+            </p>
+            <ul className="list-disc list-inside space-y-0.5 text-slate-400">
+              <li>
+                <strong className="text-slate-300">Struktur Folder Otomatis</strong> (01_KTP, 02_SPPI, folder Klien &amp; Debitur) dibuat secara langsung oleh sistem di Google Drive.
+              </li>
+              <li>
+                <strong className="text-slate-300">Unggah Berkas Fisik:</strong> Berdasarkan kebijakan Google Cloud, Service Account memerlukan folder di dalam <strong className="text-indigo-300">Google Workspace Shared Drive (Drive Bersama)</strong> dengan email Service Account sebagai <em>Editor / Pengelola Konten</em>.
+              </li>
+              <li>
+                <strong className="text-slate-300">Fallback Aman:</strong> Jika folder berada di Drive pribadi tanpa Shared Drive, sistem otomatis mengamankan foto dan berkas ke dalam database aplikasi saat Anda menekan <strong>Simpan</strong>, sehingga data operasional tetap tersimpan.
+              </li>
+            </ul>
           </div>
         </div>
 
