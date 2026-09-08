@@ -111,6 +111,63 @@ export function slugify(name: string): string {
     .replace(/^_+|_+$/g, '');
 }
 
+/** Jenis berkas KYC personel yang dipetakan ke subfolder GDrive. */
+export type PersonnelDocKind = 'KTP' | 'SPPI';
+
+/** Nama subfolder resmi di dalam folder tiap karyawan / mitra DC. */
+export const PERSONNEL_DOC_FOLDER: Record<PersonnelDocKind, string> = {
+  KTP: '01_KTP',
+  SPPI: '02_SPPI',
+};
+
+/**
+ * Pemetaan GDrive Database Karyawan & Mitra DC:
+ *   PT_MJ_INDONESIA / DATABASE_KARYAWAN / <NAMA> /
+ *     ├── 01_KTP   → foto KTP
+ *     └── 02_SPPI  → berkas SPPI (opsional)
+ */
+export function personnelFolderSegments(fullName: string): string[] {
+  return ['PT_MJ_INDONESIA', 'DATABASE_KARYAWAN', slugify(fullName) || 'TANPA_NAMA'];
+}
+
+export function personnelDocFolderSegments(fullName: string, docKind: PersonnelDocKind): string[] {
+  return [...personnelFolderSegments(fullName), PERSONNEL_DOC_FOLDER[docKind]];
+}
+
+export function personnelDocPathLabel(fullName: string, docKind: PersonnelDocKind): string {
+  return personnelDocFolderSegments(fullName, docKind).join(' / ');
+}
+
+export function personnelDocFileName(fullName: string, docKind: PersonnelDocKind, ext = 'jpg'): string {
+  const cleanExt = String(ext || 'jpg').replace(/^\./, '').toLowerCase().replace('jpeg', 'jpg');
+  const stamp = Date.now().toString().slice(-8);
+  return `${docKind}_${slugify(fullName) || 'PERSONEL'}_${stamp}.${cleanExt}`;
+}
+
+/** Pastikan folder personel + subfolder KTP/SPPI ada, lalu unggah berkas. */
+export async function uploadPersonnelDocument(
+  base64: string,
+  fullName: string,
+  docKind: PersonnelDocKind,
+  rootId?: string | null,
+): Promise<DriveUploadResult & { folderId?: string }> {
+  const match = String(base64 || '').match(/^data:(.+);base64,(.*)$/);
+  const mime = match ? match[1] : 'image/jpeg';
+  const ext = (mime.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
+  const fileName = personnelDocFileName(fullName, docKind, ext);
+
+  let folderId: string | undefined;
+  try {
+    const path = await ensureDrivePath(personnelDocFolderSegments(fullName, docKind), rootId);
+    folderId = path.folderId;
+  } catch (err) {
+    console.warn('Gagal memastikan folder dokumen personel di Google Drive:', err);
+  }
+
+  const result = await uploadBase64ToDrive(base64, fileName, mime, folderId);
+  return { ...result, folderId };
+}
+
 /** Helper convert File object to Base64 data URL */
 export function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -118,6 +175,60 @@ export function fileToBase64(file: File): Promise<string> {
     reader.onload = () => resolve(String(reader.result || ''));
     reader.onerror = (error) => reject(error);
     reader.readAsDataURL(file);
+  });
+}
+
+/** URL yang bisa dipakai sebagai src <img> untuk berkas Google Drive. */
+export function drivePreviewUrl(fileId?: string, webViewLink?: string, directViewUrl?: string): string {
+  if (directViewUrl) return directViewUrl;
+  if (fileId) return `https://drive.google.com/thumbnail?id=${fileId}&sz=w800`;
+  if (webViewLink) {
+    const id = extractFolderId(webViewLink);
+    if (id) return `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
+    return webViewLink;
+  }
+  return '';
+}
+
+/**
+ * Baca file gambar jadi data URL, kompres bila terlalu besar
+ * (foto HP sering >5MB dan gagal POST ke /api/drive/upload).
+ */
+export async function fileToCompressedDataUrl(
+  file: File,
+  maxDim = 2000,
+  quality = 0.82,
+): Promise<string> {
+  const raw = await fileToBase64(file);
+  if (!file.type.startsWith('image/') || /svg|gif/i.test(file.type)) return raw;
+
+  return await new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const longest = Math.max(img.width || 1, img.height || 1);
+      const scale = Math.min(1, maxDim / longest);
+      const needsResize = scale < 1 || file.size > 1_400_000;
+      if (!needsResize) {
+        resolve(raw);
+        return;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(raw);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      try {
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      } catch {
+        resolve(raw);
+      }
+    };
+    img.onerror = () => resolve(raw);
+    img.src = raw;
   });
 }
 
@@ -182,14 +293,25 @@ export async function uploadBase64ToDrive(
       }),
     });
 
-    const json = await resp.json();
+    const rawText = await resp.text();
+    let json: any = {};
+    try {
+      json = rawText ? JSON.parse(rawText) : {};
+    } catch {
+      return {
+        success: false,
+        fallbackBase64: true,
+        webViewLink: base64,
+        error: `Server unggahan tidak merespons JSON (HTTP ${resp.status}).`,
+      };
+    }
     if (json.success && (json.webViewLink || json.fileId)) {
       return {
         success: true,
         fileId: json.fileId,
         fileName: json.fileName || fileName,
         webViewLink: json.webViewLink,
-        directViewUrl: json.directViewUrl,
+        directViewUrl: json.directViewUrl || (json.fileId ? `https://drive.google.com/thumbnail?id=${json.fileId}&sz=w800` : undefined),
       };
     }
 

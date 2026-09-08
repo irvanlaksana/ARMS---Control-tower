@@ -765,7 +765,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
                 <div className="space-y-1">
                   <div className="font-semibold text-blue-300">Status Penyimpanan Google Drive Storage: Terhubung & Aktif</div>
                   <p className="text-[11px] text-slate-300 leading-normal">
-                    Setiap kali pengurus mengunggah foto KTP pada Module Karyawan & Mitra DC, file tersebut akan tersinkronisasi secara otomatis ke Google Drive Folder ID ini.
+                    Setiap kali pengurus mengunggah foto KTP atau SPPI pada Module Karyawan & Mitra DC, file tersebut akan tersinkronisasi secara otomatis ke Google Drive sesuai pemetaan folder di bawah.
                   </p>
                 </div>
               </div>

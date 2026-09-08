@@ -25,7 +25,7 @@ ARMS UI (React)
    │
    ├── POST /api/drive/create-folder → buat satu folder di Google Drive
    ├── POST /api/drive/ensure-path   → pastikan struktur folder bertingkat ada
-   └── POST /api/drive/upload        → upload file (KTP, SKP, SPH, Proposal, MoU) ke folder
+   └── POST /api/drive/upload        → upload file (KTP, SPPI, SKP, SPH, Proposal, MoU) ke folder
 ```
 
 Semua API tersebut memakai **Service Account** (`googleapis`) yang dikonfigurasi lewat environment variable di server. Aplikasi **tidak pernah menyimpan kredensial** Google di browser.
@@ -108,6 +108,8 @@ Email ini akan dipakai untuk *share* spreadsheet dan folder Drive.
 > ```
 > PT_MJ_INDONESIA/
 > ├── DATABASE_KARYAWAN/<NAMA_KARYAWAN>/
+> │   ├── 01_KTP/     ← foto KTP
+> │   └── 02_SPPI/    ← berkas SPPI (opsional)
 > └── MULTIFINANCE/<NAMA_KLIN>/
 >     └── FOLDER_SKP/DEBITUR_<NAMA_DEBITUR>/
 > ```
@@ -213,7 +215,9 @@ export GOOGLE_SERVICE_ACCOUNT_JSON="$(cat service-account.json)"
 ### 6.3. Tab GDRIVE_DATABASE — Direktori Google Drive
 
 1. Buka **Settings → 📁 Direktori GDrive & Database Karyawan / Multifinance**.
-2. Untuk setiap **Karyawan**: klik **Buat Folder GDrive** (struktur: `PT_MJ_INDONESIA/DATABASE_KARYAWAN/<NAMA>`).
+2. Untuk setiap **Karyawan**: klik **Buat Folder GDrive** (struktur: `PT_MJ_INDONESIA/DATABASE_KARYAWAN/<NAMA>/01_KTP` dan `.../02_SPPI`).
+   - Form **Edit Data Karyawan / Mitra DC** mengunggah foto KTP ke `01_KTP` dan berkas **SPPI (opsional)** ke `02_SPPI` lewat endpoint `/api/drive/upload`.
+   - Nama file: `KTP_<NAMA>_<timestamp>.jpg` / `SPPI_<NAMA>_<timestamp>.jpg`.
 3. Untuk setiap **Klien Multifinance**: klik **Buat Folder** (struktur: `PT_MJ_INDONESIA/MULTIFINANCE/<NAMA_KLIN>`).
 4. Klik **Buat Folder SKP** untuk folder `FOLDER_SKP` per klien.
 5. Untuk **Debitur**: klik **Buat Folder** → `FOLDER_SKP/DEBITUR_<NAMA>`; atau gunakan **+ Tambah Debitur Baru** (modal **"Tambah Debitur & Buat Folder GDrive Otomatis"**) — folder dibuat otomatis saat menekan **Simpan Debitur & Buat Folder GDrive**.

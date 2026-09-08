@@ -2,7 +2,7 @@
  * FILE INI DI-GENERATE OTOMATIS - JANGAN DIEDIT MANUAL.
  * Sumber: supabase/migrations/*.sql
  * Generator: npm run db:columns  (scripts/generate-supabase-columns.mjs)
- * Migrasi terbaca: 20260907000000_create_arms_schema.sql, 20260907000100_fix_security_definer_views.sql
+ * Migrasi terbaca: 20260907000000_create_arms_schema.sql, 20260907000100_fix_security_definer_views.sql, 20260908000000_add_personnel_sppi.sql
  */
 
 /** Daftar kolom valid tiap tabel Supabase. */
@@ -29,7 +29,7 @@ export const SUPABASE_TABLE_COLUMNS: Record<string, readonly string[]> = {
   ledger: ['id', 'entry_no', 'date', 'account', 'type', 'amount', 'reference_module', 'reference_id', 'description', 'is_reversed', 'reversed_by_id', 'created_at', 'updated_at'],
   notifications: ['id', 'title', 'message', 'type', 'for_role', 'is_read', 'created_at', 'updated_at'],
   payments: ['id', 'payment_no', 'case_id', 'case_no', 'debtor_name', 'amount', 'payment_date', 'payment_type', 'payment_method', 'total_paid_by_debitur', 'success_fee_amount', 'execution_fee_amount', 'pass_through_fee', 'proof_url', 'allocation_summary', 'manual_splits', 'verification_status', 'verified_by', 'personnel_id', 'personnel_name', 'personnel_type', 'tier_applied_name', 'tier_applied_basis', 'tier_percent', 'gross_agency_fee', 'company_fee_percent', 'company_revenue_amount', 'partner_commission_percent', 'partner_commission_amount', 'partner_payout_status', 'partner_transfer_date', 'partner_transfer_ref', 'partner_transfer_proof_url', 'partner_bank_name', 'partner_account_no', 'partner_account_name', 'paid_from_cash_account_id', 'created_at', 'updated_at'],
-  personnel: ['id', 'type', 'full_name', 'nik_ktp', 'birth_place_date', 'address', 'phone_number', 'email', 'bank_name', 'account_number', 'account_name', 'emergency_contact', 'position', 'ktp_photo_url', 'ktp_drive_file_id', 'ktp_drive_folder_url', 'gdrive_folder_url', 'gdrive_folder_id', 'status', 'created_at', 'updated_at'],
+  personnel: ['id', 'type', 'full_name', 'nik_ktp', 'birth_place_date', 'address', 'phone_number', 'email', 'bank_name', 'account_number', 'account_name', 'emergency_contact', 'position', 'ktp_photo_url', 'ktp_drive_file_id', 'ktp_drive_folder_url', 'gdrive_folder_url', 'gdrive_folder_id', 'status', 'created_at', 'updated_at', 'sppi_photo_url', 'sppi_drive_file_id', 'sppi_drive_folder_url'],
   petty_cash: ['id', 'transaction_no', 'type', 'category', 'amount', 'transaction_date', 'recipient_or_source', 'personnel_id', 'personnel_name', 'requested_by_user_id', 'requested_by_user_name', 'case_id', 'case_no', 'description', 'proof_receipt_url', 'status', 'approved_by', 'approved_at', 'created_by_name', 'created_at', 'updated_at'],
   services: ['id', 'service_code', 'name', 'category', 'description', 'default_fee_type', 'status', 'created_at', 'updated_at'],
   settings: ['id', 'google_sheet_id', 'apps_script_web_app_url', 'google_drive_folder_id', 'google_drive_folder_url', 'company_name', 'company_phone', 'company_email', 'company_address', 'company_logo', 'default_fee_percent', 'default_company_commission_split_percent', 'auto_sync_with_google_sheets', 'database_config', 'last_synced_at', 'created_at', 'updated_at'],
