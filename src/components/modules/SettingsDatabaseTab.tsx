@@ -91,10 +91,17 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
     setSupabaseMsg({ ok: true, text: 'Sedang mengirim & menyinkronkan seluruh 30 tabel ke database Supabase...' });
     try {
       const res: SupabaseSyncResult = await pushFullStoreToSupabase(store);
+      if (res.warnings?.length) {
+        // Catatan non-fatal (kolom diabaikan, FK menggantung dinolkan, duplikat id).
+        console.warn('[Supabase push] warnings:', res.warnings);
+      }
       if (res.success) {
+        const warnNote = res.warnings?.length
+          ? ` (${res.warnings.length} catatan penyesuaian data, lihat console browser)`
+          : '';
         setSupabaseMsg({
           ok: true,
-          text: `✅ Sukses! ${res.totalItems} dokumen di ${res.collectionsCount} tabel berhasil dikirim dan dibuat otomatis di database Supabase.`,
+          text: `✅ Sukses! ${res.totalItems} dokumen di ${res.collectionsCount} tabel berhasil dikirim dan dibuat otomatis di database Supabase.${warnNote}`,
         });
         const audit = createAuditEntry(
           currentUser.username,
@@ -113,9 +120,15 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
           auditLogs: [audit, ...store.auditLogs],
         });
       } else {
+        console.error('[Supabase push] errors:', res.errors);
+        const list = res.errors || [];
+        const preview = list.slice(0, 3).join(' | ');
+        const more = list.length > 3 ? ` (+${list.length - 3} error lain, lihat console browser)` : '';
         setSupabaseMsg({
           ok: false,
-          text: `❌ Gagal push ke Supabase: ${res.error || 'Terjadi kesalahan tidak diketahui.'}`,
+          text:
+            `❌ Gagal push ke Supabase: ${preview || res.error || 'Terjadi kesalahan tidak diketahui.'}${more}` +
+            (res.totalItems > 0 ? ` — ${res.totalItems} dokumen lain tetap berhasil tersimpan.` : ''),
         });
       }
     } catch (err: any) {

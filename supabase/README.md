@@ -157,3 +157,71 @@ VITE_SUPABASE_URL="https://your-project-id.supabase.co"
 VITE_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 SUPABASE_SERVICE_ROLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 ```
+
+---
+
+## 🩺 Troubleshooting "Gagal push ke Supabase"
+
+Pesan error yang muncul di tab **Settings → Database → Push ke Supabase** berasal
+langsung dari PostgREST. Berikut pemetaan penyebab dan penanganannya di kode.
+
+### 1. `Could not find the 'g_drive_folder_url' column of 'clients' in the schema cache`
+
+**Penyebab.** Konverter `camelToSnake()` di `src/utils/supabaseAdapter.ts` mengubah
+setiap huruf kapital menjadi `_huruf`, sehingga:
+
+| Field TypeScript | Hasil konversi lama | Kolom asli di Postgres |
+|---|---|---|
+| `gDriveFolderUrl` | `g_drive_folder_url` ❌ | `gdrive_folder_url` |
+| `gDriveFolderId` | `g_drive_folder_id` ❌ | `gdrive_folder_id` |
+| `gDriveFolderName` | `g_drive_folder_name` ❌ | `gdrive_folder_name` |
+| `principalDebtOS` | `principal_debt_o_s` ❌ | `principal_debt_os` |
+| `policeNoVIN` | `police_no_v_i_n` ❌ | `police_no_vin` |
+
+**Perbaikan.**
+- `camelToSnake()` kini sadar akronim (`OS`, `VIN` tidak dipecah per huruf).
+- Penamaan yang tidak bisa ditebak otomatis didaftarkan di `CAMEL_TO_SNAKE_OVERRIDES`
+  (`gDriveFolderUrl → gdrive_folder_url`, dst).
+- `snakeToCamel()` memakai peta kebalikannya, sehingga **Fetch dari Supabase**
+  mengembalikan nama field yang benar (`gDriveFolderUrl`, bukan `gdriveFolderUrl`).
+- `toSupabaseRow(table, obj)` memfilter payload memakai manifest kolom nyata
+  (`src/utils/supabaseSchemaColumns.ts`). Key yang tidak punya kolom akan dibuang
+  dan dilaporkan sebagai *warning*, bukan menggagalkan seluruh tabel.
+
+### 2. `null value in column "created_at" of relation "audit_logs" violates not-null constraint`
+
+**Penyebab.** Adapter mengubah `undefined`/`''` menjadi `null` lalu tetap mengirim
+key-nya. Postgres hanya memakai `DEFAULT NOW()` bila kolomnya **tidak dikirim** —
+mengirim `null` eksplisit tetap melanggar `NOT NULL`.
+
+**Perbaikan.** Kolom `NOT NULL` yang punya `DEFAULT` (`created_at`, `updated_at`,
+`timestamp`, `status`, `sla_days`, dll) didata otomatis di
+`SUPABASE_DEFAULTED_NOT_NULL`, dan key-nya dihapus dari payload bila nilainya null.
+
+### 3. `insert or update on table "fees" violates foreign key constraint "fees_client_id_fkey"`
+
+**Penyebab.** Efek beruntun dari error nomor 1: `clients` dan `cases` gagal ter-upsert,
+sehingga baris anak (`fees`, `contracts`, `assignments`, `sks`) menunjuk id induk yang
+belum ada di database.
+
+**Perbaikan.**
+- Urutan push tetap mengikuti `ORDERED_COLLECTIONS` (induk dulu, anak belakangan) dan
+  urutan itu kini divalidasi otomatis terhadap definisi FK di migrasi.
+- `pushFullStoreToSupabase()` mencatat id yang **benar-benar berhasil tersimpan** per
+  tabel. FK menggantung akan dikosongkan (bila kolomnya nullable) atau barisnya
+  dilewati, disertai catatan — bukan menggagalkan seluruh tabel.
+- Batch yang gagal diulang baris-per-baris agar satu record rusak tidak membatalkan 100
+  record lainnya, dan id duplikat dalam satu batch digabung
+  (`ON CONFLICT` tidak boleh mengenai baris yang sama dua kali).
+
+### Perintah validasi
+
+```bash
+npm run db:columns        # regenerate manifest kolom dari supabase/migrations/*.sql
+npm run db:validate       # cek tipe TS <-> kolom Postgres, round-trip key, urutan FK
+npm run db:validate:data  # simulasi push memakai data awal ARMS (tanpa jaringan)
+```
+
+Jalankan `npm run db:columns` **setiap kali menambah migrasi baru**, lalu
+`npm run db:validate`. Semua error di atas akan terdeteksi sebelum tombol
+"Push ke Supabase" ditekan.
