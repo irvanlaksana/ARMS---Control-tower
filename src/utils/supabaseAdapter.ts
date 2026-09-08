@@ -305,6 +305,34 @@ export function toSupabaseRow(tableName: string, obj: any): SupabaseRowResult {
     row[snakeKey] = finalVal;
   }
 
+  // --- Final Safety Nets for Missing Keys ---
+  if (tableName === 'collections') {
+    if (!row.payment_method) row.payment_method = 'TRANSFER';
+    if (!row.verification_status) row.verification_status = 'PENDING_VERIFICATION';
+  } else if (tableName === 'payments') {
+    if (!row.payment_method) row.payment_method = 'TRANSFER';
+    if (!row.payment_type) row.payment_type = 'DEBTOR_REPAYMENT';
+    if (!row.verification_status) row.verification_status = 'PENDING';
+  } else if (tableName === 'users') {
+    if (!row.role) row.role = 'SUPER_ADMIN_OPS';
+  } else if (tableName === 'clients') {
+    if (!row.client_type) row.client_type = 'PERORANGAN';
+  } else if (tableName === 'fees') {
+    if (!row.fee_type) row.fee_type = 'PERCENT';
+  } else if (tableName === 'cases') {
+    if (!row.status) row.status = 'NEW';
+  } else if (tableName === 'assignments') {
+    if (!row.status) row.status = 'PENDING';
+  } else if (tableName === 'lawyer_notices') {
+    if (!row.notice_type) row.notice_type = 'SOMASI_1';
+    if (!row.status) row.status = 'DRAFT_PROPOSED';
+  } else if (tableName === 'comm_logs') {
+    if (!row.channel) row.channel = 'WHATSAPP';
+  } else if (tableName === 'assets') {
+    if (!row.category) row.category = 'KENDARAAN_MOBIL';
+    if (!row.physical_status) row.physical_status = 'UNLOCATED';
+  }
+
   return { row, droppedKeys };
 }
 
