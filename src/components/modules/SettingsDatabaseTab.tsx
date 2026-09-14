@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, DatabaseTabConfig } from '../../types/arms';
 import { getDatabaseConfigs, markDatabaseSynced } from '../../data/databaseConfig';
+import { exportDatabaseToSpreadsheet, buildExportSheets } from '../../utils/spreadsheetExport';
 import { pushFullStoreToFirebase } from '../../services/firebaseSyncService';
 import { pushFullStoreToSupabase, fetchStoreFromSupabase, SupabaseSyncResult } from '../../services/supabaseService';
 import { isSupabaseConfigured } from '../../lib/supabase';
@@ -30,6 +31,8 @@ import {
   Server,
   Cloud,
   CheckCircle,
+  Download,
+  FileSpreadsheet as FileSpreadsheetIcon,
 } from 'lucide-react';
 
 interface SettingsDatabaseTabProps {
@@ -53,6 +56,9 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
   const [setupMsg, setSetupMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [isSettingUp, setIsSettingUp] = useState(false);
   const [isPushing, setIsPushing] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportOnlyActive, setExportOnlyActive] = useState(true);
+  const [exportMsg, setExportMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   // Supabase states
   const [isPushingSupabase, setIsPushingSupabase] = useState(false);
@@ -225,6 +231,42 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
       setSetupMsg({ ok: false, text: `❌ Gagal membuat sheet: ${err.message || String(err)}` });
     } finally {
       setIsSettingUp(false);
+    }
+  };
+
+  /**
+   * Export SELURUH data ARMS ke format spreadsheet database (30 tab) —
+   * skema tab & kolom identik dengan spreadsheet aktif di Google Apps Script.
+   */
+  const handleExportDatabase = (format: 'xls' | 'csv') => {
+    setIsExporting(true);
+    setExportMsg(null);
+    try {
+      const exportStore: ARMSStore = {
+        ...store,
+        settings: { ...store.settings, databaseConfig: configs },
+      };
+      const summary = exportDatabaseToSpreadsheet(exportStore, {
+        format,
+        onlyActive: exportOnlyActive,
+      });
+      const audit = createAuditEntry(
+        currentUser.username,
+        currentUser.role,
+        'EXPORT',
+        'Settings_Database',
+        'DATABASE_EXPORT',
+        `Export seluruh database ARMS ke ${format.toUpperCase()} (${summary.sheetCount} tab, ${summary.totalRecords} record) - ${summary.fileName}`
+      );
+      onUpdateStore({ ...exportStore, auditLogs: [audit, ...(exportStore.auditLogs || [])] });
+      setExportMsg({
+        ok: true,
+        text: `✅ ${summary.fileName} terunduh — ${summary.sheetCount} tab database, ${summary.totalRecords} record.`,
+      });
+    } catch (err: any) {
+      setExportMsg({ ok: false, text: `❌ Gagal export: ${err.message || String(err)}` });
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -462,6 +504,75 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
             >
               {setupMsg.ok ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />}
               <span>{setupMsg.text}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* EXPORT SEMUA DATA - FORMAT SPREADSHEET DATABASE */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
+        <div className="p-3 border-b border-slate-800 bg-slate-950/50 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <FileSpreadsheetIcon className="w-3.5 h-3.5 text-emerald-400" />
+            <h4 className="text-sm font-bold text-white">Export Semua Data (Format Spreadsheet Database)</h4>
+            <span className="bg-slate-800 text-slate-300 text-[10px] px-2 py-0.5 rounded font-mono">
+              {buildExportSheets({ ...store, settings: { ...store.settings, databaseConfig: configs } }, exportOnlyActive).length} tab
+            </span>
+          </div>
+          <label className="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={exportOnlyActive}
+              onChange={(e) => setExportOnlyActive(e.target.checked)}
+              className="w-3.5 h-3.5 rounded text-emerald-600 bg-slate-900 border-slate-700"
+            />
+            <span>Hanya database yang aktif</span>
+          </label>
+        </div>
+
+        <div className="p-3 space-y-2">
+          <p className="text-[11px] text-slate-400 leading-relaxed">
+            Mengunduh seluruh isi database ARMS saat ini sebagai workbook spreadsheet dengan skema yang sama persis
+            seperti spreadsheet aktif (satu tab per database, baris pertama = header kolom, record = baris data).
+            File <span className="font-mono text-emerald-300">.xls</span> dapat dibuka langsung di Microsoft Excel /
+            LibreOffice, atau diimpor ke Google Sheets (File &rarr; Import &rarr; Upload).
+          </p>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={isExporting}
+              onClick={() => handleExportDatabase('xls')}
+              className="flex items-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white text-xs font-bold rounded-xl transition shadow-lg"
+            >
+              <Download className={`w-3.5 h-3.5 ${isExporting ? 'animate-pulse' : ''}`} />
+              {isExporting ? 'Menyiapkan file...' : 'Export Workbook Excel (.xls, semua tab)'}
+            </button>
+            <button
+              type="button"
+              disabled={isExporting}
+              onClick={() => handleExportDatabase('csv')}
+              className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 text-white text-xs font-bold rounded-xl transition shadow-lg"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              Export CSV Gabungan (.csv)
+            </button>
+          </div>
+
+          {exportMsg && (
+            <div
+              className={`p-2.5 rounded-lg border text-xs font-semibold flex items-center gap-2 ${
+                exportMsg.ok
+                  ? 'bg-emerald-950/80 text-emerald-200 border-emerald-700'
+                  : 'bg-rose-950/80 text-rose-200 border-rose-700'
+              }`}
+            >
+              {exportMsg.ok ? (
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+              ) : (
+                <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+              )}
+              <span>{exportMsg.text}</span>
             </div>
           )}
         </div>

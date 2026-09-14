@@ -16,3 +16,6 @@ dist-gas/
 appsscript/dist/
 appsscript/.clasp.json
 .clasprc.json
+
+# Hasil export snapshot database (data, bukan kode)
+exports/
