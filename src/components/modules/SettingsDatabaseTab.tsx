@@ -6,6 +6,14 @@ import { pushFullStoreToFirebase } from '../../services/firebaseSyncService';
 import { pushFullStoreToSupabase, fetchStoreFromSupabase, SupabaseSyncResult } from '../../services/supabaseService';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import {
+  resolveActiveSheet,
+  saveSettingsToActiveSheet,
+  extractSpreadsheetId,
+  spreadsheetUrlFromId,
+  ActiveSpreadsheetInfo,
+} from '../../services/settingsSheetService';
+import { getApiMode, isGasBackendActive } from '../../lib/gasBridge';
+import {
   Database,
   Table2,
   CheckCircle2,
@@ -53,10 +61,32 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 
+  // Spreadsheet aktif tempat seluruh data & konfigurasi disimpan (Apps Script).
+  const [activeSheet, setActiveSheet] = useState<ActiveSpreadsheetInfo | null>(null);
+  const apiMode = getApiMode();
+  const isGasBound = apiMode === 'GAS_HTML';
+
   useEffect(() => {
     setConfigs(getDatabaseConfigs(store.settings));
     setSheetId(store.settings?.googleSheetId || '');
   }, [store.settings]);
+
+  useEffect(() => {
+    let mounted = true;
+    resolveActiveSheet(store.settings)
+      .then((info) => {
+        if (!mounted) return;
+        setActiveSheet(info);
+        if (info?.id && (apiMode !== 'SERVER' || !store.settings?.googleSheetId)) {
+          setSheetId(info.id);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      mounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiMode]);
 
   const updateConfig = (collection: string, patch: Partial<DatabaseTabConfig>) => {
     setConfigs((prev) => prev.map((c) => (c.collection === collection ? { ...c, ...patch } : c)));
@@ -64,25 +94,37 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
 
   const saveConfig = (extraSheetId?: string) => {
     if (!canEdit) return;
+    const nextSheetId = extractSpreadsheetId(extraSheetId ?? sheetId ?? activeSheet?.id ?? '');
+    const nextSettings = {
+      ...store.settings,
+      googleSheetId: nextSheetId,
+      databaseConfig: configs,
+    };
     const audit = createAuditEntry(
       currentUser.username,
       currentUser.role,
       'UPDATE',
       'Database_Config',
       'APP_SETTINGS_DATABASE',
-      `Update konfigurasi sheet untuk ${configs.length} database ARMS`
+      `Update konfigurasi sheet untuk ${configs.length} database ARMS → spreadsheet aktif ${activeSheet?.name || nextSheetId || '-'}`
     );
     onUpdateStore({
       ...store,
-      settings: {
-        ...store.settings,
-        googleSheetId: (extraSheetId ?? sheetId).trim(),
-        databaseConfig: configs,
-      },
+      settings: nextSettings,
       auditLogs: [audit, ...store.auditLogs],
     });
     setSavedMsg(true);
     setTimeout(() => setSavedMsg(false), 3000);
+
+    // Konfigurasi ikut disimpan pada tab Settings spreadsheet aktif.
+    saveSettingsToActiveSheet(nextSettings)
+      .then((result) => {
+        if (result.spreadsheet) setActiveSheet(result.spreadsheet);
+        if (!result.ok) {
+          setSetupMsg({ ok: false, text: `⚠️ Konfigurasi dipakai di sesi ini, tetapi gagal disimpan ke spreadsheet aktif: ${result.message}` });
+        }
+      })
+      .catch((err) => setSetupMsg({ ok: false, text: `⚠️ Gagal menyimpan konfigurasi ke spreadsheet aktif: ${err?.message || String(err)}` }));
   };
 
   // Push to Supabase
@@ -158,9 +200,9 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
 
   const handleSetupSheets = async () => {
     if (!canEdit) return;
-    const id = (sheetId || 'arms-control-tower').trim();
+    const id = extractSpreadsheetId(activeSheet?.id || sheetId || 'arms-control-tower');
     setIsSettingUp(true);
-    setSetupMsg({ ok: true, text: 'Sedang membuat/memverifikasi seluruh tab database di workbook CSV lokal...' });
+    setSetupMsg({ ok: true, text: 'Sedang membuat/memverifikasi seluruh tab database di spreadsheet aktif...' });
     try {
       const resp = await fetch('/api/sheets/setup', {
         method: 'POST',
@@ -176,7 +218,7 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
       }
       setSetupMsg({
         ok: true,
-        text: `✅ Berhasil! ${json.sheets?.length || 0} tab/sheet database tersedia di workbook CSV lokal.`,
+        text: `✅ Berhasil! ${json.sheets?.length || 0} tab/sheet database tersedia di spreadsheet aktif${json.spreadsheetName ? ` "${json.spreadsheetName}"` : ''}.`,
       });
       saveConfig(id);
     } catch (err: any) {
@@ -187,13 +229,13 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
   };
 
   const handlePushAll = async () => {
-    const id = (sheetId || '').trim();
+    const id = extractSpreadsheetId(activeSheet?.id || sheetId || '');
     if (!id) {
-      setSetupMsg({ ok: false, text: 'Masukkan nama workbook lokal terlebih dahulu sebelum push.' });
+      setSetupMsg({ ok: false, text: 'Tentukan spreadsheet aktif terlebih dahulu sebelum push.' });
       return;
     }
     setIsPushing(true);
-    setSetupMsg({ ok: true, text: 'Sedang mengirim data seluruh database aktif ke Google Sheets...' });
+    setSetupMsg({ ok: true, text: 'Sedang mengirim data seluruh database aktif ke spreadsheet aktif...' });
     try {
       const pushStore: ARMSStore = {
         ...store,
@@ -204,7 +246,8 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
         },
       };
       const res = await pushFullStoreToFirebase(pushStore);
-      const supabaseResult = isSupabaseConfigured ? await pushFullStoreToSupabase(pushStore) : null;
+      // Supabase hanya dipakai bila backend Apps Script tidak aktif (spreadsheet aktif = sumber utama).
+      const supabaseResult = isSupabaseConfigured && !isGasBackendActive() ? await pushFullStoreToSupabase(pushStore) : null;
       if (supabaseResult && !supabaseResult.success) {
         throw new Error(`Supabase: ${supabaseResult.error || 'sinkronisasi gagal'}`);
       }
@@ -220,7 +263,7 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
       }
       setSetupMsg({
         ok: true,
-        text: `✅ Sukses! ${res.totalItems} dokumen tersimpan di CSV lokal${supabaseResult ? ' dan Supabase' : ''}.`,
+        text: `✅ Sukses! ${res.totalItems} dokumen tersimpan di spreadsheet aktif${supabaseResult ? ' dan Supabase' : ''}.`,
       });
     } catch (err: any) {
       setSetupMsg({ ok: false, text: `❌ Gagal push: ${err.message || String(err)}` });
@@ -230,9 +273,8 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
   };
 
   const connectedCount = configs.filter((c) => c.enabled || c.collection === 'settings').length;
-  const spreadsheetUrl = sheetId
-    ? `https://docs.google.com/spreadsheets/d/${sheetId.trim()}/edit?usp=sharing`
-    : '';
+  const effectiveSheetId = extractSpreadsheetId(activeSheet?.id || sheetId || '');
+  const spreadsheetUrl = activeSheet?.url || spreadsheetUrlFromId(effectiveSheetId);
 
   // Calculate total items in store
   const totalStoreItems = Object.keys(store).reduce((acc, key) => {
@@ -332,9 +374,10 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
               <Layers className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-white text-base">Local CSV Backup & Sync Control</h3>
+              <h3 className="font-bold text-white text-base">Spreadsheet Aktif — Backup &amp; Sync Control</h3>
               <p className="text-xs text-slate-400 mt-0.5 leading-normal">
-                Atur nama tab/sheet, status aktif, dan jumlah data untuk masing-masing database ARMS di workbook CSV lokal.
+                Atur nama tab/sheet, status aktif, dan jumlah data untuk masing-masing database ARMS pada spreadsheet aktif
+                {activeSheet ? <> <code className="text-violet-300 font-mono">{activeSheet.name}</code></> : null}.
               </p>
             </div>
           </div>
@@ -362,19 +405,25 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="flex-1">
               <label className="block text-xs font-semibold text-slate-300 mb-0.5">
-                Kolom nama workbook lokal:
+                Spreadsheet aktif (ID / URL Google Sheets):
               </label>
               <input
                 type="text"
                 disabled={!canEdit}
-                value={sheetId}
-                onChange={(e) => setSheetId(e.target.value)}
-                placeholder="arms-control-tower"
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-violet-500"
+                readOnly={isGasBound}
+                title={isGasBound ? 'Otomatis terikat pada spreadsheet tempat Apps Script di-deploy' : undefined}
+                value={isGasBound && activeSheet?.id ? activeSheet.id : sheetId}
+                onChange={(e) => setSheetId(extractSpreadsheetId(e.target.value))}
+                placeholder="1AbCdefGhIjKlMnOpQrStUvWxYz0123456789"
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-violet-500 read-only:opacity-70"
               />
               <p className="text-[11px] text-slate-500 mt-0.5">
-                ID spreadsheet tujuan dibuatnya database. Diambil dari URL:
-                <span className="text-slate-400 font-mono"> docs.google.com/spreadsheets/d/&lt;ID&gt;/edit</span>
+                {isGasBound
+                  ? 'Terikat otomatis pada spreadsheet tempat Apps Script ini di-deploy (tidak perlu diisi).'
+                  : 'ID spreadsheet tujuan dibuatnya database. Diambil dari URL:'}
+                {isGasBound ? null : (
+                  <span className="text-slate-400 font-mono"> docs.google.com/spreadsheets/d/&lt;ID&gt;/edit</span>
+                )}
               </p>
             </div>
             <div className="flex items-end gap-2">
@@ -421,7 +470,7 @@ export const SettingsDatabaseTab: React.FC<SettingsDatabaseTabProps> = ({
       {savedMsg && (
         <div className="p-2.5 bg-emerald-950/80 border border-emerald-800 rounded-xl text-emerald-300 text-xs font-semibold flex items-center gap-2">
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-          Konfigurasi database tersimpan & akan disinkronkan otomatis.
+          Konfigurasi database tersimpan pada spreadsheet aktif (tab Settings) & akan disinkronkan otomatis.
         </div>
       )}
 

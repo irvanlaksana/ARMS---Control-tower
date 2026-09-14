@@ -19,8 +19,19 @@
     "db:schema": "node scripts/setup-supabase.mjs --schema-only",
     "db:seed": "node scripts/setup-supabase.mjs --seed-only",
     "spreadsheet:setup": "node scripts/sync-spreadsheet.mjs",
+    "gas:build": "node scripts/build-gas.mjs",
+    "gas:build:fast": "node scripts/build-gas.mjs --skip-vite",
+    "gas:test": "node scripts/test-gas-backend.mjs && node scripts/test-gas-bridge.mjs && node scripts/test-settings-ui.mjs && npm run test:media && npm run test:generator",
+    "gas:login": "npx @google/clasp login",
+    "gas:create": "cd appsscript && npx @google/clasp create --type standalone --title \"ARMS Control Tower\" --rootDir dist",
+    "gas:push": "cd appsscript && npx @google/clasp push --force",
+    "gas:deploy": "cd appsscript && npx @google/clasp deploy",
+    "gas:open": "cd appsscript && npx @google/clasp open",
     "supabase:link": "npx supabase link",
-    "supabase:push": "npx supabase db push"
+    "supabase:push": "npx supabase db push",
+    "test:media": "node scripts/test-media-preview.mjs",
+    "test:generator": "node scripts/test-generator-payload.mjs",
+    "verify": "npm run lint && npm run gas:test && npm run build"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

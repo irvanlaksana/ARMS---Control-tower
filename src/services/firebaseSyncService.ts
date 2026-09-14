@@ -1,5 +1,17 @@
 import { ARMSStore } from './armsDataService';
+import { AppSettings } from '../types/arms';
 import { getActiveDatabaseConfigs, getDatabaseTabMap } from '../data/databaseConfig';
+import { mergeSettingsFromSheet, parseSettingsFromSheet } from '../lib/settingsCodec';
+import { resolveActiveSheetId } from './settingsSheetService';
+
+/**
+ * Sinkronisasi data ARMS ↔ SPREADSHEET AKTIF.
+ *
+ * Perilaku & seluruh fungsinya sama seperti sebelumnya (push penuh, push
+ * inkremental, pull), yang berubah hanya target penyimpanannya: spreadsheet
+ * aktif yang dipakai deploy saat ini (Google Apps Script) — bukan workbook CSV
+ * lokal maupun Service Account Google Sheets.
+ */
 
 // Function to clean undefined values and prepare data for API
 function cleanData(obj: any): any {
@@ -18,16 +30,46 @@ function cleanData(obj: any): any {
   return result;
 }
 
-// Get spreadsheetId from settings or environment
-function getSpreadsheetId(store: ARMSStore): string | null {
-  // Nama workbook lokal. Tidak perlu Spreadsheet ID atau kredensial Google.
-  return store?.settings?.googleSheetId || 'arms-control-tower';
+/**
+ * Spreadsheet tujuan sync. Pada mode Apps Script nilai ini otomatis diisi dari
+ * spreadsheet tempat script di-deploy; bila tidak tersedia, pakai ID/nama yang
+ * diisi di Pengaturan (fallback: `arms-control-tower`).
+ */
+async function getSpreadsheetId(store: ARMSStore): Promise<string> {
+  try {
+    return await resolveActiveSheetId(store?.settings);
+  } catch {
+    return store?.settings?.googleSheetId || 'arms-control-tower';
+  }
+}
+
+/** Settings dikirim sebagai baris key/value (nilai object -> JSON string). */
+function serializeSettings(settings: AppSettings): Record<string, string> {
+  const rows: Record<string, string> = {};
+  Object.keys(settings || {}).forEach((key) => {
+    const value = (settings as any)[key];
+    if (value === undefined) return;
+    if (value === null) {
+      rows[key] = '';
+      return;
+    }
+    if (typeof value === 'object') {
+      try {
+        rows[key] = JSON.stringify(value);
+      } catch {
+        rows[key] = String(value);
+      }
+      return;
+    }
+    rows[key] = String(value);
+  });
+  return rows;
 }
 
 export async function fetchStoreFromFirebase(currentStore: ARMSStore): Promise<ARMSStore> {
-  const spreadsheetId = getSpreadsheetId(currentStore);
+  const spreadsheetId = await getSpreadsheetId(currentStore);
   if (!spreadsheetId) {
-    console.warn("Workbook lokal belum tersedia; memakai data lokal dan akan dibuat saat push pertama.");
+    console.warn('Spreadsheet aktif belum tersedia; memakai data lokal dan akan dibuat saat push pertama.');
     return currentStore;
   }
 
@@ -38,28 +80,48 @@ export async function fetchStoreFromFirebase(currentStore: ARMSStore): Promise<A
       body: JSON.stringify({
         spreadsheetId,
         tabs: getDatabaseTabMap(currentStore.settings),
-      })
+      }),
     });
-    
+
     if (!response.ok) {
-      throw new Error("Failed to fetch workbook CSV lokal");
+      throw new Error('Failed to fetch spreadsheet aktif');
     }
 
     const json = await response.json();
     if (json.success && json.data) {
-      return { ...currentStore, ...json.data };
+      const data = json.data as Record<string, any>;
+      const nextStore: any = { ...currentStore };
+
+      Object.keys(data).forEach((key) => {
+        if (key === 'settings') return;
+        const value = data[key];
+        // Tab kosong dilewati agar data lokal tidak tertimpa array kosong.
+        if (Array.isArray(value) && value.length === 0) return;
+        nextStore[key] = value;
+      });
+
+      if (data.settings) {
+        const fromSheet = parseSettingsFromSheet(data.settings);
+        if (fromSheet && Object.keys(fromSheet).length) {
+          nextStore.settings = mergeSettingsFromSheet(currentStore.settings, fromSheet);
+        }
+      }
+
+      return nextStore as ARMSStore;
     }
   } catch (e) {
-    console.warn("Failed to fetch data from Google Sheets", e);
+    console.warn('Failed to fetch data from active spreadsheet', e);
   }
-  
+
   return currentStore;
 }
 
-export async function pushFullStoreToFirebase(store: ARMSStore): Promise<{ totalItems: number; collectionsCount: number; syncedAt: string }> {
-  const spreadsheetId = getSpreadsheetId(store);
+export async function pushFullStoreToFirebase(
+  store: ARMSStore
+): Promise<{ totalItems: number; collectionsCount: number; syncedAt: string }> {
+  const spreadsheetId = await getSpreadsheetId(store);
   if (!spreadsheetId) {
-    console.warn("Workbook lokal belum tersedia; memakai nama default arms-control-tower.");
+    console.warn('Spreadsheet aktif belum tersedia; memakai nama default arms-control-tower.');
     return { totalItems: 0, collectionsCount: 0, syncedAt: new Date().toISOString() };
   }
 
@@ -75,7 +137,7 @@ export async function pushFullStoreToFirebase(store: ARMSStore): Promise<{ total
   for (const key of keys) {
     if (key === 'settings') {
       if (activeSet.has(key)) {
-        dataToSync[key] = store.settings;
+        dataToSync[key] = serializeSettings(store.settings);
         collectionsCount++;
         totalItems++;
       }
@@ -102,30 +164,33 @@ export async function pushFullStoreToFirebase(store: ARMSStore): Promise<{ total
         spreadsheetId,
         data: dataToSync,
         tabs: getDatabaseTabMap(store.settings),
-      })
+      }),
     });
 
     if (!response.ok) {
-      throw new Error("Failed to sync workbook CSV lokal");
+      throw new Error('Failed to sync spreadsheet aktif');
     }
 
     const json = await response.json();
+    if (json?.success === false) {
+      throw new Error(json.error || 'Gagal menyimpan ke spreadsheet aktif');
+    }
+
     return {
       totalItems,
       collectionsCount,
       syncedAt: json.syncedAt || new Date().toISOString(),
     };
   } catch (e) {
-    console.error("Local spreadsheet sync error", e);
+    console.error('Active spreadsheet sync error', e);
     throw e;
   }
 }
 
 export async function syncStoreToFirebase(oldStore: ARMSStore, newStore: ARMSStore) {
-  // For Google Sheets, we just push the full store since it works on entire tabs, 
-  // or we could optimize by only pushing changed tabs. 
+  // For the active spreadsheet we push the whole changed tab(s).
   // Let's optimize by sending only the changed tabs.
-  const spreadsheetId = getSpreadsheetId(newStore);
+  const spreadsheetId = await getSpreadsheetId(newStore);
   if (!spreadsheetId) {
     return;
   }
@@ -136,18 +201,18 @@ export async function syncStoreToFirebase(oldStore: ARMSStore, newStore: ARMSSto
   const dataToSync: any = {};
   const keys = Object.keys(newStore) as (keyof ARMSStore)[];
   let hasChanges = false;
-  
+
   for (const key of keys) {
     if (!activeSet.has(key)) continue;
 
     if (key === 'settings') {
       if (JSON.stringify(oldStore.settings) !== JSON.stringify(newStore.settings)) {
-        dataToSync[key] = newStore.settings;
+        dataToSync[key] = serializeSettings(newStore.settings);
         hasChanges = true;
       }
       continue;
     }
-    
+
     if (JSON.stringify(oldStore[key]) !== JSON.stringify(newStore[key])) {
       dataToSync[key] = (newStore[key] as any[]).map(cleanData);
       hasChanges = true;
@@ -166,9 +231,9 @@ export async function syncStoreToFirebase(oldStore: ARMSStore, newStore: ARMSSto
         spreadsheetId,
         data: dataToSync,
         tabs: getDatabaseTabMap(newStore.settings),
-      })
+      }),
     });
   } catch (e) {
-    console.error("Firebase (Sheets) incremental sync error", e);
+    console.error('Active spreadsheet incremental sync error', e);
   }
 }

@@ -20,6 +20,7 @@ import {
   INITIAL_LEDGER, INITIAL_CASH_ACCOUNTS, INITIAL_PETTY_CASH, INITIAL_WORKING_CAPITAL, INITIAL_DOCUMENTS, INITIAL_APPROVALS,
   INITIAL_NOTIFICATIONS, INITIAL_AUDIT_LOGS, INITIAL_SETTINGS, INITIAL_DRIVE_FOLDERS, ROOT_GDRIVE_URL, ROOT_GDRIVE_ID
 } from '../data/initialData';
+import { mergeSettingsFromSheet, parseSettingsFromSheet } from '../lib/settingsCodec';
 
 export interface ARMSStore {
   users: User[];
@@ -57,7 +58,11 @@ export interface ARMSStore {
 const STORAGE_KEY = 'ARMS_SINGLE_SOURCE_DATA_V8';
 
 export function resetStoreToInitial(): ARMSStore {
-  localStorage.removeItem(STORAGE_KEY);
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    /* storage tidak tersedia di runtime ini */
+  }
   const cleanStore = normalizeStore(null);
   saveStore(cleanStore);
   return cleanStore;
@@ -149,8 +154,17 @@ function normalizeStore(parsed: any): ARMSStore {
   };
 }
 
+function readLocalCache(): string | null {
+  try {
+    return localStorage.getItem(STORAGE_KEY);
+  } catch (e) {
+    console.warn('[ARMS] Cache lokal tidak dapat dibaca (storage diblokir runtime).', e);
+    return null;
+  }
+}
+
 export function getStoredStore(): ARMSStore | null {
-  const saved = localStorage.getItem(STORAGE_KEY);
+  const saved = readLocalCache();
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
@@ -167,7 +181,7 @@ export function initializeARMSStore(): ARMSStore {
 }
 
 export function getInitialStore(): ARMSStore {
-  const saved = localStorage.getItem(STORAGE_KEY);
+  const saved = readLocalCache();
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
@@ -180,7 +194,14 @@ export function getInitialStore(): ARMSStore {
 }
 
 export function saveStore(store: ARMSStore): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+  // localStorage hanya cache; sumber kebenaran = spreadsheet aktif.
+  // Dibungkus try/catch agar kuota penuh / storage diblokir (mis. saat berjalan
+  // di dalam Web App Apps Script) tidak menghentikan aplikasi.
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+  } catch (err) {
+    console.warn('[ARMS] Cache lokal gagal disimpan (kuota/storage tidak tersedia). Data tetap aman di spreadsheet aktif.', err);
+  }
 }
 
 function getRecordKey(r: any): string | null {
@@ -284,16 +305,13 @@ export function mapGasDataToStore(gasData: Record<string, any[]>, currentStore: 
     }
   });
 
-  // Handle Settings tab (array of { key: string, value: string })
+  // Handle Settings tab (array of { key, value } atau object key/value).
+  // Nilai panjang yang dipecah menjadi `key__chunkN` digabung kembali dan tiap
+  // key dikembalikan ke tipe aslinya (json/boolean/number) lewat settingsCodec.
   const settingsRows = gasData['Settings'] || gasData['settings'];
-  if (Array.isArray(settingsRows) && settingsRows.length > 0) {
-    const settingsObj: any = { ...currentStore.settings };
-    settingsRows.forEach((row) => {
-      if (row.key && row.value !== undefined) {
-        settingsObj[row.key] = row.value;
-      }
-    });
-    newStore.settings = settingsObj;
+  const fromSheet = parseSettingsFromSheet(settingsRows);
+  if (fromSheet && Object.keys(fromSheet).length > 0) {
+    newStore.settings = mergeSettingsFromSheet(currentStore.settings, fromSheet);
   }
 
   return normalizeStore(newStore);
