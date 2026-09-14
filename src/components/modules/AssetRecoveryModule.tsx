@@ -326,6 +326,19 @@ export const AssetRecoveryModule: React.FC<AssetRecoveryModuleProps> = ({
                             {r.tierAppliedName}
                           </div>
                         )}
+                        {(r.manualSplits?.length || 0) > 0 && (
+                          <div
+                            className="text-[9px] text-rose-300 font-normal truncate max-w-[150px] ml-auto"
+                            title={`Biaya tambahan manual: ${r.manualSplits!
+                              .map((item) => `${item.name} Rp ${(item.amount || 0).toLocaleString('id-ID')}`)
+                              .join(', ')}`}
+                          >
+                            + {r.manualSplits!.length} biaya manual (Rp{' '}
+                            {(r.manualFeesTotal ||
+                              r.manualSplits!.reduce((sum, item) => sum + (item.amount || 0), 0)).toLocaleString('id-ID')}
+                            )
+                          </div>
+                        )}
                       </td>
 
                       <td className="py-2.5 px-3 text-right font-mono font-bold text-indigo-300">

@@ -21,8 +21,12 @@ import {
 import {
   calculateRepossessionTierFee,
   executeUnitRepossessionAndCloseCase,
+  applyManualFeesToRepossessionTier,
+  calculateManualFeeTotals,
+  ManualFeeItem,
   RepossessionTierCalculationResult
 } from '../../utils/tierFeeCalculator';
+import { ManualFeeEditor } from '../common/ManualFeeEditor';
 
 interface UnitExecutionModalProps {
   initialCaseId?: string;
@@ -139,6 +143,27 @@ export const UnitExecutionModal: React.FC<UnitExecutionModalProps> = ({
     defaultCompanyPercent,
   ]);
 
+  // Biaya tambahan manual (tombol "+") - model sama seperti modul Pembayaran
+  const [manualSplits, setManualSplits] = useState<ManualFeeItem[]>([]);
+
+  const manualFeeTotals = useMemo(
+    () =>
+      calculateManualFeeTotals(manualSplits, {
+        isMitraDC: calcResult.isMitraDC,
+        companySplitPercent,
+      }),
+    [manualSplits, calcResult.isMitraDC, companySplitPercent]
+  );
+
+  const finalFeeTotals = useMemo(() => {
+    const finalCalc = applyManualFeesToRepossessionTier(calcResult, manualSplits, companySplitPercent);
+    return {
+      gross: finalCalc.grossRepossessionFee,
+      company: finalCalc.companyRevenueAmount,
+      partner: finalCalc.partnerCommissionAmount,
+    };
+  }, [calcResult, manualSplits, companySplitPercent]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!targetCase) return;
@@ -157,6 +182,7 @@ export const UnitExecutionModal: React.FC<UnitExecutionModalProps> = ({
         hasKey,
         bastDriveUrl,
         notes,
+        manualSplits,
         currentUser: {
           username: currentUser.username,
           role: currentUser.role,
@@ -451,10 +477,13 @@ export const UnitExecutionModal: React.FC<UnitExecutionModalProps> = ({
                   Total Tarif / Gross Fee Klien
                 </span>
                 <div className="text-lg font-black text-white font-mono">
-                  Rp {calcResult.grossRepossessionFee.toLocaleString('id-ID')}
+                  Rp {finalFeeTotals.gross.toLocaleString('id-ID')}
                 </div>
                 <span className="text-[10px] text-slate-500">
                   Basis: {calcResult.basisName}
+                  {manualFeeTotals.total > 0 && (
+                    <> + Biaya Manual Rp {manualFeeTotals.total.toLocaleString('id-ID')}</>
+                  )}
                 </span>
               </div>
 
@@ -468,7 +497,7 @@ export const UnitExecutionModal: React.FC<UnitExecutionModalProps> = ({
                   </span>
                 </div>
                 <div className="text-lg font-black text-indigo-300 font-mono">
-                  Rp {calcResult.companyRevenueAmount.toLocaleString('id-ID')}
+                  Rp {finalFeeTotals.company.toLocaleString('id-ID')}
                 </div>
                 <span className="text-[10px] text-indigo-400/80">
                   Masuk ke Rekening Pendapatan Kas ARMS
@@ -491,7 +520,7 @@ export const UnitExecutionModal: React.FC<UnitExecutionModalProps> = ({
                   )}
                 </div>
                 <div className="text-lg font-black font-mono">
-                  Rp {calcResult.partnerCommissionAmount.toLocaleString('id-ID')}
+                  Rp {finalFeeTotals.partner.toLocaleString('id-ID')}
                 </div>
                 <span className="text-[10px]">
                   {calcResult.isMitraDC ? 'Siap Ditransfer ke Mitra DC' : 'Tidak Berlaku (Karyawan Internal)'}
@@ -519,6 +548,15 @@ export const UnitExecutionModal: React.FC<UnitExecutionModalProps> = ({
                 </div>
               </div>
             )}
+
+            <ManualFeeEditor
+              accent="emerald"
+              items={manualSplits}
+              onChange={setManualSplits}
+              totals={manualFeeTotals}
+              title="Biaya Tambahan Manual"
+              description="Tambahkan biaya eksekusi di luar kalkulasi tier engine (mis. biaya towing, derek, parkir, atau jasa pihak ketiga)."
+            />
           </div>
 
           {/* Step 4: Storage & BAST Details */}
@@ -574,7 +612,7 @@ export const UnitExecutionModal: React.FC<UnitExecutionModalProps> = ({
                 Peringatan Sistem: Eksekusi Unit akan Otomatis Meng-Close Kasus Perkara
               </div>
               <p className="text-[11px] text-slate-300 leading-normal">
-                Menyimpan formulir ini akan mengubah status kasus menjadi <strong className="text-white">CLOSED</strong>, mencatat BAST Serah Terima, membukukan pendapatan komisi perusahaan sebesar <strong className="text-emerald-400 font-mono">Rp {calcResult.companyRevenueAmount.toLocaleString('id-ID')}</strong> ke Buku Besar, dan mengaktifkan tombol transfer bagi hasil untuk Mitra DC.
+                Menyimpan formulir ini akan mengubah status kasus menjadi <strong className="text-white">CLOSED</strong>, mencatat BAST Serah Terima, membukukan pendapatan komisi perusahaan sebesar <strong className="text-emerald-400 font-mono">Rp {finalFeeTotals.company.toLocaleString('id-ID')}</strong> ke Buku Besar, dan mengaktifkan tombol transfer bagi hasil untuk Mitra DC.
               </p>
             </div>
           </div>

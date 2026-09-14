@@ -75,6 +75,11 @@ export const TransferPartnerCommissionModal: React.FC<TransferPartnerCommissionM
     ? (payment?.partnerCommissionAmount ?? Math.max(0, initialGrossFee - initialCompanyAmount))
     : (recovery?.partnerCommissionAmount ?? Math.max(0, initialGrossFee - initialCompanyAmount));
 
+  // Biaya tambahan manual yang sudah termasuk dalam gross fee / hak mitra
+  const manualFeeItems = (isPayment ? payment?.manualSplits : recovery?.manualSplits) || [];
+  const manualFeeTotal =
+    manualFeeItems.reduce((sum, item) => sum + (item.amount || 0), 0) || (recovery?.manualFeesTotal ?? 0);
+
   // Form states
   const [grossFee, setGrossFee] = useState<number>(initialGrossFee);
   const [companyPercent, setCompanyPercent] = useState<number>(initialCompanyPercent);
@@ -448,6 +453,28 @@ export const TransferPartnerCommissionModal: React.FC<TransferPartnerCommissionM
                   <span className="text-[9px] text-emerald-300/80">Nominal bersih yang ditransfer</span>
                 </div>
               </div>
+
+              {manualFeeItems.length > 0 && (
+                <div className="rounded-lg border border-rose-800/60 bg-rose-950/30 p-2 text-[11px] text-rose-200">
+                  <div className="flex items-center justify-between font-bold">
+                    <span>Gross fee sudah termasuk Biaya Tambahan Manual ({manualFeeItems.length} item)</span>
+                    <span className="font-mono">Rp {manualFeeTotal.toLocaleString('id-ID')}</span>
+                  </div>
+                  <ul className="mt-1 space-y-0.5 text-[10px] text-rose-200/80">
+                    {manualFeeItems.map((item, idx) => (
+                      <li key={idx} className="flex items-center justify-between gap-2">
+                        <span>
+                          • {item.name}{' '}
+                          <span className="text-rose-300/60">
+                            ({item.allocation === 'SPLIT' ? 'Split dengan Mitra' : '100% Perusahaan'})
+                          </span>
+                        </span>
+                        <span className="font-mono">Rp {(item.amount || 0).toLocaleString('id-ID')}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
 
             {/* Destination Mitra DC Bank Account */}
