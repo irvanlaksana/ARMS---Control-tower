@@ -1,4 +1,5 @@
 import { SearchableSelect } from "../common/SearchableSelect";
+import { MediaUrlPreviewButton } from '../common/MediaPreview';
 import { DateInput } from '../common/DateInput';
 import React, { useState, useEffect } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
@@ -555,6 +556,9 @@ export const TransferPartnerCommissionModal: React.FC<TransferPartnerCommissionM
                     placeholder="https://drive.google.com/file/d/..."
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:border-indigo-500 focus:outline-none"
                   />
+                  <div className="mt-1.5">
+                    <MediaUrlPreviewButton url={transferProofUrl} module="Transfer Komisi Mitra" title="Bukti Transfer Komisi Mitra DC" />
+                  </div>
                 </div>
               </div>
 

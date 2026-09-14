@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { MediaUrlPreviewButton } from '../common/MediaPreview';
 import { ARMSStore } from '../../services/armsDataService';
 import { User, Case, AssetRecovery } from '../../types/arms';
 import { SearchableSelect } from '../common/SearchableSelect';
@@ -559,6 +560,9 @@ export const UnitExecutionModal: React.FC<UnitExecutionModalProps> = ({
                 placeholder="https://drive.google.com/drive/folders/..."
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:border-rose-500 focus:outline-none font-mono"
               />
+              <div className="mt-1.5">
+                <MediaUrlPreviewButton url={bastDriveUrl} module="Eksekusi Unit" title="BAST / Foto Serah Terima Unit" />
+              </div>
             </div>
           </div>
 

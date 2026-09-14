@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { MediaUrlPreviewButton } from '../common/MediaPreview';
 import { Pagination, usePagination } from '../common/Pagination';
 import { DateInput } from "../common/DateInput";
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
@@ -624,6 +625,9 @@ export const ModalKerjaModule: React.FC<ModalKerjaModuleProps> = ({
                   onChange={(e) => setProofDocumentUrl(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:border-indigo-500"
                 />
+                <div className="mt-1.5">
+                  <MediaUrlPreviewButton url={proofDocumentUrl} module="Modal Kerja" title="Bukti Transfer / Perjanjian" />
+                </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">

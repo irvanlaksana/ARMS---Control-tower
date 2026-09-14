@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
+import { MediaUrlPreviewButton } from '../common/MediaPreview';
 import { DateInput } from '../common/DateInput';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Collection, CommunicationLog, FieldPhoto, ClientType, AssetRecovery } from '../../types/arms';
@@ -9,6 +10,7 @@ import {
   Car, AlertCircle, CheckSquare, Sparkles, Navigation, Trash2, Send, Percent, ShieldCheck, Lock
 } from 'lucide-react';
 import { SearchableSelect } from "../common/SearchableSelect";
+import { useMediaPreview } from '../common/MediaPreview';
 import { AmountInput } from "../common/AmountInput";
 import { UnitExecutionModal } from './UnitExecutionModal';
 import { Pagination, usePagination } from '../common/Pagination';
@@ -67,6 +69,8 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
   const [showExecutionModal, setShowExecutionModal] = useState(false);
   const [selectedRecoveryForTransfer, setSelectedRecoveryForTransfer] = useState<AssetRecovery | null>(null);
   const [selectedPhotoPreview, setSelectedPhotoPreview] = useState<{ photo: FieldPhoto; caseNo: string; debtorName: string; clientName: string } | null>(null);
+  // Preview media global: galeri foto bukti + berkas Drive (lampiran) semua modul
+  const { openGallery: openGlobalMediaGallery } = useMediaPreview();
   const [collectionToDelete, setCollectionToDelete] = useState<Collection | null>(null);
   const [commLogToDelete, setCommLogToDelete] = useState<CommunicationLog | null>(null);
 
@@ -1715,7 +1719,13 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                       <img
                         src={photo.url}
                         alt="Preview"
-                        className="w-16 h-16 object-cover rounded-md border border-slate-700 shrink-0"
+                        data-media-preview
+                        data-media-url={photo.url}
+                        data-media-name={photo.caption || `Bukti-${photo.id}.jpg`}
+                        data-media-title="Foto Bukti (belum tersimpan)"
+                        data-media-module="Collection"
+                        title="Klik untuk preview penuh"
+                        className="w-16 h-16 object-cover rounded-md border border-slate-700 shrink-0 cursor-zoom-in hover:border-indigo-500 transition"
                       />
 
                       <div className="flex-1 min-w-0 space-y-1">
@@ -1779,6 +1789,9 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                   placeholder="https://drive.google.com/drive/folders/..."
                   className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white font-mono placeholder-slate-600"
                 />
+                <div className="mt-1.5">
+                  <MediaUrlPreviewButton url={driveFolderUrl} module="Collection" title="Lampiran / Folder Drive" />
+                </div>
               </div>
             </div>
 
@@ -1852,16 +1865,44 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                 <p className="text-slate-200 mt-0.5 font-medium">{selectedPhotoPreview.photo.caption}</p>
               </div>
 
-              <a
-                href={selectedPhotoPreview.photo.url}
-                download={`Bukti-Foto-${selectedPhotoPreview.caseNo}.jpg`}
-                target="_blank"
-                rel="noreferrer"
-                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition self-end sm:self-auto shrink-0"
-              >
-                <ExternalLink className="w-3 h-3" />
-                <span>Buka Ukuran Penuh</span>
-              </a>
+              <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const idx = Math.max(
+                      0,
+                      filteredPhotos.findIndex((x) => x.photo.url === selectedPhotoPreview.photo.url)
+                    );
+                    openGlobalMediaGallery(
+                      filteredPhotos.map((x) => ({
+                        url: x.photo.url,
+                        fileName: x.photo.caption || `Bukti-${x.caseNo}.jpg`,
+                        title: x.photo.caption || 'Foto Bukti Lapangan',
+                        caption: `${x.caseNo} — ${x.debtorName}`,
+                        module: 'Collection',
+                      })),
+                      idx
+                    );
+                  }}
+                  className="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-600/40 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
+                  title="Buka preview penuh (navigasi semua foto)"
+                >
+                  <Eye className="w-3 h-3" />
+                  <span>Preview Penuh</span>
+                </button>
+
+                <a
+                  href={selectedPhotoPreview.photo.url}
+                  download={`Bukti-Foto-${selectedPhotoPreview.caseNo}.jpg`}
+                  target="_blank"
+                  rel="noreferrer"
+                  data-no-media-preview
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  <span>Buka Ukuran Penuh</span>
+                </a>
+              </div>
             </div>
           </div>
         </div>
