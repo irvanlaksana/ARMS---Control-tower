@@ -1,20 +1,46 @@
 /**
- * Integrasi Generator Surat Tugas / Kuasa.
- * Sumber & tipe data mengikuti repo:
- *   https://github.com/irvanlaksana/generate-surat-tugas
- * UI online:
- *   https://generator-surat-new.vercel.app/
+ * ============================================================================
+ *  Integrasi Generator Surat Tugas / Kuasa
+ * ============================================================================
+ *  A. GENERATOR LOKAL (tetap ada, tidak dihapus):
+ *     komponen `assignment-letter/AssignmentLetterGenerator` memakai model
+ *     `BastData` versi lama. `buildGeneratorData()` di berkas ini menerjemahkan
+ *     Form Pembuatan Surat Tugas / Kuasa (ARMS) ke model tersebut.
  *
- * `buildGeneratorData` menerjemahkan data Form Pembuatan Surat Tugas / Kuasa (ARMS)
- * menjadi `BastData` milik generator, sehingga saat dibuka form sudah terisi.
+ *  B. GENERATOR WEB (dipakai tombol "Buat di Generator"):
+ *     https://generator-surat-beige.vercel.app/
+ *     repo: https://github.com/irvanlaksana/generator-surat-
+ *     Payload-nya mengikuti model `LetterData` + `BastData` repo tersebut dan
+ *     dibangun di `./generatorSuratPayload.ts` (lihat docs/GENERATOR_SURAT_PAYLOAD.md).
+ * ============================================================================
  */
 import { BastData, VehicleType } from '../components/assignment-letter/types';
 import { BLANK_DATA, syncChecklist } from '../components/assignment-letter/data/defaults';
 import { Case, Customer, Personnel, SK } from '../types/arms';
 
-export const GENERATOR_UI_URL = 'https://generator-surat-new.vercel.app/';
-export const GENERATOR_REPO_URL = 'https://github.com/irvanlaksana/generate-surat-tugas';
-export const GENERATOR_PAYLOAD_PARAM = 'payload';
+/** Konstanta & builder payload generator web (sumber tunggal). */
+export {
+  GENERATOR_UI_URL,
+  GENERATOR_REPO_URL,
+  GENERATOR_PAYLOAD_PARAM,
+  GENERATOR_PAYLOAD_VERSION,
+  buildGeneratorUrl,
+  buildGeneratorPayload,
+  encodeGeneratorPayload as encodeWebGeneratorPayload,
+  decodeGeneratorPayload,
+  downloadGeneratorPayload,
+  generatorPayloadJson,
+  sendPayloadToWindow,
+  summarizeGeneratorPayload,
+} from './generatorSuratPayload';
+export type {
+  GeneratorPayload,
+  GeneratorDocType,
+  LetterData as GeneratorLetterData,
+  BastData as GeneratorBastData,
+  PaperSize as GeneratorPaperSize,
+  WebGeneratorInput,
+} from './generatorSuratPayload';
 
 export interface GeneratorFormInput {
   skNumber?: string;
@@ -148,17 +174,18 @@ export function buildGeneratorData(input: GeneratorFormInput): BastData {
   };
 }
 
-/** Encode payload JSON ke base64url untuk query `?payload=`. */
+/**
+ * Encode payload JSON (model generator LOKAL) ke base64url.
+ * Dipertahankan untuk kompatibilitas; payload generator web memakai
+ * `encodeWebGeneratorPayload` dari ./generatorSuratPayload.
+ */
 export function encodeGeneratorPayload(data: BastData | Record<string, unknown>): string {
   const json = JSON.stringify(data);
-  const bytes = new TextEncoder().encode(json);
-  let binary = '';
-  bytes.forEach((b) => { binary += String.fromCharCode(b); });
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-/** URL generator online dengan payload yang sudah di-encode. */
-export function buildGeneratorUrl(data: BastData | Record<string, unknown>): string {
-  const payload = encodeGeneratorPayload(data);
-  return `${GENERATOR_UI_URL}?${GENERATOR_PAYLOAD_PARAM}=${encodeURIComponent(payload)}&d=${encodeURIComponent(payload)}`;
+  if (typeof TextEncoder !== 'undefined' && typeof btoa === 'function') {
+    const bytes = new TextEncoder().encode(json);
+    let binary = '';
+    bytes.forEach((b) => { binary += String.fromCharCode(b); });
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  return Buffer.from(json, 'utf-8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }

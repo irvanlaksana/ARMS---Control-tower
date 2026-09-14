@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { MediaUrlPreviewButton } from '../common/MediaPreview';
 import { Pagination, usePagination } from '../common/Pagination';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, LawyerNotice } from '../../types/arms';
@@ -732,6 +733,13 @@ ${firm || 'Kantor Advokat & Konsultan Hukum Mitra'}`;
                       <td className="py-2.5 px-3">
                         {hasDriveUrl ? (
                           <div className="flex items-center gap-1.5">
+                            <MediaUrlPreviewButton
+                              url={n.driveDocumentUrl}
+                              module="Legal / Somasi"
+                              title={`Somasi ${n.noticeNo}`}
+                              caption={`${n.debtorName} — ${n.caseNo}`}
+                              label="Preview"
+                            />
                             <a
                               href={n.driveDocumentUrl}
                               target="_blank"

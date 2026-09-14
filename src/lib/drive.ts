@@ -84,7 +84,7 @@ export async function createDriveFolder(name: string, parentId?: string | null):
   } catch {
     let cleanMsg = `Server merespons status HTTP ${resp.status}.`;
     if (rawText.includes('A server error') || resp.status === 500) {
-      cleanMsg = 'Server Vercel mengalami kendala saat mengakses Google Drive. Pastikan environment variable GOOGLE_SERVICE_ACCOUNT_JSON sudah diatur di Vercel.';
+      cleanMsg = 'Backend gagal mengakses Google Drive. Pada deploy Apps Script pastikan akun deploy punya akses Editor di folder master; pada deploy server pastikan GOOGLE_SERVICE_ACCOUNT_JSON terisi.';
     } else if (resp.status === 504 || resp.status === 408) {
       cleanMsg = 'Waktu permintaan ke Google Drive habis (Request Timeout).';
     } else if (resp.status === 404) {
@@ -137,7 +137,7 @@ export async function ensureDrivePath(segments: string[], rootId?: string | null
   } catch {
     let cleanMsg = `Server merespons status HTTP ${resp.status}.`;
     if (rawText.includes('A server error') || resp.status === 500) {
-      cleanMsg = 'Server Vercel mengalami kendala saat mengakses Google Drive. Pastikan environment variable GOOGLE_SERVICE_ACCOUNT_JSON sudah diatur di Vercel.';
+      cleanMsg = 'Backend gagal mengakses Google Drive. Pada deploy Apps Script pastikan akun deploy punya akses Editor di folder master; pada deploy server pastikan GOOGLE_SERVICE_ACCOUNT_JSON terisi.';
     } else if (resp.status === 504 || resp.status === 408) {
       cleanMsg = 'Waktu permintaan ke Google Drive habis (Request Timeout).';
     } else if (resp.status === 404) {
@@ -364,7 +364,7 @@ export async function uploadBase64ToDrive(
       } else if (resp.status === 504 || resp.status === 408) {
         cleanMsg = 'Waktu unggah habis (Request Timeout).';
       } else if (resp.status === 500) {
-        cleanMsg = 'Google Drive belum siap atau akun layanan memerlukan Shared Drive.';
+        cleanMsg = 'Google Drive belum siap. Pada Apps Script: bagikan folder master ke akun deploy. Pada server: akun layanan memerlukan Shared Drive.';
       }
       return {
         success: false,
@@ -403,9 +403,25 @@ export async function uploadBase64ToDrive(
 }
 
 /**
- * Periksa status kesiapan Google Drive Service Account
+ * Periksa status kesiapan penyimpanan Google Drive.
+ * - Deploy Apps Script: memakai DriveApp (akun deploy), konfigurasi folder
+ *   dibaca dari spreadsheet aktif.
+ * - Deploy server: memakai Service Account (GOOGLE_SERVICE_ACCOUNT_JSON).
  */
-export async function checkDriveStatus(): Promise<{ configured: boolean; serviceAccountEmail?: string; error?: string }> {
+export interface DriveStatusResult {
+  configured: boolean;
+  serviceAccountEmail?: string;
+  driveUser?: string;
+  mode?: string;
+  provider?: string;
+  rootFolderId?: string;
+  rootFolderName?: string;
+  rootAccessible?: boolean;
+  instructions?: string;
+  error?: string;
+}
+
+export async function checkDriveStatus(): Promise<DriveStatusResult> {
   try {
     const resp = await fetch('/api/drive/status');
     if (!resp.ok) return { configured: false };
@@ -413,6 +429,13 @@ export async function checkDriveStatus(): Promise<{ configured: boolean; service
     return {
       configured: Boolean(json.configured),
       serviceAccountEmail: json.serviceAccountEmail,
+      driveUser: json.driveUser || json.serviceAccountEmail,
+      mode: json.mode,
+      provider: json.provider,
+      rootFolderId: json.rootFolderId,
+      rootFolderName: json.rootFolderName,
+      rootAccessible: json.rootAccessible,
+      instructions: json.instructions,
     };
   } catch {
     return { configured: false };

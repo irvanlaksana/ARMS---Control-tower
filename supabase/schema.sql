@@ -470,6 +470,8 @@ CREATE TABLE IF NOT EXISTS public.asset_recoveries (
     company_fee_percent NUMERIC(15,2) DEFAULT 0,
     company_fee_amount NUMERIC(18,2) DEFAULT 0,
     partner_commission_amount NUMERIC(18,2) DEFAULT 0,
+    manual_splits JSONB DEFAULT '[]'::jsonb,
+    manual_fees_total NUMERIC(18,2) DEFAULT 0,
     partner_payout_status TEXT CHECK (partner_payout_status IN ('NOT_APPLICABLE', 'PENDING_TRANSFER', 'TRANSFERRED', 'REJECTED')),
     partner_transfer_date DATE,
     partner_transfer_ref TEXT,

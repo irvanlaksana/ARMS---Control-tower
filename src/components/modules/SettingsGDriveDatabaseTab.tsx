@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { MediaUrlPreviewButton } from '../common/MediaPreview';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Client, Personnel, Case, Customer, SK, Contract } from '../../types/arms';
 import { ROOT_GDRIVE_URL, ROOT_GDRIVE_ID } from '../../data/initialData';
@@ -46,7 +47,9 @@ import {
   personnelDocPathLabel,
   uploadPersonnelDocument,
   checkDriveStatus,
+  DriveStatusResult,
 } from '../../lib/drive';
+import { getApiMode } from '../../lib/gasBridge';
 import { LetterPreviewModal, LetterPreviewData } from '../common/LetterPreviewModal';
 import { EmployeeIdCardModal } from './EmployeeIdCardModal';
 import { AddressFields } from '../common/AddressFields';
@@ -69,7 +72,7 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [creatingFolderKey, setCreatingFolderKey] = useState<string | null>(null);
   const [folderActionMsg, setFolderActionMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const [driveStatus, setDriveStatus] = useState<{ configured: boolean; serviceAccountEmail?: string; error?: string } | null>(null);
+  const [driveStatus, setDriveStatus] = useState<DriveStatusResult | null>(null);
 
   useEffect(() => {
     checkDriveStatus()
@@ -798,19 +801,28 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
             <div className="flex items-center gap-2">
               <span className={`w-2 h-2 rounded-full ${driveStatus?.configured ? 'bg-emerald-400' : 'bg-amber-400'}`} />
               <span className="font-semibold text-slate-200">
-                {driveStatus?.configured ? 'Google Drive Service Account Terhubung' : 'Google Drive Belum Dikonfigurasi'}
+                {driveStatus?.configured
+                  ? getApiMode() === 'SERVER'
+                    ? 'Google Drive Service Account Terhubung'
+                    : 'Google Drive Terhubung (Apps Script / DriveApp)'
+                  : 'Google Drive Belum Dikonfigurasi'}
               </span>
+              {driveStatus?.mode ? (
+                <span className="px-2 py-0.5 bg-slate-900 border border-slate-800 rounded-full text-[10px] font-mono text-slate-400">
+                  {driveStatus.mode}
+                </span>
+              ) : null}
             </div>
-            {driveStatus?.serviceAccountEmail && (
+            {(driveStatus?.driveUser || driveStatus?.serviceAccountEmail) && (
               <div className="flex items-center gap-1.5 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800">
                 <span className="text-[11px] text-slate-400 font-mono select-all">
-                  {driveStatus.serviceAccountEmail}
+                  {driveStatus.driveUser || driveStatus.serviceAccountEmail}
                 </span>
                 <button
                   type="button"
-                  onClick={() => handleCopyLink(driveStatus.serviceAccountEmail || '', 'sa-email')}
+                  onClick={() => handleCopyLink(driveStatus.driveUser || driveStatus.serviceAccountEmail || '', 'sa-email')}
                   className="text-slate-400 hover:text-white transition p-0.5"
-                  title="Salin Email Service Account"
+                  title="Salin Email Akun Penyimpanan Drive"
                 >
                   {copiedId === 'sa-email' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
                 </button>
@@ -827,7 +839,26 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                 <strong className="text-slate-300">Struktur Folder Otomatis</strong> (01_KTP, 02_SPPI, folder Klien &amp; Debitur) dibuat secara langsung oleh sistem di Google Drive.
               </li>
               <li>
-                <strong className="text-slate-300">Unggah Berkas Fisik:</strong> Berdasarkan kebijakan Google Cloud, Service Account memerlukan folder di dalam <strong className="text-indigo-300">Google Workspace Shared Drive (Drive Bersama)</strong> dengan email Service Account sebagai <em>Editor / Pengelola Konten</em>.
+                <strong className="text-slate-300">Unggah Berkas Fisik:</strong>{' '}
+                {getApiMode() === 'SERVER' ? (
+                  <>
+                    Berdasarkan kebijakan Google Cloud, Service Account memerlukan folder di dalam{' '}
+                    <strong className="text-indigo-300">Google Workspace Shared Drive (Drive Bersama)</strong> dengan email
+                    Service Account sebagai <em>Editor / Pengelola Konten</em>.
+                  </>
+                ) : (
+                  <>
+                    Berkas diunggah lewat <strong className="text-indigo-300">Google Apps Script (DriveApp)</strong> memakai
+                    akun deploy, sehingga folder cukup dibagikan sebagai <em>Editor</em> ke akun tersebut — tanpa Service
+                    Account dan tanpa kewajiban Shared Drive.
+                  </>
+                )}
+              </li>
+              <li>
+                <strong className="text-slate-300">Konfigurasi Tersimpan di Spreadsheet Aktif:</strong> Folder ID/URL master,
+                tautan folder tiap karyawan/mitra/debitur, dan seluruh data yang ditampilkan di halaman ini disimpan pada
+                spreadsheet aktif (tab <code className="text-indigo-300">Settings</code>, <code className="text-indigo-300">Drive_Folders</code>,{' '}
+                <code className="text-indigo-300">Personnel</code>, <code className="text-indigo-300">Customers</code>).
               </li>
               <li>
                 <strong className="text-slate-300">Fallback Aman:</strong> Jika folder berada di Drive pribadi tanpa Shared Drive, sistem otomatis mengamankan foto dan berkas ke dalam database aplikasi saat Anda menekan <strong>Simpan</strong>, sehingga data operasional tetap tersimpan.
@@ -1905,6 +1936,9 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                   placeholder="https://drive.google.com/file/d/.../view"
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-white font-mono text-xs focus:outline-none focus:border-indigo-500"
                 />
+                <div className="mt-1.5">
+                  <MediaUrlPreviewButton url={editDocUrl} module="Pengaturan GDrive" title="Berkas Dokumen" />
+                </div>
               </div>
 
               {editLinkTarget.type === 'PERSONNEL' && (
@@ -1919,6 +1953,9 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                     placeholder="https://drive.google.com/file/d/.../view"
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-white font-mono text-xs focus:outline-none focus:border-indigo-500"
                   />
+                  <div className="mt-1.5">
+                    <MediaUrlPreviewButton url={editSphUrl} module="Pengaturan GDrive" title="Berkas Pendukung (SPPI / SPH)" />
+                  </div>
                 </div>
               )}
 
@@ -1934,6 +1971,9 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                     placeholder="https://drive.google.com/file/d/.../view"
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-white font-mono text-xs focus:outline-none focus:border-indigo-500"
                   />
+                  <div className="mt-1.5">
+                    <MediaUrlPreviewButton url={editSphUrl} module="Pengaturan GDrive" title="Berkas Pendukung (SPPI / SPH)" />
+                  </div>
                 </div>
               )}
             </div>
@@ -2031,6 +2071,9 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                   placeholder="https://drive.google.com/file/d/.../view?usp=sharing"
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-white font-mono text-xs focus:outline-none focus:border-emerald-500"
                 />
+                <div className="mt-1.5">
+                  <MediaUrlPreviewButton url={uploadedUrl} module="Pengaturan GDrive" title="Berkas yang Baru Ditautkan" />
+                </div>
               </div>
             </div>
 
@@ -2236,7 +2279,14 @@ export const SettingsGDriveDatabaseTab: React.FC<SettingsGDriveDatabaseTabProps>
                 <img
                   src={previewKtpPersonnel.ktpPhotoUrl}
                   alt={`KTP ${previewKtpPersonnel.fullName}`}
-                  className="max-h-[260px] w-auto object-contain rounded border border-slate-800"
+                  data-media-preview
+                  data-media-url={previewKtpPersonnel.ktpPhotoUrl}
+                  data-media-name={`KTP-${previewKtpPersonnel.fullName}.jpg`}
+                  data-media-title={`Foto KTP — ${previewKtpPersonnel.fullName}`}
+                  data-media-caption={previewKtpPersonnel.nikKtp || undefined}
+                  data-media-module="Pengaturan GDrive"
+                  title="Klik untuk preview penuh"
+                  className="max-h-[260px] w-auto object-contain rounded border border-slate-800 cursor-zoom-in hover:border-indigo-500 transition"
                 />
               ) : (
                 <div className="text-slate-500 text-xs">Foto KTP belum diunggah</div>

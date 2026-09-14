@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { MediaUrlPreviewButton } from '../common/MediaPreview';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Case, FeeType, Client, ClientType } from '../../types/arms';
 import { Briefcase, Plus, CheckCircle, Search, Building2, User as UserIcon, UserCheck, ShieldCheck, Edit2, Trash2, AlertTriangle, AlertCircle, Lock, X } from 'lucide-react';
@@ -655,6 +656,9 @@ export const CasesModule: React.FC<CasesModuleProps> = ({
                 placeholder="https://drive.google.com/drive/folders/..."
                 className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-white"
               />
+              <div className="mt-1.5">
+                <MediaUrlPreviewButton url={gDriveFolderUrl} module="Perkara" title="Folder Arsip Berkas Perkara" label="Preview Folder" />
+              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-1.5 border-t border-slate-800">

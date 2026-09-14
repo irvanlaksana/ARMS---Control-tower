@@ -1,5 +1,6 @@
 import React from 'react';
-import { ExternalLink, Check, Copy, X, CloudUpload } from 'lucide-react';
+import { ExternalLink, Check, Copy, X, CloudUpload, Maximize2 } from 'lucide-react';
+import { useMediaPreview } from './MediaPreview';
 
 interface DriveFilePreviewProps {
   open: boolean;
@@ -10,6 +11,12 @@ interface DriveFilePreviewProps {
   driveFileId?: string;
   webViewLink?: string;
   onUpload?: () => Promise<void> | void;
+  /** Label modul asal (ditampilkan pada preview penuh). */
+  module?: string;
+  /** Judul berkas untuk preview penuh. */
+  title?: string;
+  /** Sembunyikan tombol "Preview Penuh". */
+  hideFullPreview?: boolean;
 }
 
 export const DriveFilePreview: React.FC<DriveFilePreviewProps> = ({
@@ -21,7 +28,11 @@ export const DriveFilePreview: React.FC<DriveFilePreviewProps> = ({
   driveFileId,
   webViewLink,
   onUpload,
+  module,
+  title,
+  hideFullPreview,
 }) => {
+  const { openMedia } = useMediaPreview();
   if (!open) return null;
 
   const isDataUrl = typeof fileUrl === 'string' && fileUrl.startsWith('data:');
@@ -114,11 +125,32 @@ export const DriveFilePreview: React.FC<DriveFilePreviewProps> = ({
               </button>
             )}
 
+            {!hideFullPreview && (fileUrl || driveFileId) && (
+              <button
+                onClick={() =>
+                  openMedia({
+                    url: fileUrl || (driveFileId ? `https://drive.google.com/file/d/${driveFileId}/view` : ''),
+                    fileName,
+                    title: title || fileName,
+                    driveFileId,
+                    webViewLink,
+                    module,
+                  })
+                }
+                className="flex items-center gap-1.5 bg-violet-600/80 hover:bg-violet-500 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition"
+                title="Buka preview penuh (dukung PDF/dokumen & berkas privat)"
+              >
+                <Maximize2 className="w-4 h-4" />
+                <span>Preview Penuh</span>
+              </button>
+            )}
+
             {canOpen && (
               <a
                 href={webViewLink || fileUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                data-no-media-preview
                 className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition"
               >
                 <ExternalLink className="w-4 h-4" />

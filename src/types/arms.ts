@@ -387,6 +387,10 @@ export interface AssetRecovery {
   companyFeePercent?: number; // Company percentage share (e.g. 20%)
   companyFeeAmount?: number; // Nominal company revenue (e.g. 20% * repossessionFee)
   partnerCommissionAmount?: number; // Nominal DC partner share (e.g. 80% * repossessionFee)
+  /** Biaya tambahan manual (tombol "+") yang sudah termasuk dalam repossessionFee. */
+  manualSplits?: { name: string; amount: number; allocation?: 'COMPANY' | 'SPLIT' }[];
+  /** Total seluruh biaya tambahan manual pada BAST ini. */
+  manualFeesTotal?: number;
   partnerPayoutStatus?: 'NOT_APPLICABLE' | 'PENDING_TRANSFER' | 'TRANSFERRED' | 'REJECTED';
   partnerTransferDate?: string;
   partnerTransferRef?: string;

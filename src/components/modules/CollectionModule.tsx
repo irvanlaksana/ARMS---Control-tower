@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
+import { MediaUrlPreviewButton } from '../common/MediaPreview';
 import { DateInput } from '../common/DateInput';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Collection, CommunicationLog, FieldPhoto, ClientType, AssetRecovery } from '../../types/arms';
@@ -9,11 +10,19 @@ import {
   Car, AlertCircle, CheckSquare, Sparkles, Navigation, Trash2, Send, Percent, ShieldCheck, Lock
 } from 'lucide-react';
 import { SearchableSelect } from "../common/SearchableSelect";
+import { useMediaPreview } from '../common/MediaPreview';
 import { AmountInput } from "../common/AmountInput";
 import { UnitExecutionModal } from './UnitExecutionModal';
 import { Pagination, usePagination } from '../common/Pagination';
 import { TransferPartnerCommissionModal } from './TransferPartnerCommissionModal';
-import { calculateRepossessionTierFee, executeUnitRepossessionAndCloseCase } from '../../utils/tierFeeCalculator';
+import {
+  calculateRepossessionTierFee,
+  executeUnitRepossessionAndCloseCase,
+  applyManualFeesToRepossessionTier,
+  calculateManualFeeTotals,
+  ManualFeeItem
+} from '../../utils/tierFeeCalculator';
+import { ManualFeeEditor } from '../common/ManualFeeEditor';
 
 interface CollectionModuleProps {
   store: ARMSStore;
@@ -67,6 +76,8 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
   const [showExecutionModal, setShowExecutionModal] = useState(false);
   const [selectedRecoveryForTransfer, setSelectedRecoveryForTransfer] = useState<AssetRecovery | null>(null);
   const [selectedPhotoPreview, setSelectedPhotoPreview] = useState<{ photo: FieldPhoto; caseNo: string; debtorName: string; clientName: string } | null>(null);
+  // Preview media global: galeri foto bukti + berkas Drive (lampiran) semua modul
+  const { openGallery: openGlobalMediaGallery } = useMediaPreview();
   const [collectionToDelete, setCollectionToDelete] = useState<Collection | null>(null);
   const [commLogToDelete, setCommLogToDelete] = useState<CommunicationLog | null>(null);
 
@@ -99,6 +110,8 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
   );
   const [repossessionBastNo, setRepossessionBastNo] = useState<string>(`BAST-2026-${Math.floor(1000 + Math.random() * 9000)}`);
   const [repossessionWarehouseLocation, setRepossessionWarehouseLocation] = useState<string>('Gudang ARMS Karawang');
+  /** Biaya tambahan manual (tombol "+") pada eksekusi unit — sama seperti modul Pembayaran. */
+  const [repossessionManualSplits, setRepossessionManualSplits] = useState<ManualFeeItem[]>([]);
 
   // Payment Section
   const [hasPayment, setHasPayment] = useState(false);
@@ -155,6 +168,28 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
     repossessionCompanySplitPercent,
     store.settings?.defaultCompanyCommissionSplitPercent,
   ]);
+
+  // Total biaya tambahan manual + hasil tier final untuk eksekusi unit
+  const unitManualFeeTotals = useMemo(
+    () =>
+      calculateManualFeeTotals(repossessionManualSplits, {
+        isMitraDC: Boolean(unitTierCalculation?.isMitraDC),
+        companySplitPercent: repossessionCompanySplitPercent,
+      }),
+    [repossessionManualSplits, unitTierCalculation, repossessionCompanySplitPercent]
+  );
+
+  const unitTierFinal = useMemo(
+    () =>
+      unitTierCalculation
+        ? applyManualFeesToRepossessionTier(
+            unitTierCalculation,
+            repossessionManualSplits,
+            repossessionCompanySplitPercent
+          )
+        : null,
+    [unitTierCalculation, repossessionManualSplits, repossessionCompanySplitPercent]
+  );
 
   // Handle Photo Upload
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -307,7 +342,7 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
 
     // Repossession / Unit Execution Workflow (Closes Case, Generates Revenue & BAST)
     if (interactionType === 'REPOSSESSION') {
-      const calc = unitTierCalculation || calculateRepossessionTierFee(
+      const calc = unitTierFinal || unitTierCalculation || calculateRepossessionTierFee(
         {
           targetCase,
           client: targetClient,
@@ -342,6 +377,7 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
           hasKey: repossessionHasKey,
           bastDriveUrl: driveFolderUrl || targetCase.gDriveFolderUrl,
           notes: reportSummary,
+          manualSplits: repossessionManualSplits,
           currentUser: {
             username: currentUser.username,
             role: currentUser.role,
@@ -352,6 +388,7 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
 
       onUpdateStore(updatedStore);
       setShowUnifiedModal(false);
+      setRepossessionManualSplits([]);
 
       if (calc.isMitraDC) {
         setSelectedRecoveryForTransfer(newRecovery);
@@ -1574,26 +1611,50 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                   </label>
                 </div>
 
+                {/* Biaya tambahan manual (tombol "+") untuk eksekusi unit */}
+                <ManualFeeEditor
+                  accent="rose"
+                  items={repossessionManualSplits}
+                  onChange={setRepossessionManualSplits}
+                  totals={unitManualFeeTotals}
+                  title="Biaya Tambahan Manual"
+                  description="Tambahkan biaya eksekusi di luar kalkulasi tier otomatis (mis. biaya derek, towing, parkir gudang, atau jasa pihak ketiga)."
+                />
+
                 {/* Live Calculation Display */}
-                {unitTierCalculation && (
+                {unitTierFinal && (
                   <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 space-y-1.5 text-xs">
                     <div className="flex justify-between items-center text-slate-400">
-                      <span>Total Gross Fee Eksekusi (Tiering):</span>
+                      <span>Fee Eksekusi dari Tier Engine:</span>
+                      <span className="font-bold font-mono text-slate-300">
+                        Rp {unitTierFinal.tierGrossRepossessionFee.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                    {unitManualFeeTotals.total > 0 && (
+                      <div className="flex justify-between items-center text-slate-400">
+                        <span>Biaya Tambahan Manual ({unitManualFeeTotals.itemCount} item):</span>
+                        <span className="font-bold font-mono text-rose-300">
+                          + Rp {unitManualFeeTotals.total.toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center text-slate-300 border-t border-slate-800/80 pt-1.5">
+                      <span className="font-semibold">Total Gross Fee Eksekusi:</span>
                       <span className="font-bold font-mono text-white text-sm">
-                        Rp {unitTierCalculation.totalGrossFee.toLocaleString('id-ID')}
+                        Rp {unitTierFinal.grossRepossessionFee.toLocaleString('id-ID')}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-slate-400">
-                      <span>Pendapatan Perusahaan ({unitTierCalculation.companyFeePercent}%):</span>
+                      <span>Pendapatan Perusahaan ({unitTierFinal.companyFeePercent}%):</span>
                       <span className="font-bold font-mono text-emerald-400">
-                        Rp {unitTierCalculation.companyFeeAmount.toLocaleString('id-ID')}
+                        Rp {unitTierFinal.companyRevenueAmount.toLocaleString('id-ID')}
                       </span>
                     </div>
-                    {unitTierCalculation.isMitraDC ? (
+                    {unitTierFinal.isMitraDC ? (
                       <div className="flex justify-between items-center text-slate-400">
-                        <span>Hak Komisi Mitra DC ({unitTierCalculation.partnerCommissionPercent}%):</span>
+                        <span>Hak Komisi Mitra DC ({100 - unitTierFinal.companyFeePercent}%):</span>
                         <span className="font-bold font-mono text-amber-400">
-                          Rp {unitTierCalculation.partnerCommissionAmount.toLocaleString('id-ID')}
+                          Rp {unitTierFinal.partnerCommissionAmount.toLocaleString('id-ID')}
                         </span>
                       </div>
                     ) : (
@@ -1602,7 +1663,7 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                       </div>
                     )}
                     <div className="text-[10px] text-slate-500 pt-1 border-t border-slate-800/80">
-                      {unitTierCalculation.breakdownReason}
+                      {unitTierFinal.explanationNotes}
                     </div>
                   </div>
                 )}
@@ -1715,7 +1776,13 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                       <img
                         src={photo.url}
                         alt="Preview"
-                        className="w-16 h-16 object-cover rounded-md border border-slate-700 shrink-0"
+                        data-media-preview
+                        data-media-url={photo.url}
+                        data-media-name={photo.caption || `Bukti-${photo.id}.jpg`}
+                        data-media-title="Foto Bukti (belum tersimpan)"
+                        data-media-module="Collection"
+                        title="Klik untuk preview penuh"
+                        className="w-16 h-16 object-cover rounded-md border border-slate-700 shrink-0 cursor-zoom-in hover:border-indigo-500 transition"
                       />
 
                       <div className="flex-1 min-w-0 space-y-1">
@@ -1779,6 +1846,9 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                   placeholder="https://drive.google.com/drive/folders/..."
                   className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white font-mono placeholder-slate-600"
                 />
+                <div className="mt-1.5">
+                  <MediaUrlPreviewButton url={driveFolderUrl} module="Collection" title="Lampiran / Folder Drive" />
+                </div>
               </div>
             </div>
 
@@ -1852,16 +1922,44 @@ export const CollectionModule: React.FC<CollectionModuleProps> = ({
                 <p className="text-slate-200 mt-0.5 font-medium">{selectedPhotoPreview.photo.caption}</p>
               </div>
 
-              <a
-                href={selectedPhotoPreview.photo.url}
-                download={`Bukti-Foto-${selectedPhotoPreview.caseNo}.jpg`}
-                target="_blank"
-                rel="noreferrer"
-                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition self-end sm:self-auto shrink-0"
-              >
-                <ExternalLink className="w-3 h-3" />
-                <span>Buka Ukuran Penuh</span>
-              </a>
+              <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const idx = Math.max(
+                      0,
+                      filteredPhotos.findIndex((x) => x.photo.url === selectedPhotoPreview.photo.url)
+                    );
+                    openGlobalMediaGallery(
+                      filteredPhotos.map((x) => ({
+                        url: x.photo.url,
+                        fileName: x.photo.caption || `Bukti-${x.caseNo}.jpg`,
+                        title: x.photo.caption || 'Foto Bukti Lapangan',
+                        caption: `${x.caseNo} — ${x.debtorName}`,
+                        module: 'Collection',
+                      })),
+                      idx
+                    );
+                  }}
+                  className="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-600/40 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
+                  title="Buka preview penuh (navigasi semua foto)"
+                >
+                  <Eye className="w-3 h-3" />
+                  <span>Preview Penuh</span>
+                </button>
+
+                <a
+                  href={selectedPhotoPreview.photo.url}
+                  download={`Bukti-Foto-${selectedPhotoPreview.caseNo}.jpg`}
+                  target="_blank"
+                  rel="noreferrer"
+                  data-no-media-preview
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  <span>Buka Ukuran Penuh</span>
+                </a>
+              </div>
             </div>
           </div>
         </div>

@@ -98,6 +98,7 @@ const NUMERIC_COLUMNS = new Set([
   'tier_base_amount',
   'tier_modifiers_total',
   'repossession_fee',
+  'manual_fees_total',
   'company_fee_percent',
   'company_fee_amount',
   'partner_commission_amount',

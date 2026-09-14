@@ -751,6 +751,8 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
         fileName={previewKtpModal?.fullName}
         isUploading={isUploadingPhoto}
         driveFileId={previewKtpModal?.ktpDriveFileId}
+        module="Personnel"
+        title={`Foto KTP — ${previewKtpModal?.fullName || ''}`}
         webViewLink={previewKtpModal?.ktpPhotoUrl}
         onUpload={async () => {
           // allow immediate upload from preview if the image is a data URL
@@ -843,7 +845,19 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
                   {ktpPhotoUrl ? (
                     <div className="relative w-full h-24 rounded-lg overflow-hidden border border-emerald-600 bg-slate-900 group">
                       {isPreviewableImage(ktpPhotoUrl) ? (
-                        <img src={ktpPhotoUrl} alt="Preview KTP" className="w-full h-full object-cover" />
+                        <img
+                          src={ktpPhotoUrl}
+                          alt="Preview KTP"
+                          data-media-preview
+                          data-media-url={ktpPhotoUrl}
+                          data-media-id={ktpDriveFileId || undefined}
+                          data-media-name={`KTP-${fullName || 'personnel'}.jpg`}
+                          data-media-title="Foto KTP Personnel"
+                          data-media-caption={fullName || undefined}
+                          data-media-module="Personnel"
+                          title="Klik untuk preview KTP"
+                          className="w-full h-full object-cover cursor-zoom-in"
+                        />
                       ) : (
                         <a
                           href={ktpPhotoUrl}
@@ -930,7 +944,15 @@ export const PersonnelModule: React.FC<PersonnelModuleProps> = ({ store, current
                         <img
                           src={isPreviewableImage(sppiPhotoUrl) ? sppiPhotoUrl : drivePreviewUrl(sppiDriveFileId, sppiPhotoUrl)}
                           alt="Preview SPPI"
-                          className="w-full h-full object-cover"
+                          data-media-preview
+                          data-media-url={sppiPhotoUrl}
+                          data-media-id={sppiDriveFileId || undefined}
+                          data-media-name={`SPPI-${fullName || 'personnel'}.jpg`}
+                          data-media-title="Berkas SPPI Personnel"
+                          data-media-caption={fullName || undefined}
+                          data-media-module="Personnel"
+                          title="Klik untuk preview SPPI"
+                          className="w-full h-full object-cover cursor-zoom-in"
                         />
                       ) : (
                         <a
