@@ -32,8 +32,16 @@ jobs:
       - name: Validate TypeScript
         run: npm run lint
 
+      - name: Build project
+        run: npm run build
+
       - name: Deploy production to Vercel
+        if: ${{ secrets.VERCEL_TOKEN != '' }}
         run: npx vercel deploy --prod --yes --token="${{ secrets.VERCEL_TOKEN }}"
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Skip Vercel deployment if secret not configured
+        if: ${{ secrets.VERCEL_TOKEN == '' }}
+        run: echo "VERCEL_TOKEN secret is not configured in repository secrets; skipping Vercel deployment."
