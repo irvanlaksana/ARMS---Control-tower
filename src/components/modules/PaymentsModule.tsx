@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { MediaUrlPreviewButton } from '../common/MediaPreview';
 import { AmountInput } from '../common/AmountInput';
 import { Pagination, usePagination } from '../common/Pagination';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
@@ -997,9 +996,6 @@ export const PaymentsModule: React.FC<PaymentsModuleProps> = ({ store, currentUs
                   placeholder="https://drive.google.com/file/d/..."
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:border-indigo-500 focus:outline-none font-mono"
                 />
-                <div className="mt-1.5">
-                  <MediaUrlPreviewButton url={proofDriveUrl} module="Pembayaran" title="Bukti Transfer / Dokumen Pembayaran" />
-                </div>
               </div>
             </div>
 

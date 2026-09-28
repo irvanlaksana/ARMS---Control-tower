@@ -1,157 +1,438 @@
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
-import { FileText, Play } from "lucide-react";
-import type { BastData, ChecklistMap, VehicleType } from "./types";
-import { BLANK_DATA, syncChecklist } from "./data/defaults";
-import FormPanel from "./components/FormPanel";
-import SuratPenyerahan from "./components/SuratPenyerahan";
-import BastSheet from "./components/BastSheet";
-import { SuratTugasHal1, SuratTugasHal2 } from "./components/SuratTugas";
-import PreviewStage, { PageCard } from "./components/PreviewStage";
-import { Btn } from "./components/ui";
+import React, { useState, useEffect } from 'react';
+import LetterForm from './components/LetterForm';
+import LetterPreview from './components/LetterPreview';
+import BastGenerator from './components/BastGenerator';
+import GoogleDriveSaveModal from './components/GoogleDriveSaveModal';
+import PrintPreviewModal from './components/PrintPreviewModal';
+import { LetterData, BastData, PaperSize, DEFAULT_PAPER_SIZE, PAPER_SIZES } from './types';
+import { FileText, ClipboardCheck, UploadCloud, Printer, ArrowLeft, X } from 'lucide-react';
+import { generateLetterNumber } from './utils/letterNumber';
+import { CONTOH_RODA4, syncChecklist } from './data/defaults';
+import { buildLetterDataFromInput, buildBastDataFromInput, GeneratorFormInput } from '../../lib/suratGenerator';
+import { ARMSStore } from '../../services/armsDataService';
+import { syncLetterDataToBast } from './utils/syncData';
+import { getSavedKopTemplate } from './utils/kopStorage';
 
-const PAPER_W = 215 * (96 / 25.4);
-const PAPER_H = 330 * (96 / 25.4);
+export type DocumentType = 'surat_tugas' | 'bast';
 
-interface Props {
-  initialData: BastData;
-  isPersonal: boolean;
-  onClose: () => void;
-  onSave: (data: BastData) => void;
+const defaultInitialLetterData: LetterData = {
+  kopImage: null,
+  kopImageHeight: 120,
+  kopImageFit: 'contain',
+  kopImageAlign: 'center',
+  kopImageOffsetY: 0,
+  kopImageOffsetX: 0,
+  kopImageMarginBottom: 32,
+  kopCompanyName: 'PT. MITRA JASATRIA INDONESIA',
+  letterNumber: generateLetterNumber(),
+  assignerName: 'FILEMO HALAWA',
+  assignerPosition: 'DIREKTUR',
+  assigneeName: 'RIZKY JUANDA SAPUTRA',
+  assigneePosition: 'Petugas Penagihan',
+  clientName: 'Koperasi Anugrah Mega Mandiri (KAMM)',
+  customerContract: '00730191',
+  customerName: 'KISNO ANGKAH TRI HIDAYAT',
+  customerAddress: 'KALIKABONG RT 004 RW 002, KEL. KALIKABONG, KEC. KALIMANAH',
+  customerAddressDetail: 'KALIKABONG RT 004 RW 002',
+  customerKabupaten: 'PURBALINGGA',
+  customerKecamatan: 'KALIMANAH',
+  customerKelurahan: 'KALIKABONG',
+  customerDueDate: '2024-02-02',
+  customerInstallment: 'Rp 385.000',
+  customerTotalInstallment: 'Rp 4.235.000',
+  customerUnpaidInstallmentCount: '10 Bulan',
+  customerPenalty: 'Rp 41.692.000',
+  attachments: [],
+  vehicleBrand: 'YAMAHA / VIXION',
+  vehiclePlate: 'R4088YV',
+  validFrom: '2026-08-21',
+  validTo: '2026-08-31',
+  signPlaceDate: 'Purwokerto, 22 Agustus 2026'
+};
+
+const STORAGE_KEY_BAST = 'bast-generator-v1';
+
+function loadInitialBast(): BastData {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_BAST);
+    if (raw) {
+      const parsed = JSON.parse(raw) as BastData;
+      return {
+        ...CONTOH_RODA4,
+        ...parsed,
+        checklist: syncChecklist(parsed.jenis ?? 'roda4', parsed.checklist ?? {}),
+      };
+    }
+  } catch {
+    /* ignore */
+  }
+  return CONTOH_RODA4;
 }
 
-export default function AssignmentLetterGenerator({ initialData, isPersonal, onClose, onSave }: Props) {
-  const [data, setData] = useState<BastData>(() => ({
-    ...BLANK_DATA,
-    ...initialData,
-    kop: { ...BLANK_DATA.kop, ...initialData.kop },
-    st: { ...BLANK_DATA.st, ...initialData.st },
-    checklist: syncChecklist(initialData.jenis, initialData.checklist),
+export interface AssignmentLetterGeneratorProps {
+  initialLetterData?: Partial<LetterData>;
+  initialBastData?: Partial<BastData>;
+  defaultDocType?: DocumentType;
+  rootDriveFolderId?: string;
+  onClose?: () => void;
+  onSaveToDriveSuccess?: (result: { fileId: string; fileUrl: string; fileName: string; folderId: string; docType: DocumentType }) => void;
+  skRecordId?: string;
+  isModal?: boolean;
+  armsStore?: ARMSStore;
+  activeCaseId?: string;
+  activePersonnelId?: string;
+}
+
+export default function AssignmentLetterGenerator({
+  initialLetterData,
+  initialBastData,
+  defaultDocType = 'surat_tugas',
+  rootDriveFolderId,
+  onClose,
+  onSaveToDriveSuccess,
+  skRecordId,
+  isModal = false,
+  armsStore,
+  activeCaseId,
+  activePersonnelId,
+}: AssignmentLetterGeneratorProps) {
+  const [docType, setDocType] = useState<DocumentType>(defaultDocType);
+  const [data, setData] = useState<LetterData>(() => {
+    const savedKop = getSavedKopTemplate();
+    const baseKop = savedKop ? {
+      kopImage: savedKop.kopImage,
+      kopImageHeight: savedKop.kopImageHeight,
+      kopImageFit: savedKop.kopImageFit,
+      kopImageAlign: savedKop.kopImageAlign,
+      kopImageOffsetY: savedKop.kopImageOffsetY,
+      kopImageOffsetX: savedKop.kopImageOffsetX,
+      kopImageMarginBottom: savedKop.kopImageMarginBottom,
+      kopCompanyName: savedKop.kopCompanyName,
+    } : {};
+    return {
+      ...defaultInitialLetterData,
+      ...baseKop,
+      ...initialLetterData,
+    };
+  });
+  const [bastData, setBastData] = useState<BastData>(() => ({
+    ...loadInitialBast(),
+    ...initialBastData,
   }));
-  const [pageMode, setPageMode] = useState<"both" | "bast" | "penyerahan" | "tugas">(
-    isPersonal ? "tugas" : "both",
-  );
-  const [zoom, setZoom] = useState(0.7);
-  const [fitMode, setFitMode] = useState<"width" | "page" | "manual">("width");
-  const [isGenerated, setIsGenerated] = useState(false);
-  const viewportRef = useRef<HTMLDivElement>(null);
+  const [paperSize, setPaperSize] = useState<PaperSize>(DEFAULT_PAPER_SIZE);
+  const [activeTab, setActiveTab] = useState<'form' | 'preview'>('form');
+  const [isDriveModalOpen, setIsDriveModalOpen] = useState(false);
+  const [isPrintPreviewOpen, setIsPrintPreviewOpen] = useState(false);
 
-  const set = useCallback(
-    <K extends keyof BastData>(key: K, value: BastData[K]) =>
-      setData((current) => {
-        if (key === "noBast" || key === "noSuratTugas") {
-          const number = value as string;
-          return { ...current, noBast: number, noSuratTugas: number, st: { ...current.st, nomor: number } };
-        }
-        if (key === "st") {
-          const st = value as BastData["st"];
-          return { ...current, st, noBast: st.nomor, noSuratTugas: st.nomor };
-        }
-        return { ...current, [key]: value };
-      }),
-    [],
-  );
-  const setJenis = useCallback(
-    (jenis: VehicleType) =>
-      setData((current) => ({ ...current, jenis, checklist: syncChecklist(jenis, current.checklist) })),
-    [],
-  );
-  const setChecklist = useCallback((checklist: ChecklistMap) => setData((current) => ({ ...current, checklist })), []);
+  const handleSelectDocType = (nextDoc: DocumentType) => {
+    if (nextDoc === 'bast' && docType === 'surat_tugas') {
+      setBastData((prev) => syncLetterDataToBast(data, prev));
+    }
+    setDocType(nextDoc);
+  };
 
-  const fit = useCallback(
-    (mode: "width" | "page") => {
-      const element = viewportRef.current;
-      if (!element) return;
-      const width = element.clientWidth - 56;
-      const height = element.clientHeight - 84;
-      const nextZoom = mode === "width" ? width / PAPER_W : Math.min(width / PAPER_W, height / PAPER_H);
-      setZoom(Math.min(1.6, Math.max(0.2, +nextZoom.toFixed(3))));
-    },
-    [],
-  );
+  // Autofill handler from ARMS store case
+  const handleAutofillFromCase = (caseId: string, personnelId?: string, isPerorangan: boolean = false) => {
+    if (!armsStore) return;
+    const caseItem = armsStore.cases?.find(c => c.id === caseId);
+    if (!caseItem) return;
+    const customer = armsStore.customers?.find(c => c.id === caseItem.customerId);
+    const personnel = armsStore.personnel?.find(p => p.id === (personnelId || activePersonnelId));
+    const client = armsStore.clients?.find(cl => cl.id === caseItem.clientId);
 
-  useLayoutEffect(() => {
-    if (fitMode === "manual") return;
-    fit(fitMode);
-    const element = viewportRef.current;
-    if (!element) return;
-    const observer = new ResizeObserver(() => fit(fitMode));
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [fitMode, fit]);
+    const formInput: GeneratorFormInput = {
+      caseItem,
+      customer,
+      personnel,
+      companyName: armsStore.settings?.companyName,
+      companyAddress: armsStore.settings?.companyAddress,
+      isPerorangan: isPerorangan || caseItem.clientType === 'PERORANGAN',
+      krediturName: caseItem.clientName,
+      krediturAddress: client?.address,
+      issuedDate: new Date().toISOString().split('T')[0],
+      expiryDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    };
 
-  const showTugas = pageMode === "both" || pageMode === "tugas";
-  const showPenyerahan = !isPersonal && (pageMode === "both" || pageMode === "penyerahan");
-  const showBast = pageMode === "both" || pageMode === "bast";
-  const pageCount = (showTugas ? 2 : 0) + (showPenyerahan ? 1 : 0) + (showBast ? 1 : 0);
-  let pageNo = 0;
+    const newLetterData = buildLetterDataFromInput(formInput);
+    const newBastData = buildBastDataFromInput(formInput);
+
+    setData(prev => ({
+      ...prev,
+      ...newLetterData,
+      // Retain custom uploads if any
+      kopImage: prev.kopImage || newLetterData.kopImage,
+      attachments: prev.attachments?.length ? prev.attachments : newLetterData.attachments,
+    }));
+
+    setBastData(prev => ({
+      ...prev,
+      ...newBastData,
+    }));
+  };
+
+  // Update if props change
+  useEffect(() => {
+    if (initialLetterData) {
+      setData((prev) => ({ ...prev, ...initialLetterData }));
+    }
+  }, [initialLetterData]);
+
+  useEffect(() => {
+    if (initialBastData) {
+      setBastData((prev) => ({
+        ...prev,
+        ...initialBastData,
+        checklist: initialBastData.checklist || prev.checklist,
+      }));
+    }
+  }, [initialBastData]);
+
+  useEffect(() => {
+    if (defaultDocType) {
+      setDocType(defaultDocType);
+    }
+  }, [defaultDocType]);
+
+  const activeClientName = docType === 'surat_tugas' ? data.clientName : bastData.krediturLeasing;
+  const activeDebtorName = docType === 'surat_tugas' ? data.customerName : bastData.debiturNama;
+  const activeContractNo = docType === 'surat_tugas' ? data.customerContract : bastData.nomorKontrak;
+
+  const handleDriveUploadSuccess = (res: { fileId: string; fileUrl: string; fileName: string; folderId: string }) => {
+    if (onSaveToDriveSuccess) {
+      onSaveToDriveSuccess({
+        ...res,
+        docType,
+      });
+    }
+  };
 
   return (
-    <div className="arms-generator fixed inset-0 z-[60] flex flex-col bg-slate-950">
-      <div className="generator-toolbar no-print flex items-center justify-between border-b border-slate-800 bg-slate-900 px-4 py-2">
-        <div>
-          <h2 className="text-sm font-bold text-white">Generator Surat Penugasan Lapangan</h2>
-          <p className="text-[11px] text-slate-400">{isPersonal ? "Debitur perorangan · Surat Penyerahan tidak digunakan" : "Debitur perusahaan"}</p>
-        </div>
-        <div className="generator-actions flex gap-2">
-          <Btn variant="primary" onClick={() => onSave(data)}>Simpan Surat</Btn>
-          <Btn variant="primary" onClick={() => window.print()}>🖨️ Cetak / Simpan PDF</Btn>
-          <Btn onClick={onClose}>Tutup</Btn>
-        </div>
-      </div>
-      <div className="generator-body flex min-h-0 flex-1">
-        <aside className="generator-form no-print thin-scroll w-[350px] shrink-0 overflow-y-auto border-r border-slate-800 bg-slate-900 p-3 flex flex-col">
-          <FormPanel data={data} set={set} setJenis={setJenis} setChecklist={setChecklist} />
-          
-          <div className="mt-4 pt-4 border-t border-slate-800">
+    <div className={`flex flex-col bg-[#F5F5F0] font-sans text-[#4A4A4A] overflow-hidden ${
+      isModal ? 'fixed inset-0 z-50 h-screen max-h-screen w-screen' : 'h-full w-full'
+    }`}>
+      {/* Header Toolbar */}
+      <header id="app-main-header" className="bg-[#EBEBE4] border-b border-[#D1D1CA] px-3 md:px-5 py-2 flex flex-wrap items-center justify-between gap-2.5 print:hidden shadow-xs z-10 shrink-0">
+        <div className="flex items-center gap-2.5">
+          {onClose && (
             <button
-              onClick={() => setIsGenerated(true)}
-              className="w-full flex justify-center items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 px-4 rounded-xl shadow-md shadow-emerald-600/20 transition-all active:scale-95"
+              type="button"
+              onClick={onClose}
+              className="p-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+              title="Kembali ke Manajemen SK"
             >
-              <Play className="w-4 h-4" />
-              Generate Surat
+              <ArrowLeft size={16} />
+              <span className="hidden sm:inline">Kembali</span>
+            </button>
+          )}
+
+          <div className="bg-[#5A5A40] p-1.5 rounded-lg text-white shadow-xs">
+            {docType === 'surat_tugas' ? <FileText size={18} /> : <ClipboardCheck size={18} />}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm md:text-base font-bold tracking-tight text-[#2C2C24] leading-tight">
+                {docType === 'surat_tugas' ? 'Generator Surat Tugas Penagihan' : 'BAST & Penyerahan Unit'}
+              </h1>
+              <span className="text-[10px] bg-[#5A5A40]/10 text-[#5A5A40] border border-[#5A5A40]/20 px-2 py-0.5 rounded-full font-mono font-bold">
+                GAS Ready
+              </span>
+            </div>
+            <p className="text-[10px] md:text-[11px] text-[#8A8A7A] leading-tight">
+              {docType === 'surat_tugas'
+                ? 'Format resmi SKP Surat Tugas Eksekusi Penagihan'
+                : 'Berita Acara Serah Terima & Surat Penyerahan Sukarela'}
+            </p>
+          </div>
+        </div>
+
+        {/* Right tools */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Document Template Selector */}
+          <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-[#D1D1CA] shadow-2xs">
+            <button
+              type="button"
+              id="tab-surat-tugas"
+              onClick={() => handleSelectDocType('surat_tugas')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                docType === 'surat_tugas'
+                  ? 'bg-[#5A5A40] text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <FileText size={13} />
+              Surat Tugas
+            </button>
+            <button
+              type="button"
+              id="tab-bast"
+              onClick={() => handleSelectDocType('bast')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                docType === 'bast'
+                  ? 'bg-[#5A5A40] text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <ClipboardCheck size={13} />
+              BAST
             </button>
           </div>
-        </aside>
-        <main className="generator-preview flex min-w-0 flex-1 flex-col">
-          {!isGenerated ? (
-            <div className="flex flex-col items-center justify-center flex-1 text-slate-500 bg-slate-50">
-              <FileText className="w-16 h-16 mb-4 text-slate-300" />
-              <p className="font-semibold text-slate-300">Preview Belum Digenerate</p>
-              <p className="text-sm mt-1 text-slate-500">Silakan lengkapi form dan klik tombol "Generate Surat".</p>
-            </div>
-          ) : (
-            <>
-              <div className="no-print flex flex-wrap items-center gap-2 border-b border-slate-800 bg-slate-900 px-3 py-2">
-            <div className="flex gap-1 rounded-lg bg-slate-950 p-1">
-              {([["both", "Semua"], ["tugas", "Surat Tugas"], ...(isPersonal ? [] : [["penyerahan", "Penyerahan"] as const]), ["bast", "BAST"]] as const).map(([value, label]) => (
-                <button key={value} onClick={() => setPageMode(value)} className={`rounded px-2.5 py-1 text-[11px] ${pageMode === value ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"}`}>
-                  {label}
-                </button>
+
+          {/* Paper Size Selector in Header */}
+          <div className="hidden sm:flex items-center gap-1.5 bg-white px-2.5 py-1.5 rounded-lg border border-[#D1D1CA] shadow-2xs">
+            <span className="text-xs font-bold text-slate-700">Kertas:</span>
+            <select
+              value={paperSize}
+              onChange={(e) => setPaperSize(e.target.value as PaperSize)}
+              className="text-xs font-bold text-[#5A5A40] bg-transparent focus:outline-none cursor-pointer"
+            >
+              {(Object.keys(PAPER_SIZES) as PaperSize[]).map((key) => (
+                <option key={key} value={key}>
+                  {PAPER_SIZES[key].name} ({PAPER_SIZES[key].widthMm}×{PAPER_SIZES[key].heightMm}mm)
+                </option>
               ))}
-            </div>
-            <span className="text-[11px] text-slate-400">{pageCount} halaman</span>
-            <div className="ml-auto flex gap-1">
-              <button className="rounded bg-slate-800 px-2 py-1 text-xs text-slate-200 hover:bg-slate-700" onClick={() => { setFitMode("manual"); setZoom((value) => Math.max(0.2, value - 0.1)); }}>−</button>
-              <span className="rounded bg-slate-800 px-2 py-1 text-xs text-slate-200">{Math.round(zoom * 100)}%</span>
-              <button className="rounded bg-slate-800 px-2 py-1 text-xs text-slate-200 hover:bg-slate-700" onClick={() => { setFitMode("manual"); setZoom((value) => Math.min(1.6, value + 0.1)); }}>+</button>
-              <button className="rounded bg-slate-800 px-2 py-1 text-xs text-slate-200 hover:bg-slate-700" onClick={() => { setFitMode("width"); fit("width"); }}>Lebar</button>
-            </div>
+            </select>
           </div>
-          <div ref={viewportRef} className="print-scroll thin-scroll flex-1 overflow-auto p-7">
-            <div className="print-root">
-              <PreviewStage zoom={zoom}>
-                <div className="page-list flex flex-col items-center gap-8">
-                  {showTugas && <><PageCard label={`Halaman ${++pageNo}`} badge="Surat Tugas — Hal. 1"><SuratTugasHal1 data={data} /></PageCard><PageCard label={`Halaman ${++pageNo}`} badge="Surat Tugas — Hal. 2"><SuratTugasHal2 data={data} /></PageCard></>}
-                  {showPenyerahan && <PageCard label={`Halaman ${++pageNo}`} badge="Surat Penyerahan"><SuratPenyerahan data={data} /></PageCard>}
-                  {showBast && <PageCard label={`Halaman ${++pageNo}`} badge={`BAST — ${data.jenis === "roda2" ? "Roda 2" : "Roda 4"}`}><BastSheet data={data} /></PageCard>}
-                </div>
-              </PreviewStage>
-            </div>
-          </div>
-            </>
+
+          {/* Tombol Pratinjau Cetak */}
+          <button
+            type="button"
+            id="btn-header-print-preview"
+            onClick={() => setIsPrintPreviewOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-800 border border-[#D1D1CA] rounded-lg text-xs font-bold transition shadow-2xs cursor-pointer active:scale-95"
+            title="Buka Pratinjau Cetak & Ukuran Kertas"
+          >
+            <Printer size={14} className="text-[#5A5A40]" />
+            <span className="hidden sm:inline">Pratinjau Cetak</span>
+            <span className="sm:hidden">Cetak</span>
+          </button>
+
+          {/* Tombol Simpan ke GDrive */}
+          <button
+            type="button"
+            id="btn-simpan-ke-gdrive"
+            onClick={() => setIsDriveModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2D6A4F] hover:bg-[#1B4332] text-white rounded-lg text-xs font-bold transition shadow-2xs cursor-pointer active:scale-95"
+            title="Simpan Dokumen ke Google Drive Multi Finance"
+          >
+            <UploadCloud size={14} />
+            <span className="hidden sm:inline">Simpan ke GDrive</span>
+            <span className="sm:hidden">GDrive</span>
+          </button>
+
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer ml-1"
+              title="Tutup"
+            >
+              <X size={18} />
+            </button>
           )}
-        </main>
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <div id="app-main-layout" className="flex-1 flex flex-col overflow-hidden min-h-0">
+        {docType === 'bast' ? (
+          <BastGenerator 
+            data={bastData} 
+            onChange={setBastData}
+            paperSize={paperSize}
+            onPaperSizeChange={setPaperSize}
+            onOpenPrintPreview={() => setIsPrintPreviewOpen(true)}
+            onOpenDriveModal={() => setIsDriveModalOpen(true)}
+          />
+        ) : (
+          <>
+            {/* Mobile Tabs for Surat Tugas */}
+            <div className="lg:hidden flex bg-[#EBEBE4] border-b border-[#D1D1CA] print:hidden shrink-0">
+              <button
+                type="button"
+                onClick={() => setActiveTab('form')}
+                className={`flex-1 py-2 text-xs font-bold transition-colors ${
+                  activeTab === 'form'
+                    ? 'text-[#5A5A40] border-b-2 border-[#5A5A40] bg-white/50'
+                    : 'text-[#8A8A7A] hover:text-[#4A4A4A]'
+                }`}
+              >
+                Isi Data
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('preview')}
+                className={`flex-1 py-2 text-xs font-bold transition-colors ${
+                  activeTab === 'preview'
+                    ? 'text-[#5A5A40] border-b-2 border-[#5A5A40] bg-white/50'
+                    : 'text-[#8A8A7A] hover:text-[#4A4A4A]'
+                }`}
+              >
+                Pratinjau Surat
+              </button>
+            </div>
+
+            <main className="flex-1 flex overflow-hidden min-h-0">
+              {/* Form Panel */}
+              <div
+                className={`w-full lg:w-[360px] xl:w-[400px] shrink-0 border-r border-[#D1D1CA] bg-[#EBEBE4] flex-col overflow-hidden ${
+                  activeTab === 'form' ? 'flex' : 'hidden lg:flex'
+                } print:hidden`}
+              >
+                <div className="flex-1 overflow-y-auto p-2.5 md:p-3 custom-scrollbar">
+                  <LetterForm 
+                    data={data} 
+                    onChange={setData}
+                    armsStore={armsStore}
+                    activeCaseId={activeCaseId}
+                    activePersonnelId={activePersonnelId}
+                    onAutofillFromCase={handleAutofillFromCase}
+                  />
+                </div>
+              </div>
+
+              {/* Preview Panel */}
+              <div
+                className={`flex-1 flex-col overflow-hidden bg-[#FDFBF7] min-h-0 ${
+                  activeTab === 'preview' ? 'flex' : 'hidden lg:flex'
+                } print:block print:bg-white`}
+              >
+                <LetterPreview 
+                  data={data}
+                  paperSize={paperSize}
+                  onPaperSizeChange={setPaperSize}
+                  onOpenPrintPreview={() => setIsPrintPreviewOpen(true)}
+                  onOpenDriveModal={() => setIsDriveModalOpen(true)}
+                />
+              </div>
+            </main>
+          </>
+        )}
       </div>
+
+      {/* Full-Featured Print Preview Modal */}
+      <PrintPreviewModal
+        isOpen={isPrintPreviewOpen}
+        onClose={() => setIsPrintPreviewOpen(false)}
+        docType={docType}
+        letterData={data}
+        bastData={bastData}
+        paperSize={paperSize}
+        onPaperSizeChange={setPaperSize}
+        onOpenDriveModal={() => setIsDriveModalOpen(true)}
+      />
+
+      {/* Google Drive Save Modal */}
+      <GoogleDriveSaveModal
+        isOpen={isDriveModalOpen}
+        onClose={() => setIsDriveModalOpen(false)}
+        currentDocType={docType}
+        paperSize={paperSize}
+        suggestedClientName={activeClientName}
+        suggestedDebtorName={activeDebtorName}
+        suggestedContractNo={activeContractNo}
+        rootFolderId={rootDriveFolderId}
+        onSaveSuccess={handleDriveUploadSuccess}
+      />
     </div>
   );
 }

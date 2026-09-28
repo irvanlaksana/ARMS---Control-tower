@@ -20,7 +20,6 @@ import {
   INITIAL_LEDGER, INITIAL_CASH_ACCOUNTS, INITIAL_PETTY_CASH, INITIAL_WORKING_CAPITAL, INITIAL_DOCUMENTS, INITIAL_APPROVALS,
   INITIAL_NOTIFICATIONS, INITIAL_AUDIT_LOGS, INITIAL_SETTINGS, INITIAL_DRIVE_FOLDERS, ROOT_GDRIVE_URL, ROOT_GDRIVE_ID
 } from '../data/initialData';
-import { mergeSettingsFromSheet, parseSettingsFromSheet } from '../lib/settingsCodec';
 
 export interface ARMSStore {
   users: User[];
@@ -58,11 +57,7 @@ export interface ARMSStore {
 const STORAGE_KEY = 'ARMS_SINGLE_SOURCE_DATA_V8';
 
 export function resetStoreToInitial(): ARMSStore {
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch {
-    /* storage tidak tersedia di runtime ini */
-  }
+  localStorage.removeItem(STORAGE_KEY);
   const cleanStore = normalizeStore(null);
   saveStore(cleanStore);
   return cleanStore;
@@ -154,17 +149,8 @@ function normalizeStore(parsed: any): ARMSStore {
   };
 }
 
-function readLocalCache(): string | null {
-  try {
-    return localStorage.getItem(STORAGE_KEY);
-  } catch (e) {
-    console.warn('[ARMS] Cache lokal tidak dapat dibaca (storage diblokir runtime).', e);
-    return null;
-  }
-}
-
 export function getStoredStore(): ARMSStore | null {
-  const saved = readLocalCache();
+  const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
@@ -181,7 +167,7 @@ export function initializeARMSStore(): ARMSStore {
 }
 
 export function getInitialStore(): ARMSStore {
-  const saved = readLocalCache();
+  const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
@@ -194,14 +180,7 @@ export function getInitialStore(): ARMSStore {
 }
 
 export function saveStore(store: ARMSStore): void {
-  // localStorage hanya cache; sumber kebenaran = spreadsheet aktif.
-  // Dibungkus try/catch agar kuota penuh / storage diblokir (mis. saat berjalan
-  // di dalam Web App Apps Script) tidak menghentikan aplikasi.
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
-  } catch (err) {
-    console.warn('[ARMS] Cache lokal gagal disimpan (kuota/storage tidak tersedia). Data tetap aman di spreadsheet aktif.', err);
-  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
 }
 
 function getRecordKey(r: any): string | null {
@@ -305,13 +284,16 @@ export function mapGasDataToStore(gasData: Record<string, any[]>, currentStore: 
     }
   });
 
-  // Handle Settings tab (array of { key, value } atau object key/value).
-  // Nilai panjang yang dipecah menjadi `key__chunkN` digabung kembali dan tiap
-  // key dikembalikan ke tipe aslinya (json/boolean/number) lewat settingsCodec.
+  // Handle Settings tab (array of { key: string, value: string })
   const settingsRows = gasData['Settings'] || gasData['settings'];
-  const fromSheet = parseSettingsFromSheet(settingsRows);
-  if (fromSheet && Object.keys(fromSheet).length > 0) {
-    newStore.settings = mergeSettingsFromSheet(currentStore.settings, fromSheet);
+  if (Array.isArray(settingsRows) && settingsRows.length > 0) {
+    const settingsObj: any = { ...currentStore.settings };
+    settingsRows.forEach((row) => {
+      if (row.key && row.value !== undefined) {
+        settingsObj[row.key] = row.value;
+      }
+    });
+    newStore.settings = settingsObj;
   }
 
   return normalizeStore(newStore);
@@ -321,42 +303,35 @@ export function mapGasDataToStore(gasData: Record<string, any[]>, currentStore: 
  * Fetches all sheets data from Google Apps Script Web App (via proxy or direct fetch)
  */
 export async function fetchDataFromGoogleSheets(webAppUrl: string, currentStore: ARMSStore): Promise<ARMSStore> {
-  if (!webAppUrl) return currentStore;
-  const cleanUrl = webAppUrl.trim();
+  const spreadsheetId = currentStore?.settings?.googleSheetId || 'arms-control-tower';
 
   let rawData: any = null;
 
-  // 1. Try Express backend proxy
+  // 1. Cek jika di lingkungan Google Apps Script
   try {
-    const res = await fetch('/api/gas/proxy', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        webAppUrl: cleanUrl,
-        action: 'GET_ALL_DATA',
-      }),
-    });
-    if (res.ok) {
-      const json = await res.json();
-      if (json.success && json.data) {
-        rawData = json.data;
-      }
+    const { callGasFunction } = await import('../lib/gasApi');
+    const { getDatabaseTabMap } = await import('../data/databaseConfig');
+    const tabs = getDatabaseTabMap(currentStore.settings);
+    const gasRes = await callGasFunction('fetchSheets', spreadsheetId, tabs);
+    if (gasRes && gasRes.success && gasRes.data) {
+      rawData = gasRes.data;
     }
   } catch (e) {
-    console.warn('Proxy fetch failed, attempting direct fetch:', e);
+    // Lanjut ke fallback jika bukan di lingkungan GAS
   }
 
-  // 2. Direct client fetch fallback via GET (no CORS preflight)
-  if (!rawData) {
+  // 2. Direct client fetch fallback via GET ke Web App URL (no CORS preflight)
+  if (!rawData && webAppUrl) {
+    const cleanUrl = webAppUrl.trim();
     try {
-      const getUrl = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=GET_ALL_DATA`;
+      const getUrl = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=GET_ALL_DATA&spreadsheetId=${encodeURIComponent(spreadsheetId)}`;
       const directRes = await fetch(getUrl, { method: 'GET' });
       const directJson = await directRes.json();
       if (directJson.success && directJson.data) {
         rawData = directJson.data;
       }
     } catch (e) {
-      console.error('Direct GET fetch to GAS failed:', e);
+      console.warn('Direct GET fetch to GAS failed:', e);
     }
   }
 

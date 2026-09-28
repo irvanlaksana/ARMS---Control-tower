@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { MediaUrlPreviewButton } from '../common/MediaPreview';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, SK, LawyerNotice, Contract, DocumentRecord, DriveFolder } from '../../types/arms';
 import { 
@@ -759,14 +758,7 @@ export const DocumentsModule: React.FC<DocumentsModuleProps> = ({
                           {/* Link Google Drive */}
                           <td className="p-3">
                             {hasDrive ? (
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <MediaUrlPreviewButton
-                                  url={doc.driveDocumentUrl}
-                                  module={doc.categoryLabel}
-                                  title={doc.title}
-                                  caption={`${doc.docNo} — ${doc.subjectName}`}
-                                  label="Preview"
-                                />
+                              <div className="flex items-center gap-1.5">
                                 <a
                                   href={doc.driveDocumentUrl}
                                   target="_blank"

@@ -73,128 +73,6 @@ export interface PaymentTierCalculationResult {
 }
 
 /**
- * Biaya tambahan manual (tombol "+ Tambah Biaya") yang diinput user di luar
- * kalkulasi otomatis tier engine. Model datanya identik dengan `Payment.manualSplits`
- * pada modul Debtor Payments & Fee Collections.
- */
-export interface ManualFeeItem {
-  name: string;
-  amount: number;
-  allocation?: 'COMPANY' | 'SPLIT';
-}
-
-export interface ManualFeeTotals {
-  total: number;
-  company: number;
-  partner: number;
-  itemCount: number;
-}
-
-/** Hasil tier engine setelah biaya tambahan manual diperhitungkan. */
-export interface RepossessionTierWithManualFees extends RepossessionTierCalculationResult {
-  /** Nilai murni dari tier engine (sebelum biaya manual). */
-  tierGrossRepossessionFee: number;
-  tierCompanyRevenueAmount: number;
-  tierPartnerCommissionAmount: number;
-  /** Biaya tambahan manual yang tersimpan pada record BAST. */
-  manualSplits: ManualFeeItem[];
-  manualFeesTotal: number;
-  manualCompanyAmount: number;
-  manualPartnerAmount: number;
-}
-
-/** Buang item kosong/negatif dan normalkan nama biaya. */
-export function normalizeManualFees(items?: ManualFeeItem[] | null): ManualFeeItem[] {
-  if (!Array.isArray(items)) return [];
-  return items
-    .filter((item) => item && Number(item.amount) > 0)
-    .map((item, index) => ({
-      name: (item.name || '').trim() || `Biaya Tambahan ${index + 1}`,
-      amount: Math.round(Number(item.amount)),
-      allocation:
-        String(item.allocation || '').toUpperCase() === 'SPLIT' ? ('SPLIT' as const) : ('COMPANY' as const),
-    }));
-}
-
-/**
- * Hitung total biaya tambahan manual beserta alokasi perusahaan / mitra.
- * Logika sama persis dengan `manualFeeTotals` pada PaymentsModule:
- *  - allocation COMPANY  -> 100% hak perusahaan
- *  - allocation SPLIT    -> dibagi sesuai persentase bagi hasil (hanya bila Mitra DC)
- */
-export function calculateManualFeeTotals(
-  items: ManualFeeItem[] | undefined | null,
-  options: { isMitraDC: boolean; companySplitPercent: number }
-): ManualFeeTotals {
-  const validItems = normalizeManualFees(items);
-  const total = validItems.reduce((sum, item) => sum + item.amount, 0);
-  const percent = Math.max(0, Math.min(100, options.companySplitPercent));
-  const splitCompany = options.isMitraDC ? percent / 100 : 1;
-  const splitPartner = options.isMitraDC ? 1 - percent / 100 : 0;
-  const company = validItems.reduce(
-    (sum, item) => sum + item.amount * (item.allocation === 'SPLIT' ? splitCompany : 1),
-    0
-  );
-  const partner = validItems.reduce(
-    (sum, item) => sum + item.amount * (item.allocation === 'SPLIT' ? splitPartner : 0),
-    0
-  );
-  return {
-    total,
-    company: Math.round(company),
-    partner: Math.round(partner),
-    itemCount: validItems.length,
-  };
-}
-
-/**
- * Gabungkan biaya tambahan manual ke hasil tier engine eksekusi unit sehingga
- * gross fee, pendapatan perusahaan, dan komisi mitra sudah final.
- */
-export function applyManualFeesToRepossessionTier(
-  calcResult: RepossessionTierCalculationResult,
-  manualSplits?: ManualFeeItem[] | null,
-  companySplitPercent?: number
-): RepossessionTierWithManualFees {
-  const items = normalizeManualFees(manualSplits);
-  const totals = calculateManualFeeTotals(items, {
-    isMitraDC: calcResult.isMitraDC,
-    companySplitPercent: companySplitPercent ?? calcResult.companyFeePercent,
-  });
-
-  const finalGross = calcResult.grossRepossessionFee + totals.total;
-  const finalCompany = calcResult.companyRevenueAmount + totals.company;
-  const finalPartner = calcResult.partnerCommissionAmount + totals.partner;
-
-  const manualNote =
-    items.length > 0
-      ? ` Biaya Tambahan Manual (${items.length} item): ${items
-          .map(
-            (item) =>
-              `${item.name} Rp ${item.amount.toLocaleString('id-ID')} (${
-                item.allocation === 'SPLIT' ? 'Split dengan Mitra' : '100% Perusahaan'
-              })`
-          )
-          .join(', ')} = Rp ${totals.total.toLocaleString('id-ID')}.`
-      : '';
-
-  return {
-    ...calcResult,
-    tierGrossRepossessionFee: calcResult.grossRepossessionFee,
-    tierCompanyRevenueAmount: calcResult.companyRevenueAmount,
-    tierPartnerCommissionAmount: calcResult.partnerCommissionAmount,
-    grossRepossessionFee: finalGross,
-    companyRevenueAmount: finalCompany,
-    partnerCommissionAmount: finalPartner,
-    manualSplits: items,
-    manualFeesTotal: totals.total,
-    manualCompanyAmount: totals.company,
-    manualPartnerAmount: totals.partner,
-    explanationNotes: `${calcResult.explanationNotes}${manualNote}`,
-  };
-}
-
-/**
  * Calculate automated tier fee for debtor repayment / cash receipts
  */
 export function calculatePaymentTierFee(
@@ -588,8 +466,6 @@ export function executeUnitRepossessionAndCloseCase(
     hasKey?: boolean;
     bastDriveUrl?: string;
     notes?: string;
-    /** Biaya tambahan manual (tombol "+ Tambah Biaya") di luar kalkulasi tier. */
-    manualSplits?: ManualFeeItem[];
     currentUser: { username: string; role: any; name?: string };
   }
 ): {
@@ -602,14 +478,7 @@ export function executeUnitRepossessionAndCloseCase(
   const todayDate = nowIso.split('T')[0];
   const { currentUser, bastNo, warehouseLocation, physicalCondition, vehicleType, vehicleYear, hasStnk, hasKey, bastDriveUrl } = extraParams;
 
-  // Biaya tambahan manual digabung ke hasil tier engine sebelum dicatat.
-  const finalCalc = applyManualFeesToRepossessionTier(calcResult, extraParams.manualSplits);
-  const manualNote =
-    finalCalc.manualSplits.length > 0
-      ? ` | Biaya Tambahan Manual (${finalCalc.manualSplits.length} item): Rp ${finalCalc.manualFeesTotal.toLocaleString('id-ID')}`
-      : '';
-
-  const personnelObj = store.personnel.find(p => p.id === targetCase.currentPersonnelId || p.fullName === finalCalc.personnelName);
+  const personnelObj = store.personnel.find(p => p.id === targetCase.currentPersonnelId || p.fullName === calcResult.personnelName);
 
   // 1. Create BAST / AssetRecovery Record
   const newRecovery: AssetRecovery = {
@@ -620,8 +489,8 @@ export function executeUnitRepossessionAndCloseCase(
     assetId: targetCase.customerId ? `AST-${targetCase.customerId}` : `AST-${Date.now()}`,
     assetDescription: targetCase.assetSummary || 'Kendaraan Bermotor / Aset Jaminan',
     personnelId: personnelObj?.id || targetCase.currentPersonnelId || 'PER-OPS',
-    personnelName: personnelObj?.fullName || finalCalc.personnelName,
-    personnelType: finalCalc.personnelType,
+    personnelName: personnelObj?.fullName || calcResult.personnelName,
+    personnelType: calcResult.personnelType,
     recoveryDate: todayDate,
     warehouseLocation: warehouseLocation || 'Gudang ARMS Karawang',
     physicalCondition,
@@ -629,17 +498,15 @@ export function executeUnitRepossessionAndCloseCase(
     vehicleYear: vehicleYear || new Date().getFullYear() - 2,
     hasStnk: hasStnk ?? true,
     hasKey: hasKey ?? true,
-    tierAppliedName: finalCalc.appliedTierRuleName,
-    tierAppliedBasis: finalCalc.basisName,
-    tierBaseAmount: finalCalc.baseFeeAmount,
-    tierModifiersTotal: finalCalc.modifiersTotal,
-    repossessionFee: finalCalc.grossRepossessionFee,
-    companyFeePercent: finalCalc.companyFeePercent,
-    companyFeeAmount: finalCalc.companyRevenueAmount,
-    partnerCommissionAmount: finalCalc.partnerCommissionAmount,
-    partnerPayoutStatus: finalCalc.payoutStatus,
-    manualSplits: finalCalc.manualSplits,
-    manualFeesTotal: finalCalc.manualFeesTotal,
+    tierAppliedName: calcResult.appliedTierRuleName,
+    tierAppliedBasis: calcResult.basisName,
+    tierBaseAmount: calcResult.baseFeeAmount,
+    tierModifiersTotal: calcResult.modifiersTotal,
+    repossessionFee: calcResult.grossRepossessionFee,
+    companyFeePercent: calcResult.companyFeePercent,
+    companyFeeAmount: calcResult.companyRevenueAmount,
+    partnerCommissionAmount: calcResult.partnerCommissionAmount,
+    partnerPayoutStatus: calcResult.payoutStatus,
     partnerBankName: personnelObj?.bankName || '',
     partnerAccountNo: personnelObj?.accountNumber || '',
     partnerAccountName: personnelObj?.accountName || personnelObj?.fullName || '',
@@ -655,15 +522,14 @@ export function executeUnitRepossessionAndCloseCase(
     caseId: targetCase.id,
     caseNo: targetCase.caseNo,
     debtorName: targetCase.debtorName,
-    amount: finalCalc.grossRepossessionFee,
+    amount: calcResult.grossRepossessionFee,
     paymentDate: todayDate,
     paymentType: 'ASSET_LIQUIDATION_PAYMENT',
     paymentMethod: 'TRANSFER',
-    executionFeeAmount: finalCalc.companyRevenueAmount,
-    allocationSummary: `Pendapatan Fee Eksekusi Unit Perusahaan (${finalCalc.companyFeePercent}%): Rp ${finalCalc.companyRevenueAmount.toLocaleString('id-ID')}${
-      finalCalc.isMitraDC ? ` | Alokasi Komisi Mitra DC: Rp ${finalCalc.partnerCommissionAmount.toLocaleString('id-ID')}` : ' | Pelaksana: Karyawan Internal'
-    }${manualNote}`,
-    manualSplits: finalCalc.manualSplits,
+    executionFeeAmount: calcResult.companyRevenueAmount,
+    allocationSummary: `Pendapatan Fee Eksekusi Unit Perusahaan (${calcResult.companyFeePercent}%): Rp ${calcResult.companyRevenueAmount.toLocaleString('id-ID')}${
+      calcResult.isMitraDC ? ` | Alokasi Komisi Mitra DC: Rp ${calcResult.partnerCommissionAmount.toLocaleString('id-ID')}` : ' | Pelaksana: Karyawan Internal'
+    }`,
     verificationStatus: 'VERIFIED',
     verifiedBy: currentUser.name || currentUser.username,
     proofUrl: bastDriveUrl || targetCase.gDriveFolderUrl,
@@ -677,10 +543,10 @@ export function executeUnitRepossessionAndCloseCase(
     date: todayDate,
     account: 'REVENUE_FEE',
     type: 'CREDIT',
-    amount: finalCalc.companyRevenueAmount,
+    amount: calcResult.companyRevenueAmount,
     referenceModule: 'SETTLEMENT',
     referenceId: newRecovery.id,
-    description: `Pendapatan Fee Penyerahan Unit (${finalCalc.appliedTierRuleName}) - Perkara ${targetCase.caseNo} (${targetCase.debtorName})`,
+    description: `Pendapatan Fee Penyerahan Unit (${calcResult.appliedTierRuleName}) - Perkara ${targetCase.caseNo} (${targetCase.debtorName})`,
     createdAt: nowIso,
   };
 
@@ -702,9 +568,9 @@ export function executeUnitRepossessionAndCloseCase(
     'UPDATE',
     'Cases_AssetRecovery',
     targetCase.id,
-    `Eksekusi Unit Sukses & Kasus ${targetCase.caseNo} DITUTUP (CLOSED). Pendapatan Perusahaan tercatat Rp ${finalCalc.companyRevenueAmount.toLocaleString('id-ID')} (${finalCalc.appliedTierRuleName}). ${
-      finalCalc.isMitraDC ? `Komisi Mitra DC siap ditransfer: Rp ${finalCalc.partnerCommissionAmount.toLocaleString('id-ID')}` : ''
-    }${manualNote}`
+    `Eksekusi Unit Sukses & Kasus ${targetCase.caseNo} DITUTUP (CLOSED). Pendapatan Perusahaan tercatat Rp ${calcResult.companyRevenueAmount.toLocaleString('id-ID')} (${calcResult.appliedTierRuleName}). ${
+      calcResult.isMitraDC ? `Komisi Mitra DC siap ditransfer: Rp ${calcResult.partnerCommissionAmount.toLocaleString('id-ID')}` : ''
+    }`
   );
 
   const updatedStore: ARMSStore = {

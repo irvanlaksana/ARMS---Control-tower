@@ -1,678 +1,908 @@
-import { useState } from "react";
-import type { BastData, ChecklistMap, VehicleType } from "../types";
-import { PERLENGKAPAN } from "../data/perlengkapan";
-import { hariTanggal } from "../lib/format";
-import {
-  KREDITUR_DEFAULT,
-  KREDITUR_PRESETS,
-  catatanKreditur,
-  catatanKrediturText,
-  countForDate,
-  generateNomorST,
-  mitraLine,
-  nextCountForDate,
-} from "../lib/text";
-import ChecklistEditor from "./ChecklistEditor";
-import KopEditor from "./KopEditor";
-import { Check, Field, Grid, Section, Segmented, TextArea, TextInput } from "./ui";
-import type { SuratTugasData } from "../types";
-import { DateInput } from "../../common/DateInput";
-import { AddressFields } from "../../common/AddressFields";
+import React, { useState } from 'react';
+import { BastData, ChecklistMap, ItemCondition, VehicleType } from '../types';
+import { getChecklistDefinitions, CONTOH_RODA4, CONTOH_RODA2, BLANK_DATA, emptyChecklist } from '../data/defaults';
+import { generateOfficialLetterNumber } from '../utils/letterNumber';
+import { getSavedKopTemplate, saveKopTemplate } from '../utils/kopStorage';
+import { 
+  Bike, 
+  Car, 
+  Building2, 
+  UserCheck, 
+  User, 
+  FileText, 
+  CheckSquare, 
+  Sparkles,
+  CheckCircle2,
+  AlertTriangle,
+  MinusCircle,
+  Image as ImageIcon,
+  Save,
+  RotateCcw,
+  Sliders,
+  Check
+} from 'lucide-react';
 
-interface Props {
+interface FormPanelProps {
   data: BastData;
   set: <K extends keyof BastData>(key: K, value: BastData[K]) => void;
   setJenis: (j: VehicleType) => void;
   setChecklist: (c: ChecklistMap) => void;
+  onApplyTemplate?: (template: BastData) => void;
+  onSyncFromLetter?: () => void;
 }
 
-export default function FormPanel({ data, set, setJenis, setChecklist }: Props) {
-  const isR2 = data.jenis === "roda2";
-  const [allOpen, setAllOpen] = useState(false);
-  const [groupKey, setGroupKey] = useState(0);
-  const st = <K extends keyof SuratTugasData>(k: K, v: SuratTugasData[K]) =>
-    set("st", { ...data.st, [k]: v });
+export default function FormPanel({ data, set, setJenis, setChecklist, onApplyTemplate, onSyncFromLetter }: FormPanelProps) {
+  const [activeSection, setActiveSection] = useState<'info' | 'kendaraan' | 'checklist' | 'kop' | 'ttd'>('info');
+  const [savedKopSuccess, setSavedKopSuccess] = useState(false);
+  const [syncSuccess, setSyncSuccess] = useState(false);
+  const checklistDefs = getChecklistDefinitions(data.jenis);
 
-  const filledChecklist = Object.values(data.checklist).filter(
-    (e) => e.p1 || e.p2,
-  ).length;
+  const inputClass =
+    'w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#5A5A40] focus:border-[#5A5A40] transition-all shadow-2xs';
+  const labelClass = 'block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-0.5';
 
-  const dOpen = (main = false) => allOpen || main;
-  const gk = (t: string) => `${t}-${groupKey}`;
+  const updateField = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    set(name as keyof BastData, value);
+  };
+
+  const handleItemStatusChange = (id: string, status: ItemCondition) => {
+    const current = data.checklist[id] || { status: 'baik', catatan: '' };
+    setChecklist({
+      ...data.checklist,
+      [id]: {
+        ...current,
+        status,
+        catatan:
+          status === '' ? '' :
+          status === 'baik'
+            ? 'Lengkap & Baik'
+            : status === 'rusak'
+            ? 'Rusak / Perlu Perbaikan'
+            : 'Tidak Ada / Tidak Diserahkan',
+      },
+    });
+  };
+
+  const handleItemNoteChange = (id: string, catatan: string) => {
+    const current = data.checklist[id] || { status: 'baik', catatan: '' };
+    setChecklist({
+      ...data.checklist,
+      [id]: {
+        ...current,
+        catatan,
+      },
+    });
+  };
+
+  const setAllStatus = (status: ItemCondition) => {
+    const updated: ChecklistMap = {};
+    for (const def of checklistDefs) {
+      updated[def.id] = {
+        status,
+        catatan:
+          status === '' ? '' :
+          status === 'baik'
+            ? 'Lengkap & Baik'
+            : status === 'rusak'
+            ? 'Rusak'
+            : 'Tidak Ada',
+      };
+    }
+    setChecklist(updated);
+  };
+
+  const handleGenerateBast = () => {
+    const num = generateOfficialLetterNumber({
+      type: 'BAST',
+      companyName: data.perusahaan,
+    });
+    set('nomorBast', num);
+  };
+
+  const handleGeneratePenyerahan = () => {
+    const num = generateOfficialLetterNumber({
+      type: 'SPK',
+      companyName: data.perusahaan,
+    });
+    set('nomorPenyerahan', num);
+  };
+
+  const handleGenerateBoth = () => {
+    const bNum = generateOfficialLetterNumber({
+      type: 'BAST',
+      companyName: data.perusahaan,
+    });
+    const pNum = generateOfficialLetterNumber({
+      type: 'SPK',
+      companyName: data.perusahaan,
+    });
+    set('nomorBast', bNum);
+    set('nomorPenyerahan', pNum);
+  };
+
+  const handleSyncKopFromStorage = () => {
+    const saved = getSavedKopTemplate();
+    if (saved) {
+      set('kopImage', saved.kopImage);
+      set('kopImageHeight', saved.kopImageHeight);
+      set('kopImageFit', saved.kopImageFit);
+      set('kopImageAlign', saved.kopImageAlign);
+      set('kopImageOffsetY', saved.kopImageOffsetY);
+      set('kopImageOffsetX', saved.kopImageOffsetX);
+      set('kopImageMarginBottom', saved.kopImageMarginBottom);
+      set('useImageKop', Boolean(saved.kopImage));
+      setSavedKopSuccess(true);
+      setTimeout(() => setSavedKopSuccess(false), 2500);
+    }
+  };
+
+  const handleSaveKopAsDefault = () => {
+    saveKopTemplate({
+      kopImage: data.kopImage ?? null,
+      kopImageHeight: data.kopImageHeight ?? 120,
+      kopImageFit: data.kopImageFit ?? 'contain',
+      kopImageAlign: data.kopImageAlign ?? 'center',
+      kopImageOffsetY: data.kopImageOffsetY ?? 0,
+      kopImageOffsetX: data.kopImageOffsetX ?? 0,
+      kopImageMarginBottom: data.kopImageMarginBottom ?? 24,
+      kopCompanyName: data.perusahaan || 'PT. MITRA JASATRIA INDONESIA',
+    });
+    setSavedKopSuccess(true);
+    setTimeout(() => setSavedKopSuccess(false), 2500);
+  };
+
+  const savedTemplate = getSavedKopTemplate();
+  const currentKopImage = data.kopImage ?? savedTemplate?.kopImage ?? null;
 
   return (
-    <div className="space-y-2">
-      {/* ---------- Jenis kendaraan + kontrol grup ---------- */}
-      <Segmented<VehicleType>
-        value={data.jenis}
-        onChange={setJenis}
-        options={[
-          { value: "roda2", label: "🏍️ Roda 2" },
-          { value: "roda4", label: "🚗 Roda 4" },
-        ]}
-      />
+    <div className="space-y-3.5">
+      {/* Quick Template Selector Box */}
+      <div className="bg-slate-100/90 border border-slate-200/90 p-2.5 rounded-xl shadow-2xs space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 font-bold text-slate-800 text-[11px]">
+            <Sparkles size={13} className="text-[#5A5A40]" />
+            <span>Preset Template:</span>
+          </div>
+          <span className="text-[9.5px] bg-slate-200 text-slate-700 font-semibold px-1.5 py-0.5 rounded">
+            Cepat Isi
+          </span>
+        </div>
 
-      <div className="flex items-center justify-between px-0.5 pt-0.5">
-        <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-slate-400">
-          Grup Isian
-        </span>
-        <div className="flex gap-1">
+        <div className="grid grid-cols-2 gap-1.5">
+          {onSyncFromLetter && (
+            <button
+              type="button"
+              id="btn-sync-surat-tugas-action"
+              onClick={() => {
+                onSyncFromLetter();
+                setSyncSuccess(true);
+                setTimeout(() => setSyncSuccess(false), 2500);
+              }}
+              className="flex items-center justify-center gap-1.5 py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg font-bold text-[10.5px] transition shadow-2xs cursor-pointer active:scale-95 col-span-2"
+              title="Ambil data semua isian formulir dari isian Surat Tugas secara otomatis"
+            >
+              {syncSuccess ? (
+                <>
+                  <Check size={13} className="text-emerald-600" />
+                  <span>Isian Berhasil Disinkronkan dari Surat Tugas!</span>
+                </>
+              ) : (
+                <>
+                  <FileText size={13} className="text-emerald-700" />
+                  <span>Ambil Isian dari Surat Tugas (Sinkron Otomatis)</span>
+                </>
+              )}
+            </button>
+          )}
+
           <button
-            onClick={() => {
-              setAllOpen(true);
-              setGroupKey((k) => k + 1);
-            }}
-            className="rounded px-1.5 py-0.5 text-[10px] font-medium text-slate-400 transition hover:bg-slate-100 hover:text-indigo-600"
+            type="button"
+            onClick={() => onApplyTemplate?.(CONTOH_RODA4)}
+            className="flex items-center justify-center gap-1 py-1.5 px-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 rounded-lg font-bold text-[10.5px] transition shadow-2xs cursor-pointer active:scale-95"
+            title="Muat data contoh BAST Roda 4 (Mobil Avanza)"
           >
-            ＋ Buka semua
+            <Car size={13} className="text-[#5A5A40]" />
+            <span className="truncate">Contoh Mobil (R4)</span>
           </button>
+
           <button
-            onClick={() => {
-              setAllOpen(false);
-              setGroupKey((k) => k + 1);
-            }}
-            className="rounded px-1.5 py-0.5 text-[10px] font-medium text-slate-400 transition hover:bg-slate-100 hover:text-indigo-600"
+            type="button"
+            onClick={() => onApplyTemplate?.(CONTOH_RODA2)}
+            className="flex items-center justify-center gap-1 py-1.5 px-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 rounded-lg font-bold text-[10.5px] transition shadow-2xs cursor-pointer active:scale-95"
+            title="Muat data contoh BAST Roda 2 (Motor)"
           >
-            − Tutup semua
+            <Bike size={13} className="text-[#5A5A40]" />
+            <span className="truncate">Contoh Motor (R2)</span>
+          </button>
+
+          <button
+            type="button"
+            id="btn-reset-form-kosong-bast"
+            onClick={() => onApplyTemplate?.({
+              ...BLANK_DATA,
+              jenis: data.jenis,
+              perusahaan: data.perusahaan,
+              cabang: data.cabang,
+              alamat: data.alamat,
+              telepon: data.telepon,
+              kopImage: data.kopImage,
+              kopImageHeight: data.kopImageHeight,
+              kopImageFit: data.kopImageFit,
+              kopImageAlign: data.kopImageAlign,
+              kopImageOffsetY: data.kopImageOffsetY,
+              kopImageOffsetX: data.kopImageOffsetX,
+              kopImageMarginBottom: data.kopImageMarginBottom,
+              kopCompanyName: data.kopCompanyName,
+              useImageKop: data.useImageKop,
+              checklist: emptyChecklist(data.jenis),
+            })}
+            className="flex items-center justify-center gap-1.5 py-1.5 px-2 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 rounded-lg font-bold text-[10.5px] transition shadow-2xs cursor-pointer active:scale-95 col-span-2"
+            title="Kosongkan seluruh isian formulir (Reset Semua Field)"
+          >
+            <RotateCcw size={12} className="text-rose-600" />
+            <span>Kosongkan Semua Field (Reset)</span>
           </button>
         </div>
       </div>
 
-      {/* ---------- 1. Data utama ---------- */}
-      <Section key={gk("du")} title="Data Utama" icon="📋" defaultOpen={dOpen(true)}>
-        <Grid cols={2}>
-          <Field label="No. BAST">
-            <TextInput
-              value={data.noBast}
-              placeholder="12496/BAST/2026"
-              onChange={(e) => set("noBast", e.target.value)}
-            />
-          </Field>
-          <Field label="Tanggal BAST">
-            <DateInput
-              value={data.tanggalBast}
-              onChange={(e) => set("tanggalBast", e.target.value)}
-            />
-          </Field>
-
-          <Field label="No. Perjanjian">
-            <TextInput
-              value={data.noPerjanjian}
-              placeholder="040424210837"
-              onChange={(e) => set("noPerjanjian", e.target.value)}
-            />
-          </Field>
-          <Field label="Tgl. Perjanjian">
-            <TextInput
-              upper
-              value={data.tglPerjanjian}
-              placeholder="13-FEB-24"
-              onChange={(e) => set("tglPerjanjian", e.target.value)}
-            />
-          </Field>
-
-          <Field label="Nama Debitur">
-            <TextInput
-              upper
-              value={data.namaDebitur}
-              placeholder="MARYANTO"
-              onChange={(e) => set("namaDebitur", e.target.value)}
-            />
-          </Field>
-          <Field label="STNK/BPKB a/n">
-            <TextInput
-              upper
-              value={data.bpkbAtasNama}
-              placeholder="SULASTRI"
-              onChange={(e) => set("bpkbAtasNama", e.target.value)}
-            />
-          </Field>
-        </Grid>
-      </Section>
-
-      {/* ---------- 2. Kreditur & Mitra ---------- */}
-      <Section
-        key={gk("km")}
-        title="Kreditur & Mitra"
-        icon="🤝"
-        defaultOpen={dOpen()}
-        badge={
-          data.kreditur.match(/\(([^)]+)\)/)?.[1] ||
-          data.kreditur
-            .split(" ")
-            .filter((w) => w && w !== "PT")
-            .slice(0, 2)
-            .map((w) => w[0])
-            .join("")
-            .toUpperCase() ||
-          undefined
-        }
-      >
-        {/* --- kreditur --- */}
-        <Field label="Nama Kreditur" hint="Dipakai di BAST, Penyerahan & Surat Tugas">
-          <TextInput
-            value={data.kreditur}
-            placeholder={KREDITUR_DEFAULT}
-            onChange={(e) => set("kreditur", e.target.value)}
-          />
-        </Field>
-
-        <div className="mt-1 flex flex-wrap gap-1">
-          {KREDITUR_PRESETS.map((k) => {
-            const singkat = k.match(/\(([^)]+)\)/)?.[1] ?? k.split(" ")[1] ?? k;
-            const aktif = data.kreditur === k;
-            return (
-              <button
-                key={k}
-                title={k}
-                onClick={() => set("kreditur", k)}
-                className={`rounded px-1.5 py-0.5 text-[10px] font-medium transition ${
-                  aktif
-                    ? "bg-indigo-600 text-white"
-                    : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                }`}
-              >
-                {singkat}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="mt-2">
-          <Field label="Kalimat Penyerahan" hint="Kosongkan = kalimat baku otomatis">
-            <TextArea
-              rows={3}
-              value={data.catatanKreditur}
-              placeholder={catatanKrediturText(data.kreditur)}
-              onChange={(e) => set("catatanKreditur", e.target.value)}
-            />
-          </Field>
-        </div>
-        <div className="mt-1">
-          <Check
-            checked={data.tampilkanCatatanBast}
-            onChange={(v) => set("tampilkanCatatanBast", v)}
+      {/* Jenis Kendaraan Selector */}
+      <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-xs">
+        <label className="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+          Kategori Kendaraan
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setJenis('roda2')}
+            className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              data.jenis === 'roda2'
+                ? 'bg-[#5A5A40] text-white shadow-sm ring-2 ring-[#5A5A40]/30'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
           >
-            Tampilkan kalimat kreditur di BAST
-          </Check>
-          <Check
-            checked={data.tampilkanCatatanPenyerahan}
-            onChange={(v) => set("tampilkanCatatanPenyerahan", v)}
+            <Bike size={15} />
+            Roda 2 (Motor)
+          </button>
+          <button
+            type="button"
+            onClick={() => setJenis('roda4')}
+            className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              data.jenis === 'roda4'
+                ? 'bg-[#5A5A40] text-white shadow-sm ring-2 ring-[#5A5A40]/30'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
           >
-            Tampilkan di Surat Penyerahan (poin 5)
-          </Check>
+            <Car size={15} />
+            Roda 4 (Mobil)
+          </button>
         </div>
+      </div>
 
-        <div className="my-2.5 border-t border-slate-100" />
+      {/* Navigation Pills inside Form */}
+      <div className="flex rounded-lg bg-slate-200/80 p-1 gap-0.5 text-[10.5px] font-medium overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => setActiveSection('info')}
+          className={`flex-1 py-1 px-1.5 rounded-md transition-all cursor-pointer whitespace-nowrap text-center ${
+            activeSection === 'info' ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          Pihak
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveSection('kendaraan')}
+          className={`flex-1 py-1 px-1.5 rounded-md transition-all cursor-pointer whitespace-nowrap text-center ${
+            activeSection === 'kendaraan' ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          Unit
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveSection('checklist')}
+          className={`flex-1 py-1 px-1.5 rounded-md transition-all cursor-pointer whitespace-nowrap text-center ${
+            activeSection === 'checklist' ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          Checklist
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveSection('kop')}
+          className={`flex-1 py-1 px-1.5 rounded-md transition-all cursor-pointer whitespace-nowrap text-center flex items-center justify-center gap-1 ${
+            activeSection === 'kop' ? 'bg-white text-[#5A5A40] shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          <ImageIcon size={11} />
+          <span>Kop</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveSection('ttd')}
+          className={`flex-1 py-1 px-1.5 rounded-md transition-all cursor-pointer whitespace-nowrap text-center ${
+            activeSection === 'ttd' ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          TTD
+        </button>
+      </div>
 
-        {/* --- perusahaan mitra --- */}
-        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-          Perusahaan Mitra (Pelaksana)
-        </p>
-        <Field label="Nama Perusahaan Mitra">
-          <TextInput
-            upper
-            value={data.mitraNama}
-            placeholder="PT MITRA JASATRIA INDONESIA"
-            onChange={(e) => set("mitraNama", e.target.value)}
-          />
-        </Field>
-        <div className="mt-2">
-          <Grid cols={2}>
-            <Field label="No. Legalitas / AHU">
-              <TextInput
-                value={data.mitraLegalitas}
-                placeholder="AHU-056731.AH.01.01"
-                onChange={(e) => set("mitraLegalitas", e.target.value)}
-              />
-            </Field>
-            <Field label="PIC Lapangan">
-              <TextInput
-                upper
-                value={data.mitraPic}
-                placeholder="Nama penanggung jawab"
-                onChange={(e) => set("mitraPic", e.target.value)}
-              />
-            </Field>
-            <Field label="Alamat Mitra" span>
-              <AddressFields value={data.mitraAlamat} onChange={(value) => set("mitraAlamat", value)} compact />
-            </Field>
-          </Grid>
-        </div>
-        <div className="mt-1">
-          <Check
-            checked={data.tampilkanMitraBast}
-            onChange={(v) => set("tampilkanMitraBast", v)}
-          >
-            Tampilkan kalimat mitra di BAST
-          </Check>
-          <Check
-            checked={data.mitraSebagaiPenerima}
-            onChange={(v) => set("mitraSebagaiPenerima", v)}
-          >
-            Cetak nama mitra di kolom “Yang Menerima”
-          </Check>
-        </div>
-
-        <div className="mt-2 rounded-md bg-slate-50 p-2 text-[10.5px] leading-relaxed text-slate-500">
-          <span className="mb-0.5 block text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">
-            Pratinjau kalimat BAST
-          </span>
-          {data.tampilkanCatatanBast && <p className="mb-1">“{catatanKreditur(data)}”</p>}
-          {data.tampilkanMitraBast && data.mitraNama && <p>“{mitraLine(data)}”</p>}
-          {!data.tampilkanCatatanBast && !data.tampilkanMitraBast && (
-            <span className="italic text-slate-400">Tidak ada kalimat tambahan.</span>
-          )}
-        </div>
-      </Section>
-
-      {/* ---------- 3. Kendaraan ---------- */}
-      <Section key={gk("kd")} title="Kendaraan" icon="🚘" defaultOpen={dOpen()}>
-        <Grid cols={2}>
-          <Field label="Merk / Type" span>
-            <TextInput
-              upper
-              value={data.merekType}
-              placeholder={isR2 ? "HONDA / BEAT CBS" : "HONDA / MINIBUS"}
-              onChange={(e) => set("merekType", e.target.value)}
-            />
-          </Field>
-          <Field label="No. Rangka">
-            <TextInput
-              upper
-              value={data.noRangka}
-              placeholder="MHRDD1750PJ407376"
-              onChange={(e) => set("noRangka", e.target.value)}
-            />
-          </Field>
-          <Field label="No. Mesin">
-            <TextInput
-              upper
-              value={data.noMesin}
-              placeholder="L12B35431364"
-              onChange={(e) => set("noMesin", e.target.value)}
-            />
-          </Field>
-        </Grid>
-        <div className="mt-2">
-          <Grid cols={3}>
-            <Field label="No. Polisi">
-              <TextInput
-                upper
-                value={data.noPolisi}
-                placeholder="R1187UC"
-                onChange={(e) => set("noPolisi", e.target.value)}
-              />
-            </Field>
-            <Field label="Warna">
-              <TextInput
-                upper
-                value={data.warna}
-                placeholder="MERAH"
-                onChange={(e) => set("warna", e.target.value)}
-              />
-            </Field>
-            <Field label="Tahun">
-              <TextInput
-                value={data.tahun}
-                placeholder="2023"
-                onChange={(e) => set("tahun", e.target.value)}
-              />
-            </Field>
-          </Grid>
-        </div>
-      </Section>
-
-      {/* ---------- 4. Tanda tangan ---------- */}
-      <Section key={gk("tt")} title="Tanda Tangan" icon="✍️" defaultOpen={dOpen()}>
-        <Grid cols={2}>
-          <Field label="Yang Bertandatangan">
-            <TextInput
-              upper
-              value={data.ttdBertandatangan}
-              placeholder="Nama konsumen"
-              onChange={(e) => set("ttdBertandatangan", e.target.value)}
-            />
-          </Field>
-          <Field label="Yang Menerima 1">
-            <TextInput
-              upper
-              value={data.ttdMenerima1}
-              placeholder="FILEMO HALAWA"
-              onChange={(e) => set("ttdMenerima1", e.target.value)}
-            />
-          </Field>
-          <Field label="Yang Menyerahkan">
-            <TextInput
-              upper
-              value={data.ttdMenyerahkan}
-              placeholder="FILEMO HALAWA"
-              onChange={(e) => set("ttdMenyerahkan", e.target.value)}
-            />
-          </Field>
-          <Field label="Yang Menerima 2">
-            <TextInput
-              upper
-              value={data.ttdMenerima2}
-              placeholder="Petugas gudang"
-              onChange={(e) => set("ttdMenerima2", e.target.value)}
-            />
-          </Field>
-        </Grid>
-      </Section>
-
-      {/* ---------- 4b. Surat Tugas ---------- */}
-      <Section
-        key={gk("st")}
-        title="Surat Tugas & Kop"
-        icon="📑"
-        defaultOpen={dOpen()}
-        badge={data.kop.image ? "kop ✓" : undefined}
-      >
-        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-          Kop Surat
-        </p>
-        <KopEditor kop={data.kop} onChange={(k) => set("kop", k)} />
-
-        <div className="my-2.5 border-t border-slate-100" />
-
-        <Grid cols={2}>
-          <Field
-            label="Nomor Surat"
-            span
-            hint={
-              countForDate(data.st.tanggalSuratISO) > 0
-                ? `Sudah ${countForDate(data.st.tanggalSuratISO)} surat tercatat untuk tanggal ini`
-                : "Format: ST-DC/{mitra}.{kreditur}/{thn}/{bln}/{seri}"
-            }
-          >
-            <div className="flex gap-1.5">
-              <TextInput
-                value={data.st.nomor}
-                placeholder="ST-DC/MJI.KAMM/2026/08/0483"
-                onChange={(e) => st("nomor", e.target.value)}
-              />
+      {/* SECTION 1: INFO PIHAK & KONTRAK */}
+      {activeSection === 'info' && (
+        <div className="space-y-3.5">
+          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <div className="flex items-center gap-2">
+                <Building2 size={15} className="text-[#5A5A40]" />
+                <h3 className="text-xs font-bold text-slate-800">Data Perusahaan & Nomor Surat</h3>
+              </div>
               <button
                 type="button"
-                onClick={() => {
-                  const n = nextCountForDate(data.st.tanggalSuratISO);
-                  st(
-                    "nomor",
-                    generateNomorST(
-                      {
-                        mitraNama: data.mitraNama,
-                        kreditur: data.kreditur,
-                        tanggalSuratISO: data.st.tanggalSuratISO,
-                      },
-                      n,
-                    ),
-                  );
-                }}
-                title="Buat nomor surat otomatis"
-                className="shrink-0 rounded-md bg-indigo-600 px-2.5 text-[11.5px] font-semibold text-white shadow-sm shadow-indigo-200 transition hover:bg-indigo-700 active:scale-95"
+                id="btn-generate-both-bast-spk"
+                onClick={handleGenerateBoth}
+                className="flex items-center gap-1 px-2.5 py-1 bg-[#5A5A40] hover:bg-[#484833] text-white rounded-lg text-[10.5px] font-bold transition shadow-xs cursor-pointer"
+                title="Generate otomatis No. BAST dan No. Penyerahan resmi"
               >
-                🎲 Acak
+                <Sparkles size={11} />
+                <span>Auto No.</span>
               </button>
             </div>
-          </Field>
-          <div className="col-span-full rounded-md bg-slate-50 px-2 py-1.5">
-            <span className="block text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">
-              Perusahaan penerbit
-            </span>
-            <span className="text-[11.5px] font-medium text-slate-700">
-              {data.mitraNama || data.st.perusahaan}
-            </span>
-            <span className="block text-[9.5px] text-slate-400">
-              Diambil dari panel “Kreditur &amp; Perusahaan Mitra”
-            </span>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <div className="flex items-center justify-between mb-0.5">
+                  <label className={labelClass}>No. BAST</label>
+                  <button
+                    type="button"
+                    onClick={handleGenerateBast}
+                    className="text-[9.5px] text-[#5A5A40] hover:text-[#383826] font-bold flex items-center gap-0.5 hover:underline cursor-pointer"
+                  >
+                    Generate
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  name="nomorBast"
+                  value={data.nomorBast}
+                  onChange={updateField}
+                  className={inputClass}
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-0.5">
+                  <label className={labelClass}>No. Penyerahan (SPK)</label>
+                  <button
+                    type="button"
+                    onClick={handleGeneratePenyerahan}
+                    className="text-[9.5px] text-[#5A5A40] hover:text-[#383826] font-bold flex items-center gap-0.5 hover:underline cursor-pointer"
+                  >
+                    Generate
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  name="nomorPenyerahan"
+                  value={data.nomorPenyerahan}
+                  onChange={updateField}
+                  className={inputClass}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className={labelClass}>Nama Perusahaan / Eksekutor</label>
+                <input
+                  type="text"
+                  name="perusahaan"
+                  value={data.perusahaan}
+                  onChange={updateField}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Cabang Perusahaan</label>
+                <input
+                  type="text"
+                  name="cabang"
+                  value={data.cabang}
+                  onChange={updateField}
+                  className={inputClass}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className={labelClass}>Alamat Kantor</label>
+                <input
+                  type="text"
+                  name="alamat"
+                  value={data.alamat}
+                  onChange={updateField}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Telepon Kantor</label>
+                <input
+                  type="text"
+                  name="telepon"
+                  value={data.telepon}
+                  onChange={updateField}
+                  className={inputClass}
+                />
+              </div>
+            </div>
           </div>
-          <Field label="Pemberi Tugas">
-            <TextInput
-              upper
-              value={data.st.pemberiNama}
-              onChange={(e) => st("pemberiNama", e.target.value)}
-            />
-          </Field>
-          <Field label="Jabatan">
-            <TextInput
-              upper
-              value={data.st.pemberiJabatan}
-              onChange={(e) => st("pemberiJabatan", e.target.value)}
-            />
-          </Field>
-          <Field label="Petugas" span>
-            <TextInput
-              upper
-              value={data.st.petugasNama}
-              onChange={(e) => st("petugasNama", e.target.value)}
-            />
-          </Field>
-          <Field label="NIK Petugas">
-            <TextInput
-              value={data.st.petugasNik}
-              onChange={(e) => st("petugasNik", e.target.value)}
-            />
-          </Field>
-          <Field label="Jabatan Petugas">
-            <TextInput
-              value={data.st.petugasJabatan}
-              onChange={(e) => st("petugasJabatan", e.target.value)}
-            />
-          </Field>
-        </Grid>
 
-        <div className="my-2.5 border-t border-slate-100" />
+          {/* Data Petugas Penerima */}
+          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-2.5">
+            <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+              <UserCheck size={15} className="text-[#5A5A40]" />
+              <h3 className="text-xs font-bold text-slate-800">Pihak Penerima (Petugas MJI)</h3>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className={labelClass}>Nama Petugas Penerima</label>
+                <input type="text" name="petugasNama" value={data.petugasNama} onChange={updateField} className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass}>NIK / ID Petugas</label>
+                <input type="text" name="petugasNik" value={data.petugasNik} onChange={updateField} className={inputClass} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className={labelClass}>Jabatan Petugas</label>
+                <input type="text" name="petugasJabatan" value={data.petugasJabatan} onChange={updateField} className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass}>No. HP Petugas</label>
+                <input type="text" name="petugasHp" value={data.petugasHp} onChange={updateField} className={inputClass} />
+              </div>
+            </div>
+          </div>
 
-        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-          Data Nasabah
-        </p>
-        <Grid cols={2}>
-          <Field label="No. Kontrak">
-            <TextInput
-              value={data.st.noKontrak}
-              onChange={(e) => st("noKontrak", e.target.value)}
-            />
-          </Field>
-          <Field label="Nama Nasabah">
-            <TextInput
-              upper
-              value={data.st.nasabahNama}
-              onChange={(e) => st("nasabahNama", e.target.value)}
-            />
-          </Field>
-          <Field label="Alamat" span>
-            <AddressFields value={data.st.nasabahAlamat} onChange={(value) => st("nasabahAlamat", value)} compact />
-          </Field>
-          <Field label="Jatuh Tempo">
-            <TextInput
-              upper
-              value={data.st.jatuhTempo}
-              placeholder="23 MARET 2018"
-              onChange={(e) => st("jatuhTempo", e.target.value)}
-            />
-          </Field>
-          <Field label="Angsuran / Total" span hint="Nilai angsuran / total tagihan">
-            <TextInput
-              value={data.st.angsuranNilai}
-              placeholder="Rp. 652.000 / Rp. 11.736.000"
-              onChange={(e) => st("angsuranNilai", e.target.value)}
-            />
-          </Field>
-          <Field label="Denda">
-            <TextInput
-              value={data.st.denda}
-              placeholder="Rp. 169.285.000"
-              onChange={(e) => st("denda", e.target.value)}
-            />
-          </Field>
-          <Field label="Merk/Type">
-            <TextInput
-              value={data.st.merkType}
-              placeholder="HONDA / BeAT"
-              onChange={(e) => st("merkType", e.target.value)}
-            />
-          </Field>
-          <Field label="Nomor Polisi">
-            <TextInput
-              upper
-              value={data.st.noPolisi}
-              onChange={(e) => st("noPolisi", e.target.value)}
-            />
-          </Field>
-        </Grid>
-
-        <button
-          onClick={() =>
-            set("st", {
-              ...data.st,
-              merkType: data.merekType || data.st.merkType,
-              noPolisi: data.noPolisi || data.st.noPolisi,
-              nasabahNama: data.namaDebitur || data.st.nasabahNama,
-            })
-          }
-          className="mt-1.5 w-full rounded bg-slate-100 py-1 text-[10.5px] font-medium text-slate-600 hover:bg-slate-200"
-        >
-          ⤵ Salin data kendaraan &amp; debitur dari BAST
-        </button>
-
-        <div className="my-2.5 border-t border-slate-100" />
-
-        <Grid cols={2}>
-          <Field label="Berlaku Dari">
-            <TextInput
-              value={data.st.berlakuDari}
-              placeholder="29 Agustus 2026"
-              onChange={(e) => st("berlakuDari", e.target.value)}
-            />
-          </Field>
-          <Field label="Berlaku Sampai">
-            <TextInput
-              value={data.st.berlakuSampai}
-              placeholder="31 Agustus 2026"
-              onChange={(e) => st("berlakuSampai", e.target.value)}
-            />
-          </Field>
-          <Field label="Kota">
-            <TextInput
-              value={data.st.kota}
-              placeholder="Purwokerto"
-              onChange={(e) => st("kota", e.target.value)}
-            />
-          </Field>
-          <Field label="Tanggal Surat">
-            <DateInput
-              value={data.st.tanggalSuratISO}
-              onChange={(e) => st("tanggalSuratISO", e.target.value)}
-            />
-          </Field>
-        </Grid>
-      </Section>
-
-      {/* ---------- 5. Checklist ---------- */}
-      <Section
-        key={gk("ck")}
-        title="Checklist"
-        icon="✅"
-        defaultOpen={dOpen()}
-        badge={filledChecklist ? `${filledChecklist} terisi` : undefined}
-        hint={PERLENGKAPAN[data.jenis].label}
-      >
-        <ChecklistEditor
-          jenis={data.jenis}
-          checklist={data.checklist}
-          onChange={setChecklist}
-        />
-      </Section>
-
-      {/* ---------- 6. Lanjutan ---------- */}
-      <Section
-        key={gk("op")}
-        title="Opsi & Kop BAST"
-        icon="⚙️"
-        defaultOpen={dOpen()}
-        hint="penyelesaian, karoseri, kop teks"
-      >
-        {/* kop surat */}
-        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-          Kop Surat
-        </p>
-        <div className="space-y-1.5">
-          <TextInput
-            value={data.perusahaan}
-            placeholder="Nama perusahaan"
-            onChange={(e) => set("perusahaan", e.target.value)}
-          />
-          <TextInput
-            upper
-            value={data.cabang}
-            placeholder="Cabang"
-            onChange={(e) => set("cabang", e.target.value)}
-          />
-          <TextInput
-            upper
-            value={data.alamat}
-            placeholder="Alamat cabang"
-            onChange={(e) => set("alamat", e.target.value)}
-          />
+          {/* Data Konsumen / Debitur */}
+          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-2.5">
+            <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+              <User size={15} className="text-[#5A5A40]" />
+              <h3 className="text-xs font-bold text-slate-800">Pihak Yang Menyerahkan (Debitur)</h3>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className={labelClass}>Nama Debitur / Konsumen</label>
+                <input type="text" name="debiturNama" value={data.debiturNama} onChange={updateField} className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass}>No. KTP / NIK</label>
+                <input type="text" name="debiturNik" value={data.debiturNik} onChange={updateField} className={inputClass} />
+              </div>
+            </div>
+            <div>
+              <label className={labelClass}>Alamat Lengkap Debitur</label>
+              <textarea name="debiturAlamat" value={data.debiturAlamat} onChange={updateField} rows={2} className={`${inputClass} resize-none`} />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className={labelClass}>No. HP Debitur</label>
+                <input type="text" name="debiturHp" value={data.debiturHp} onChange={updateField} className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass}>No. Kontrak / Perjanjian</label>
+                <input type="text" name="nomorKontrak" value={data.nomorKontrak} onChange={updateField} className={inputClass} />
+              </div>
+            </div>
+            <div>
+              <label className={labelClass}>Kreditur / Leasing / Lembaga Pembiayaan</label>
+              <input type="text" name="krediturLeasing" value={data.krediturLeasing} onChange={updateField} className={inputClass} />
+            </div>
+          </div>
         </div>
+      )}
 
-        <div className="my-2.5 border-t border-slate-100" />
-
-        {/* nomor tambahan */}
-        <Grid cols={2}>
-          <Field label="No. Surat Tugas">
-            <TextInput
-              upper
-              value={data.noSuratTugas}
-              placeholder="040426C01061"
-              onChange={(e) => set("noSuratTugas", e.target.value)}
+      {/* SECTION 2: UNIT KENDARAAN */}
+      {activeSection === 'kendaraan' && (
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-3">
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+            <FileText size={15} className="text-[#5A5A40]" />
+            <h3 className="text-xs font-bold text-slate-800">Spesifikasi & Identitas Kendaraan</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className={labelClass}>Merk Kendaraan</label>
+              <input type="text" name="kendaraanMerk" value={data.kendaraanMerk} onChange={updateField} className={inputClass} placeholder="Contoh: HONDA / TOYOTA" />
+            </div>
+            <div>
+              <label className={labelClass}>Tipe / Model</label>
+              <input type="text" name="kendaraanType" value={data.kendaraanType} onChange={updateField} className={inputClass} placeholder="Contoh: HR-V / AVANZA" />
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className={labelClass}>Nomor Polisi</label>
+              <input type="text" name="kendaraanNoPol" value={data.kendaraanNoPol} onChange={updateField} className={inputClass} placeholder="R 1829 XH" />
+            </div>
+            <div>
+              <label className={labelClass}>Tahun</label>
+              <input type="text" name="kendaraanTahun" value={data.kendaraanTahun} onChange={updateField} className={inputClass} placeholder="2022" />
+            </div>
+            <div>
+              <label className={labelClass}>Warna</label>
+              <input type="text" name="kendaraanWarna" value={data.kendaraanWarna} onChange={updateField} className={inputClass} placeholder="Putih Mutiara" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className={labelClass}>Nomor Rangka (VIN)</label>
+              <input type="text" name="kendaraanNoRangka" value={data.kendaraanNoRangka} onChange={updateField} className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>Nomor Mesin</label>
+              <input type="text" name="kendaraanNoMesin" value={data.kendaraanNoMesin} onChange={updateField} className={inputClass} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className={labelClass}>Odometer (KM)</label>
+              <input type="text" name="kendaraanOdometer" value={data.kendaraanOdometer} onChange={updateField} className={inputClass} placeholder="36.120 KM" />
+            </div>
+            <div>
+              <label className={labelClass}>Posisi Bahan Bakar</label>
+              <input type="text" name="kendaraanBahanBakar" value={data.kendaraanBahanBakar} onChange={updateField} className={inputClass} placeholder="3/4 Tangki" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className={labelClass}>Kelengkapan STNK</label>
+              <input type="text" name="kendaraanStnk" value={data.kendaraanStnk} onChange={updateField} className={inputClass} placeholder="Ada (Pajak s/d 2027)" />
+            </div>
+            <div>
+              <label className={labelClass}>Status BPKB</label>
+              <input type="text" name="kendaraanBpkb" value={data.kendaraanBpkb} onChange={updateField} className={inputClass} placeholder="Dalam Jaminan Kreditur" />
+            </div>
+          </div>
+          <div>
+            <label className={labelClass}>Kondisi Mesin & Transmisi</label>
+            <input type="text" name="kendaraanKondisiMesin" value={data.kendaraanKondisiMesin} onChange={updateField} className={inputClass} placeholder="Normal / Hidup / Suara Halus" />
+          </div>
+          <div>
+            <label className={labelClass}>Catatan Kondisi Bodi & Eksterior</label>
+            <textarea
+              name="kendaraanKondisiBodi"
+              value={data.kendaraanKondisiBodi}
+              onChange={updateField}
+              rows={2}
+              className={`${inputClass} resize-none`}
+              placeholder="Catatan lecet bodi, baret, penyok, dll."
             />
-          </Field>
-          <Field label="Hari & Tanggal" hint={`Auto: ${hariTanggal(data.tanggalBast) || "-"}`}>
-            <TextInput
-              value={data.hariTanggal}
-              placeholder={hariTanggal(data.tanggalBast)}
-              onChange={(e) => set("hariTanggal", e.target.value)}
-            />
-          </Field>
-        </Grid>
-
-        <div className="my-2.5 border-t border-slate-100" />
-
-        {/* opsi dokumen */}
-        <Grid cols={2}>
-          <Field label="Penyelesaian">
-            <Segmented
-              value={data.penyelesaian}
-              onChange={(v) => set("penyelesaian", v)}
-              options={[
-                { value: "", label: "—" },
-                { value: "YA", label: "YA" },
-                { value: "TIDAK", label: "TIDAK" },
-              ]}
-            />
-          </Field>
-          <Field label={isR2 ? "Aksesoris" : "Karoseri"}>
-            <Segmented
-              value={data.karoseri}
-              onChange={(v) => set("karoseri", v)}
-              options={[
-                { value: "", label: "—" },
-                { value: "Termasuk", label: "Ya" },
-                { value: "Tidak Termasuk", label: "Tidak" },
-              ]}
-            />
-          </Field>
-        </Grid>
-        <div className="mt-1.5">
-          <Check
-            checked={data.labelMesinBenar}
-            onChange={(v) => set("labelMesinBenar", v)}
-          >
-            Perbaiki label kolom jadi “No. Mesin”
-          </Check>
+          </div>
         </div>
-      </Section>
+      )}
+
+      {/* SECTION 3: CHECKLIST KOMPONEN */}
+      {activeSection === 'checklist' && (
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-3">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <div className="flex items-center gap-2">
+              <CheckSquare size={15} className="text-[#5A5A40]" />
+              <h3 className="text-xs font-bold text-slate-800">Checklist Fisik ({data.jenis === 'roda2' ? 'Motor' : 'Mobil'})</h3>
+            </div>
+            <div className="flex gap-1.5">
+              <button
+                type="button"
+                onClick={() => setAllStatus('')}
+                className="text-[10px] font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded border border-slate-300 cursor-pointer"
+              >
+                Kosongkan
+              </button>
+              <button
+                type="button"
+                onClick={() => setAllStatus('baik')}
+                className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded border border-emerald-200 cursor-pointer"
+              >
+                Semua Baik
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1">
+            {checklistDefs.map((def) => {
+              const current = data.checklist[def.id] || { status: 'baik', catatan: '' };
+              const status = current.status;
+
+              return (
+                <div key={def.id} className="p-2 rounded-lg border border-slate-200 bg-slate-50/50 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold text-slate-800">{def.nama}</span>
+                    <span className="text-[9.5px] text-slate-400 font-medium">{def.kategori}</span>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => handleItemStatusChange(def.id, 'baik')}
+                      className={`flex-1 flex items-center justify-center gap-1 py-1 px-1 rounded text-[10px] font-semibold transition-all cursor-pointer ${
+                        status === 'baik'
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      <CheckCircle2 size={11} />
+                      Baik (✓)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleItemStatusChange(def.id, 'rusak')}
+                      className={`flex-1 flex items-center justify-center gap-1 py-1 px-1 rounded text-[10px] font-semibold transition-all cursor-pointer ${
+                        status === 'rusak'
+                          ? 'bg-rose-600 text-white shadow-xs'
+                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      <AlertTriangle size={11} />
+                      Rusak (✗)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleItemStatusChange(def.id, 'tidak_ada')}
+                      className={`flex-1 flex items-center justify-center gap-1 py-1 px-1 rounded text-[10px] font-semibold transition-all cursor-pointer ${
+                        status === 'tidak_ada'
+                          ? 'bg-slate-700 text-white shadow-xs'
+                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      <MinusCircle size={11} />
+                      Tdk Ada (—)
+                    </button>
+                  </div>
+
+                  <input
+                    type="text"
+                    value={current.catatan || ''}
+                    onChange={(e) => handleItemNoteChange(def.id, e.target.value)}
+                    placeholder="Catatan kondisi..."
+                    className="w-full bg-white border border-slate-200 rounded px-2 py-0.5 text-[10.5px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#5A5A40]"
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* SECTION 4: KOP SURAT & SETTING POSISI */}
+      {activeSection === 'kop' && (
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-3">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <div className="flex items-center gap-2">
+              <ImageIcon size={15} className="text-[#5A5A40]" />
+              <h3 className="text-xs font-bold text-slate-800">Kop Surat & Posisi (BAST & SPK)</h3>
+            </div>
+            <button
+              type="button"
+              onClick={handleSaveKopAsDefault}
+              className="flex items-center gap-1 px-2.5 py-1 bg-[#5A5A40] hover:bg-[#484833] text-white rounded-lg text-[10.5px] font-bold transition shadow-xs cursor-pointer"
+            >
+              {savedKopSuccess ? <Check size={11} className="text-emerald-300" /> : <Save size={11} />}
+              <span>{savedKopSuccess ? 'Tersimpan!' : 'Kunci Standar'}</span>
+            </button>
+          </div>
+
+          {/* Status info */}
+          <div className="bg-emerald-50 border border-emerald-200/80 p-2.5 rounded-lg text-[11px] text-emerald-900 space-y-1">
+            <p className="font-bold flex items-center gap-1.5">
+              <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
+              <span>Kop Surat Aktif & Tersinkronisasi</span>
+            </p>
+            <p className="text-[10.5px] text-emerald-800 leading-snug">
+              BAST dan Surat Penyerahan otomatis menggunakan file Kop Surat yang Anda upload beserta seluruh posisi koordinat sekarang.
+            </p>
+          </div>
+
+          {/* Toggle Image Kop vs Text Header */}
+          <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200">
+            <div>
+              <p className="text-xs font-bold text-slate-800">Tampilkan Kop Bergambar</p>
+              <p className="text-[10px] text-slate-500">Gunakan logo kop surat yang diupload</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => set('useImageKop', data.useImageKop === false ? true : false)}
+              className={`px-3 py-1 rounded-md text-xs font-bold transition cursor-pointer ${
+                data.useImageKop !== false
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-slate-300 text-slate-700'
+              }`}
+            >
+              {data.useImageKop !== false ? 'Aktif' : 'Teks Saja'}
+            </button>
+          </div>
+
+          {/* Kop Image Thumbnail Preview */}
+          {currentKopImage ? (
+            <div className="p-2 border border-slate-200 rounded-lg bg-slate-50/50 space-y-1.5">
+              <div className="flex items-center justify-between text-[10.5px] text-slate-600 font-medium">
+                <span>Pratinjau Gambar Kop:</span>
+                <button
+                  type="button"
+                  onClick={handleSyncKopFromStorage}
+                  className="text-[#5A5A40] hover:underline font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  <RotateCcw size={10} />
+                  <span>Sinkronkan Ulang</span>
+                </button>
+              </div>
+              <div className="bg-white p-2 border border-slate-200 rounded flex items-center justify-center max-h-20 overflow-hidden">
+                <img
+                  src={currentKopImage}
+                  alt="Kop Surat Thumbnail"
+                  className="max-h-16 w-auto object-contain"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="p-3 border-2 border-dashed border-slate-300 rounded-lg text-center text-slate-500 text-xs">
+              <p>Belum ada gambar kop tersimpan.</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">Silakan upload pada tab Surat Tugas atau sinkronkan.</p>
+            </div>
+          )}
+
+          {/* Sliders Posisi Kop */}
+          <div className="space-y-2.5 pt-1">
+            {/* Slider Height */}
+            <div>
+              <div className="flex justify-between text-[11px] font-semibold text-slate-700 mb-1">
+                <span>Tinggi Kop:</span>
+                <span className="font-mono text-[#5A5A40] font-bold">{data.kopImageHeight ?? savedTemplate?.kopImageHeight ?? 120} px</span>
+              </div>
+              <input
+                type="range"
+                min="60"
+                max="220"
+                step="5"
+                value={data.kopImageHeight ?? savedTemplate?.kopImageHeight ?? 120}
+                onChange={(e) => set('kopImageHeight', Number(e.target.value))}
+                className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#5A5A40]"
+              />
+            </div>
+
+            {/* Slider Offset Y */}
+            <div>
+              <div className="flex justify-between text-[11px] font-semibold text-slate-700 mb-1">
+                <span>Geser Vertikal (Y):</span>
+                <span className="font-mono text-[#5A5A40] font-bold">{data.kopImageOffsetY ?? savedTemplate?.kopImageOffsetY ?? 0} px</span>
+              </div>
+              <input
+                type="range"
+                min="-60"
+                max="60"
+                step="2"
+                value={data.kopImageOffsetY ?? savedTemplate?.kopImageOffsetY ?? 0}
+                onChange={(e) => set('kopImageOffsetY', Number(e.target.value))}
+                className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#5A5A40]"
+              />
+            </div>
+
+            {/* Slider Offset X */}
+            <div>
+              <div className="flex justify-between text-[11px] font-semibold text-slate-700 mb-1">
+                <span>Geser Horisontal (X):</span>
+                <span className="font-mono text-[#5A5A40] font-bold">{data.kopImageOffsetX ?? savedTemplate?.kopImageOffsetX ?? 0} px</span>
+              </div>
+              <input
+                type="range"
+                min="-60"
+                max="60"
+                step="2"
+                value={data.kopImageOffsetX ?? savedTemplate?.kopImageOffsetX ?? 0}
+                onChange={(e) => set('kopImageOffsetX', Number(e.target.value))}
+                className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#5A5A40]"
+              />
+            </div>
+
+            {/* Slider Margin Bottom */}
+            <div>
+              <div className="flex justify-between text-[11px] font-semibold text-slate-700 mb-1">
+                <span>Jarak Bawah (Margin):</span>
+                <span className="font-mono text-[#5A5A40] font-bold">{data.kopImageMarginBottom ?? savedTemplate?.kopImageMarginBottom ?? 24} px</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="50"
+                step="2"
+                value={data.kopImageMarginBottom ?? savedTemplate?.kopImageMarginBottom ?? 24}
+                onChange={(e) => set('kopImageMarginBottom', Number(e.target.value))}
+                className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#5A5A40]"
+              />
+            </div>
+
+            {/* Scale Fit & Alignment */}
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <div>
+                <label className={labelClass}>Skala Gambar</label>
+                <select
+                  value={data.kopImageFit ?? savedTemplate?.kopImageFit ?? 'contain'}
+                  onChange={(e) => set('kopImageFit', e.target.value as any)}
+                  className={inputClass}
+                >
+                  <option value="contain">Contain (Proporsional)</option>
+                  <option value="fill">Fill (Rentangkan Penuh)</option>
+                  <option value="cover">Cover (Penuh Area)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className={labelClass}>Perataan</label>
+                <select
+                  value={data.kopImageAlign ?? savedTemplate?.kopImageAlign ?? 'center'}
+                  onChange={(e) => set('kopImageAlign', e.target.value as any)}
+                  className={inputClass}
+                >
+                  <option value="center">Tengah (Center)</option>
+                  <option value="left">Rata Kiri</option>
+                  <option value="right">Rata Kanan</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SECTION 5: TTD & SAKSI */}
+      {activeSection === 'ttd' && (
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-3">
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+            <UserCheck size={15} className="text-[#5A5A40]" />
+            <h3 className="text-xs font-bold text-slate-800">Tempat, Tanggal & Saksi</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className={labelClass}>Kota / Tempat</label>
+              <input type="text" name="kota" value={data.kota} onChange={updateField} className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>Tanggal Pelaksanaan</label>
+              <input type="text" name="tanggal" value={data.tanggal} onChange={updateField} className={inputClass} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className={labelClass}>Nama Saksi 1</label>
+              <input type="text" name="saksi1Nama" value={data.saksi1Nama} onChange={updateField} className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>Jabatan / Status Saksi 1</label>
+              <input type="text" name="saksi1Jabatan" value={data.saksi1Jabatan} onChange={updateField} className={inputClass} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className={labelClass}>Nama Saksi 2</label>
+              <input type="text" name="saksi2Nama" value={data.saksi2Nama} onChange={updateField} className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>Jabatan / Status Saksi 2</label>
+              <input type="text" name="saksi2Jabatan" value={data.saksi2Jabatan} onChange={updateField} className={inputClass} />
+            </div>
+          </div>
+          <div>
+            <label className={labelClass}>Catatan Khusus / Pernyataan Tambahan</label>
+            <textarea
+              name="catatanKhusus"
+              value={data.catatanKhusus}
+              onChange={updateField}
+              rows={3}
+              className={`${inputClass} resize-none`}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

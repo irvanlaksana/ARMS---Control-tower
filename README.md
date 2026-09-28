@@ -1,113 +1,16 @@
 # ARMS — Control Tower (Agency Recovery Management System)
 
-Sistem Control Tower untuk agency DC & Recovery Management. **Seluruh data dan
-pengaturan disimpan pada spreadsheet aktif** yang dipakai deploy saat ini, dan
-aplikasi dapat dijalankan langsung sebagai **Google Apps Script Web App** — tanpa
-Service Account, tanpa `GOOGLE_SERVICE_ACCOUNT_JSON`, dan tanpa Supabase.
+Sistem Control Tower untuk agency DC & Recovery Management dengan database **Supabase/PostgreSQL** dan workbook spreadsheet **CSV lokal**. Sinkronisasi spreadsheet tidak memakai Google Sheets API, service account, OAuth, atau Google Apps Script. CSV bisa dibuka di Excel/LibreOffice dan diimpor ke Google Sheets bila diperlukan. Google Drive tetap opsional hanya untuk arsip dokumen.
 
-Google Drive tetap dipakai untuk arsip berkas (KTP, SPPI, SKP, dokumen) dengan
-**seluruh fitur yang sama**; yang berubah hanya cara penyimpanannya: folder dibuat
-dan berkas diunggah lewat `DriveApp` (akun deploy Apps Script), sedangkan
-konfigurasinya (Folder ID / URL / struktur sub-folder) disimpan di spreadsheet aktif.
+## Mode spreadsheet tanpa Google API
 
-Dua kemampuan baru yang berlaku di **seluruh modul**:
+- Setiap workbook disimpan di `storage/spreadsheets/<nama-workbook>/` sebagai satu file CSV per tab.
+- `googleSheetId` pada Settings sekarang dipakai sebagai **nama workbook lokal**, bukan ID Google. Jika kosong, aplikasi memakai `arms-control-tower`.
+- Tombol **Buat Sheet Database**, **Push Semua Data**, dan sync berkala tetap memakai endpoint `/api/sheets/*`, tetapi endpoint tersebut hanya membaca/menulis CSV lokal.
+- Jalankan `npm run spreadsheet:setup -- nama-workbook` untuk membuat struktur file CSV. Data aplikasi dapat dipush dari menu Settings.
+- Folder `storage/spreadsheets/` diabaikan Git karena berisi data operasional. Backup folder tersebut atau impor CSV ke spreadsheet secara manual.
 
-1. **Preview media Google Drive in-app** — setiap foto/PDF/dokumen yang diunggah ke
-   Drive bisa dilihat tanpa keluar aplikasi (lihat [Preview Media](#preview-media-google-drive-semua-modul)).
-2. **Kirim data ke Generator Surat web** — modul Surat Kuasa membuka
-   `https://generator-surat-beige.vercel.app/` membawa payload `LetterData` + `BastData`
-   sesuai repo [`irvanlaksana/generator-surat-`](https://github.com/irvanlaksana/generator-surat-)
-   (lihat [Generator Surat](#generator-surat-web-surat-tugas--bast) dan
-   [`docs/GENERATOR_SURAT_PAYLOAD.md`](docs/GENERATOR_SURAT_PAYLOAD.md)).
-
-## Deploy utama: Google Apps Script
-
-```
-React SPA (HtmlService di dalam Web App Apps Script)
-   └─ google.script.run ──> appsscript/*.gs
-                              ├─ SpreadsheetApp → SPREADSHEET AKTIF (30 tab + Settings + Blob_Store)
-                              └─ DriveApp       → Google Drive (folder karyawan, mitra DC, SKP, berkas)
-```
-
-```bash
-npm install
-npm run gas:build     # bangun SPA + rakit appsscript/dist (Code.gs, Db.gs, Index.html, BundleNN.html)
-npm run gas:login     # sekali saja
-npm run gas:create    # buat project Apps Script (atau: npm run gas:build -- --scriptId <ID>)
-npm run gas:push      # kirim seluruh berkas
-npm run gas:test      # uji backend + frontend + preview media + payload generator (388 pemeriksaan)
-```
-
-Lalu **Deploy → New deployment → Web app** (*Execute as: Me*, *Who has access: Anyone*).
-Panduan lengkap: [`docs/DEPLOY_GOOGLE_APPS_SCRIPT.md`](docs/DEPLOY_GOOGLE_APPS_SCRIPT.md) •
-Detail backend: [`appsscript/README.md`](appsscript/README.md).
-
-### Pengaturan & Branding Profile → spreadsheet aktif
-
-Pada **Settings → Pengaturan Sistem & Google Sheets** ("ARMS System Settings &
-Branding Profile"), semua pengaturan — profil perusahaan, logo, konfigurasi Google
-Drive, konfigurasi tab/kolom database, fee default, URL Web App Apps Script —
-disimpan sebagai baris `key | value | updatedAt | note` pada tab **`Settings`** di
-spreadsheet aktif. Nilai panjang (mis. logo base64) dipecah otomatis menjadi
-`key__chunkN` dan digabung kembali saat dibaca, sehingga tidak pernah melewati batas
-50.000 karakter per sel. localStorage browser hanya berperan sebagai cache.
-
-### Tiga mode operasi (terdeteksi otomatis oleh `src/lib/gasBridge.ts`)
-
-| Mode | Kondisi | Jalur penyimpanan |
-|---|---|---|
-| `GAS_HTML` | aplikasi dibuka dari URL Web App Apps Script | `google.script.run` → spreadsheet aktif |
-| `GAS_URL` | aplikasi di-host terpisah + **Apps Script Web App URL** diisi di Pengaturan | HTTP POST ke `/exec` → spreadsheet aktif |
-| `SERVER` | tanpa Apps Script (`server.ts` / Netlify / Vercel) | Google Sheets API (+ Supabase bila dikonfigurasi) |
-
-Mode hybrid tersedia untuk deploy lama: set env `GAS_WEB_APP_URL` pada
-server/Netlify/Vercel, maka `server.ts` meneruskan seluruh `/api/*` ke Apps Script.
-
-> Bagian Google API (Service Account) di bawah tetap dipertahankan untuk deploy
-> mode `SERVER`; tidak diperlukan bila memakai Google Apps Script.
-
-### Preview Media Google Drive (semua modul)
-
-Satu penyedia preview global (`src/components/common/MediaPreview.tsx`, dipasang di
-`App.tsx`) membuat **semua media yang diunggah ke Google Drive bisa dilihat di dalam
-aplikasi** — foto KTP/SPPI/STNK, bukti kunjungan & penagihan, SKP, SPH, BAST, proposal,
-MoU, kwitansi petty cash, bukti transfer modal kerja/komisi mitra, lampiran surat kuasa.
-
-| Cara pakai | Contoh |
-|---|---|
-| Otomatis (tanpa ubah komponen) | klik tautan `<a href={doc.driveDocumentUrl}>` di modul mana pun → preview in-app |
-| Atribut data | `<img src={url} data-media-preview data-media-name="KTP.jpg" data-media-module="Personnel" />` |
-| Galeri | `data-media-gallery={JSON.stringify(items)} data-media-index={i}` (navigasi ← →, Esc tutup) |
-| Komponen | `<MediaThumb>`, `<MediaLink>`, `<MediaUrlPreviewButton>`, `<MediaBadge>` |
-| Hook | `const { openMedia, openGallery } = useMediaPreview()` |
-| Opt-out | `data-no-media-preview` (logo, tautan folder/spreadsheet tetap buka tab baru) |
-
-Fitur preview: gambar (zoom + fallback otomatis), PDF/Docs/Slides (iframe), video/audio
-(player), navigasi galeri, tombol **Buka di Google Drive**, **Unduh**, **Salin Tautan**,
-serta **sumber Server** untuk berkas privat.
-
-Berkas privat (tidak dibagikan "anyone with link") tetap terbaca lewat proxy backend
-`GET /api/drive/file?fileId=...`:
-- mode `SERVER` → Service Account men-stream berkas (`Content-Type` asli),
-- mode `GAS_HTML`/`GAS_URL` → action `DRIVE_FILE` mengembalikan base64 (maks. 25 MB),
-  frontend mengubahnya jadi Blob URL,
-- dokumen Google native (Docs/Sheets/Slides/Drawing) otomatis di-export ke PDF/PNG.
-
-### Generator Surat Web (Surat Tugas & BAST)
-
-Modul **Surat Kuasa** → panel *"7. Kirim ke Generator Surat Web"*:
-
-- Target: `https://generator-surat-beige.vercel.app/` (repo `irvanlaksana/generator-surat-`).
-- Pilihan **tab tujuan** (`surat_tugas` / `bast`) dan **ukuran kertas** (`f4`/`a4`/`legal`/`letter`).
-- Payload mengikuti model repo: `LetterData` (32 field) + `BastData` (38 field) + `meta` ARMS.
-- Dikirim lewat 4 jalur: `?payload=<base64url>` (atau `#payload=` bila panjang), parameter datar,
-  `postMessage ARMS_GENERATOR_PAYLOAD` (dengan ACK), serta JSON yang bisa **disalin/diunduh**.
-- Tombol **Kirim ke Generator** juga tersedia per baris daftar SK.
-- Generator **lokal** (`src/components/assignment-letter/`) tetap ada dan tidak diubah.
-- Backend: `POST /api/surat/open-generator` (Express/Vercel/Apps Script) memakai logika yang sama
-  (`api/lib/generatorLink.ts` ↔ port JS di `appsscript/Surat.gs`).
-- Patch penerima (agar aplikasi generator membaca payload) tersedia siap-tempel di
-  [`docs/GENERATOR_SURAT_PAYLOAD.md`](docs/GENERATOR_SURAT_PAYLOAD.md).
+Bagian Google API lama di bawah hanya relevan bila ingin mengaktifkan kembali integrasi Google Drive; tidak diperlukan untuk database dan sync spreadsheet.
 
 ---
 
@@ -285,34 +188,23 @@ export GOOGLE_SERVICE_ACCOUNT_JSON="$(cat service-account.json)"
 
 ## 6. Konfigurasi di Aplikasi ARMS
 
-### 6.1. Tab SYSTEM — Spreadsheet Aktif & Push Otomatis
+### 6.1. Tab SYSTEM — Google Sheets Cloud Database Control & Push Otomatis
 
 1. Buka **Settings → Pengaturan Sistem & Google Sheets**.
-2. Pada kartu **"Spreadsheet Aktif — Sumber Penyimpanan Deploy Ini"** terlihat mode
-   deploy (`GOOGLE APPS SCRIPT (TERIKAT)` / `(WEB APP URL)` / `SERVER API`), nama & ID
-   spreadsheet aktif, tab pengaturan, dan akun deploy/Drive. Tombol **Muat dari
-   Spreadsheet** membaca pengaturan dari tab `Settings`; **Uji Koneksi** memeriksa
-   backend + Google Drive.
-3. Pada kartu **"Spreadsheet Aktif & Push Data Otomatis"**, kolom **Spreadsheet Aktif
-   (ID / URL)** terisi otomatis (terkunci) bila berjalan di dalam Apps Script; isi
-   manual bila memakai mode `SERVER`/`GAS_URL`, lalu klik **Simpan**.
-4. Di bawahnya ada kartu **"Kolom Spreadsheet untuk Membuat Database"**:
+2. Pada kartu **"Google Sheets Cloud Database Control & Push Otomatis"**, isi kolom **"Kolom Spreadsheet Database (Google Sheets ID / URL)"** dengan ID spreadsheet (contoh: `1AbCdef...`), lalu klik **Simpan**.
+3. Di bawahnya ada kartu **"Kolom Spreadsheet untuk Membuat Database"**:
    - Edit **nama tab/sheet** per database (mis. `customers → Debitur_2026`).
    - Toggle **ON/OFF** untuk mengaktifkan/nonaktifkan sinkronisasi per database.
    - Klik **Simpan Kolom** untuk menyimpan konfigurasi.
    - Klik **Buat Kolom Database** untuk membuat/memverifikasi seluruh tab di spreadsheet.
-5. Klik **🚀 Push Data Otomatis & Buat Tab** untuk mengisi seluruh data sekaligus ke spreadsheet aktif.
-6. Isi **URL Web App Google Apps Script** bila aplikasi di-host di luar Apps Script (mode `GAS_URL`).
+4. Klik **🚀 Push Data Otomatis & Buat Sheet** untuk mengisi seluruh data sekaligus.
 
 ### 6.2. Tab DATABASE — Pengaturan Semua Database
 
 1. Buka **Settings → Database & Sheet**.
-2. Kolom **Spreadsheet aktif (ID / URL)** terisi otomatis dari spreadsheet tempat
-   Apps Script di-deploy (isi manual hanya untuk mode `SERVER`).
-3. Klik **Buat Sheet Database** (membuat semua tab otomatis di spreadsheet aktif).
-4. Klik **Push ke Sheets** untuk mengirim seluruh database aktif.
-5. **Simpan Konfigurasi** menyimpan nama tab & toggle ON/OFF ke tab `Settings`
-   spreadsheet aktif (bukan hanya di browser).
+2. Isi **Google Spreadsheet ID / URL**.
+3. Klik **Buat Sheet Database** (membuat semua tab otomatis).
+4. Klik **Push Semua Data** untuk mengirim seluruh database aktif.
 5. Tabel daftar database menampilkan:
    - nama tab spreadsheet (bisa diedit),
    - jumlah data,
@@ -339,24 +231,13 @@ export GOOGLE_SERVICE_ACCOUNT_JSON="$(cat service-account.json)"
 
 | Metode | Endpoint | Fungsi | Body utama |
 |---|---|---|---|
-| GET | `/api/health` | Cek status server / Apps Script | — |
-| GET | `/api/runtime` | Info spreadsheet aktif, mode deploy, akun Drive | — |
-| POST | `/api/settings/save` | Simpan pengaturan ke tab `Settings` | `{ spreadsheetId, settings, tabs }` |
-| POST | `/api/settings/load` | Muat pengaturan dari tab `Settings` | `{ spreadsheetId, tabs }` |
+| GET | `/api/health` | Cek status server | — |
 | POST | `/api/sheets/setup` | Buat/verifikasi tab sheet | `{ spreadsheetId, tabs }` |
 | POST | `/api/sheets/sync` | Tulis data database | `{ spreadsheetId, data, tabs }` |
 | POST | `/api/sheets/fetch` | Baca data spreadsheet | `{ spreadsheetId, tabs }` |
 | POST | `/api/drive/create-folder` | Buat folder | `{ name, parentId }` |
 | POST | `/api/drive/ensure-path` | Pastikan path folder | `{ path, rootId }` |
 | POST | `/api/drive/upload` | Upload file | `{ fileName, mimeType, base64, folderId }` |
-| GET | `/api/drive/file` | Proxy baca berkas untuk preview media (biner / `mode=json`) | `?fileId=&name=&mode=` |
-| GET | `/api/drive/status` | Status koneksi & folder root Drive | — |
-| POST | `/api/surat/create-issue` | Buat GitHub Issue di repo `generator-surat-` (sinkron SK/debitur + payload) | `{ skNumber, debtor, personnel }` |
-| POST | `/api/surat/open-generator` | Link generator surat web (`LetterData` + `BastData`) | `{ payload }` atau `{ skNumber, debtor, personnel, docType, paperSize }` |
-
-Semua endpoint di atas tersedia baik di `server.ts` (mode `SERVER`) maupun sebagai
-*action* Apps Script (mode `GAS_HTML`/`GAS_URL`) — lihat tabel pemetaan di
-[`appsscript/README.md`](appsscript/README.md).
 
 ---
 
@@ -376,11 +257,6 @@ Semua endpoint di atas tersedia baik di `server.ts` (mode `SERVER`) maupun sebag
 | `fetch failed (unable to verify the first certificate)` pada `/api/surat/create-issue` | Koneksi TLS server ke `api.github.com` diblokir | Pastikan server bisa akses internet; cek proxy/trusted CA |
 | Push sukses tapi "0 dokumen" | Spreadsheet ID kosong / belum disimpan | Isi ID, klik **Simpan**, lalu **Push Data Otomatis** |
 | CSV terunduh tidak rapi di Excel | Pemisah koma vs semicolon | Export memakai `;` + UTF-8 BOM; pilih sesuai regional Excel |
-| Halaman Apps Script menampilkan "Bundle aplikasi kosong" | `BundleNN.html` belum ter-push | `npm run gas:build && npm run gas:push` |
-| URL `/dev` meminta login Google | Deployment development | Pakai URL `/exec` dari **Deploy → New deployment** |
-| Respon HTML / akses ditolak (mode `GAS_URL`) | Akses deployment bukan *Anyone* | Deploy ulang: *Execute as: Me*, *Who has access: Anyone* |
-| `Exceeded maximum execution time` saat push | Batas 6 menit per eksekusi Apps Script | Push per bagian / nonaktifkan tab yang tidak diperlukan |
-| Pengaturan kembali default di browser lain | localStorage hanya cache | Klik **Muat dari Spreadsheet** di kartu Spreadsheet Aktif |
 
 ### Cek cepat konfigurasi
 ```bash
@@ -395,8 +271,7 @@ curl -X POST http://localhost:3000/api/sheets/setup \
 
 ## 9. Keamanan
 
-- **Jangan pernah** commit `service-account.json`, `.env`, `appsscript/.clasp.json`, `appsscript/dist/`, atau token ke Git.
-- Pada deploy Apps Script, simpan `GITHUB_TOKEN` di **Script Properties** (bukan di kode).
+- **Jangan pernah** commit `service-account.json`, `.env`, atau token ke Git.
 - Gunakan secret manager (Vercel Env, Cloud Run Secret, dsb.) untuk `GOOGLE_SERVICE_ACCOUNT_JSON`.
 - Berikan service account akses **minimal**: hanya spreadsheet database dan folder Drive yang dibutuhkan (jangan beri akses ke Drive root akun pribadi).
 - Nonaktifkan database yang tidak dipakai melalui tab **Database & Sheet** (toggle OFF) agar tidak ter-push.

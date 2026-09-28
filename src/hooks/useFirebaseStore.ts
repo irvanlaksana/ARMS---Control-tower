@@ -8,31 +8,9 @@ import {
   SupabaseSyncResult,
 } from '../services/supabaseService';
 import { isSupabaseConfigured } from '../lib/supabase';
-import { isGasBackendActive } from '../lib/gasBridge';
 
 const CACHE_TIMESTAMP_KEY = 'ARMS_FIREBASE_CACHE_TIMESTAMP_V1';
 const CACHE_TTL_MS = 5 * 60 * 1000;
-
-/**
- * Cache waktu sync terakhir. localStorage hanya cache — sumber kebenaran adalah
- * spreadsheet aktif — sehingga kegagalan storage (kuota penuh / diblokir runtime
- * Web App Apps Script) tidak boleh menghentikan aplikasi.
- */
-function readCacheTimestamp(): number {
-  try {
-    return Number(localStorage.getItem(CACHE_TIMESTAMP_KEY) || 0);
-  } catch {
-    return 0;
-  }
-}
-
-function writeCacheTimestamp(value: number): void {
-  try {
-    localStorage.setItem(CACHE_TIMESTAMP_KEY, String(value));
-  } catch {
-    /* abaikan: cache tidak kritikal */
-  }
-}
 
 export function useFirebaseStore() {
   const [store, setStore] = useState<ARMSStore>(() => {
@@ -54,7 +32,7 @@ export function useFirebaseStore() {
     let intervalId: NodeJS.Timeout;
 
     const performSync = async (force = false) => {
-      const cachedAt = readCacheTimestamp();
+      const cachedAt = Number(localStorage.getItem(CACHE_TIMESTAMP_KEY) || 0);
       if (!force && cachedAt > 0 && Date.now() - cachedAt < CACHE_TTL_MS) {
         if (mounted) setIsInitializing(false);
         return;
@@ -64,9 +42,7 @@ export function useFirebaseStore() {
         let updatedStore = store;
         
         // 1. Supabase as PRIMARY database if configured
-        //    (dinonaktifkan otomatis bila backend Google Apps Script aktif —
-        //     sumber penyimpanan utama adalah spreadsheet aktif tempat deploy)
-        if (isSupabaseConfigured && !isGasBackendActive()) {
+        if (isSupabaseConfigured) {
           try {
             updatedStore = await fetchStoreFromSupabase(updatedStore);
           } catch (sbErr) {
@@ -84,7 +60,7 @@ export function useFirebaseStore() {
         if (mounted) {
           setStore(updatedStore);
           saveStore(updatedStore);
-          writeCacheTimestamp(Date.now());
+          localStorage.setItem(CACHE_TIMESTAMP_KEY, String(Date.now()));
           lastSyncedStoreRef.current = updatedStore;
           setIsInitializing(false);
         }
@@ -126,8 +102,8 @@ export function useFirebaseStore() {
 
     syncTimeoutRef.current = setTimeout(async () => {
       try {
-        // Sync to Supabase as primary database (spreadsheet aktif saat mode Apps Script)
-        if (isSupabaseConfigured && !isGasBackendActive()) {
+        // Sync to Supabase as primary database
+        if (isSupabaseConfigured) {
           await syncStoreToSupabase(lastSyncedStoreRef.current, newStore);
         } else {
           // Local Sheets fallback
@@ -152,7 +128,7 @@ export function useFirebaseStore() {
     setIsSyncing(true);
     try {
       let refreshedStore = store;
-      if (isSupabaseConfigured && !isGasBackendActive()) {
+      if (isSupabaseConfigured) {
         refreshedStore = await fetchStoreFromSupabase(refreshedStore);
       } else {
         try {
@@ -164,9 +140,9 @@ export function useFirebaseStore() {
       
       setStore(refreshedStore);
       saveStore(refreshedStore);
-      writeCacheTimestamp(Date.now());
+      localStorage.setItem(CACHE_TIMESTAMP_KEY, String(Date.now()));
       
-      if (isSupabaseConfigured && !isGasBackendActive()) {
+      if (isSupabaseConfigured) {
         await syncStoreToSupabase(store, refreshedStore);
       }
       
@@ -185,9 +161,9 @@ export function useFirebaseStore() {
     try {
       const fbResult = await pushFullStoreToFirebase(store);
       
-      // Also push to Supabase if configured (skip saat spreadsheet aktif jadi sumber utama)
+      // Also push to Supabase if configured
       let sbResult: SupabaseSyncResult | null = null;
-      if (isSupabaseConfigured && !isGasBackendActive()) {
+      if (isSupabaseConfigured) {
         sbResult = await pushFullStoreToSupabase(store);
       }
       

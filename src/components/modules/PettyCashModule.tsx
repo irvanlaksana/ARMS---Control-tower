@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { MediaUrlPreviewButton } from '../common/MediaPreview';
 import { Pagination, usePagination } from '../common/Pagination';
 import { DateInput } from '../common/DateInput';
 import { AmountInput } from '../common/AmountInput';
@@ -804,9 +803,6 @@ export const PettyCashModule: React.FC<PettyCashModuleProps> = ({
                 placeholder="https://drive.google.com/..."
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-amber-500"
               />
-              <div className="mt-1.5">
-                <MediaUrlPreviewButton url={proofReceiptUrl} module="Petty Cash" title="Bukti Struk / Nota" />
-              </div>
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">

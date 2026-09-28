@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { UserRole } from '../../types/arms';
 import { 
-  LayoutDashboard, CheckSquare, Briefcase, Users, PhoneCall, Receipt, ShieldAlert,
-  Car, FileText, UserPlus, Building2, DollarSign, Wallet, FileSpreadsheet,
-  Settings, FolderGit2, ShieldCheck, Scale, PieChart, Coins, Banknote, Landmark,
+  Grid, CheckCircle, Box, Users, Phone, Receipt, ShieldAlert,
+  Truck, FileText, UserPlus, Building, DollarSign, Wallet, FileSpreadsheet,
+  Settings, FolderGit2, ShieldCheck, Scale, PieChart, Database, CreditCard, Home,
   X, Search, ChevronRight, Layers, Sparkles, Activity
 } from 'lucide-react';
 
@@ -61,14 +61,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       title: 'UTAMA & PERSETUJUAN',
       items: [
-        { id: 'DASHBOARD', label: 'Dashboard', shortLabel: 'Home', icon: LayoutDashboard },
-        { id: 'APPROVALS', label: 'Persetujuan (Approvals)', shortLabel: 'Persetujuan', icon: CheckSquare, badge: pendingApprovalsCount },
+        { id: 'DASHBOARD', label: 'Dashboard', shortLabel: 'Home', icon: Grid },
+        { id: 'APPROVALS', label: 'Persetujuan (Approvals)', shortLabel: 'Persetujuan', icon: CheckCircle, badge: pendingApprovalsCount },
       ],
     },
     {
       title: 'MASTER DATA & MITRA',
       items: [
-        { id: 'CLIENTS', label: 'Klien & Multifinance', shortLabel: 'Klien', icon: Building2 },
+        { id: 'CLIENTS', label: 'Klien & Multifinance', shortLabel: 'Klien', icon: Building },
         { id: 'CONTRACTS', label: 'Kontrak & MoU', shortLabel: 'Kontrak', icon: FileSpreadsheet },
         { id: 'CUSTOMERS', label: 'Data Debitur', shortLabel: 'Debitur', icon: Users },
         { id: 'PERSONNEL', label: 'Tim Karyawan & Mitra DC', shortLabel: 'Tim & Mitra', icon: Users },
@@ -79,21 +79,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       title: 'OPERASIONAL & LAPANGAN',
       items: [
-        { id: 'CASES', label: 'Kasus & Piutang', shortLabel: 'Kasus', icon: Briefcase },
+        { id: 'CASES', label: 'Kasus & Piutang', shortLabel: 'Kasus', icon: Box },
         { id: 'SK', label: 'Surat Kuasa (SK)', shortLabel: 'Surat Kuasa', icon: FileText },
         { id: 'ASSIGNMENTS', label: 'Penugasan Lapangan', shortLabel: 'Penugasan', icon: Users },
         { id: 'LAWYER', label: 'Lawyer & Somasi', shortLabel: 'Lawyer', icon: Scale },
         { id: 'COLLECTION', label: 'Koleksi & Log Komunikasi', shortLabel: 'Koleksi', icon: Receipt },
         { id: 'RECOVERY', label: 'Eksekusi & Tarik Aset', shortLabel: 'Eksekusi Aset', icon: ShieldAlert },
-        { id: 'ASSETS', label: 'Gudang Penitipan Aset', shortLabel: 'Gudang Aset', icon: Car },
+        { id: 'ASSETS', label: 'Gudang Penitipan Aset', shortLabel: 'Gudang Aset', icon: Truck },
       ],
     },
     {
       title: 'KEUANGAN & KAS',
       items: [
-        { id: 'MODAL_KERJA', label: 'Modal Kerja & Rekening', shortLabel: 'Modal Kerja', icon: Landmark },
-        { id: 'TALANGAN', label: 'Dana Talangan', shortLabel: 'Talangan', icon: Coins },
-        { id: 'PETTY_CASH', label: 'Kas Kecil (Petty Cash)', shortLabel: 'Petty Cash', icon: Banknote },
+        { id: 'MODAL_KERJA', label: 'Modal Kerja & Rekening', shortLabel: 'Modal Kerja', icon: Home },
+        { id: 'TALANGAN', label: 'Dana Talangan', shortLabel: 'Talangan', icon: Database },
+        { id: 'PETTY_CASH', label: 'Kas Kecil (Petty Cash)', shortLabel: 'Petty Cash', icon: CreditCard },
         { id: 'EXPENSES', label: 'Pengeluaran (Biaya)', shortLabel: 'Pengeluaran', icon: Wallet },
         { id: 'PAYMENTS', label: 'Penerimaan Dana', shortLabel: 'Penerimaan', icon: DollarSign },
         { id: 'SETTLEMENT', label: 'Settlement & Remitansi', shortLabel: 'Settlement', icon: Scale },
@@ -187,7 +187,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
-              placeholder="Cari modul / menu..."
+              placeholder="Trucki modul / menu..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-red-500 transition"

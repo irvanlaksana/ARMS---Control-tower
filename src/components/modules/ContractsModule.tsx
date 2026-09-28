@@ -1,5 +1,4 @@
 import { Pagination, usePagination } from '../common/Pagination';
-import { MediaUrlPreviewButton } from '../common/MediaPreview';
 import React, { useState, useMemo } from 'react';
 import { ARMSStore, createAuditEntry } from '../../services/armsDataService';
 import { User, Contract, ApprovalRequest } from '../../types/arms';
@@ -369,9 +368,6 @@ export const ContractsModule: React.FC<ContractsModuleProps> = ({ store, current
                 placeholder="https://drive.google.com/file/d/..."
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
               />
-              <div className="mt-1.5">
-                <MediaUrlPreviewButton url={driveDocumentUrl} module="Kontrak" title="Dokumen Kontrak / MoU" />
-              </div>
             </div>
             
             <div className="bg-slate-800/50 p-2.5 rounded-lg border border-slate-700 mt-3">

@@ -37,9 +37,6 @@ import { UserManagementModule } from './components/modules/UserManagementModule'
 import { AuditLogModule } from './components/modules/AuditLogModule';
 import { SettingsModule } from './components/modules/SettingsModule';
 
-// Preview media global (semua modul: foto/PDF/berkas Google Drive)
-import { MediaPreviewProvider } from './components/common/MediaPreview';
-
 export default function App() {
   const { store, updateStore: handleUpdateStore, forceSync, pushFullData, isSyncing } = useFirebaseStore();
 
@@ -158,9 +155,6 @@ export default function App() {
   };
 
   return (
-    // MediaPreviewProvider: satu modal preview media untuk SEMUA modul.
-    // Klik pada tautan/thumbnail berkas Drive otomatis membuka preview in-app.
-    <MediaPreviewProvider>
     <div className="h-screen overflow-hidden bg-slate-950 text-slate-100 flex flex-col font-sans antialiased">
       {/* Top Header */}
       <Header
@@ -214,6 +208,5 @@ export default function App() {
         userRole={currentUser.role}
       />
     </div>
-    </MediaPreviewProvider>
   );
 }

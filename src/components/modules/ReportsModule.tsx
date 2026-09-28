@@ -17,11 +17,9 @@ import {
   Calendar,
   Filter,
   Check,
-  Activity,
-  Database
+  Activity
 } from 'lucide-react';
 import { downloadCSV, formatRupiahNumber } from '../../utils/exportUtils';
-import { exportDatabaseToSpreadsheet, buildExportSheets } from '../../utils/spreadsheetExport';
 
 interface ReportsModuleProps {
   store: ARMSStore;
@@ -147,21 +145,6 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
   // =========================================================================
   // EXPORT HANDLERS WITH DIRECT INSTANT DOWNLOAD
   // =========================================================================
-
-  // 0. Export SELURUH database ARMS (format spreadsheet database, 30 tab)
-  const databaseExportSheets = useMemo(() => buildExportSheets(store, true), [store]);
-  const databaseExportRecords = databaseExportSheets.reduce((acc, sheet) => acc + sheet.recordCount, 0);
-
-  const handleExportFullDatabase = (format: 'xls' | 'csv') => {
-    const summary = exportDatabaseToSpreadsheet(store, { format, onlyActive: true });
-    recordAuditAndStore(
-      'Export Database Lengkap',
-      `Exported full ARMS database as ${format.toUpperCase()} workbook (${summary.sheetCount} tabs, ${summary.totalRecords} records) -> ${summary.fileName}`
-    );
-    showExportNotice(
-      `Seluruh database (${summary.sheetCount} tab, ${summary.totalRecords} record) berhasil diunduh sebagai ${summary.fileName}!`
-    );
-  };
 
   // 1. Export Recovery Performance per Client
   const handleExportClientPerformance = () => {
@@ -440,43 +423,6 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({ store, currentUser
             <span className="text-[11px] text-emerald-400/80 font-mono">File CSV terunduh secara instan</span>
           </div>
         )}
-      </div>
-
-      {/* EXPORT SELURUH DATABASE - FORMAT SPREADSHEET DATABASE */}
-      <div className="bg-gradient-to-r from-emerald-950/60 via-slate-900 to-slate-950 border-2 border-emerald-700/70 rounded-xl p-3 shadow-lg">
-        <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-          <div className="flex items-start gap-2.5 flex-1">
-            <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg shrink-0">
-              <Database className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="font-bold text-white text-sm">Export Semua Data (Format Spreadsheet Database)</h3>
-              <p className="text-xs text-slate-400 leading-normal mt-0.5">
-                Mengunduh {databaseExportSheets.length} tab database ({databaseExportRecords.toLocaleString('id-ID')} record)
-                dengan skema yang sama persis seperti spreadsheet aktif: satu tab per database, baris pertama header kolom,
-                setiap record menjadi satu baris. File .xls dapat dibuka di Excel/LibreOffice atau diimpor ke Google Sheets.
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={() => handleExportFullDatabase('xls')}
-              className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg text-xs font-bold transition shadow-md"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5" />
-              <span>Excel Multi-Sheet (.xls)</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleExportFullDatabase('csv')}
-              className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-100 px-3 py-2 rounded-lg text-xs font-bold transition shadow-md"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>CSV Gabungan (.csv)</span>
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* Grid of 6 Export Cards for Quick Direct Download */}

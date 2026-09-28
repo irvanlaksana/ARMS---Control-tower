@@ -148,7 +148,6 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
                 <img
                   src={store.settings.companyLogo}
                   alt={store.settings?.companyName || 'Company Logo'}
-                  data-no-media-preview
                   className="w-full h-full object-contain"
                 />
               </div>

@@ -5,8 +5,7 @@ import {
   FileText, Plus, ExternalLink, HardDrive, UserCheck, 
   Building2, User as UserIcon, Search, Edit2, Trash2, 
   Link2, Check, Copy, Calendar, DollarSign, 
-  Car, ShieldCheck, CheckCircle2, X, AlertCircle, FolderOpen, Eye, Lock,
-  Download, Send, ClipboardList
+  Car, ShieldCheck, CheckCircle2, X, AlertCircle, FolderOpen, Eye, Lock
 } from 'lucide-react';
 import DriveFilePreview from '../common/DriveFilePreview';
 import { angkaKeTerbilang } from '../../utils/terbilang';
@@ -16,23 +15,10 @@ import { QuickGDriveModal } from '../common/QuickGDriveModal';
 import { AddressFields } from '../common/AddressFields';
 import { LetterPreviewModal, LetterPreviewData } from '../common/LetterPreviewModal';
 import { ROOT_GDRIVE_URL } from '../../data/initialData';
-import AssignmentLetterGenerator from '../assignment-letter/AssignmentLetterGenerator';
-import { BastData } from '../assignment-letter/types';
-import { buildGeneratorData, GeneratorFormInput, GENERATOR_UI_URL, GENERATOR_REPO_URL } from '../../lib/suratGenerator';
-import {
-  WebGeneratorInput,
-  GeneratorDocType,
-  GeneratorPayload,
-  GeneratorPayloadSummary,
-  PaperSize as GeneratorPaperSize,
-  buildGeneratorPayload,
-  buildGeneratorUrl,
-  summarizeGeneratorPayload,
-  generatorPayloadJson,
-  downloadGeneratorPayload,
-  sendPayloadToWindow,
-  GENERATOR_PAYLOAD_VERSION,
-} from '../../lib/generatorSuratPayload';
+import AssignmentLetterGenerator, { DocumentType } from '../assignment-letter/AssignmentLetterGenerator';
+import { LetterData, BastData } from '../assignment-letter/types';
+import { buildLetterDataFromInput, buildBastDataFromInput, GeneratorFormInput } from '../../lib/suratGenerator';
+import { uploadBase64ToDrive } from '../../lib/drive';
 
 interface SKModuleProps {
   store: ARMSStore;
@@ -52,21 +38,15 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
   const [previewData, setPreviewData] = useState<LetterPreviewData | null>(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
-  // Generator (sumber repo generate-surat-tugas) state
+  // Generator (sumber repo generator-surat- disesuaikan Google Apps Script) state
   const [showLocalGenerator, setShowLocalGenerator] = useState(false);
-  const [generatorData, setGeneratorData] = useState<{ data: BastData; isPersonal: boolean } | null>(null);
-  const [generatorStatus, setGeneratorStatus] = useState<string | null>(null);
-
-  // Generator WEB — https://generator-surat-beige.vercel.app/ (repo irvanlaksana/generator-surat-)
-  // Payload memakai model LetterData (tab Surat Tugas) + BastData (tab BAST) milik repo tersebut.
-  const [webDocType, setWebDocType] = useState<GeneratorDocType>('surat_tugas');
-  const [webPaperSize, setWebPaperSize] = useState<GeneratorPaperSize>('f4');
-  const [lastGeneratorPayload, setLastGeneratorPayload] = useState<{
-    payload: GeneratorPayload;
-    url: string;
-    summary: GeneratorPayloadSummary;
+  const [activeGeneratorConfig, setActiveGeneratorConfig] = useState<{
+    letterData: LetterData;
+    bastData: BastData;
+    docType: DocumentType;
+    targetSkId?: string;
   } | null>(null);
-  const [payloadAcked, setPayloadAcked] = useState<boolean | null>(null);
+  const [generatorStatus, setGeneratorStatus] = useState<string | null>(null);
 
   // Quick GDrive Link Modal state
   const [quickDriveModal, setQuickDriveModal] = useState<{
@@ -187,13 +167,14 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
         };
         const folderIdToUse = selectedCase?.gDriveFolderId || extractFolderIdFromUrl(selectedCase?.gDriveFolderUrl) || store.settings?.googleDriveFolderId;
 
-        const resp = await fetch('/api/drive/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fileName, mimeType: mime, base64: first, folderId: folderIdToUse }),
-        });
-        const j = await resp.json();
-        if (j && j.success) return j;
+        const res = await uploadBase64ToDrive(first, fileName, mime, folderIdToUse);
+        if (res && res.success) {
+          return {
+            success: true,
+            fileId: res.fileId,
+            webViewLink: res.webViewLink,
+          };
+        }
       } catch (err) {
         console.error('Attachment upload failed', err);
       }
@@ -230,149 +211,61 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
     repTitle,
     city,
     isPerorangan: isPerorangan,
-    krediturName,
-    krediturAddress,
+    krediturName: isPerorangan ? (krediturName || selectedCase?.clientName) : undefined,
+    krediturAddress: isPerorangan ? (krediturAddress || selectedCase?.clientAddress) : undefined,
+    krediturNik: isPerorangan ? krediturNik : undefined,
+    krediturJob: isPerorangan ? krediturJob : undefined,
+    dasarPenagihan: dasarPenagihan || undefined,
     personnel: selectedPersonnel,
     caseItem: selectedCase,
     customer: selectedCustomer,
-    contractNo: skContractNo,
-    debtorName: skDebtorName,
-    debtorAddress: skDebtorAddress,
-    dueDate: skDueDate,
-    installment: skInstallment,
-    penalty: skPenalty,
-    vehicleMerk: skVehicleMerk,
-    vehiclePoliceNo: skVehiclePoliceNo,
+    contractNo: skContractNo || selectedCase?.contractNo,
+    debtorName: skDebtorName || selectedCase?.debtorName,
+    debtorNik: selectedCustomer?.nikKtp || selectedCase?.debtorNik,
+    debtorAddress: skDebtorAddress || selectedCase?.debtorAddress,
+    debtorPhone: skPhone || selectedCustomer?.phone || selectedCase?.phone,
+    phone: skPhone || selectedCustomer?.phone || selectedCase?.phone,
+    dueDate: skDueDate || selectedCase?.dueDate,
+    installment: skInstallment || (selectedCase?.monthlyPayment ? `Rp ${selectedCase.monthlyPayment.toLocaleString('id-ID')}` : undefined),
+    penalty: skPenalty || (selectedCase?.penalty ? `Rp ${selectedCase.penalty.toLocaleString('id-ID')}` : undefined),
+    vehicleMerk: skVehicleMerk || selectedCase?.vehicleBrand,
+    vehiclePoliceNo: skVehiclePoliceNo || selectedCase?.licensePlate,
+    vehicleChassisNo: selectedCustomer?.vehicleChassisNo || selectedCase?.chassisNumber,
+    vehicleEngineNo: selectedCustomer?.vehicleEngineNo || selectedCase?.engineNumber,
+    vehicleYear: selectedCustomer?.vehicleYear || selectedCase?.vehicleYear,
+    vehicleColor: selectedCustomer?.vehicleColor || selectedCase?.vehicleColor,
+    kronologi: selectedCase?.notes || selectedCase?.description,
     customNominal,
     issuedDate: new Date().toISOString().split('T')[0],
     expiryDate: endDate.toISOString().split('T')[0],
   });
 
-  // Buka generator LOKAL (kode sumber repo generate-surat-tugas) — form sudah terisi
-  const openLocalGenerator = () => {
-    const data = buildGeneratorData(collectFormInput());
-    setGeneratorData({ data, isPersonal: isPerorangan });
-    setShowLocalGenerator(true);
-    setGeneratorStatus('Generator dibuka dengan data dari Form Pembuatan Surat Tugas / Kuasa.');
-  };
-
-  /**
-   * Kumpulkan konteks ARMS (form + perkara + debitur + aset + lampiran) menjadi
-   * input payload generator web. Bentuk keluaran mengikuti WebGeneratorInput.
-   */
-  const collectWebGeneratorInput = (): WebGeneratorInput => {
-    const base = collectFormInput();
-    const parentAsset = (store.assets || []).find((a) => a.caseId === selectedCase?.id) || null;
-    const parentRecovery = (store.assetRecoveries || []).find((r) => r.caseId === selectedCase?.id) || null;
-    return {
-      ...base,
-      skId: editId || undefined,
-      companyPhone: store.settings?.companyPhone,
-      companyLogo: store.settings?.companyLogo || null,
-      krediturNik,
-      krediturAddress,
-      debtorPhone: skPhone,
-      asset: parentAsset,
-      recovery: parentRecovery,
-      attachments,
-      notes: draftContent || undefined,
-      docType: webDocType,
-      paperSize: webPaperSize,
-    };
-  };
-
-  /**
-   * Kirim payload ke generator web lewat 3 jalur sekaligus:
-   *   1. URL `?payload=<base64url>` (atau `#payload=` bila panjang),
-   *   2. parameter datar (?letterNumber=, ?customerName=, ...),
-   *   3. postMessage `ARMS_GENERATOR_PAYLOAD` + handshake ACK.
-   * JSON lengkap juga disalin ke clipboard & bisa diunduh dari panel payload.
-   */
-  const dispatchGeneratorPayload = (payload: GeneratorPayload) => {
-    const url = buildGeneratorUrl(payload);
-    // window.open TANPA 'noopener' agar handle window tersedia untuk postMessage
-    const win = window.open(url, '_blank');
-    const summary = summarizeGeneratorPayload(payload, url);
-    setLastGeneratorPayload({ payload, url, summary });
-    setPayloadAcked(null);
-    setGeneratorStatus(
-      `Generator surat dibuka (tab ${payload.docType === 'bast' ? 'BAST' : 'Surat Tugas'}, kertas ${payload.paperSize.toUpperCase()}) — payload ${summary.payloadBytes.toLocaleString('id-ID')} byte dikirim via URL & postMessage.`
-    );
-    if (win) {
-      sendPayloadToWindow(win, payload, { onAck: (acked) => setPayloadAcked(acked) });
-    }
-    void (async () => {
-      try {
-        await navigator.clipboard.writeText(generatorPayloadJson(payload));
-      } catch {
-        /* clipboard ditolak — tombol Salin/Unduh di panel payload tetap tersedia */
-      }
-    })();
-  };
-
-  /** Buka generator web dari isian Form Pembuatan Surat Tugas / Kuasa. */
-  const openWebGenerator = () => {
-    dispatchGeneratorPayload(buildGeneratorPayload(collectWebGeneratorInput()));
-  };
-
-  /** Buka generator web dari baris daftar SK yang sudah tersimpan. */
-  const openWebGeneratorFromRow = (skItem: SK) => {
-    const parentCase = (store.cases || []).find((c) => c.id === skItem.caseId) || null;
-    const rowCustomer = (store.customers || []).find((c) => c.id === parentCase?.customerId) || null;
-    const rowPersonnel = (store.personnel || []).find((p) => p.id === skItem.personnelId) || null;
-    const rowAsset = (store.assets || []).find((a) => a.caseId === skItem.caseId) || null;
-    const rowRecovery = (store.assetRecoveries || []).find((r) => r.caseId === skItem.caseId) || null;
-    const isPer = skItem.clientType === 'PERORANGAN' || parentCase?.clientType === 'PERORANGAN';
-
-    const payload = buildGeneratorPayload({
-      skId: skItem.id,
-      skNumber: skItem.skNumber,
-      sk: skItem,
-      companyName: store.settings?.companyName,
-      companyAddress: store.settings?.companyAddress,
-      companyPhone: store.settings?.companyPhone,
-      companyLogo: store.settings?.companyLogo || null,
-      repName,
-      repTitle,
-      city,
-      isPerorangan: isPer,
-      krediturName: skItem.krediturName,
-      krediturNik: skItem.krediturNik,
-      krediturAddress: skItem.krediturAddress,
-      personnel: rowPersonnel,
-      caseItem: parentCase,
-      customer: rowCustomer,
-      asset: rowAsset,
-      recovery: rowRecovery,
-      contractNo: parentCase?.multifinanceContractNo || rowCustomer?.contractNo,
-      debtorName: skItem.debtorName,
-      debtorAddress: rowCustomer?.addressCurrent || rowCustomer?.addressKtp,
-      debtorPhone: rowCustomer?.phone,
-      dueDate: rowCustomer?.dueDate,
-      installment: rowCustomer?.installmentAmount,
-      totalInstallment: rowCustomer?.totalInstallment ? String(rowCustomer.totalInstallment) : undefined,
-      penalty: rowCustomer?.penaltyAmount,
-      vehicleMerk: rowCustomer?.vehicleMerkType || parentCase?.assetSummary,
-      vehiclePoliceNo: rowCustomer?.vehiclePoliceNo,
-      issuedDate: skItem.issuedDate,
-      expiryDate: skItem.expiryDate,
-      docType: webDocType,
-      paperSize: webPaperSize,
+  // Buka generator resmi (clone repo generator-surat- disesuaikan Google Apps Script)
+  const openLocalGenerator = (docType: DocumentType = 'surat_tugas') => {
+    const input = collectFormInput();
+    const letterData = buildLetterDataFromInput(input);
+    const bastData = buildBastDataFromInput(input);
+    setActiveGeneratorConfig({
+      letterData,
+      bastData,
+      docType,
+      targetSkId: isEditing ? (editId || undefined) : undefined,
     });
-    dispatchGeneratorPayload(payload);
+    setShowLocalGenerator(true);
+    setGeneratorStatus(`Generator ${docType === 'surat_tugas' ? 'Surat Tugas' : 'BAST'} dibuka dengan data Form ARMS.`);
   };
 
   const handleOpenGeneratorFromDraft = () => {
-    openLocalGenerator();
+    openLocalGenerator('surat_tugas');
   };
 
   // Generate surat dari baris daftar SK (data SK + kasus + debitur + petugas)
-  const handleGenerateFromRow = (skItem: SK) => {
+  const handleGenerateFromRow = (skItem: SK, docType: DocumentType = 'surat_tugas') => {
     const parentCase = (store.cases || []).find((c) => c.id === skItem.caseId);
     const rowCustomer = (store.customers || []).find((c) => c.id === parentCase?.customerId);
     const rowPersonnel = (store.personnel || []).find((p) => p.id === skItem.personnelId);
     const isPer = skItem.clientType === 'PERORANGAN' || parentCase?.clientType === 'PERORANGAN';
-    const data = buildGeneratorData({
+    const input: GeneratorFormInput = {
       sk: skItem,
       skNumber: skItem.skNumber,
       companyName: store.settings?.companyName,
@@ -383,12 +276,70 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
       isPerorangan: isPer,
       krediturName: skItem.krediturName,
       krediturAddress: skItem.krediturAddress,
+      debtorNik: rowCustomer?.nikKtp || parentCase?.debtorNik,
+      debtorPhone: rowCustomer?.phone || parentCase?.phone,
+      vehicleChassisNo: rowCustomer?.vehicleChassisNo || parentCase?.chassisNumber,
+      vehicleEngineNo: rowCustomer?.vehicleEngineNo || parentCase?.engineNumber,
+      vehicleYear: rowCustomer?.vehicleYear || parentCase?.vehicleYear,
+      vehicleColor: rowCustomer?.vehicleColor || parentCase?.vehicleColor,
+      kronologi: parentCase?.notes || parentCase?.description,
       issuedDate: skItem.issuedDate,
       expiryDate: skItem.expiryDate,
+    };
+    const letterData = buildLetterDataFromInput(input);
+    const bastData = buildBastDataFromInput(input);
+    setActiveGeneratorConfig({
+      letterData,
+      bastData,
+      docType,
+      targetSkId: skItem.id,
     });
-    setGeneratorData({ data, isPersonal: isPer });
     setShowLocalGenerator(true);
-    setGeneratorStatus(`Generator dibuka berisi data SK ${skItem.skNumber}.`);
+    setGeneratorStatus(`Generator ${docType === 'surat_tugas' ? 'Surat Tugas' : 'BAST'} dibuka untuk SK ${skItem.skNumber}.`);
+  };
+
+  // Callback saat dokumen PDF berhasil diupload ke Google Drive melalui generator
+  const handleGeneratorDriveSaveSuccess = (result: {
+    fileId: string;
+    fileUrl: string;
+    fileName: string;
+    folderId: string;
+    docType: DocumentType;
+  }) => {
+    if (activeGeneratorConfig?.targetSkId) {
+      const skId = activeGeneratorConfig.targetSkId;
+      const updatedSKs = (store.sks || []).map((sk) => {
+        if (sk.id === skId) {
+          return {
+            ...sk,
+            driveDocumentUrl: result.fileUrl,
+            driveFolderId: result.folderId,
+          };
+        }
+        return sk;
+      });
+
+      const audit = createAuditEntry(
+        currentUser.username,
+        currentUser.role,
+        'UPDATE',
+        'SK',
+        skId,
+        `Dokumen ${result.docType === 'surat_tugas' ? 'Surat Tugas' : 'BAST'} (${result.fileName}) berhasil disimpan ke Google Drive dan ditautkan ke SK.`
+      );
+
+      onUpdateStore({
+        ...store,
+        sks: updatedSKs,
+        auditLogs: [audit, ...(store.auditLogs || [])],
+      });
+      setGeneratorStatus(`Dokumen berhasil disimpan ke Google Drive dan ditautkan ke SK.`);
+    } else {
+      // Mode form draft
+      setDriveDocumentUrl(result.fileUrl);
+      setDriveFolderId(result.folderId);
+      setGeneratorStatus(`Dokumen berhasil disimpan ke Google Drive (${result.fileName}).`);
+    }
   };
 
   const handleCreateSK = async (e: React.FormEvent) => {
@@ -610,11 +561,10 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
             Penerbitan surat tugas resmi, pengelolaan parameter penagihan, serta tautan arsip digital Google Drive
           </p>
           <p className="mt-0.5 text-[10px] text-slate-500 flex flex-wrap items-center gap-1.5">
-            <span>Generator Web:</span>
-            <a href={GENERATOR_UI_URL} target="_blank" rel="noopener noreferrer" data-no-media-preview className="text-indigo-400 hover:underline">generator-surat-beige.vercel.app</a>
+            <span className="text-indigo-400 font-semibold">Engine Generator:</span>
+            <span>Surat Tugas & BAST Terintegrasi Ekosistem Google Apps Script & Google Drive</span>
             <span>·</span>
-            <a href={GENERATOR_REPO_URL} target="_blank" rel="noopener noreferrer" data-no-media-preview className="text-indigo-400 hover:underline">repo generator-surat-</a>
-            <span>· payload LetterData + BastData otomatis terisi dari Form Surat Tugas / Kuasa</span>
+            <span>Data otomatis terisi langsung dari database perkara ARMS</span>
           </p>
         </div>
 
@@ -874,21 +824,21 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                           </button>
 
                           <button
-                            onClick={() => handleGenerateFromRow(sk)}
+                            onClick={() => handleGenerateFromRow(sk, 'surat_tugas')}
                             className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-950 hover:bg-emerald-900 text-emerald-200 rounded border border-emerald-800 text-[11px] font-semibold transition shadow-sm"
-                            title="Buka Generator (sumber repo generate-surat-tugas) berisi data SK ini"
+                            title="Buka Generator Surat Tugas resmi untuk SK ini"
                           >
                             <FileText className="w-3 h-3 text-emerald-400" />
-                            <span>Generate Surat</span>
+                            <span>Surat Tugas</span>
                           </button>
 
                           <button
-                            onClick={() => openWebGeneratorFromRow(sk)}
-                            className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-200 rounded border border-indigo-800 text-[11px] font-semibold transition shadow-sm"
-                            title={`Kirim data SK ini ke generator-surat-beige.vercel.app (tab ${webDocType === 'bast' ? 'BAST' : 'Surat Tugas'})`}
+                            onClick={() => handleGenerateFromRow(sk, 'bast')}
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-cyan-950 hover:bg-cyan-900 text-cyan-200 rounded border border-cyan-800 text-[11px] font-semibold transition shadow-sm"
+                            title="Buka Generator BAST & Penyerahan Unit untuk SK ini"
                           >
-                            <Send className="w-3 h-3 text-indigo-400" />
-                            <span>Kirim ke Generator</span>
+                            <Car className="w-3 h-3 text-cyan-400" />
+                            <span>BAST</span>
                           </button>
 
                           {canEdit && (
@@ -961,21 +911,21 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={openWebGenerator}
-                  className="px-2.5 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white flex items-center gap-2"
-                  title={`Buka generator-surat-beige.vercel.app (tab ${webDocType === 'bast' ? 'BAST' : 'Surat Tugas'}) dengan payload LetterData + BastData dari form ini`}
+                  onClick={() => openLocalGenerator('surat_tugas')}
+                  className="px-2.5 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white flex items-center gap-1.5 font-medium transition shadow-sm"
+                  title="Buka Generator Surat Tugas resmi terisi data form ini"
                 >
-                  <Send className="w-3.5 h-3.5" />
-                  Kirim ke Generator
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Generator Surat Tugas</span>
                 </button>
                 <button
                   type="button"
-                  onClick={handleOpenGeneratorFromDraft}
-                  className="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200 flex items-center gap-2"
-                  title="Buka Generator lokal (kode sumber repo generate-surat-tugas) terisi dari form"
+                  onClick={() => openLocalGenerator('bast')}
+                  className="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200 border border-slate-700 flex items-center gap-1.5 font-medium transition"
+                  title="Buka Generator BAST & Penyerahan Unit terisi data form ini"
                 >
-                  <FileText className="w-3.5 h-3.5 text-indigo-400" />
-                  Buat Surat
+                  <Car className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Generator BAST</span>
                 </button>
 
                 <button
@@ -1354,7 +1304,6 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                   fileName={selectedAttachmentPreview ? `attachment-${selectedAttachmentPreview.index}` : undefined}
                   isUploading={isUploadingAttachmentPreview}
                   webViewLink={selectedAttachmentPreview?.src}
-                  module="Surat Kuasa"
                   onUpload={async () => {
                     if (!selectedAttachmentPreview) return;
                     const { src, index } = selectedAttachmentPreview;
@@ -1375,14 +1324,9 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
                         };
                         const folderIdToUse = selectedCase?.gDriveFolderId || extractFolderIdFromUrl(selectedCase?.gDriveFolderUrl) || store.settings?.googleDriveFolderId;
 
-                        const resp = await fetch('/api/drive/upload', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ fileName, mimeType: mime, base64: src, folderId: folderIdToUse }),
-                        });
-                        const j = await resp.json();
+                        const j = await uploadBase64ToDrive(src, fileName, mime, folderIdToUse);
                         if (j && j.success) {
-                          const newUrl = j.webViewLink || `https://drive.google.com/file/d/${j.fileId}/view?usp=sharing`;
+                          const newUrl = j.webViewLink || (j.fileId ? `https://drive.google.com/file/d/${j.fileId}/view?usp=sharing` : '');
                           setAttachments(prev => prev.map((it, idx) => idx === index ? newUrl : it));
                           const audit = createAuditEntry(currentUser.username, currentUser.role, 'UPDATE', 'SK_Attachment', `ATT-${Date.now()}`, `Uploaded SK attachment via preview for case ${selectedCase?.caseNo}`);
                           onUpdateStore({ ...store, auditLogs: [audit, ...(store.auditLogs || [])] });
@@ -1430,183 +1374,6 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
               </div>
 
               {/* Form Action Buttons */}
-              {/* 7B. KIRIM KE GENERATOR SURAT WEB (payload LetterData + BastData) */}
-              <div className="bg-slate-950/60 border border-indigo-800/50 rounded-xl p-3 space-y-2.5">
-                <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5 gap-2">
-                  <div className="flex items-center gap-2">
-                    <Send className="w-3.5 h-3.5 text-indigo-400" />
-                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">
-                      7. Kirim ke Generator Surat Web
-                    </h4>
-                  </div>
-                  <a
-                    href={GENERATOR_UI_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    data-no-media-preview
-                    className="text-[10px] text-indigo-300 hover:underline font-mono"
-                  >
-                    generator-surat-beige.vercel.app
-                  </a>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1">
-                      Dokumen yang Dibuka (Tab Generator)
-                    </label>
-                    <div className="flex rounded-lg overflow-hidden border border-slate-700 text-[11px]">
-                      <button
-                        type="button"
-                        onClick={() => setWebDocType('surat_tugas')}
-                        className={`flex-1 px-2 py-1.5 font-semibold transition ${
-                          webDocType === 'surat_tugas'
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-slate-900 text-slate-400 hover:text-slate-200'
-                        }`}
-                      >
-                        Surat Tugas
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setWebDocType('bast')}
-                        className={`flex-1 px-2 py-1.5 font-semibold border-l border-slate-700 transition ${
-                          webDocType === 'bast'
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-slate-900 text-slate-400 hover:text-slate-200'
-                        }`}
-                      >
-                        BAST
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1">
-                      Ukuran Kertas (PaperSize)
-                    </label>
-                    <select
-                      value={webPaperSize}
-                      onChange={(e) => setWebPaperSize(e.target.value as GeneratorPaperSize)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-[11px] text-slate-200"
-                    >
-                      <option value="f4">F4 / Folio (215 × 330 mm)</option>
-                      <option value="a4">A4 (210 × 297 mm)</option>
-                      <option value="legal">US Legal (215.9 × 355.6 mm)</option>
-                      <option value="letter">US Letter (215.9 × 279.4 mm)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={openWebGenerator}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition shadow"
-                    title="Buka generator web + kirim payload (URL, parameter datar, dan postMessage)"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    Buka Generator dengan Payload
-                  </button>
-
-                  {lastGeneratorPayload && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          try {
-                            await navigator.clipboard.writeText(generatorPayloadJson(lastGeneratorPayload.payload));
-                            setGeneratorStatus('Payload JSON (LetterData + BastData) disalin ke clipboard.');
-                          } catch {
-                            setGeneratorStatus('Clipboard ditolak browser — gunakan tombol Unduh JSON.');
-                          }
-                        }}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold rounded-lg transition"
-                      >
-                        <ClipboardList className="w-3.5 h-3.5" />
-                        Salin Payload JSON
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => downloadGeneratorPayload(lastGeneratorPayload.payload)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold rounded-lg transition"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        Unduh JSON
-                      </button>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          try {
-                            await navigator.clipboard.writeText(lastGeneratorPayload.url);
-                            setGeneratorStatus('URL generator (dengan payload ter-encode) disalin.');
-                          } catch {
-                            setGeneratorStatus('Clipboard ditolak browser.');
-                          }
-                        }}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold rounded-lg transition"
-                      >
-                        <Link2 className="w-3.5 h-3.5" />
-                        Salin URL
-                      </button>
-                    </>
-                  )}
-                </div>
-
-                {lastGeneratorPayload ? (
-                  <div className="bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-[11px] space-y-1">
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-slate-300">
-                      <span>
-                        <span className="text-slate-500">Tab:</span> {lastGeneratorPayload.summary.docTypeLabel}
-                      </span>
-                      <span>
-                        <span className="text-slate-500">Kertas:</span> {lastGeneratorPayload.summary.paperSize.toUpperCase()}
-                      </span>
-                      <span>
-                        <span className="text-slate-500">No. Surat:</span> {lastGeneratorPayload.summary.letterNumber || '-'}
-                      </span>
-                      <span>
-                        <span className="text-slate-500">Petugas:</span> {lastGeneratorPayload.summary.assigneeName || '-'}
-                      </span>
-                      <span>
-                        <span className="text-slate-500">Debitur:</span> {lastGeneratorPayload.summary.customerName || '-'}
-                      </span>
-                      <span>
-                        <span className="text-slate-500">Unit:</span> {lastGeneratorPayload.summary.vehicle || '-'}
-                      </span>
-                      <span>
-                        <span className="text-slate-500">Lampiran:</span> {lastGeneratorPayload.payload.letter.attachments.length} berkas
-                      </span>
-                      <span>
-                        <span className="text-slate-500">Ukuran payload:</span>{' '}
-                        {lastGeneratorPayload.summary.payloadBytes.toLocaleString('id-ID')} byte (URL{' '}
-                        {lastGeneratorPayload.summary.urlLength.toLocaleString('id-ID')} char)
-                      </span>
-                      <span>
-                        <span className="text-slate-500">Versi payload:</span> v{GENERATOR_PAYLOAD_VERSION}
-                      </span>
-                      <span>
-                        <span className="text-slate-500">ACK generator:</span>{' '}
-                        {payloadAcked === null ? 'menunggu…' : payloadAcked ? 'diterima ✔' : 'tidak diterima (pakai JSON)'}
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-slate-500 leading-relaxed">
-                      Payload dikirim lewat <code className="text-indigo-300">?payload=</code> / <code className="text-indigo-300">#payload=</code>,
-                      parameter datar (<code className="text-indigo-300">?letterNumber=</code>, <code className="text-indigo-300">?customerName=</code>, dst),
-                      serta <code className="text-indigo-300">postMessage ARMS_GENERATOR_PAYLOAD</code>.
-                      Bila aplikasi generator belum membaca parameter tersebut, tempel isi JSON (tombol Salin/Unduh) —
-                      skema field mengikuti <code className="text-indigo-300">LetterData</code> &amp; <code className="text-indigo-300">BastData</code> repo generator-surat-.
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-[10px] text-slate-500 leading-relaxed">
-                    Payload dibangun dari seluruh isian form di atas: kop &amp; nomor surat, pemberi/penerima tugas,
-                    kreditur (leasing), data debitur &amp; alamat (detail/kelurahan/kecamatan/kabupaten), jatuh tempo,
-                    angsuran &amp; denda, kendaraan, masa berlaku, serta lampiran gambar (KTP/STNK/unit).
-                  </p>
-                )}
-              </div>
-
               <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2 sticky bottom-0 bg-slate-900 py-2">
                 <button
                   type="button"
@@ -1659,12 +1426,12 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
 
                   <button
                     type="button"
-                    onClick={openWebGenerator}
-                    className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition flex items-center gap-2"
-                    title="Buka generator-surat-beige.vercel.app dengan payload LetterData + BastData dari form ini"
+                    onClick={() => openLocalGenerator('surat_tugas')}
+                    className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition flex items-center gap-1.5 shadow-sm"
+                    title="Buka Generator Dokumen Resmi terintegrasi Google Apps Script"
                   >
-                    <Send className="w-3.5 h-3.5" />
-                    Buat di Generator (Web)
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>Buka di Generator</span>
                   </button>
 
                   <button
@@ -1712,25 +1479,21 @@ export const SKModule: React.FC<SKModuleProps> = ({ store, currentUser, onUpdate
         </div>
       )}
 
-      {/* GENERATOR LOKAL — kode sumber repo irvanlaksana/generate-surat-tugas
-          (UI yang sama dengan generator-surat-new.vercel.app), data terisi dari Form SPK */}
-      {showLocalGenerator && generatorData && (
+      {/* GENERATOR DOKUMEN RESMI — Di-clone dari repo generator-surat-
+          Disesuaikan penuh untuk ekosistem Google Apps Script Web App & Google Drive */}
+      {showLocalGenerator && activeGeneratorConfig && (
         <AssignmentLetterGenerator
-          initialData={generatorData.data}
-          isPersonal={generatorData.isPersonal}
+          isModal={true}
+          initialLetterData={activeGeneratorConfig.letterData}
+          initialBastData={activeGeneratorConfig.bastData}
+          defaultDocType={activeGeneratorConfig.docType}
+          rootDriveFolderId={store.settings?.googleDriveFolderId}
+          armsStore={store}
+          activeCaseId={caseId}
+          activePersonnelId={personnelId}
           onClose={() => setShowLocalGenerator(false)}
-          onSave={(savedData) => {
-            const audit = createAuditEntry(
-              currentUser.username,
-              currentUser.role,
-              'CREATE',
-              'SK_Generator',
-              savedData.st?.nomor || skNumberDraft,
-              `Generate surat via Generator (repo generate-surat-tugas) untuk ${savedData.namaDebitur || ''}`
-            );
-            onUpdateStore({ ...store, auditLogs: [audit, ...(store.auditLogs || [])] });
-            setShowLocalGenerator(false);
-            setGeneratorStatus('Surat berhasil digenerate & disimpan di arsip (audit log).');
+          onSaveToDriveSuccess={(res) => {
+            handleGeneratorDriveSaveSuccess(res);
           }}
         />
       )}

@@ -2,13 +2,13 @@
  * FILE INI DI-GENERATE OTOMATIS - JANGAN DIEDIT MANUAL.
  * Sumber: supabase/migrations/*.sql
  * Generator: npm run db:columns  (scripts/generate-supabase-columns.mjs)
- * Migrasi terbaca: 20260907000000_create_arms_schema.sql, 20260907000100_fix_security_definer_views.sql, 20260908000000_add_personnel_sppi.sql, 20260914000000_add_asset_recovery_manual_fees.sql
+ * Migrasi terbaca: 20260907000000_create_arms_schema.sql, 20260907000100_fix_security_definer_views.sql, 20260908000000_add_personnel_sppi.sql
  */
 
 /** Daftar kolom valid tiap tabel Supabase. */
 export const SUPABASE_TABLE_COLUMNS: Record<string, readonly string[]> = {
   approvals: ['id', 'request_no', 'module', 'target_id', 'target_reference', 'title', 'requested_by', 'amount_or_value', 'description', 'status', 'reviewed_by', 'reviewed_at', 'rejection_reason', 'created_at', 'updated_at'],
-  asset_recoveries: ['id', 'recovery_no', 'case_id', 'case_no', 'asset_id', 'asset_description', 'personnel_id', 'personnel_name', 'personnel_type', 'recovery_date', 'warehouse_location', 'physical_condition', 'vehicle_type', 'vehicle_year', 'has_stnk', 'has_key', 'tier_applied_name', 'tier_applied_basis', 'tier_base_amount', 'tier_modifiers_total', 'repossession_fee', 'company_fee_percent', 'company_fee_amount', 'partner_commission_amount', 'partner_payout_status', 'partner_transfer_date', 'partner_transfer_ref', 'partner_transfer_proof_url', 'partner_bank_name', 'partner_account_no', 'partner_account_name', 'paid_from_cash_account_id', 'status', 'bast_drive_url', 'created_at', 'updated_at', 'manual_splits', 'manual_fees_total'],
+  asset_recoveries: ['id', 'recovery_no', 'case_id', 'case_no', 'asset_id', 'asset_description', 'personnel_id', 'personnel_name', 'personnel_type', 'recovery_date', 'warehouse_location', 'physical_condition', 'vehicle_type', 'vehicle_year', 'has_stnk', 'has_key', 'tier_applied_name', 'tier_applied_basis', 'tier_base_amount', 'tier_modifiers_total', 'repossession_fee', 'company_fee_percent', 'company_fee_amount', 'partner_commission_amount', 'partner_payout_status', 'partner_transfer_date', 'partner_transfer_ref', 'partner_transfer_proof_url', 'partner_bank_name', 'partner_account_no', 'partner_account_name', 'paid_from_cash_account_id', 'status', 'bast_drive_url', 'created_at', 'updated_at'],
   assets: ['id', 'asset_code', 'case_id', 'case_no', 'debtor_name', 'category', 'brand_model', 'police_no_vin', 'estimated_market_value', 'physical_status', 'warehouse_location', 'storage_fee_per_day', 'recovered_date', 'created_at', 'updated_at'],
   assignments: ['id', 'assignment_no', 'case_id', 'case_no', 'debtor_name', 'personnel_id', 'personnel_name', 'assigned_date', 'target_date', 'sla_days', 'instructions', 'status', 'field_report_summary', 'gdrive_folder_url', 'created_at', 'updated_at'],
   audit_logs: ['id', 'timestamp', 'username', 'user_role', 'action', 'module_name', 'target_id', 'details', 'ip_address', 'created_at'],

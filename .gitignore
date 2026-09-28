@@ -11,11 +11,12 @@ service-account.json
 # Generated local spreadsheet workbooks
 storage/spreadsheets/
 
-# Google Apps Script build artifacts (dihasilkan `npm run gas:build`)
-dist-gas/
-appsscript/dist/
-appsscript/.clasp.json
-.clasprc.json
-
-# Hasil export snapshot database (data, bukan kode)
-exports/
+# Temporary migration & scratch scripts
+*.cjs
+fix*.js
+fix*.py
+replace_*.js
+search_*.js
+test_*.js
+*.txt
+GAS_UI_BUILD.html

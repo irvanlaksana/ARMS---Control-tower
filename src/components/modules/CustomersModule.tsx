@@ -1078,18 +1078,7 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                   </label>
                   {ktpPhotoUrl && (
                     <div className="relative group">
-                      <img
-                        src={ktpPhotoUrl}
-                        alt="KTP"
-                        data-media-preview
-                        data-media-url={ktpPhotoUrl}
-                        data-media-name={`KTP-${fullName || "nasabah"}.jpg`}
-                        data-media-title="Foto KTP Nasabah"
-                        data-media-caption={fullName || undefined}
-                        data-media-module="Customers"
-                        title="Klik untuk preview KTP"
-                        className="w-full h-24 object-cover rounded-lg border border-slate-800 cursor-zoom-in hover:border-indigo-500 transition"
-                      />
+                      <img src={ktpPhotoUrl} alt="KTP" className="w-full h-24 object-cover rounded-lg border border-slate-800" />
                       {ktpPhotoUrl.startsWith('http') && (
                         <a
                           href={ktpPhotoUrl}
@@ -1137,28 +1126,7 @@ export const CustomersModule: React.FC<CustomersModuleProps> = ({ store, current
                     <div className="grid grid-cols-2 gap-2">
                       {stnkPhotoUrls.map((url, index) => (
                         <div key={`${url}-${index}`} className="relative group">
-                          <img
-                            src={url}
-                            alt={`STNK ${index + 1}`}
-                            data-media-preview
-                            data-media-url={url}
-                            data-media-name={`STNK-${index + 1}.jpg`}
-                            data-media-title={`Foto STNK ${index + 1}`}
-                            data-media-caption={fullName || undefined}
-                            data-media-module="Customers"
-                            data-media-index={index}
-                            data-media-gallery={JSON.stringify(
-                              stnkPhotoUrls.map((u, i) => ({
-                                url: u,
-                                fileName: `STNK-${i + 1}.jpg`,
-                                title: `Foto STNK ${i + 1}`,
-                                caption: fullName || undefined,
-                                module: 'Customers',
-                              }))
-                            )}
-                            title="Klik untuk preview STNK"
-                            className="w-full h-24 object-cover rounded-lg border border-slate-800 cursor-zoom-in hover:border-indigo-500 transition"
-                          />
+                          <img src={url} alt={`STNK ${index + 1}`} className="w-full h-24 object-cover rounded-lg border border-slate-800" />
                           {url.startsWith('http') && (
                             <a
                               href={url}

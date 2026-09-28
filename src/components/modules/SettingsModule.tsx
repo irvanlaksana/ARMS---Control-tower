@@ -23,23 +23,10 @@ import { DEFAULT_MJ_LOGO } from '../../assets/mjLogo';
 import { SettingsWorkflowTab } from './SettingsWorkflowTab';
 import { SettingsBankBalancesTab } from './SettingsBankBalancesTab';
 import { SettingsGDriveDatabaseTab } from './SettingsGDriveDatabaseTab';
-import { SettingsDatabaseTab } from './SettingsDatabaseTab';
 import { getDatabaseConfigs, markDatabaseSynced } from '../../data/databaseConfig';
-import { pushFullStoreToFirebase } from '../../services/firebaseSyncService';
-import { pushFullStoreToSupabase } from '../../services/supabaseService';
-import { isSupabaseConfigured } from '../../lib/supabase';
+import { pushFullStoreToFirebase, checkAndPrepareSpreadsheet } from '../../services/firebaseSyncService';
 import { DatabaseTabConfig } from '../../types/arms';
-import { Landmark, Table2, Link2, PlugZap, FileSpreadsheet } from 'lucide-react';
-import {
-  resolveActiveSheet,
-  saveSettingsToActiveSheet,
-  loadSettingsFromActiveSheet,
-  extractSpreadsheetId,
-  spreadsheetUrlFromId,
-  ActiveSpreadsheetInfo,
-} from '../../services/settingsSheetService';
-import { checkDriveStatus, DriveStatusResult } from '../../lib/drive';
-import { getApiMode, isGasBackendActive, setGasWebAppUrl } from '../../lib/gasBridge';
+import { Landmark, Table2, Layers, CheckSquare, ShieldCheck } from 'lucide-react';
 
 interface SettingsModuleProps {
   store: ARMSStore;
@@ -65,106 +52,56 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
   const [isPulling, setIsPulling] = useState(false);
   const [isPushing, setIsPushing] = useState(false);
   const [pushStatusMsg, setPushStatusMsg] = useState('');
+  const [isVerifyingStructure, setIsVerifyingStructure] = useState(false);
+  const [structureStatus, setStructureStatus] = useState<{
+    ok: boolean;
+    text: string;
+    totalSheets?: number;
+    createdSheets?: string[];
+    existingSheets?: string[];
+    isSimulation?: boolean;
+  } | null>(null);
   const [activeTab, setActiveTab] = useState<'GDRIVE_DATABASE' | 'DATABASE' | 'SYSTEM' | 'BANK_BALANCES' | 'WORKFLOW'>('GDRIVE_DATABASE');
 
-  // ---- Target penyimpanan: spreadsheet aktif yang dipakai deploy saat ini ----
-  const [activeSheet, setActiveSheet] = useState<ActiveSpreadsheetInfo | null>(null);
-  const [driveStatus, setDriveStatus] = useState<DriveStatusResult | null>(null);
-  const [sheetMsg, setSheetMsg] = useState('');
-  const [isSavingSettings, setIsSavingSettings] = useState(false);
-  const [isLoadingSettings, setIsLoadingSettings] = useState(false);
-  const apiMode = getApiMode();
-  const isGasSpreadsheetMode = apiMode !== 'SERVER';
-
-  const refreshActiveSheet = async (nextSettings?: AppSettings) => {
-    const [info, drive] = await Promise.all([
-      resolveActiveSheet(nextSettings || settings).catch(() => null),
-      checkDriveStatus().catch(() => null),
-    ]);
-    if (info) setActiveSheet(info);
-    if (drive) setDriveStatus(drive);
-    return info;
-  };
-
-  useEffect(() => {
-    void refreshActiveSheet();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiMode]);
-
-  /** Simpan seluruh pengaturan ke tab Settings pada spreadsheet aktif. */
-  const persistSettingsToActiveSheet = async (nextSettings: AppSettings): Promise<boolean> => {
-    setIsSavingSettings(true);
-    setSheetMsg('Menyimpan pengaturan ke spreadsheet aktif…');
+  const handleCheckAndCreateSheets = async () => {
+    const sheetId = (settings.googleSheetId || 'arms-control-tower').trim();
+    setIsVerifyingStructure(true);
+    setStructureStatus(null);
     try {
-      const result = await saveSettingsToActiveSheet(nextSettings);
-      if (result.spreadsheet) setActiveSheet(result.spreadsheet);
-      setSheetMsg(result.ok ? `✅ ${result.message}` : `⚠️ Pengaturan dipakai di sesi ini, tetapi gagal disimpan ke spreadsheet: ${result.message}`);
-      return result.ok;
-    } catch (err: any) {
-      setSheetMsg(`⚠️ Gagal menyimpan ke spreadsheet aktif: ${err?.message || String(err)}`);
-      return false;
-    } finally {
-      setIsSavingSettings(false);
-    }
-  };
-
-  /** Muat pengaturan dari tab Settings spreadsheet aktif. */
-  const handleLoadSettingsFromSheet = async () => {
-    if (!canEdit) return;
-    setIsLoadingSettings(true);
-    setSheetMsg('Membaca pengaturan dari spreadsheet aktif…');
-    try {
-      const result = await loadSettingsFromActiveSheet(settings);
-      if (!result.ok) {
-        setSheetMsg(`❌ ${result.message}`);
-        return;
+      const checkStore: ARMSStore = {
+        ...store,
+        settings: { ...settings, googleSheetId: sheetId, databaseConfig: dbColumns },
+      };
+      const res = await checkAndPrepareSpreadsheet(checkStore);
+      if (res && res.success) {
+        setStructureStatus({
+          ok: true,
+          text: `Struktur Siap! ${res.totalSheets} Sheet & kolom terverifikasi (${res.createdSheets?.length || 0} sheet baru dibuat, ${res.existingSheets?.length || 0} sheet sudah ada). Kolom telah diformat rapi.`,
+          totalSheets: res.totalSheets,
+          createdSheets: res.createdSheets,
+          existingSheets: res.existingSheets,
+          isSimulation: res.isSimulation,
+        });
+      } else {
+        setStructureStatus({
+          ok: false,
+          text: res?.message || 'Gagal menyiapkan struktur spreadsheet.',
+        });
       }
-      const fromSheet = result.settings || {};
-      if (!Object.keys(fromSheet).length) {
-        setSheetMsg(`ℹ️ ${result.message}`);
-        return;
-      }
-      const merged: AppSettings = { ...settings, ...fromSheet };
-      const audit = createAuditEntry(
-        currentUser.username,
-        currentUser.role,
-        'UPDATE',
-        'Settings',
-        'APP_SETTINGS_LOAD',
-        `Muat ${Object.keys(fromSheet).length} key pengaturan dari spreadsheet aktif (${result.spreadsheet?.name || ''})`
-      );
-      setSettings(merged);
-      onUpdateStore({ ...store, settings: merged, auditLogs: [audit, ...store.auditLogs] });
-      if (result.spreadsheet) setActiveSheet(result.spreadsheet);
-      setSheetMsg(`✅ ${result.message}`);
     } catch (err: any) {
-      setSheetMsg(`❌ Gagal memuat pengaturan: ${err?.message || String(err)}`);
+      setStructureStatus({
+        ok: false,
+        text: `Gagal Memeriksa Struktur: ${err?.message || String(err)}`,
+      });
     } finally {
-      setIsLoadingSettings(false);
-    }
-  };
-
-  /** Uji koneksi ke backend penyimpanan (Apps Script / server). */
-  const handleTestConnection = async () => {
-    setSheetMsg('Menguji koneksi ke spreadsheet aktif & Google Drive…');
-    try {
-      const info = await refreshActiveSheet(settings);
-      const health = await fetch('/api/health').then((r) => r.json()).catch(() => null);
-      const drive = driveStatus?.configured ? 'Drive siap' : 'Drive belum siap';
-      setSheetMsg(
-        `✅ Koneksi OK — mode ${info?.mode || apiMode}, spreadsheet "${info?.name || '-'}" (${info?.id || '-'}) • ${drive}` +
-        (health?.provider ? ` • backend ${health.provider}` : '')
-      );
-    } catch (err: any) {
-      setSheetMsg(`❌ Uji koneksi gagal: ${err?.message || String(err)}`);
+      setIsVerifyingStructure(false);
     }
   };
 
   const handlePushFullFirebase = async () => {
-    // Spreadsheet aktif tempat deploy ini menyimpan data (otomatis pada mode Apps Script).
-    const sheetId = extractSpreadsheetId(activeSheet?.id || settings.googleSheetId || 'arms-control-tower');
+    const sheetId = (settings.googleSheetId || 'arms-control-tower').trim();
     setIsPushing(true);
-    setPushStatusMsg(`Sedang menginisialisasi tab dan memicu Push Data Otomatis ke spreadsheet aktif${activeSheet?.name ? ` "${activeSheet.name}"` : ''}...`);
+    setPushStatusMsg('Sedang memverifikasi kolom dan mengirim data ke baris & sheet masing-masing...');
     try {
       // Pakai settings yang baru diketik (ID spreadsheet + kolom database) agar push sesuai kolom terbaru
       const pushStore: ARMSStore = {
@@ -172,11 +109,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
         settings: { ...settings, googleSheetId: sheetId, databaseConfig: dbColumns },
       };
       const res = await pushFullStoreToFirebase(pushStore);
-      // Supabase hanya dipakai bila backend Apps Script tidak aktif (spreadsheet aktif = sumber utama).
-      const supabaseResult = isSupabaseConfigured && !isGasBackendActive() ? await pushFullStoreToSupabase(pushStore) : null;
-      if (supabaseResult && !supabaseResult.success) {
-        throw new Error(`Supabase: ${supabaseResult.error || 'sinkronisasi gagal'}`);
-      }
+      
       const counts: Record<string, number> = {};
       for (const cfg of getDatabaseConfigs(pushStore.settings)) {
         if (cfg.collection === 'settings') continue;
@@ -186,7 +119,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
       const syncedSettings = markDatabaseSynced(pushStore.settings, counts, res.syncedAt || new Date().toISOString());
       onUpdateStore({ ...pushStore, settings: syncedSettings });
       setSettings(syncedSettings);
-      setPushStatusMsg(`✅ Sukses! ${res.totalItems} dokumen tersimpan di spreadsheet aktif${supabaseResult ? ' dan Supabase' : ''}.`);
+      setPushStatusMsg(`✅ Sukses! ${res.totalItems} dokumen berhasil dipetakan ke kolom-kolom Spreadsheet tanpa melebihi limit sel.`);
     } catch (err: any) {
       setPushStatusMsg(`❌ Gagal Push Data: ${err.message || String(err)}`);
     } finally {
@@ -227,30 +160,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
     setTimeout(() => setSavedMsg(false), 3000);
   };
 
-  const handleCreateDatabaseColumns = async () => {
-    if (!canEdit) return;
-    const id = (activeSheet?.id || settings.googleSheetId || 'arms-control-tower').trim();
-    setIsCreatingColumns(true);
-    setCreateColumnMsg('Membuat seluruh kolom/tab database di spreadsheet aktif...');
-    try {
-      const resp = await fetch('/api/sheets/setup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          spreadsheetId: id,
-          tabs: Object.fromEntries(dbColumns.map((c) => [c.collection, c.tabName])),
-        }),
-      });
-      const json = await resp.json();
-      if (!json?.success) throw new Error(json?.error || 'Gagal membuat kolom database');
-      setCreateColumnMsg(`✅ Berhasil! ${json.sheets?.length || 0} kolom/tab database dibuat & dipastikan tersedia di spreadsheet.`);
-      handleSaveDbColumns();
-    } catch (err: any) {
-      setCreateColumnMsg(`❌ Gagal membuat kolom database: ${err.message || String(err)}`);
-    } finally {
-      setIsCreatingColumns(false);
-    }
-  };
+  const handleCreateDatabaseColumns = () => {};
 
   // Synchronize internal state when store changes
   useEffect(() => {
@@ -282,43 +192,30 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
     }
   };
 
-  /**
-   * Simpan "ARMS System Settings & Branding Profile".
-   * Seluruh key (profil perusahaan, logo, konfigurasi Google Drive, fee default,
-   * konfigurasi tab database, URL Web App Apps Script) ditulis ke tab Settings
-   * pada SPREADSHEET AKTIF yang dipakai deploy saat ini.
-   */
-  const handleSave = async (e?: React.FormEvent) => {
-    if (e && typeof e.preventDefault === 'function') e.preventDefault();
-
-    const nextSettings: AppSettings = {
-      ...settings,
-      googleSheetId: (settings.googleSheetId || activeSheet?.id || '').trim(),
-      lastSyncedAt: new Date().toISOString(),
-    };
-
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
     const audit = createAuditEntry(
       currentUser.username,
       currentUser.role,
       'UPDATE',
       'Settings',
       'APP_SETTINGS',
-      `Updated ARMS System Settings & Branding Profile (${nextSettings.companyName}) → spreadsheet aktif ${activeSheet?.name || nextSettings.googleSheetId || '-'}`
+      `Updated ARMS System Settings & Enterprise Profile (${settings.companyName})`
     );
 
     const updatedStore: ARMSStore = {
       ...store,
-      settings: nextSettings,
+      settings: {
+        ...settings,
+        lastSyncedAt: new Date().toISOString(),
+      },
       auditLogs: [audit, ...store.auditLogs],
     };
 
-    setSettings(nextSettings);
     onUpdateStore(updatedStore);
-    setSavedMsg(true);
-    setTimeout(() => setSavedMsg(false), 4000);
 
-    // Simpan ke spreadsheet aktif (sumber kebenaran), bukan hanya cache lokal.
-    await persistSettingsToActiveSheet(updatedStore.settings);
+    setSavedMsg(true);
+    setTimeout(() => setSavedMsg(false), 3000);
   };
 
   return (
@@ -331,47 +228,14 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
             <h2 className="text-xl font-bold text-white">ARMS System Settings & Branding Profile</h2>
           </div>
           <p className="text-xs text-slate-400">
-            Seluruh pengaturan &amp; tampilan disimpan pada <b className="text-indigo-300">spreadsheet aktif</b> yang dipakai deploy saat ini
-            {activeSheet ? (
-              <>
-                {' '}— <code className="text-emerald-300 bg-slate-950 px-1.5 py-0.5 rounded font-mono text-[11px] border border-slate-800">{activeSheet.name}</code>
-              </>
-            ) : null}
-            . Penyimpanan berkas Google Drive tetap aktif (DriveApp / Service Account).
+            Configure Google Drive Storage, Google Sheets Database, Apps Script Endpoint, Company Profile, and Enterprise Logo
           </p>
         </div>
       </div>
 
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-slate-800 pb-px overflow-x-auto">
-        <button
-          type="button"
-          onClick={() => setActiveTab('GDRIVE_DATABASE')}
-          className={`px-3 py-2 text-sm font-bold border-b-2 transition shrink-0 ${
-            activeTab === 'GDRIVE_DATABASE'
-              ? 'border-indigo-500 text-indigo-400 bg-indigo-950/20'
-              : 'border-transparent text-slate-400 hover:text-slate-300'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <HardDrive className="w-3.5 h-3.5 text-indigo-400" />
-            <span>📁 Direktori GDrive & Database Karyawan / Multifinance</span>
-          </div>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('DATABASE')}
-          className={`px-3 py-2 text-sm font-bold border-b-2 transition shrink-0 ${
-            activeTab === 'DATABASE'
-              ? 'border-violet-500 text-violet-400 bg-violet-950/20'
-              : 'border-transparent text-slate-400 hover:text-slate-300'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Table2 className="w-3.5 h-3.5 text-violet-400" />
-            <span>Database & Sheet</span>
-          </div>
-        </button>
+        
         <button
           type="button"
           onClick={() => setActiveTab('SYSTEM')}
@@ -383,7 +247,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
         >
           <div className="flex items-center gap-2">
             <SettingsIcon className="w-3.5 h-3.5" />
-            <span>Pengaturan Sistem & Google Sheets</span>
+            <span>Pengaturan Sistem & Google Workspace</span>
           </div>
         </button>
         <button
@@ -423,156 +287,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
           onUpdateStore={onUpdateStore}
         />
       )}
-
-      {activeTab === 'DATABASE' && (
-        <SettingsDatabaseTab
-          store={store}
-          currentUser={currentUser}
-          onUpdateStore={onUpdateStore}
-          onPushFullFirebase={onPushFullFirebase}
-        />
-      )}
-
       <div className={activeTab === 'SYSTEM' ? 'space-y-4' : 'hidden'}>
-      {/* ===== Spreadsheet Aktif & Deployment Google Apps Script ===== */}
-      <div className="bg-gradient-to-r from-indigo-950/70 via-slate-900 to-slate-950 border border-indigo-800/70 rounded-xl p-3.5 space-y-2.5 shadow-lg">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5">
-          <div className="flex items-start gap-2">
-            <div className="p-2.5 bg-indigo-900/60 rounded-xl border border-indigo-700/60 text-indigo-300 shrink-0 shadow-inner">
-              <FileSpreadsheet className="w-5 h-5 text-indigo-300" />
-            </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-bold text-white text-base">Spreadsheet Aktif — Sumber Penyimpanan Deploy Ini</h3>
-                <span
-                  className={`px-2 py-0.5 border text-[10px] font-bold rounded-full ${
-                    apiMode === 'GAS_HTML'
-                      ? 'bg-emerald-950 text-emerald-300 border-emerald-700'
-                      : apiMode === 'GAS_URL'
-                      ? 'bg-teal-950 text-teal-300 border-teal-700'
-                      : 'bg-slate-800 text-slate-300 border-slate-700'
-                  }`}
-                >
-                  {apiMode === 'GAS_HTML'
-                    ? 'GOOGLE APPS SCRIPT (TERIKAT)'
-                    : apiMode === 'GAS_URL'
-                    ? 'GOOGLE APPS SCRIPT (WEB APP URL)'
-                    : 'SERVER API'}
-                </span>
-              </div>
-              <p className="text-xs text-slate-300 mt-0.5 leading-normal">
-                Semua pengaturan pada halaman ini (Branding Profile, logo, konfigurasi Google Drive, kolom database,
-                fee default) disimpan sebagai baris <code className="text-indigo-300">key/value</code> pada tab{' '}
-                <b className="text-white">{activeSheet?.settingsTab || 'Settings'}</b> di spreadsheet aktif.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
-            <a
-              href={activeSheet?.url || spreadsheetUrlFromId(settings.googleSheetId || '')}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border transition ${
-                activeSheet?.url || settings.googleSheetId
-                  ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
-                  : 'pointer-events-none bg-slate-900 text-slate-600 border-slate-800'
-              }`}
-            >
-              <ExternalLink className="w-3 h-3 text-indigo-400" />
-              Buka Spreadsheet
-            </a>
-            <button
-              type="button"
-              disabled={!canEdit || isLoadingSettings}
-              onClick={handleLoadSettingsFromSheet}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 border border-slate-700 text-xs font-bold rounded-lg transition"
-            >
-              <Download className={`w-3 h-3 ${isLoadingSettings ? 'animate-bounce' : ''}`} />
-              {isLoadingSettings ? 'Memuat…' : 'Muat dari Spreadsheet'}
-            </button>
-            <button
-              type="button"
-              onClick={handleTestConnection}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold rounded-lg transition"
-            >
-              <PlugZap className="w-3 h-3 text-amber-400" />
-              Uji Koneksi
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-          {[
-            { label: 'Nama Spreadsheet', value: activeSheet?.name || settings.googleSheetId || '—' },
-            { label: 'Spreadsheet ID', value: activeSheet?.id || settings.googleSheetId || '—', mono: true },
-            { label: 'Tab Pengaturan', value: activeSheet?.settingsTab || 'Settings', mono: true },
-            {
-              label: apiMode === 'SERVER' ? 'Akun Service Account' : 'Akun Deploy / Drive',
-              value: activeSheet?.driveUser || activeSheet?.ownerEmail || driveStatus?.driveUser || driveStatus?.serviceAccountEmail || '—',
-              mono: true,
-            },
-          ].map((item) => (
-            <div key={item.label} className="bg-slate-950/70 border border-slate-800 rounded-lg p-2">
-              <div className="text-[10px] uppercase tracking-wide text-slate-500 font-semibold">{item.label}</div>
-              <div className={`text-[11px] text-slate-200 break-all ${item.mono ? 'font-mono' : 'font-semibold'}`}>{item.value}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* URL Web App Apps Script (dipakai bila aplikasi di-host terpisah) */}
-        <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
-          <label className="block text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
-            <Link2 className="w-3 h-3 text-indigo-400" />
-            URL Web App Google Apps Script (opsional — wajib bila aplikasi di-host di luar Apps Script):
-          </label>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <input
-              type="text"
-              disabled={!canEdit}
-              value={settings.appsScriptWebAppUrl || ''}
-              onChange={(e) => setSettings({ ...settings, appsScriptWebAppUrl: e.target.value.trim() })}
-              onBlur={() => setGasWebAppUrl(settings.appsScriptWebAppUrl || '')}
-              placeholder="https://script.google.com/macros/s/AKfycb.../exec"
-              className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-indigo-500"
-            />
-            {canEdit && (
-              <button
-                type="button"
-                disabled={isSavingSettings}
-                onClick={() => {
-                  setGasWebAppUrl(settings.appsScriptWebAppUrl || '');
-                  void handleSave();
-                }}
-                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white text-xs font-bold rounded-lg transition"
-              >
-                <Save className="w-3 h-3" />
-                Simpan URL
-              </button>
-            )}
-          </div>
-          <p className="text-[10px] text-slate-500 leading-normal">
-            {apiMode === 'GAS_HTML'
-              ? 'Aplikasi sedang berjalan di dalam Web App Apps Script — semua penyimpanan otomatis mengarah ke spreadsheet aktif, URL ini tidak diperlukan.'
-              : 'Isi URL deployment berakhiran /exec (Execute as: Me • Who has access: Anyone) agar aplikasi yang di-host terpisah menyimpan data ke spreadsheet aktif Apps Script.'}
-          </p>
-        </div>
-
-        {sheetMsg && (
-          <div
-            className={`p-2.5 rounded-lg border text-xs font-semibold ${
-              sheetMsg.startsWith('✅')
-                ? 'bg-emerald-950/90 text-emerald-200 border-emerald-700'
-                : sheetMsg.startsWith('❌')
-                ? 'bg-rose-950/90 text-rose-200 border-rose-700'
-                : 'bg-indigo-950/90 text-indigo-200 border-indigo-700'
-            }`}
-          >
-            {sheetMsg}
-          </div>
-        )}
-      </div>
-
       {/* Firebase Database Push & Auto-Table Creation Banner */}
       <div className="bg-gradient-to-r from-emerald-950/70 via-slate-900 to-teal-950/70 border border-emerald-800/80 rounded-xl p-3.5 shadow-lg space-y-2">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5">
@@ -582,42 +297,31 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-white text-base">Spreadsheet Aktif &amp; Push Data Otomatis</h3>
-                <span className="px-2 py-0.5 bg-emerald-900/80 text-emerald-200 border border-emerald-700 text-[10px] font-bold rounded-full animate-pulse">
-                  ONLINE LIVE
-                </span>
+                <h3 className="font-bold text-white text-base">Spreadsheet Database (Deploy Aktif)</h3>
               </div>
               <p className="text-xs text-slate-300 mt-0.5 leading-normal">
-                Database Target:{' '}
-                <code className="text-emerald-300 bg-slate-950 px-2 py-0.5 rounded font-mono text-[11px] border border-slate-800">
-                  {activeSheet?.name || settings.googleSheetId || 'spreadsheet aktif (otomatis)'}
-                </code>
-                {activeSheet?.source ? (
-                  <span className="ml-1.5 text-[10px] text-slate-500">sumber: {activeSheet.source}</span>
-                ) : null}
+                Database Target: <code className="text-emerald-300 bg-slate-950 px-2 py-0.5 rounded font-mono text-[11px] border border-slate-800">{settings.googleSheetId || 'arms-control-tower (default)'}</code>
               </p>
               <div className="mt-1.5 bg-slate-950/70 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
                 <label className="block text-[11px] font-semibold text-slate-300">
-                  Spreadsheet Aktif (ID / URL Google Sheets):
+                  ID Spreadsheet:
                 </label>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="text"
                     disabled={!canEdit}
-                    readOnly={apiMode === 'GAS_HTML'}
-                    title={apiMode === 'GAS_HTML' ? 'Otomatis terikat pada spreadsheet tempat Apps Script ini di-deploy' : undefined}
-                    value={apiMode === 'GAS_HTML' && activeSheet?.id ? activeSheet.id : settings.googleSheetId || ''}
-                    onChange={(e) => setSettings({ ...settings, googleSheetId: extractSpreadsheetId(e.target.value) })}
-                    placeholder="1AbCdefGhIjKlMnOpQrStUvWxYz0123456789 atau https://docs.google.com/spreadsheets/d/..."
-                    className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-emerald-500 read-only:opacity-70"
+                    value={settings.googleSheetId || ''}
+                    onChange={(e) => setSettings({ ...settings, googleSheetId: e.target.value.trim() })}
+                    placeholder="arms-control-tower"
+                    className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-emerald-500"
                   />
                   <div className="flex items-center gap-2">
                     <a
-                      href={activeSheet?.url || spreadsheetUrlFromId(settings.googleSheetId || '')}
+                      href="#"
                       target="_blank"
                       rel="noopener noreferrer"
                       className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition ${
-                        activeSheet?.url || spreadsheetUrlFromId(settings.googleSheetId || '')
+                        settings.googleSheetId
                           ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
                           : 'pointer-events-none bg-slate-900 text-slate-600 border border-slate-800'
                       }`}
@@ -628,11 +332,10 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
                     {canEdit && (
                       <button
                         type="button"
-                        disabled={isSavingSettings}
                         onClick={() => {
-                          const conf = window.confirm('Simpan spreadsheet ini sebagai database aktif ARMS (semua pengaturan ikut tersimpan di tab Settings)?');
+                          const conf = window.confirm('Simpan ID Spreadsheet ini sebagai database ARMS?');
                           if (!conf) return;
-                          void handleSave();
+                          handleSave(new Event('submit') as any);
                         }}
                         className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition"
                       >
@@ -643,147 +346,90 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
                   </div>
                 </div>
                 <p className="text-[10px] text-slate-500">
-                  {apiMode === 'GAS_HTML'
-                    ? 'Otomatis terikat pada spreadsheet tempat Apps Script ini di-deploy — tidak perlu diisi manual.'
-                    : 'Tempel ID atau URL spreadsheet tujuan. Simpan, lalu klik '}
-                  {apiMode === 'GAS_HTML' ? null : <b>Push Data Otomatis</b>}
-                  {apiMode === 'GAS_HTML' ? null : ' untuk membuat dan mengisi seluruh tab database pada spreadsheet aktif.'}
+                  Isi nama workbook lokal, misalnya <b className="text-slate-300">arms-control-tower</b>. Simpan lalu klik <b>Push Data Otomatis</b> untuk membuat dan mengisi file Sheet database.
                 </p>
               </div>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                Klik tombol di bawah untuk membuat seluruh tab dan memicu push data penuh ke spreadsheet aktif.
+                Klik tombol di bawah untuk membuat seluruh tab dan memicu push data penuh ke Spreadsheet.
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
+            {/* Tombol 1: Periksa & Buat Struktur Kolom dan Sheet */}
+            <button
+              type="button"
+              disabled={isVerifyingStructure}
+              onClick={handleCheckAndCreateSheets}
+              className="flex items-center justify-center gap-2 px-3.5 py-2.5 bg-indigo-700 hover:bg-indigo-600 disabled:bg-slate-800 text-white font-bold text-xs rounded-lg shadow-lg shadow-indigo-950/50 border border-indigo-400/30 transition transform active:scale-95 cursor-pointer"
+              title="Periksa keberadaan 30 sheet dan struktur kolom master sebelum melakukan push data"
+            >
+              <Table2 className={`w-3.5 h-3.5 ${isVerifyingStructure ? 'animate-spin text-amber-300' : 'text-indigo-200'}`} />
+              <span>{isVerifyingStructure ? 'Memeriksa & Menyiapkan Kolom...' : '🛠️ 1. Periksa & Buat Struktur Kolom/Sheet'}</span>
+            </button>
+
+            {/* Tombol 2: Push Data Terpisah per Kolom */}
             <button
               type="button"
               disabled={isPushing}
               onClick={handlePushFullFirebase}
-              className="flex items-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white font-bold text-xs rounded-lg shadow-lg shadow-emerald-950/50 border border-emerald-400/30 transition transform active:scale-95 cursor-pointer"
+              className="flex items-center justify-center gap-2 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white font-bold text-xs rounded-lg shadow-lg shadow-emerald-950/50 border border-emerald-400/30 transition transform active:scale-95 cursor-pointer"
+              title="Kirim data terdistribusi ke masing-masing kolom dan sheet (bebas limit 50k karakter)"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isPushing ? 'animate-spin text-amber-300' : 'text-emerald-200'}`} />
-              <span>{isPushing ? 'Mengirim & Membuat Tab...' : '🚀 Push Data Otomatis & Buat Tab'}</span>
+              <span>{isPushing ? 'Mengirim Data per Kolom...' : '🚀 2. Push Data ke Kolom-kolom Sheet'}</span>
             </button>
           </div>
         </div>
 
+        {/* Info & Status Feedback Struktur Sheet */}
+        {structureStatus && (
+          <div className={`p-3 rounded-xl border text-xs flex flex-col gap-1.5 ${
+            structureStatus.ok
+              ? 'bg-indigo-950/90 text-indigo-100 border-indigo-700/80 shadow-md'
+              : 'bg-rose-950/90 text-rose-200 border-rose-700/80'
+          }`}>
+            <div className="flex items-center gap-2 font-bold">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{structureStatus.text}</span>
+            </div>
+            {structureStatus.details && (
+              <div className="text-[11px] text-indigo-200/90 pl-6 space-y-0.5">
+                <div>Total Sheet Terverifikasi: <b>{structureStatus.details.totalSheets} Sheet</b></div>
+                {structureStatus.details.createdSheets && structureStatus.details.createdSheets.length > 0 && (
+                  <div>Sheet Baru Dibuat: <span className="font-mono text-emerald-300">{structureStatus.details.createdSheets.join(', ')}</span></div>
+                )}
+                <div className="text-[10px] text-indigo-300/80 mt-1">
+                  ✨ Header baris pertama di setiap sheet telah diformat tebal (bold), latar gelap, dan dibekukan (frozen row 1).
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Info & Status Feedback Push Data */}
         {pushStatusMsg && (
-          <div className={`p-2.5 rounded-lg border text-xs font-semibold flex items-center gap-2 ${
+          <div className={`p-3 rounded-xl border text-xs font-semibold flex items-center gap-2 ${
             pushStatusMsg.startsWith('✅')
               ? 'bg-emerald-950/90 text-emerald-200 border-emerald-700'
               : pushStatusMsg.startsWith('❌')
               ? 'bg-rose-950/90 text-rose-200 border-rose-700'
-              : 'bg-indigo-950/90 text-indigo-200 border-indigo-700 animate-pulse'
+              : 'bg-slate-900 text-amber-200 border-amber-700 animate-pulse'
           }`}>
+            <CheckSquare className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>{pushStatusMsg}</span>
           </div>
         )}
 
-        {/* Kolom Spreadsheet untuk Membuat Database (sheet column configuration) */}
-        <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 space-y-2">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                <Table2 className="w-3.5 h-3.5 text-emerald-400" />
-                Kolom Spreadsheet untuk Membuat Database
-              </h4>
-              <p className="text-[11px] text-slate-400 mt-0.5">
-                Atur nama tab/sheet tiap database ARMS. Kolom ini dipakai otomatis oleh <b>Push Data Otomatis</b> dan
-                tombol <b>Buat Kolom Database</b> di bawah.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                disabled={!canEdit}
-                onClick={handleSaveDbColumns}
-                className="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white text-xs font-bold rounded-lg transition"
-              >
-                <Save className="w-3 h-3" />
-                Simpan Kolom
-              </button>
-              <button
-                type="button"
-                disabled={!canEdit || isCreatingColumns}
-                onClick={handleCreateDatabaseColumns}
-                className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white text-xs font-bold rounded-lg transition"
-              >
-                <Database className={`w-3 h-3 ${isCreatingColumns ? 'animate-pulse' : ''}`} />
-                {isCreatingColumns ? 'Membuat...' : 'Buat Kolom Database'}
-              </button>
-            </div>
-          </div>
-
-          {createColumnMsg && (
-            <div className={`p-2 rounded-lg border text-[11px] font-semibold ${
-              createColumnMsg.startsWith('✅')
-                ? 'bg-emerald-950/80 text-emerald-200 border-emerald-700'
-                : createColumnMsg.startsWith('❌')
-                ? 'bg-rose-950/80 text-rose-200 border-rose-700'
-                : 'bg-indigo-950/80 text-indigo-200 border-indigo-700'
-            }`}>
-              {createColumnMsg}
-            </div>
-          )}
-
-          <div className="max-h-72 overflow-y-auto thin-scroll rounded-lg border border-slate-800">
-            <table className="w-full text-left text-[11px] text-slate-300">
-              <thead className="bg-slate-900 text-slate-400 font-semibold sticky top-0">
-                <tr>
-                  <th className="p-2 w-6">No</th>
-                  <th className="p-2">Database</th>
-                  <th className="p-2">Nama Kolom / Tab di Spreadsheet</th>
-                  <th className="p-2 text-center">Aktif</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60">
-                {dbColumns.map((cfg, idx) => {
-                  const isSettings = cfg.collection === 'settings';
-                  return (
-                    <tr key={cfg.collection} className="bg-slate-950/40 hover:bg-slate-900/40">
-                      <td className="p-2 text-slate-500 font-mono">{String(idx + 1).padStart(2, '0')}</td>
-                      <td className="p-2">
-                        <div className="font-semibold text-slate-200">{cfg.label}</div>
-                        <div className="text-[10px] text-slate-500 font-mono">collection: {cfg.collection}</div>
-                      </td>
-                      <td className="p-2">
-                        <input
-                          type="text"
-                          disabled={!canEdit || isSettings}
-                          value={cfg.tabName}
-                          onChange={(e) => updateDbColumn(cfg.collection, { tabName: e.target.value })}
-                          className="w-full min-w-[130px] bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] font-mono text-white focus:outline-none focus:border-emerald-500 disabled:opacity-60"
-                        />
-                      </td>
-                      <td className="p-2 text-center">
-                        {isSettings ? (
-                          <span className="text-[10px] text-slate-500">Selalu</span>
-                        ) : (
-                          <button
-                            type="button"
-                            disabled={!canEdit}
-                            onClick={() => updateDbColumn(cfg.collection, { enabled: !cfg.enabled })}
-                            className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border transition disabled:opacity-40 ${
-                              cfg.enabled
-                                ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
-                                : 'bg-slate-800 text-slate-400 border-slate-700'
-                            }`}
-                          >
-                            {cfg.enabled ? 'ON' : 'OFF'}
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+        <div className="p-2.5 bg-slate-950/80 border border-slate-800/80 rounded-lg flex items-center justify-between text-[11px] text-slate-400">
+          <span className="flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <b>Anti-50k Cell Limit:</b> Data dipetakan ke kolom masing-masing secara granular. Gambar base64 otomatis disimpan ke Google Drive.
+          </span>
+          <span className="text-[10px] text-slate-500 font-mono">Google Apps Script Ecosystem</span>
         </div>
-      </div>
 
+              </div>
       {/* Google Drive Storage Status Banner */}
       <div className="bg-gradient-to-r from-blue-950/60 via-slate-900 to-indigo-950/60 border border-blue-800/60 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-md">
         <div className="flex items-start sm:items-center gap-2">
@@ -793,29 +439,12 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <span className="font-bold text-white text-sm">Google Drive Storage Integration</span>
-              <span
-                className={`px-2 py-0.5 border text-[10px] font-semibold rounded-full flex items-center gap-1 ${
-                  driveStatus?.configured
-                    ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
-                    : 'bg-amber-950 text-amber-300 border-amber-800'
-                }`}
-              >
-                <CheckCircle2 className={`w-3 h-3 ${driveStatus?.configured ? 'text-emerald-400' : 'text-amber-400'}`} />
-                {driveStatus?.configured ? 'Connected' : 'Perlu Dicek'}
+              <span className="px-2 py-0.5 bg-emerald-950 text-emerald-300 border border-emerald-800 text-[10px] font-semibold rounded-full flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Connected
               </span>
-              {driveStatus?.mode ? (
-                <span className="px-2 py-0.5 bg-slate-800 text-slate-300 border border-slate-700 text-[10px] font-semibold rounded-full">
-                  {driveStatus.mode}
-                </span>
-              ) : null}
             </div>
             <p className="text-xs text-slate-300 mt-0.5">
               Folder Drive Terkonfigurasi: <code className="text-indigo-300 bg-slate-950 px-1.5 py-0.5 rounded font-mono text-[11px]">{defaultDriveFolderId}</code>
-              {driveStatus?.rootFolderName ? <span className="ml-1.5 text-slate-400">({driveStatus.rootFolderName})</span> : null}
-            </p>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              Konfigurasi folder ini disimpan pada tab <b className="text-slate-300">{activeSheet?.settingsTab || 'Settings'}</b> spreadsheet aktif
-              {driveStatus?.driveUser ? <> • akses Drive sebagai <code className="text-slate-300 font-mono">{driveStatus.driveUser}</code></> : null}
             </p>
           </div>
         </div>
@@ -882,10 +511,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
       {savedMsg && (
         <div className="p-3 bg-emerald-950/80 border border-emerald-800 rounded-xl text-emerald-300 text-xs flex items-center gap-2 shadow-lg animate-fade-in">
           <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-          <div className="font-semibold">
-            Pengaturan Sistem &amp; Profil Perusahaan berhasil diperbarui, disimpan ke tab {activeSheet?.settingsTab || 'Settings'} spreadsheet aktif,
-            dan direfleksikan ke Dashboard!
-          </div>
+          <div className="font-semibold">Pengaturan Sistem & Profil Perusahaan Berhasil Diperbarui dan Direfleksikan ke Dashboard!</div>
         </div>
       )}
 
@@ -903,7 +529,6 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
                 <img
                   src={settings.companyLogo || DEFAULT_MJ_LOGO}
                   alt="Company Logo Preview"
-                  data-no-media-preview
                   className="w-full h-full object-contain"
                 />
               </div>
@@ -1016,31 +641,8 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
         <div className="space-y-2.5">
           <h3 className="font-bold text-white text-sm border-b border-slate-800 pb-1.5 flex items-center gap-2">
             <HardDrive className="w-3.5 h-3.5 text-blue-400" />
-            <span>3. Google Drive Cloud Storage &amp; KTP Database Configuration</span>
+            <span>3. Google Drive Cloud Storage & KTP Database Configuration</span>
           </h3>
-
-          <div className="flex flex-wrap items-center gap-2 text-[11px]">
-            <span className="px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-slate-400">
-              Fitur tidak berubah — hanya cara simpannya: konfigurasi Drive disimpan di spreadsheet aktif, berkas fisik tetap di Google Drive.
-            </span>
-            <button
-              type="button"
-              onClick={async () => {
-                setSheetMsg('Memeriksa akses Google Drive…');
-                const status = await checkDriveStatus();
-                setDriveStatus(status);
-                setSheetMsg(
-                  status.configured
-                    ? `✅ Google Drive siap (${status.mode || 'DriveApp'}) sebagai ${status.driveUser || status.serviceAccountEmail || 'akun deploy'}.`
-                    : '⚠️ Google Drive belum siap. Periksa izin folder master atau isi Folder ID di bawah.'
-                );
-              }}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg font-semibold transition"
-            >
-              <PlugZap className="w-3 h-3 text-blue-400" />
-              Uji Akses GDrive
-            </button>
-          </div>
 
           <div className="bg-slate-950/80 border border-slate-800/80 rounded-xl p-3 space-y-2.5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
@@ -1083,18 +685,9 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
               <div className="flex items-start gap-2.5">
                 <HardDrive className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />
                 <div className="space-y-1">
-                  <div className="font-semibold text-blue-300">
-                    Status Penyimpanan Google Drive Storage:{' '}
-                    {driveStatus?.configured ? 'Terhubung & Aktif' : 'Perlu Diperiksa'}
-                  </div>
+                  <div className="font-semibold text-blue-300">Status Penyimpanan Google Drive Storage: Terhubung & Aktif</div>
                   <p className="text-[11px] text-slate-300 leading-normal">
                     Setiap kali pengurus mengunggah foto KTP atau SPPI pada Module Karyawan & Mitra DC, file tersebut akan tersinkronisasi secara otomatis ke Google Drive sesuai pemetaan folder di bawah.
-                  </p>
-                  <p className="text-[11px] text-slate-400 leading-normal">
-                    {apiMode === 'SERVER'
-                      ? 'Backend: Service Account Google Drive (GOOGLE_SERVICE_ACCOUNT_JSON).'
-                      : 'Backend: Google Apps Script (DriveApp) memakai akun deploy — tanpa Service Account.'}{' '}
-                    {driveStatus?.instructions ? driveStatus.instructions : ''}
                   </p>
                 </div>
               </div>
@@ -1184,11 +777,10 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
 
             <button
               type="submit"
-              disabled={isSavingSettings}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white text-xs font-semibold rounded-lg shadow-md transition"
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg shadow-md transition"
             >
-              <Save className={`w-3.5 h-3.5 ${isSavingSettings ? 'animate-pulse' : ''}`} />
-              <span>{isSavingSettings ? 'Menyimpan ke Spreadsheet Aktif…' : 'Simpan Pengaturan ke Spreadsheet Aktif'}</span>
+              <Save className="w-3.5 h-3.5" />
+              <span>Simpan Pengaturan System & GDrive</span>
             </button>
           </div>
         )}

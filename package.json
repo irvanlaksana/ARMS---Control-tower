@@ -4,9 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx server.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
-    "start": "node dist/server.cjs",
+    "dev": "vite",
+    "build": "vite build && cp dist/index.html gas-backend/Index.html",
+    "build:gas": "vite build && cp dist/index.html gas-backend/Index.html",
+    "start": "vite preview",
     "preview": "vite preview --port 5173",
     "preview:prod": "npm run build && npm run start",
     "clean": "rm -rf dist server.js",
@@ -19,21 +20,8 @@
     "db:schema": "node scripts/setup-supabase.mjs --schema-only",
     "db:seed": "node scripts/setup-supabase.mjs --seed-only",
     "spreadsheet:setup": "node scripts/sync-spreadsheet.mjs",
-    "gas:build": "node scripts/build-gas.mjs",
-    "gas:build:fast": "node scripts/build-gas.mjs --skip-vite",
-    "gas:test": "node scripts/test-gas-backend.mjs && node scripts/test-gas-bridge.mjs && node scripts/test-settings-ui.mjs && npm run test:media && npm run test:generator && npm run test:fees",
-    "gas:login": "npx @google/clasp login",
-    "gas:create": "cd appsscript && npx @google/clasp create --type standalone --title \"ARMS Control Tower\" --rootDir dist",
-    "gas:push": "cd appsscript && npx @google/clasp push --force",
-    "gas:deploy": "cd appsscript && npx @google/clasp deploy",
-    "gas:open": "cd appsscript && npx @google/clasp open",
     "supabase:link": "npx supabase link",
-    "supabase:push": "npx supabase db push",
-    "test:media": "node scripts/test-media-preview.mjs",
-    "test:generator": "node scripts/test-generator-payload.mjs",
-    "test:fees": "node scripts/test-manual-fee-export.mjs",
-    "export:database": "node scripts/export-database-snapshot.mjs",
-    "verify": "npm run lint && npm run gas:test && npm run build"
+    "supabase:push": "npx supabase db push"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -46,7 +34,9 @@
     "express": "^5.2.1",
     "firebase": "^12.17.1",
     "googleapis": "^174.0.1",
+    "html-to-image": "^1.11.13",
     "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "pg": "^8.23.0",
@@ -67,6 +57,7 @@
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.3"
+    "vite": "^6.2.3",
+    "vite-plugin-singlefile": "^2.3.3"
   }
 }
